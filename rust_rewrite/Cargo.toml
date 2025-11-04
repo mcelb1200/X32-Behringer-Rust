@@ -1,6 +1,6 @@
 [workspace]
 members = [
     "x32_lib",
-    "x32_command", "get_scene_name", "x32_reaper", "x32_tap", "x32_usb", "x32_get_scene", "x32_set_scene",
+    "x32_command", "get_scene_name", "x32_reaper", "x32_tap", "x32_usb", "x32_get_scene", "x32_set_scene", "osc_lib",
 ]
 resolver = "2"

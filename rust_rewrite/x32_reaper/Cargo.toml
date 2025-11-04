@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 clap = { version = "4.5.4", features = ["derive"] }
-x32_lib = { path = "../x32_lib" }
+osc_lib = { path = "../osc_lib" }
 anyhow = "1.0.82"
 config = "0.14.0"
 serde = { version = "1.0", features = ["derive"] }

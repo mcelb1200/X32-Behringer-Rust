@@ -1,8 +1,7 @@
 [package]
-name = "x32_lib"
+name = "osc_lib"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-osc_lib = { path = "../osc_lib" }
 byteorder = "1.5.0"

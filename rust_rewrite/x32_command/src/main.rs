@@ -1,11 +1,10 @@
 
 use anyhow::{anyhow, Result};
 use clap::Parser;
-use std::fs::File;
-use std::io::{self, BufRead, BufReader, Write};
+use std::io::{self, BufRead, Write};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr, UdpSocket};
 use std::time::{Duration, Instant};
-use x32_lib::{cparse, dump};
+use osc_lib::{OscMessage, OscArg};
 
 /// A command-line tool for sending OSC commands to a Behringer X32/X-Air mixer.
 #[derive(Parser, Debug)]
@@ -54,7 +53,7 @@ fn main() -> Result<()> {
             let broadcast_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(255, 255, 255, 255)), 10023);
             let mut discovered_ip = None;
 
-            let command = cparse::xcparse("/info").map_err(|e| anyhow!(e))?;
+            let command = OscMessage::new("/info".to_string(), vec![]).to_bytes().map_err(|e: String| anyhow!(e))?;
 
             for i in 0..5 {
                 print!(".");
@@ -62,15 +61,11 @@ fn main() -> Result<()> {
                 socket.send_to(&command, broadcast_addr)?;
                 let mut buf = [0; 512];
                 if let Ok((len, _)) = socket.recv_from(&mut buf) {
-                    let response = &buf[..len];
-                    if response.starts_with(b"/info") {
-                       if let Some(ip_start) = response.windows(16).position(|window| window == b"ip\"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00") {
-                            let ip_bytes_start = ip_start + 16;
-                            if let Some(ip_end) = (ip_bytes_start..len).find(|&i| response[i] == 0) {
-                                let ip_str = String::from_utf8_lossy(&response[ip_bytes_start..ip_end]);
-                                discovered_ip = Some(ip_str.to_string());
-                                break;
-                            }
+                    let response = OscMessage::from_bytes(&buf[..len]).map_err(|e: String| anyhow!(e))?;
+                    if response.path == "/info" {
+                        if let Some(OscArg::String(ip)) = response.args.get(0) {
+                            discovered_ip = Some(ip.to_string());
+                            break;
                         }
                     }
                 }
@@ -94,19 +89,23 @@ fn main() -> Result<()> {
     let mut verbose = args.verbose;
 
     if let Some(scene_file) = args.scene {
-        let file = File::open(scene_file)?;
-        let reader = BufReader::new(file);
+        let file = std::fs::File::open(scene_file)?;
+        let reader = io::BufReader::new(file);
         for line in reader.lines() {
             let line = line?;
             if !line.starts_with('#') {
-                let command = cparse::xcparse(&format!("/{},s,{}", line, line)).map_err(|e| anyhow!(e))?;
+                let msg = OscMessage::new(
+                    format!("/{}", line),
+                    vec![OscArg::String(line.clone())]
+                );
+                let command = msg.to_bytes().map_err(|e: String| anyhow!(e))?;
                 socket.send(&command)?;
                 check_for_response(&socket, verbose, args.debug)?;
             }
         }
     } else if let Some(batch_file) = args.file {
-        let file = File::open(batch_file)?;
-        let reader = BufReader::new(file);
+        let file = std::fs::File::open(batch_file)?;
+        let reader = io::BufReader::new(file);
         for line in reader.lines() {
             let line = line?;
             if line.starts_with('#') {
@@ -124,7 +123,7 @@ fn main() -> Result<()> {
         let mut last_command = String::new();
         loop {
             if xremote_on && last_xremote_time.elapsed() > Duration::from_secs(9) {
-                let xremote_cmd = cparse::xcparse("/xremote").map_err(|e| anyhow!(e))?;
+                let xremote_cmd = OscMessage::new("/xremote".to_string(), vec![]).to_bytes().map_err(|e: String| anyhow!(e))?;
                 socket.send(&xremote_cmd)?;
                 last_xremote_time = Instant::now();
             }
@@ -154,18 +153,18 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn handle_command(command: &str, socket: &UdpSocket, xremote_on: &mut bool, verbose: &mut bool, debug: bool) -> Result<()> {
-    match command {
+fn handle_command(command_str: &str, socket: &UdpSocket, xremote_on: &mut bool, verbose: &mut bool, debug: bool) -> Result<()> {
+    match command_str {
         "xremote on" => *xremote_on = true,
         "xremote off" => *xremote_on = false,
         "verbose on" => *verbose = true,
         "verbose off" => *verbose = false,
         _ => {
-            let osc_command = cparse::xcparse(command).map_err(|e| anyhow!(e))?;
+            let osc_command = parse_command(command_str)?;
             if *verbose {
-                println!("{}", dump::xfdump("->X", &osc_command, debug));
+                println!("->X: {} {:?}", osc_command.path, osc_command.args);
             }
-            socket.send(&osc_command)?;
+            socket.send(&osc_command.to_bytes().map_err(|e: String| anyhow!(e))?)?;
         }
     }
     Ok(())
@@ -175,8 +174,38 @@ fn check_for_response(socket: &UdpSocket, verbose: bool, debug: bool) -> Result<
     let mut buf = [0; 512];
     while let Ok(len) = socket.recv(&mut buf) {
         if verbose {
-            println!("{}", dump::xfdump("X->", &buf[..len], debug));
+            let response = OscMessage::from_bytes(&buf[..len]).map_err(|e: String| anyhow!(e))?;
+            println!("X->: {} {:?}", response.path, response.args);
         }
     }
     Ok(())
+}
+
+fn parse_command(command_str: &str) -> Result<OscMessage> {
+    let mut parts = command_str.split_whitespace();
+    let path = parts.next().ok_or_else(|| anyhow!("Empty command"))?.to_string();
+    let mut args = Vec::new();
+    if let Some(type_tags) = parts.next() {
+        if type_tags.starts_with(',') {
+            for (i, tag) in type_tags.chars().skip(1).enumerate() {
+                let arg_str = parts.next().ok_or_else(|| anyhow!(format!("Missing argument for type tag '{}'", tag)))?;
+                match tag {
+                    'i' => args.push(OscArg::Int(arg_str.parse()?)),
+                    'f' => args.push(OscArg::Float(arg_str.parse()?)),
+                    's' => args.push(OscArg::String(arg_str.to_string())),
+                    _ => return Err(anyhow!(format!("Unsupported type tag: {}", tag))),
+                }
+            }
+        } else {
+            // No type tags, treat remaining as string arguments
+            let mut arg_string = type_tags.to_string();
+            for part in parts {
+                arg_string.push(' ');
+                arg_string.push_str(part);
+            }
+            args.push(OscArg::String(arg_string));
+        }
+    }
+
+    Ok(OscMessage::new(path, args))
 }

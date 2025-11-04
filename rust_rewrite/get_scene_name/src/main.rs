@@ -4,7 +4,7 @@ use clap::Parser;
 use std::io::{self, Write};
 use std::net::{SocketAddr, UdpSocket};
 use std::time::{Duration, Instant};
-use x32_lib::cparse;
+use osc_lib::{OscMessage, OscArg};
 
 /// A command-line tool for getting the name of the currently loaded scene on an X32 mixer.
 #[derive(Parser, Debug)]
@@ -37,12 +37,13 @@ fn main() -> Result<()> {
         println!("Connecting to X32...");
     }
 
-    let info_cmd = cparse::xcparse("/info").map_err(|e| anyhow!(e))?;
+    let info_cmd = OscMessage::new("/info".to_string(), vec![]).to_bytes().map_err(|e: String| anyhow!(e))?;
     loop {
         socket.send(&info_cmd)?;
         let mut buf = [0; 512];
         if let Ok(len) = socket.recv(&mut buf) {
-            if &buf[..len] == b"/info" {
+            let msg = OscMessage::from_bytes(&buf[..len]).map_err(|e: String| anyhow!(e))?;
+            if msg.path == "/info" {
                 break;
             }
         }
@@ -63,27 +64,24 @@ fn main() -> Result<()> {
 
     loop {
         if last_xremote_time.elapsed() > Duration::from_secs(9) {
-            let xremote_cmd = cparse::xcparse("/xremote").map_err(|e| anyhow!(e))?;
+            let xremote_cmd = OscMessage::new("/xremote".to_string(), vec![]).to_bytes().map_err(|e: String| anyhow!(e))?;
             socket.send(&xremote_cmd)?;
-
-            let show_control_cmd = cparse::xcparse("/-prefs/show_control,i,1").map_err(|e| anyhow!(e))?;
+            let show_control_cmd = OscMessage::new("/-prefs/show_control".to_string(), vec![OscArg::Int(1)]).to_bytes().map_err(|e: String| anyhow!(e))?;
             socket.send(&show_control_cmd)?;
-
             last_xremote_time = Instant::now();
         }
 
         let mut buf = [0; 512];
         if let Ok(len) = socket.recv(&mut buf) {
-            let response = &buf[..len];
-            if response.starts_with(b"/-show/prepos/current") {
-                if let Ok(index) = std::str::from_utf8(&response[32..36])?.parse::<i32>() {
-                    scene_index = index;
-                    let scene_cmd = cparse::xcparse(&format!("/-show/showfile/scene/{:03}", scene_index)).map_err(|e| anyhow!(e))?;
+            let msg = OscMessage::from_bytes(&buf[..len]).map_err(|e: String| anyhow!(e))?;
+            if msg.path == "/-show/prepos/current" {
+                if let Some(OscArg::Int(index)) = msg.args.get(0) {
+                    scene_index = *index;
+                    let scene_cmd = OscMessage::new(format!("/-show/showfile/scene/{:03}", scene_index), vec![]).to_bytes().map_err(|e: String| anyhow!(e))?;
                     socket.send(&scene_cmd)?;
                 }
-            } else if response.starts_with(b"/-show/showfile/scene") {
-                if let Some(name_start) = response.iter().position(|&b| b == 0) {
-                    let name = String::from_utf8_lossy(&response[name_start + 1..]);
+            } else if msg.path.starts_with("/-show/showfile/scene") {
+                if let Some(OscArg::String(name)) = msg.args.get(0) {
                     println!("{:02} - {}", scene_index, name);
                     if args.one_time {
                         break;

@@ -4,7 +4,7 @@ use clap::Parser;
 use std::io::{self, Write};
 use std::net::{SocketAddr, UdpSocket};
 use std::time::Duration;
-use x32_lib::cparse;
+use osc_lib::{OscMessage, OscArg};
 
 /// A command-line tool for managing a USB drive on an X32 mixer.
 #[derive(Parser, Debug)]
@@ -53,12 +53,13 @@ fn main() -> Result<()> {
 
     println!("X32USB - v0.3 - (c)2015-17 Patrick-Gilles Maillot\n");
 
-    let info_cmd = cparse::xcparse("/info").map_err(|e| anyhow!(e))?;
+    let info_cmd = OscMessage::new("/info".to_string(), vec![]).to_bytes().map_err(|e: String| anyhow!(e))?;
     loop {
         socket.send(&info_cmd)?;
         let mut buf = [0; 512];
         if let Ok(len) = socket.recv(&mut buf) {
-            if &buf[..len] == b"/info" {
+            let msg = OscMessage::from_bytes(&buf[..len]).map_err(|e: String| anyhow!(e))?;
+            if msg.path == "/info" {
                 break;
             }
         }
@@ -98,13 +99,35 @@ fn main() -> Result<()> {
                 if mounted {
                     if let Ok(index) = arg.parse::<i32>() {
                         change_directory(&socket, index)?;
-                        prompt.push_str(&format!("{}/", get_dir_name(&file_tree, index).unwrap_or("")));
+                        let dir_name = get_dir_name(&file_tree, index).unwrap_or("");
+                        if dir_name == "[..]" {
+                            if let Some(pos) = prompt.rfind('/') {
+                                prompt.truncate(pos);
+                            }
+                        } else {
+                            prompt.push_str(&format!("{}/", dir_name.trim_matches(|c| c == '[' || c == ']')));
+                        }
                     } else {
                         if let Some(file) = file_tree.iter().find(|f| f.name == arg && f.file_type == FileType::Directory) {
                             change_directory(&socket, file.index)?;
-                            prompt.push_str(&format!("{}/", file.name));
+                            prompt.push_str(&format!("{}/", file.name.trim_matches(|c| c == '[' || c == ']')));
                         } else {
                             println!("Directory not found!");
+                        }
+                    }
+                } else {
+                    println!("No USB stick mounted!");
+                }
+            }
+            "load" | "run" => {
+                if mounted {
+                    if let Ok(index) = arg.parse::<i32>() {
+                        load_file(&socket, index)?;
+                    } else {
+                        if let Some(file) = file_tree.iter().find(|f| f.name == arg) {
+                            load_file(&socket, file.index)?;
+                        } else {
+                            println!("File not found!");
                         }
                     }
                 } else {
@@ -126,15 +149,45 @@ fn main() -> Result<()> {
                     println!("No USB stick mounted!");
                 }
             }
+            "stop" => {
+                let stop_cmd = OscMessage::new("/-stat/tape/state".to_string(), vec![OscArg::Int(0)]).to_bytes().map_err(|e: String| anyhow!(e))?;
+                socket.send(&stop_cmd)?;
+            }
+            "pause" => {
+                let pause_cmd = OscMessage::new("/-stat/tape/state".to_string(), vec![OscArg::Int(1)]).to_bytes().map_err(|e: String| anyhow!(e))?;
+                socket.send(&pause_cmd)?;
+            }
+            "resume" => {
+                let resume_cmd = OscMessage::new("/-stat/tape/state".to_string(), vec![OscArg::Int(2)]).to_bytes().map_err(|e: String| anyhow!(e))?;
+                socket.send(&resume_cmd)?;
+            }
+            "umount" => {
+                let umount_cmd = OscMessage::new("/-stat/usbmounted".to_string(), vec![OscArg::Int(0)]).to_bytes().map_err(|e: String| anyhow!(e))?;
+                socket.send(&umount_cmd)?;
+                mounted = false;
+                prompt = ">:".to_string();
+            }
+            "help" => {
+                println!("  ls                  List directory contents");
+                println!("  cd <id> | <name>    Change directory");
+                println!("  load <id> | <name>  Load or Run file");
+                println!("  play <id> | <name>  Play WAV file");
+                println!("  stop                Stops playback");
+                println!("  pause               Pauses playback");
+                println!("  resume              Resumes playback");
+                println!("  umount              Unmount the USB drive");
+                println!("  exit | quit         Exits program");
+            }
             "exit" | "quit" => break,
             _ => {
                  if !mounted {
-                    let mounted_cmd = cparse::xcparse("/-stat/usbmounted").map_err(|e| anyhow!(e))?;
+                    let mounted_cmd = OscMessage::new("/-stat/usbmounted".to_string(), vec![]).to_bytes().map_err(|e: String| anyhow!(e))?;
                     socket.send(&mounted_cmd)?;
                     let mut buf = [0; 512];
                     if let Ok(len) = socket.recv(&mut buf) {
-                        if &buf[..len] == b"/-stat/usbmounted" {
-                            if buf[24..28] == [0, 0, 0, 1] {
+                        let msg = OscMessage::from_bytes(&buf[..len]).map_err(|e: String| anyhow!(e))?;
+                        if msg.path == "/-stat/usbmounted" {
+                            if let Some(OscArg::Int(1)) = msg.args.get(0) {
                                 mounted = true;
                                 prompt = "$:".to_string();
                             }
@@ -150,20 +203,22 @@ fn main() -> Result<()> {
 
 fn list_directory(socket: &UdpSocket) -> Result<Vec<FileNode>> {
     let mut file_tree = Vec::new();
-    let maxpos_cmd = cparse::xcparse("/-usb/dir/maxpos").map_err(|e| anyhow!(e))?;
+    let maxpos_cmd = OscMessage::new("/-usb/dir/maxpos".to_string(), vec![]).to_bytes().map_err(|e: String| anyhow!(e))?;
     socket.send(&maxpos_cmd)?;
     let mut buf = [0; 512];
     if let Ok(len) = socket.recv(&mut buf) {
-        if &buf[..len] == b"/-usb/dir/maxpos" {
-            let num_files = i32::from_be_bytes([buf[24], buf[25], buf[26], buf[27]]);
-            for i in 1..=num_files {
-                let name_cmd = cparse::xcparse(&format!("/-usb/dir/{:03}/name", i)).map_err(|e| anyhow!(e))?;
-                socket.send(&name_cmd)?;
-                if let Ok(len) = socket.recv(&mut buf) {
-                    if let Some(start) = buf.iter().position(|&b| b == 0) {
-                        let name = String::from_utf8_lossy(&buf[start+1..len]).to_string();
-                        let file_type = parse_file_type(&name);
-                        file_tree.push(FileNode { name, file_type, index: i });
+        let msg = OscMessage::from_bytes(&buf[..len]).map_err(|e: String| anyhow!(e))?;
+        if msg.path == "/-usb/dir/maxpos" {
+            if let Some(OscArg::Int(num_files)) = msg.args.get(0) {
+                for i in 1..=*num_files {
+                    let name_cmd = OscMessage::new(format!("/-usb/dir/{:03}/name", i), vec![]).to_bytes().map_err(|e: String| anyhow!(e))?;
+                    socket.send(&name_cmd)?;
+                    if let Ok(len) = socket.recv(&mut buf) {
+                        let name_msg = OscMessage::from_bytes(&buf[..len]).map_err(|e: String| anyhow!(e))?;
+                        if let Some(OscArg::String(name)) = name_msg.args.get(0) {
+                            let file_type = parse_file_type(name);
+                            file_tree.push(FileNode { name: name.clone(), file_type, index: i });
+                        }
                     }
                 }
             }
@@ -173,14 +228,20 @@ fn list_directory(socket: &UdpSocket) -> Result<Vec<FileNode>> {
 }
 
 fn change_directory(socket: &UdpSocket, index: i32) -> Result<()> {
-    let cd_cmd = cparse::xcparse(&format!("/-action/recselect,i,{}", index)).map_err(|e| anyhow!(e))?;
+    let cd_cmd = OscMessage::new("/-action/recselect".to_string(), vec![OscArg::Int(index)]).to_bytes().map_err(|e: String| anyhow!(e))?;
     socket.send(&cd_cmd)?;
     Ok(())
 }
 
 fn play_file(socket: &UdpSocket, index: i32) -> Result<()> {
-    let play_cmd = cparse::xcparse(&format!("/-action/recselect,i,{}", index)).map_err(|e| anyhow!(e))?;
+    let play_cmd = OscMessage::new("/-action/recselect".to_string(), vec![OscArg::Int(index)]).to_bytes().map_err(|e: String| anyhow!(e))?;
     socket.send(&play_cmd)?;
+    Ok(())
+}
+
+fn load_file(socket: &UdpSocket, index: i32) -> Result<()> {
+    let load_cmd = OscMessage::new("/-action/recselect".to_string(), vec![OscArg::Int(index)]).to_bytes().map_err(|e: String| anyhow!(e))?;
+    socket.send(&load_cmd)?;
     Ok(())
 }
 

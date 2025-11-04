@@ -4,7 +4,7 @@ use clap::Parser;
 use std::io::{self, BufRead, Write};
 use std::net::{SocketAddr, UdpSocket};
 use std::time::Duration;
-use x32_lib::cparse;
+use osc_lib::{OscMessage, OscArg};
 
 /// A command-line tool for getting a scene file from an X32 mixer.
 #[derive(Parser, Debug)]
@@ -60,13 +60,13 @@ fn main() -> Result<()> {
     for line in stdin.lock().lines() {
         let line = line?;
         if line.starts_with('/') {
-            let command = cparse::xcparse(&format!("/node,s,{}", &line[1..])).map_err(|e| anyhow!(e))?;
+            let msg = OscMessage::new("/node".to_string(), vec![OscArg::String(line[1..].to_string())]);
+            let command = msg.to_bytes().map_err(|e: String| anyhow!(e))?;
             socket.send(&command)?;
             let mut buf = [0; 512];
             if let Ok(len) = socket.recv(&mut buf) {
-                if let Some(start) = buf.iter().position(|&b| b == b'/') {
-                    println!("{}", String::from_utf8_lossy(&buf[start..len]));
-                }
+                let response = OscMessage::from_bytes(&buf[..len]).map_err(|e: String| anyhow!(e))?;
+                println!("{}", response.path);
             }
         } else if line == "exit" {
             break;

@@ -5,8 +5,7 @@ use crossterm::{event::{self, Event, KeyCode}, terminal};
 use std::io::{self, Write};
 use std::net::{SocketAddr, UdpSocket};
 use std::time::{Duration, Instant};
-use x32_lib::cparse;
-use byteorder::{BigEndian, ReadBytesExt};
+use osc_lib::{OscMessage, OscArg};
 
 /// A command-line tool for setting the tap tempo of a delay effect on an X32 mixer.
 #[derive(Parser, Debug)]
@@ -37,12 +36,13 @@ fn main() -> Result<()> {
     write!(stdout, "Connecting to X32.")?;
     stdout.flush()?;
 
-    let info_cmd = cparse::xcparse("/info").map_err(|e| anyhow!(e))?;
+    let info_cmd = OscMessage::new("/info".to_string(), vec![]).to_bytes().map_err(|e: String| anyhow!(e))?;
     loop {
         socket.send(&info_cmd)?;
         let mut buf = [0; 512];
         if let Ok(len) = socket.recv(&mut buf) {
-            if &buf[..len] == b"/info" {
+            let msg = OscMessage::from_bytes(&buf[..len]).map_err(|e: String| anyhow!(e))?;
+            if msg.path == "/info" {
                 break;
             }
         }
@@ -68,8 +68,11 @@ fn main() -> Result<()> {
 
                             if delta > 0 && delta < 3000 {
                                 let tempo = delta as f32 / 3000.0;
-                                let command = cparse::xcparse(&format!("/fx/{}/par/02,f,{}", fx_slot, tempo))
-                                    .map_err(|e| anyhow!(e))?;
+                                let msg = OscMessage::new(
+                                    format!("/fx/{}/par/02", fx_slot),
+                                    vec![OscArg::Float(tempo)]
+                                );
+                                let command = msg.to_bytes().map_err(|e: String| anyhow!(e))?;
                                 socket.send(&command)?;
                                 write!(stdout, "Tempo: {}ms\n", delta)?;
                                 stdout.flush()?;
@@ -80,14 +83,14 @@ fn main() -> Result<()> {
                         match c {
                             '1'..='4' => {
                                 let slot = c.to_digit(10).unwrap();
-                                let command = cparse::xcparse(&format!("/fx/{}/type", slot)).map_err(|e| anyhow!(e))?;
+                                let command = OscMessage::new(format!("/fx/{}/type", slot), vec![]).to_bytes().map_err(|e: String| anyhow!(e))?;
                                 socket.send(&command)?;
                                 let mut buf = [0; 512];
                                 if let Ok(len) = socket.recv(&mut buf) {
-                                    if &buf[..len] == format!("/fx/{}/type", slot).as_bytes() {
-                                        let mut cursor = std::io::Cursor::new(&buf[16..]);
-                                        if let Ok(fx_type) = cursor.read_i32::<BigEndian>() {
-                                            if fx_type == 10 { // Stereo Delay
+                                    let msg = OscMessage::from_bytes(&buf[..len]).map_err(|e: String| anyhow!(e))?;
+                                    if msg.path == format!("/fx/{}/type", slot) {
+                                        if let Some(OscArg::Int(fx_type)) = msg.args.get(0) {
+                                            if *fx_type == 10 { // Stereo Delay
                                                 fx_slot = slot;
                                                 write!(stdout, "Found FX!\n")?;
                                             } else {
