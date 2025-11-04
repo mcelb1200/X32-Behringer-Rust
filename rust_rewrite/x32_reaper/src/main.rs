@@ -7,6 +7,10 @@ use std::net::{SocketAddr, UdpSocket};
 use std::time::{Duration, Instant};
 use x32_lib::{cparse, dump};
 
+mod reaper_to_x32;
+mod x32_to_reaper;
+
+/// A command-line tool for bridging X32 and REAPER.
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
@@ -121,7 +125,7 @@ fn main() -> Result<()> {
             if config.verbose {
                 println!("{}", dump::xfdump("X->", &x32_buf[..len], false));
             }
-            // Parse X32 message and send to Reaper
+            x32_to_reaper::handle_x32_message(&x32_buf[..len], &reaper_socket, &config, &mut tracks, bank_offset)?;
         }
 
         let mut reaper_buf = [0; 1024];
@@ -129,7 +133,7 @@ fn main() -> Result<()> {
             if config.verbose {
                 println!("{}", dump::xfdump("R->", &reaper_buf[..len], false));
             }
-            // Parse Reaper message and send to X32
+            reaper_to_x32::handle_reaper_message(&reaper_buf[..len], &x32_socket, &config, &mut tracks, bank_offset)?;
         }
     }
 }
