@@ -1,6 +1,6 @@
 
 use clap::Parser;
-use std::io::{self, BufRead, Write};
+use std::io::{self, BufRead};
 use std::thread;
 use std::time::Duration;
 use x32_lib::{create_socket, Result};
