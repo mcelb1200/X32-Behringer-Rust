@@ -1,9 +1,9 @@
 [package]
-name = "x32_set_scene"
+name = "x32_geq2cpy"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
 clap = { version = "4.5.4", features = ["derive"] }
 osc_lib = { path = "../osc_lib" }
-anyhow = "1.0.82"
+x32_lib = { path = "../x32_lib" }
