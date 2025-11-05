@@ -1,0 +1,12 @@
+[package]
+name = "x32_commander"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+clap = { version = "4.5.4", features = ["derive"] }
+x32_lib = { path = "../x32_lib" }
+osc_lib = { path = "../osc_lib" }
+
+[dev-dependencies]
+tempfile = "3.10.1"
