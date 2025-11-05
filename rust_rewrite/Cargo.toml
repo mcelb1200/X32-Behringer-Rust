@@ -2,6 +2,6 @@
 members = [
     "x32_lib",
     "osc_lib",
-    "x32_geq2cpy", "x32_tap",
+    "x32_geq2cpy", "x32_tap", "get_scene_name",
 ]
 resolver = "2"
