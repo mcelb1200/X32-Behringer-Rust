@@ -3,5 +3,6 @@ members = [
     "x32_lib",
     "osc_lib",
     "x32_get_scene", "x32_set_scene",
+    "x32_custom_layer",
 ]
 resolver = "2"
