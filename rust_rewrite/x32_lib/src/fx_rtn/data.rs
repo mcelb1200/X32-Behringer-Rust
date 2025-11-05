@@ -1,4 +1,5 @@
 
+//! This module contains the static arrays of OSC commands for the X32's FX return channels.
 use super::{CommandFlags, CommandFormat, CommandValue, X32Command};
 
 pub static OFF_ON: [&'static str; 2] = ["OFF", "ON"];
