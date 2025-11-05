@@ -58,3 +58,10 @@ fn test_message_from_str_with_quoted_string() {
         _ => panic!("Incorrect argument type"),
     }
 }
+
+#[test]
+#[should_panic]
+fn test_tokenize_quoted_string_with_no_space_after() {
+    let s = "/cmd ,s \"hello\"no-space";
+    OscMessage::from_str(s).unwrap();
+}
