@@ -6,6 +6,7 @@ pub mod dca;
 pub mod fx;
 
 pub mod bus;
+pub mod common;
 
 use std::io;
 use std::net::{AddrParseError, SocketAddr, UdpSocket};
