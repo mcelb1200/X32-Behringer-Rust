@@ -349,6 +349,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "x32_core"
+version = "0.1.0"
+dependencies = [
+ "osc_lib",
+]
+
+[[package]]
+name = "x32_emulator"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "x32_core",
+]
+
+[[package]]
 name = "x32_fade"
 version = "0.1.0"
 dependencies = [
