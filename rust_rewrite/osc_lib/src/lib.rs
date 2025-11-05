@@ -1,6 +1,6 @@
 
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
-use std::io::{self, Cursor, Write};
+use std::io::{self, Cursor, Read, Write};
 use std::string::FromUtf8Error;
 use std::str::FromStr;
 
@@ -49,6 +49,7 @@ pub enum OscArg {
     Int(i32),
     Float(f32),
     String(String),
+    Blob(Vec<u8>),
 }
 
 #[derive(Debug, PartialEq)]
@@ -87,6 +88,15 @@ impl OscMessage {
                     let val = read_osc_string(&mut cursor)?;
                     args.push(OscArg::String(val));
                 }
+                'b' => {
+                    let len = cursor.read_i32::<BigEndian>()? as usize;
+                    let mut buf = vec![0; len];
+                    cursor.read_exact(&mut buf)?;
+                    args.push(OscArg::Blob(buf));
+                    let current_pos = cursor.position();
+                    let next_aligned_pos = (current_pos + 3) & !3;
+                    cursor.set_position(next_aligned_pos);
+                }
                 _ => return Err(OscError::UnsupportedTypeTag(tag)),
             }
         }
@@ -105,6 +115,7 @@ impl OscMessage {
                 OscArg::Int(_) => type_tags.push('i'),
                 OscArg::Float(_) => type_tags.push('f'),
                 OscArg::String(_) => type_tags.push('s'),
+                OscArg::Blob(_) => type_tags.push('b'),
             }
         }
         write_osc_string(&mut bytes, &type_tags)?;
@@ -114,6 +125,13 @@ impl OscMessage {
                 OscArg::Int(val) => bytes.write_i32::<BigEndian>(*val)?,
                 OscArg::Float(val) => bytes.write_f32::<BigEndian>(*val)?,
                 OscArg::String(val) => write_osc_string(&mut bytes, val)?,
+                OscArg::Blob(val) => {
+                    bytes.write_i32::<BigEndian>(val.len() as i32)?;
+                    bytes.write_all(val)?;
+                    while bytes.len() % 4 != 0 {
+                        bytes.write_u8(0)?;
+                    }
+                }
             }
         }
 
@@ -162,6 +180,7 @@ impl OscMessage {
                     OscArg::Int(_) => s.push('i'),
                     OscArg::Float(_) => s.push('f'),
                     OscArg::String(_) => s.push('s'),
+                    OscArg::Blob(_) => s.push('b'),
                 }
             }
             for arg in &self.args {
@@ -170,6 +189,7 @@ impl OscMessage {
                     OscArg::Int(val) => s.push_str(&val.to_string()),
                     OscArg::Float(val) => s.push_str(&val.to_string()),
                     OscArg::String(val) => s.push_str(&format!("\"{}\"", val)),
+                    OscArg::Blob(_) => s.push_str("[blob]"),
                 }
             }
         }
