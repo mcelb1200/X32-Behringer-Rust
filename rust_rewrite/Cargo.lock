@@ -356,6 +356,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "x32_custom_layer"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "osc_lib",
+ "x32_lib",
+]
+
+[[package]]
 name = "x32_emulator"
 version = "0.1.0"
 dependencies = [
