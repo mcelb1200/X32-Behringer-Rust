@@ -1,0 +1,9 @@
+{
+  "ip": "192.168.1.100",
+  "faders": [
+    "/ch/01/mix/fader"
+  ],
+  "fade_in": 2.0,
+  "fade_out": null,
+  "steps": 50
+}

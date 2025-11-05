@@ -1,3 +1,4 @@
+//! `osc_lib` is a library for encoding and decoding Open Sound Control (OSC) 1.0 messages.
 
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use std::io::{self, Cursor, Write};
@@ -7,12 +8,18 @@ use std::str::FromStr;
 #[cfg(test)]
 mod tests;
 
+/// Represents the possible errors that can occur when working with OSC messages.
 #[derive(Debug)]
 pub enum OscError {
+    /// An I/O error occurred while reading or writing.
     Io(io::Error),
+    /// A string was not valid UTF-8.
     Utf8(FromUtf8Error),
+    /// The OSC type tag string was invalid (e.g., did not start with ',').
     InvalidTypeTag,
+    /// An unsupported OSC type tag was encountered.
     UnsupportedTypeTag(char),
+    /// A general parsing error occurred.
     ParseError(String),
 }
 
@@ -42,26 +49,36 @@ impl From<FromUtf8Error> for OscError {
     }
 }
 
+/// A type alias for `Result` with the error type `OscError`.
 pub type Result<T> = std::result::Result<T, OscError>;
 
+/// Represents a single argument in an OSC message.
 #[derive(Debug, PartialEq, Clone)]
 pub enum OscArg {
+    /// A 32-bit integer.
     Int(i32),
+    /// A 32-bit float.
     Float(f32),
+    /// A string.
     String(String),
 }
 
+/// Represents a single OSC message, containing a path and a list of arguments.
 #[derive(Debug, PartialEq)]
 pub struct OscMessage {
+    /// The OSC address pattern.
     pub path: String,
+    /// The arguments to the message.
     pub args: Vec<OscArg>,
 }
 
 impl OscMessage {
+    /// Creates a new `OscMessage`.
     pub fn new(path: String, args: Vec<OscArg>) -> Self {
         OscMessage { path, args }
     }
 
+    /// Deserializes an `OscMessage` from a byte slice.
     pub fn from_bytes(bytes: &[u8]) -> Result<Self> {
         let mut cursor = Cursor::new(bytes);
 
@@ -94,6 +111,7 @@ impl OscMessage {
         Ok(OscMessage { path, args })
     }
 
+    /// Serializes the `OscMessage` to a `Vec<u8>`.
     pub fn to_bytes(&self) -> Result<Vec<u8>> {
         let mut bytes = Vec::new();
 
@@ -120,6 +138,22 @@ impl OscMessage {
         Ok(bytes)
     }
 
+    /// Creates an `OscMessage` from a string representation.
+    ///
+    /// The string format is the OSC path followed by a space, then the type tag string,
+    /// and then a space-separated list of arguments. String arguments with spaces
+    /// should be enclosed in double quotes.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use osc_lib::{OscMessage, OscArg};
+    ///
+    /// let msg_str = r#"/ch/01/mix/fader ,f 0.75"#;
+    /// let msg = OscMessage::from_str(msg_str).unwrap();
+    /// assert_eq!(msg.path, "/ch/01/mix/fader");
+    /// assert_eq!(msg.args, vec![OscArg::Float(0.75)]);
+    /// ```
     pub fn from_str(s: &str) -> Result<Self> {
         let tokens = tokenize(s)?;
         let mut it = tokens.iter();
@@ -153,6 +187,7 @@ impl OscMessage {
         Ok(OscMessage { path, args })
     }
 
+    /// Converts the `OscMessage` to a string representation.
     pub fn to_string(&self) -> String {
         let mut s = self.path.clone();
         if !self.args.is_empty() {
@@ -177,6 +212,7 @@ impl OscMessage {
     }
 }
 
+/// Tokenizes a string for OSC message parsing, handling quoted strings.
 fn tokenize(s: &str) -> Result<Vec<String>> {
     let mut tokens = Vec::new();
     let mut current_token = String::new();
@@ -203,7 +239,7 @@ fn tokenize(s: &str) -> Result<Vec<String>> {
     Ok(tokens)
 }
 
-
+/// Reads a null-terminated and 4-byte padded OSC string from a cursor.
 fn read_osc_string(cursor: &mut Cursor<&[u8]>) -> Result<String> {
     let mut bytes = Vec::new();
     loop {
@@ -222,6 +258,7 @@ fn read_osc_string(cursor: &mut Cursor<&[u8]>) -> Result<String> {
     Ok(string)
 }
 
+/// Writes a null-terminated and 4-byte padded OSC string to a byte vector.
 fn write_osc_string(bytes: &mut Vec<u8>, s: &str) -> Result<()> {
     bytes.write_all(s.as_bytes())?;
     bytes.write_u8(0)?;
