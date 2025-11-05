@@ -271,3 +271,12 @@ version = "0.1.0"
 dependencies = [
  "osc_lib",
 ]
+
+[[package]]
+name = "x32_set_scene"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "osc_lib",
+ "x32_lib",
+]
