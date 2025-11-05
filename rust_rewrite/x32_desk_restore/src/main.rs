@@ -4,7 +4,7 @@
 
 use clap::Parser;
 use std::path::PathBuf;
-use x32_lib::{create_socket, X32Error};
+use x32_lib::{create_socket, X32Error, Result};
 use osc_lib::{OscMessage};
 use std::fs::File;
 use std::io::{self, BufRead};
@@ -19,8 +19,8 @@ struct Args {
     ip: String,
 
     /// The source file path to restore data from.
-    #[arg(required = true)]
-    source_file: PathBuf,
+    #[arg(index = 1)]
+    file: PathBuf,
 }
 
 /// Sends a list of OSC commands to the X32.
@@ -33,13 +33,38 @@ struct Args {
 /// # Returns
 ///
 /// A `Result` indicating success or an `X32Error` if an error occurs.
-fn send_commands(socket: &UdpSocket, commands: &[String]) -> Result<(), X32Error> {
+fn send_commands(socket: &UdpSocket, commands: &[String]) -> Result<()> {
     let mut buf = [0; 512];
     for cmd_str in commands {
-        let msg = OscMessage::from_str(cmd_str)?;
-        socket.send(&msg.to_bytes()?)?;
-        // We expect a response, but we'll ignore it for now.
-        let _ = socket.recv(&mut buf);
+        // Prepend "/" to the command string if it doesn't start with it
+        let command = if cmd_str.starts_with('/') {
+            cmd_str.to_string()
+        } else {
+            format!("/{}", cmd_str)
+        };
+
+        // Attempt to parse with OscMessage::from_str first
+        let msg = match OscMessage::from_str(&command) {
+            Ok(msg) => msg,
+            Err(_) => {
+                // If parsing fails, treat the line as a simple command with no arguments
+                OscMessage::new(command, vec![])
+            }
+        };
+        
+        let bytes = msg.to_bytes()?;
+        socket.send(&bytes)?;
+
+        match socket.recv(&mut buf) {
+            Ok(_) => {
+                // We don't care about the response for this tool
+            },
+            Err(e) => {
+                if e.kind() != io::ErrorKind::WouldBlock {
+                    return Err(X32Error::Io(e));
+                }
+            }
+        }
     }
     Ok(())
 }
@@ -48,18 +73,18 @@ fn send_commands(socket: &UdpSocket, commands: &[String]) -> Result<(), X32Error
 ///
 /// This function parses command-line arguments, reads OSC commands from a file,
 /// connects to the X32, and sends the commands to restore the mixer's state.
-fn main() -> Result<(), X32Error> {
+fn main() -> Result<()> {
     let args = Args::parse();
 
-    let file = File::open(&args.source_file)?;
+    let file = File::open(&args.file)?;
     let commands: Vec<String> = io::BufReader::new(file)
         .lines()
         .filter_map(io::Result::ok)
-        .filter(|line| !line.starts_with('#'))
+        .filter(|line| !line.starts_with('#') && !line.trim().is_empty())
         .collect();
 
     if commands.is_empty() {
-        eprintln!("No commands to send from file: {}", args.source_file.display());
+        eprintln!("No commands to send from file: {}", args.file.display());
         return Ok(());
     }
 
@@ -68,7 +93,7 @@ fn main() -> Result<(), X32Error> {
 
     send_commands(&socket, &commands)?;
 
-    println!("Successfully restored data from {}", args.source_file.display());
+    println!("Successfully restored data from {}", args.file.display());
 
     Ok(())
 }
