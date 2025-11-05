@@ -148,6 +148,9 @@ impl OscMessage {
                     _ => return Err(OscError::UnsupportedTypeTag(tag)),
                 }
             }
+            if it.next().is_some() {
+                return Err(OscError::ParseError("Extra arguments at end of command string".to_string()));
+            }
         }
 
         Ok(OscMessage { path, args })
@@ -184,6 +187,11 @@ fn tokenize(s: &str) -> Result<Vec<String>> {
     for c in s.chars() {
         match c {
             '"' => {
+                if in_quote {
+                    // Closing quote
+                    tokens.push(current_token);
+                    current_token = String::new();
+                }
                 in_quote = !in_quote;
             }
             ' ' if !in_quote => {
