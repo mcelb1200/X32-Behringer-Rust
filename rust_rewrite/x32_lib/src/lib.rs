@@ -13,6 +13,7 @@ use std::time::Duration;
 use osc_lib::{OscMessage, OscArg, OscError};
 
 pub mod channel;
+pub mod auxin;
 
 
 /// Represents the possible errors that can occur when interacting with an X32 console.
