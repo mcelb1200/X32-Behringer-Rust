@@ -14,6 +14,8 @@ use osc_lib::{OscMessage, OscArg, OscError};
 
 pub mod channel;
 pub mod auxin;
+pub mod fx_rtn;
+pub use fx_rtn::*;
 
 
 /// Represents the possible errors that can occur when interacting with an X32 console.

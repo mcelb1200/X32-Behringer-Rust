@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 osc_lib = { path = "../osc_lib" }
+bitflags = "2.4.1"
 
 [features]
 dca = []
