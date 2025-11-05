@@ -2,6 +2,6 @@
 members = [
     "x32_lib",
     "osc_lib",
-    "x32_get_scene", "x32_set_scene", "x32_desk_save",
+    "x32_get_scene", "x32_set_scene", "x32_desk_save", "x32_desk_restore", "x32_get_scene_name",
 ]
 resolver = "2"

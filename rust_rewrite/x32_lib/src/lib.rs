@@ -57,7 +57,7 @@ pub fn create_socket(ip: &str, timeout_ms: u64) -> Result<UdpSocket> {
     let socket = UdpSocket::bind("0.0.0.0:0")?;
     socket.set_read_timeout(Some(Duration::from_millis(timeout_ms)))?;
 
-    let x32_addr: SocketAddr = format!("{}:10023", ip).parse()?;
+    let x32_addr: SocketAddr = ip.parse().unwrap_or_else(|_| format!("{}:10023", ip).parse().unwrap());
     socket.connect(x32_addr)?;
 
     Ok(socket)

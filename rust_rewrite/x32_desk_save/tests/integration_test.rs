@@ -1,4 +1,4 @@
-use std::net::UdpSocket;
+use std::net::{SocketAddr, UdpSocket};
 use std::thread;
 use std::time::Duration;
 use std::fs::File;
@@ -7,39 +7,36 @@ use assert_cmd::Command;
 use predicates::prelude::*;
 use osc_lib::{OscMessage, OscArg};
 
-fn setup_mock_x32_server() {
-    thread::spawn(|| {
-        let socket = UdpSocket::bind("127.0.0.1:10023").expect("couldn't bind to address");
+fn setup_mock_x32_server() -> SocketAddr {
+    let socket = UdpSocket::bind("127.0.0.1:0").expect("couldn't bind to address");
+    let addr = socket.local_addr().unwrap();
+    thread::spawn(move || {
         let mut buf = [0; 512];
-
         loop {
-            match socket.recv_from(&mut buf) {
-                Ok((number_of_bytes, src_addr)) => {
-                    let received_msg = OscMessage::from_bytes(&buf[..number_of_bytes]).unwrap();
-                    let response_msg = OscMessage::new(received_msg.path, vec![OscArg::String("mock_response".to_string())]);
-                    socket.send_to(&response_msg.to_bytes().unwrap(), src_addr).expect("couldn't send data");
-                }
-                Err(_) => {
-                    // Timeout, break the loop
-                    break;
-                }
+            if let Ok((number_of_bytes, src_addr)) = socket.recv_from(&mut buf) {
+                let received_msg = OscMessage::from_bytes(&buf[..number_of_bytes]).unwrap();
+                let response_msg = OscMessage::new(received_msg.path, vec![OscArg::String("mock_response".to_string())]);
+                socket.send_to(&response_msg.to_bytes().unwrap(), src_addr).expect("couldn't send data");
+            } else {
+                break;
             }
         }
     });
     // Give the server a moment to start up
     thread::sleep(Duration::from_millis(100));
+    addr
 }
 
 #[test]
 fn test_desk_save_command() {
-    setup_mock_x32_server();
+    let addr = setup_mock_x32_server();
 
     let mut cmd = Command::cargo_bin("x32_desk_save").unwrap();
-    cmd.args(&["--ip", "127.0.0.1", "-d", "test_output.txt"]);
+    cmd.args(&["--ip", &addr.to_string(), "-d", "test_output.txt"]);
 
     cmd.assert()
         .success()
-        .stdout(predicate::str::contains("Successfully connected to X32 at 127.0.0.1"))
+        .stdout(predicate::str::contains(format!("Successfully connected to X32 at {}", addr)))
         .stdout(predicate::str::contains("Successfully saved data to test_output.txt"));
 
     // Verify the content of the output file
@@ -52,7 +49,7 @@ fn test_desk_save_command() {
 
 #[test]
 fn test_pattern_file_command() {
-    setup_mock_x32_server();
+    let addr = setup_mock_x32_server();
 
     // Create a mock pattern file
     let mut file = File::create("test_pattern.txt").unwrap();
@@ -61,11 +58,11 @@ fn test_pattern_file_command() {
     writeln!(file, "/-prefs/remote").unwrap();
 
     let mut cmd = Command::cargo_bin("x32_desk_save").unwrap();
-    cmd.args(&["--ip", "127.0.0.1", "-p", "test_pattern.txt", "test_output.txt"]);
+    cmd.args(&["--ip", &addr.to_string(), "-p", "test_pattern.txt", "test_output.txt"]);
 
     cmd.assert()
         .success()
-        .stdout(predicate::str::contains("Successfully connected to X32 at 127.0.0.1"))
+        .stdout(predicate::str::contains(format!("Successfully connected to X32 at {}", addr)))
         .stdout(predicate::str::contains("Successfully saved data to test_output.txt"));
 
     // Verify the content of the output file

@@ -1,3 +1,7 @@
+//! `x32_desk_save` is a command-line utility for saving preferences, scenes, and routing data
+//! from a Behringer X32 digital mixer to a file. It is a Rust implementation of the original
+//! `X32DeskSave.c` tool by Patrick-Gilles Maillot.
+
 use clap::Parser;
 use std::path::PathBuf;
 use std::net::UdpSocket;
@@ -8,34 +12,46 @@ use osc_lib::{OscMessage, OscArg};
 
 mod nodes;
 
+/// A Rust implementation of the X32DeskSave tool.
 #[derive(Parser, Debug)]
-#[command(author, version, about = "A Rust implementation of the X32DeskSave tool.", long_about = None)]
+#[command(author, version, about, long_about = None)]
 struct Args {
     /// X32 console IP address
     #[arg(short, long, default_value = "192.168.1.64")]
     ip: String,
 
-    /// File path to pattern input file
+    /// File path to a pattern file containing OSC commands to be retrieved from the X32.
     #[arg(short, long)]
     pattern_file: Option<PathBuf>,
 
-    /// DeskSave file
+    /// Save a DeskSave file, containing the mixer's preferences and status.
     #[arg(short, long, group = "file_type")]
     desk_save: bool,
 
-    /// Scene file
+    /// Save a Scene file, containing the mixer's channel and configuration settings.
     #[arg(short, long, group = "file_type")]
     scene: bool,
 
-    /// Routing file
+    /// Save a Routing file, containing the mixer's input/output routing configuration.
     #[arg(short, long, group = "file_type")]
     routing: bool,
 
-    /// Destination file name/path
+    /// The destination file path to save the retrieved data.
     #[arg(required = true)]
     destination_file: PathBuf,
 }
 
+/// Sends a list of OSC commands to the X32 and returns the responses.
+///
+/// # Arguments
+///
+/// * `socket` - A `UdpSocket` connected to the X32 console.
+/// * `commands` - A slice of strings, where each string is an OSC command to be sent.
+///
+/// # Returns
+///
+/// A `Result` containing a `Vec<String>` of the X32's responses, or an `X32Error` if an
+/// error occurs.
 fn get_desk_data(socket: &UdpSocket, commands: &[String]) -> Result<Vec<String>, X32Error> {
     let mut results = Vec::new();
     let mut buf = [0; 512];
@@ -51,6 +67,10 @@ fn get_desk_data(socket: &UdpSocket, commands: &[String]) -> Result<Vec<String>,
     Ok(results)
 }
 
+/// The main entry point for the `x32_desk_save` utility.
+///
+/// This function parses command-line arguments, determines which OSC commands to send,
+/// connects to the X32, retrieves the data, and saves it to a file.
 fn main() -> Result<(), X32Error> {
     let args = Args::parse();
 
@@ -83,7 +103,7 @@ fn main() -> Result<(), X32Error> {
     }
 
     let socket = create_socket(&args.ip, 2000)?;
-    println!("Successfully connected to X32 at {}", args.ip);
+    println!("Successfully connected to X32 at {}", &args.ip);
 
     let data = get_desk_data(&socket, &commands)?;
 
