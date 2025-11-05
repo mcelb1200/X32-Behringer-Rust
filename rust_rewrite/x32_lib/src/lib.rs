@@ -4,6 +4,9 @@ use std::net::{AddrParseError, SocketAddr, UdpSocket};
 use std::time::Duration;
 use osc_lib::{OscMessage, OscArg, OscError};
 
+pub mod fx_rtn;
+pub use fx_rtn::*;
+
 #[derive(Debug)]
 pub enum X32Error {
     Io(io::Error),
