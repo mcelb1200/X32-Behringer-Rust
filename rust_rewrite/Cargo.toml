@@ -1,0 +1,7 @@
+[workspace]
+members = [
+    "x32_lib",
+    "osc_lib",
+    "x32_geq2cpy", "x32_tap", "get_scene_name", "x32_command",
+]
+resolver = "2"
