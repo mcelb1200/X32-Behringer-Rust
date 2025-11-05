@@ -330,6 +330,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d6bbff5f0aada427a1e5a6da5f1f98158182f26556f345ac9e04d36d0ebed650"
 
 [[package]]
+name = "x32_automix"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "osc_lib",
+ "x32_lib",
+]
+
+[[package]]
 name = "x32_copy_fx"
 version = "0.1.0"
 dependencies = [
