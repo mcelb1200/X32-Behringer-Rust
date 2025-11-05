@@ -1,11 +1,10 @@
 
 use clap::Parser;
-use std::error::Error;
 use std::io::{self, BufRead};
 use std::net::UdpSocket;
 use std::time::Instant;
 use osc_lib::{OscMessage, OscArg};
-use x32_lib::create_socket;
+use x32_lib::{create_socket, get_fx_type, Result};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -15,7 +14,7 @@ struct Args {
     ip: String,
 }
 
-fn main() -> Result<(), Box<dyn Error>> {
+fn main() -> Result<()> {
     let args = Args::parse();
 
     let socket = create_socket(&args.ip, 100)?;
@@ -52,7 +51,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         } else {
             match input {
                 "1" | "2" | "3" | "4" => {
-                    let slot: u8 = input.parse()?;
+                    let slot: u8 = input.parse().unwrap_or(0);
                     if verify_fx_slot(&socket, slot)? {
                         fx_slot = slot;
                         println!("FX Slot {} selected.", fx_slot);
@@ -68,22 +67,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn verify_fx_slot(socket: &UdpSocket, slot: u8) -> Result<bool, Box<dyn Error>> {
-    let msg = OscMessage::new(format!("/fx/{}/type", slot), vec![]);
-    socket.send(&msg.to_bytes()?)?;
-    let mut buf = [0; 512];
-    if let Ok(len) = socket.recv(&mut buf) {
-        let response = OscMessage::from_bytes(&buf[..len])?;
-        if let Some(OscArg::Int(fx_type)) = response.args.get(0) {
-            if *fx_type == 10 { // Stereo Delay
-                return Ok(true);
-            }
-        }
-    }
-    Ok(false)
+fn verify_fx_slot(socket: &UdpSocket, slot: u8) -> Result<bool> {
+    let fx_type = get_fx_type(socket, slot)?;
+    Ok(fx_type == 10) // Stereo Delay
 }
 
-fn set_tempo(socket: &UdpSocket, slot: u8, value: f32) -> Result<(), Box<dyn Error>> {
+fn set_tempo(socket: &UdpSocket, slot: u8, value: f32) -> Result<()> {
     let msg = OscMessage::new(format!("/fx/{}/par/02", slot), vec![OscArg::Float(value)]);
     socket.send(&msg.to_bytes()?)?;
     Ok(())

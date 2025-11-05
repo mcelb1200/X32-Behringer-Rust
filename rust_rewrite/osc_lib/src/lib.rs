@@ -1,6 +1,6 @@
 
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
-use std::io::{self, Cursor, Read, Write};
+use std::io::{self, Cursor, Write};
 use std::string::FromUtf8Error;
 
 #[cfg(test)]
