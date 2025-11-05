@@ -1,5 +1,5 @@
 [package]
-name = "get_scene_name"
+name = "x32_get_scene"
 version = "0.1.0"
 edition = "2021"
 
