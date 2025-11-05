@@ -2,6 +2,7 @@
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use std::io::{self, Cursor, Write};
 use std::string::FromUtf8Error;
+use std::str::FromStr;
 
 #[cfg(test)]
 mod tests;
@@ -12,6 +13,7 @@ pub enum OscError {
     Utf8(FromUtf8Error),
     InvalidTypeTag,
     UnsupportedTypeTag(char),
+    ParseError(String),
 }
 
 impl std::fmt::Display for OscError {
@@ -21,6 +23,7 @@ impl std::fmt::Display for OscError {
             OscError::Utf8(e) => write!(f, "UTF-8 conversion error: {}", e),
             OscError::InvalidTypeTag => write!(f, "Invalid OSC type tag string"),
             OscError::UnsupportedTypeTag(c) => write!(f, "Unsupported OSC type tag: {}", c),
+            OscError::ParseError(s) => write!(f, "Parse error: {}", s),
         }
     }
 }
@@ -116,7 +119,90 @@ impl OscMessage {
 
         Ok(bytes)
     }
+
+    pub fn from_str(s: &str) -> Result<Self> {
+        let tokens = tokenize(s)?;
+        let mut it = tokens.iter();
+        let path = it.next().ok_or(OscError::ParseError("Empty command string".to_string()))?.to_string();
+        let mut args = Vec::new();
+
+        if let Some(type_tags) = it.next() {
+            if !type_tags.starts_with(',') {
+                return Err(OscError::InvalidTypeTag);
+            }
+
+            for tag in type_tags[1..].chars() {
+                let val_str = it.next().ok_or(OscError::ParseError(format!("Missing value for type tag '{}'", tag)))?;
+                match tag {
+                    'i' => {
+                        let val = i32::from_str(val_str).map_err(|e| OscError::ParseError(e.to_string()))?;
+                        args.push(OscArg::Int(val));
+                    }
+                    'f' => {
+                        let val = f32::from_str(val_str).map_err(|e| OscError::ParseError(e.to_string()))?;
+                        args.push(OscArg::Float(val));
+                    }
+                    's' => {
+                        args.push(OscArg::String(val_str.to_string()));
+                    }
+                    _ => return Err(OscError::UnsupportedTypeTag(tag)),
+                }
+            }
+        }
+
+        Ok(OscMessage { path, args })
+    }
+
+    pub fn to_string(&self) -> String {
+        let mut s = self.path.clone();
+        if !self.args.is_empty() {
+            s.push_str(" ,");
+            for arg in &self.args {
+                match arg {
+                    OscArg::Int(_) => s.push('i'),
+                    OscArg::Float(_) => s.push('f'),
+                    OscArg::String(_) => s.push('s'),
+                }
+            }
+            for arg in &self.args {
+                s.push(' ');
+                match arg {
+                    OscArg::Int(val) => s.push_str(&val.to_string()),
+                    OscArg::Float(val) => s.push_str(&val.to_string()),
+                    OscArg::String(val) => s.push_str(&format!("\"{}\"", val)),
+                }
+            }
+        }
+        s
+    }
 }
+
+fn tokenize(s: &str) -> Result<Vec<String>> {
+    let mut tokens = Vec::new();
+    let mut current_token = String::new();
+    let mut in_quote = false;
+    for c in s.chars() {
+        match c {
+            '"' => {
+                in_quote = !in_quote;
+            }
+            ' ' if !in_quote => {
+                if !current_token.is_empty() {
+                    tokens.push(current_token);
+                    current_token = String::new();
+                }
+            }
+            _ => {
+                current_token.push(c);
+            }
+        }
+    }
+    if !current_token.is_empty() {
+        tokens.push(current_token);
+    }
+    Ok(tokens)
+}
+
 
 fn read_osc_string(cursor: &mut Cursor<&[u8]>) -> Result<String> {
     let mut bytes = Vec::new();
