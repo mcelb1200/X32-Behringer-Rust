@@ -3,7 +3,7 @@
 //! Controls the 8 internal FX processors on the X32/M32.
 //!
 //! This module provides functions for setting the type, source, and parameters of each FX processor.
-
+use lazy_static::lazy_static;
 use crate::common::{FxSource, CommandFlags, CommandFormat, CommandValue, X32Command};
 use osc_lib::OscArg;
 
@@ -300,17 +300,17 @@ pub const SFX_SRC: &[&str] = &[
     " MIX10", " MIX11", " MIX12", " MIX13", " MIX14", " MIX15", " MIX16", " M/C",
 ];
 
-#[rustfmt::skip]
-#[allow(dead_code)]
-pub const XFX1: &[X32Command] = &[
-    X32Command { command: "/fx".to_string(), format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None },
-    X32Command { command: "/fx/1".to_string(), format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None },
-    X32Command { command: "/fx/1/type".to_string(), format: CommandFormat::StringList(&SFX_TYP1), flags: CommandFlags::F_XET, value: CommandValue::None },
-    X32Command { command: "/fx/1/source".to_string(), format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None },
-    X32Command { command: "/fx/1/source/l".to_string(), format: CommandFormat::StringList(&SFX_SRC), flags: CommandFlags::F_XET, value: CommandValue::None },
-    X32Command { command: "/fx/1/source/r".to_string(), format: CommandFormat::StringList(&SFX_SRC), flags: CommandFlags::F_XET, value: CommandValue::None },
-    X32Command { command: "/fx/1/par".to_string(), format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None },
-];
+lazy_static! {
+    pub static ref XFX1: Vec<X32Command> = vec![
+        X32Command { command: "/fx".to_string(), format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None },
+        X32Command { command: "/fx/1".to_string(), format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None },
+        X32Command { command: "/fx/1/type".to_string(), format: CommandFormat::StringList(&SFX_TYP1), flags: CommandFlags::F_XET, value: CommandValue::None },
+        X32Command { command: "/fx/1/source".to_string(), format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None },
+        X32Command { command: "/fx/1/source/l".to_string(), format: CommandFormat::StringList(&SFX_SRC), flags: CommandFlags::F_XET, value: CommandValue::None },
+        X32Command { command: "/fx/1/source/r".to_string(), format: CommandFormat::StringList(&SFX_SRC), flags: CommandFlags::F_XET, value: CommandValue::None },
+        X32Command { command: "/fx/1/par".to_string(), format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None },
+    ];
+}
 
 #[cfg(test)]
 mod tests {

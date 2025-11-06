@@ -5,6 +5,7 @@
 use std::net::AddrParseError;
 use std::io;
 use osc_lib::OscError;
+use std::fmt;
 
 pub type Result<T> = std::result::Result<T, X32Error>;
 
@@ -14,6 +15,28 @@ pub enum X32Error {
     AddrParse(AddrParseError),
     Osc(OscError),
     String(String),
+}
+
+impl fmt::Display for X32Error {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            X32Error::Io(e) => write!(f, "IO error: {}", e),
+            X32Error::AddrParse(e) => write!(f, "Address parsing error: {}", e),
+            X32Error::Osc(e) => write!(f, "OSC error: {}", e),
+            X32Error::String(s) => write!(f, "{}", s),
+        }
+    }
+}
+
+impl std::error::Error for X32Error {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match *self {
+            X32Error::Io(ref e) => Some(e),
+            X32Error::AddrParse(ref e) => Some(e),
+            X32Error::Osc(ref e) => Some(e),
+            X32Error::String(_) => None,
+        }
+    }
 }
 
 impl From<io::Error> for X32Error {
