@@ -19,7 +19,7 @@ pub mod channel;
 pub mod auxin;
 pub mod fx_rtn;
 pub use fx_rtn::*;
-
+pub mod cfg_main;
 
 /// Represents the possible errors that can occur when interacting with an X32 console.
 #[derive(Debug)]
