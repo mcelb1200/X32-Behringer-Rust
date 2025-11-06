@@ -3,6 +3,43 @@
 //! This module contains common enumerations and structs used across the library.
 //! These enums provide a type-safe way to interact with the X32/M32 console's parameters.
 
+use bitflags::bitflags;
+
+#[derive(Debug, Clone)]
+pub enum CommandFormat {
+    Int,
+    Float,
+    String,
+    StringList(&'static [&'static str]),
+}
+
+#[derive(Debug, Clone)]
+pub enum CommandValue {
+    Int(i32),
+    Float(f32),
+    String(String),
+    None,
+}
+
+bitflags! {
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+    pub struct CommandFlags: u32 {
+        const F_GET = 0x0001;
+        const F_SET = 0x0002;
+        const F_XET = Self::F_GET.bits() | Self::F_SET.bits();
+        const F_NPR = 0x0004;
+        const F_FND = 0x0008;
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct X32Command {
+    pub command: String,
+    pub format: CommandFormat,
+    pub flags: CommandFlags,
+    pub value: CommandValue,
+}
+
 /// Represents the `On` or `Off` state of a parameter.
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[repr(u8)]
@@ -206,3 +243,19 @@ impl FxSource {
         }
     }
 }
+
+pub static XCOLORS: [&'static str; 16] = [
+    "OFF", "RD", "GN", "YE", "BL", "MG", "CY", "WH",
+    "OFFi", "RDi", "GNi", "YEi", "BLi", "MGi", "CYi", "WHi"];
+
+pub static OFF_ON: [&'static str; 2] = ["OFF", "ON"];
+pub static XDYMODE: [&'static str; 2] = ["COMP", "EXP"];
+pub static XDYDET: [&'static str; 2] = ["PEAK", "RMS"];
+pub static XDYENV: [&'static str; 2] = ["LIN", "LOG"];
+pub static XDYPPOS: [&'static str; 2] = ["PRE", "POST"];
+pub static XDYFTYP: [&'static str; 9] = ["LC6", "LC12", "HC6", "HC12", "1.0", "2.0", "3.0", "5.0", "10.0"];
+pub static XISEL: [&'static str; 23] = [
+    "OFF", "FX1L", "FX1R", "FX2L", "FX2R", "FX3L", "FX3R", "FX4L", "FX4R",
+    "FX5L", "FX5R", "FX6L", "FX6R", "FX7L", "FX7R", "FX8L", "FX8R", "AUX1",
+    "AUX2", "AUX3", "AUX4", "AUX5", "AUX6"];
+pub static XEQTY1: [&'static str; 6] = ["LCut", "LShv", "PEQ", "VEQ", "HShv", "HCut"];
