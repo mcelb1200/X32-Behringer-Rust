@@ -1,168 +1,121 @@
+//! # DCA Module
+//!
+//! Controls the 8 DCAs (Digitally Controlled Amplifiers) on the X32/M32.
+//!
+//! DCAs are used to control the level of multiple channels simultaneously.
 
-//! This module defines the OSC commands for controlling DCA groups on the X32/X-Air mixers.
-//! It provides a static array of `DcaCommand` structs that represent the available DCA commands.
+use crate::common::{Color, On};
+use osc_lib::OscArg;
 
-use crate::{Result, UdpSocket};
-use osc_lib::{OscArg, OscMessage};
-
-/// Represents the type of argument a DCA command expects.
-#[derive(Debug, PartialEq, Clone, Copy)]
-pub enum DcaArgType {
-    /// A command that acts as a header or grouping for other commands.
-    Header,
-    /// An on/off toggle. Corresponds to an integer argument (0 or 1).
-    OnOff,
-    /// A fader level. Corresponds to a float argument (0.0 to 1.0).
-    Fader,
-    /// A name for the DCA group. Corresponds to a string argument.
-    Name,
-    /// An icon for the DCA group. Corresponds to an integer argument.
-    Icon,
-    /// A color for the DCA group. Corresponds to an integer argument representing an enum.
-    Color,
+/// Sets the fader level for a specific DCA.
+///
+/// # Arguments
+///
+/// * `dca_id` - The ID of the DCA (1-8).
+/// * `level` - The fader level (0.0 to 1.0).
+///
+/// # Example
+///
+/// ```
+/// use x32_lib::dca;
+/// use osc_lib::OscArg;
+///
+/// let (address, args) = dca::set_fader(1, 0.75);
+/// assert_eq!(address, "/dca/1/fader");
+/// assert_eq!(args, vec![OscArg::Float(0.75)]);
+/// ```
+pub fn set_fader(dca_id: u8, level: f32) -> (String, Vec<OscArg>) {
+    let address = format!("/dca/{}/fader", dca_id);
+    let args = vec![OscArg::Float(level)];
+    (address, args)
 }
 
-/// Represents a static definition of a DCA-related OSC command.
-#[derive(Debug, PartialEq, Clone, Copy)]
-pub struct DcaCommand {
-    /// The OSC path for the command.
-    pub path: &'static str,
-    /// The type of argument the command expects.
-    pub arg_type: DcaArgType,
+/// Sets the mute state for a specific DCA.
+///
+/// # Arguments
+///
+/// * `dca_id` - The ID of the DCA (1-8).
+/// * `on` - The mute state (`On::On` for muted, `On::Off` for unmuted).
+///
+/// # Example
+///
+/// ```
+/// use x32_lib::dca;
+/// use x32_lib::common::On;
+/// use osc_lib::OscArg;
+///
+/// let (address, args) = dca::set_on(1, On::On);
+/// assert_eq!(address, "/dca/1/on");
+/// assert_eq!(args, vec![OscArg::Int(1)]);
+/// ```
+pub fn set_on(dca_id: u8, on: On) -> (String, Vec<OscArg>) {
+    let address = format!("/dca/{}/on", dca_id);
+    let args = vec![OscArg::Int(on as i32)];
+    (address, args)
 }
 
-/// A static array of all available DCA commands.
-pub const DCA_COMMANDS: &[DcaCommand] = &[
-    DcaCommand { path: "/dca", arg_type: DcaArgType::Header },
-    DcaCommand { path: "/dca/1", arg_type: DcaArgType::Header },
-    DcaCommand { path: "/dca/1/on", arg_type: DcaArgType::OnOff },
-    DcaCommand { path: "/dca/1/fader", arg_type: DcaArgType::Fader },
-    DcaCommand { path: "/dca/1/config", arg_type: DcaArgType::Header },
-    DcaCommand { path: "/dca/1/config/name", arg_type: DcaArgType::Name },
-    DcaCommand { path: "/dca/1/config/icon", arg_type: DcaArgType::Icon },
-    DcaCommand { path: "/dca/1/config/color", arg_type: DcaArgType::Color },
-    DcaCommand { path: "/dca/2", arg_type: DcaArgType::Header },
-    DcaCommand { path: "/dca/2/on", arg_type: DcaArgType::OnOff },
-    DcaCommand { path: "/dca/2/fader", arg_type: DcaArgType::Fader },
-    DcaCommand { path: "/dca/2/config", arg_type: DcaArgType::Header },
-    DcaCommand { path: "/dca/2/config/name", arg_type: DcaArgType::Name },
-    DcaCommand { path: "/dca/2/config/icon", arg_type: DcaArgType::Icon },
-    DcaCommand { path: "/dca/2/config/color", arg_type: DcaArgType::Color },
-    DcaCommand { path: "/dca/3", arg_type: DcaArgType::Header },
-    DcaCommand { path: "/dca/3/on", arg_type: DcaArgType::OnOff },
-    DcaCommand { path: "/dca/3/fader", arg_type: DcaArgType::Fader },
-    DcaCommand { path: "/dca/3/config", arg_type: DcaArgType::Header },
-    DcaCommand { path: "/dca/3/config/name", arg_type: DcaArgType::Name },
-    DcaCommand { path: "/dca/3/config/icon", arg_type: DcaArgType::Icon },
-    DcaCommand { path: "/dca/3/config/color", arg_type: DcaArgType::Color },
-    DcaCommand { path: "/dca/4", arg_type: DcaArgType::Header },
-    DcaCommand { path: "/dca/4/on", arg_type: DcaArgType::OnOff },
-    DcaCommand { path: "/dca/4/fader", arg_type: DcaArgType::Fader },
-    DcaCommand { path: "/dca/4/config", arg_type: DcaArgType::Header },
-    DcaCommand { path: "/dca/4/config/name", arg_type: DcaArgType::Name },
-    DcaCommand { path: "/dca/4/config/icon", arg_type: DcaArgType::Icon },
-    DcaCommand { path: "/dca/4/config/color", arg_type: DcaArgType::Color },
-    DcaCommand { path: "/dca/5", arg_type: DcaArgType::Header },
-    DcaCommand { path: "/dca/5/on", arg_type: DcaArgType::OnOff },
-    DcaCommand { path: "/dca/5/fader", arg_type: DcaArgType::Fader },
-    DcaCommand { path: "/dca/5/config", arg_type: DcaArgType::Header },
-    DcaCommand { path: "/dca/5/config/name", arg_type: DcaArgType::Name },
-    DcaCommand { path: "/dca/5/config/icon", arg_type: DcaArgType::Icon },
-    DcaCommand { path: "/dca/5/config/color", arg_type: DcaArgType::Color },
-    DcaCommand { path: "/dca/6", arg_type: DcaArgType::Header },
-    DcaCommand { path: "/dca/6/on", arg_type: DcaArgType::OnOff },
-    DcaCommand { path: "/dca/6/fader", arg_type: DcaArgType::Fader },
-    DcaCommand { path: "/dca/6/config", arg_type: DcaArgType::Header },
-    DcaCommand { path: "/dca/6/config/name", arg_type: DcaArgType::Name },
-    DcaCommand { path: "/dca/6/config/icon", arg_type: DcaArgType::Icon },
-    DcaCommand { path: "/dca/6/config/color", arg_type: DcaArgType::Color },
-    DcaCommand { path: "/dca/7", arg_type: DcaArgType::Header },
-    DcaCommand { path: "/dca/7/on", arg_type: DcaArgType::OnOff },
-    DcaCommand { path: "/dca/7/fader", arg_type: DcaArgType::Fader },
-    DcaCommand { path: "/dca/7/config", arg_type: DcaArgType::Header },
-    DcaCommand { path: "/dca/7/config/name", arg_type: DcaArgType::Name },
-    DcaCommand { path: "/dca/7/config/icon", arg_type: DcaArgType::Icon },
-    DcaCommand { path: "/dca/7/config/color", arg_type: DcaArgType::Color },
-    DcaCommand { path: "/dca/8", arg_type: DcaArgType::Header },
-    DcaCommand { path: "/dca/8/on", arg_type: DcaArgType::OnOff },
-    DcaCommand { path: "/dca/8/fader", arg_type: DcaArgType::Fader },
-    DcaCommand { path: "/dca/8/config", arg_type: DcaArgType::Header },
-    DcaCommand { path: "/dca/8/config/name", arg_type: DcaArgType::Name },
-    DcaCommand { path: "/dca/8/config/icon", arg_type: DcaArgType::Icon },
-    DcaCommand { path: "/dca/8/config/color", arg_type: DcaArgType::Color },
-];
-
-pub fn set_dca_fader(socket: &UdpSocket, dca_index: u8, level: f32) -> Result<()> {
-    let path = format!("/dca/{}/fader", dca_index);
-    let msg = OscMessage::new(path, vec![OscArg::Float(level)]);
-    socket.send(&msg.to_bytes()?)?;
-    Ok(())
+/// Sets the name for a specific DCA.
+///
+/// # Arguments
+///
+/// * `dca_id` - The ID of the DCA (1-8).
+/// * `name` - The name to set.
+///
+/// # Example
+///
+/// ```
+/// use x32_lib::dca;
+/// use osc_lib::OscArg;
+///
+/// let (address, args) = dca::set_name(1, "Drums");
+/// assert_eq!(address, "/dca/1/config/name");
+/// assert_eq!(args, vec![OscArg::String("Drums".to_string())]);
+/// ```
+pub fn set_name(dca_id: u8, name: &str) -> (String, Vec<OscArg>) {
+    let address = format!("/dca/{}/config/name", dca_id);
+    let args = vec![OscArg::String(name.to_string())];
+    (address, args)
 }
 
-pub fn set_dca_on(socket: &UdpSocket, dca_index: u8, on: bool) -> Result<()> {
-    let path = format!("/dca/{}/on", dca_index);
-    let msg = OscMessage::new(path, vec![OscArg::Int(if on { 1 } else { 0 })]);
-    socket.send(&msg.to_bytes()?)?;
-    Ok(())
+/// Sets the color for a specific DCA.
+///
+/// # Arguments
+///
+/// * `dca_id` - The ID of the DCA (1-8).
+/// * `color` - The color to set.
+///
+/// # Example
+///
+/// ```
+/// use x32_lib::dca;
+/// use x32_lib::common::Color;
+/// use osc_lib::OscArg;
+///
+/// let (address, args) = dca::set_color(1, Color::Red);
+/// assert_eq!(address, "/dca/1/config/color");
+/// assert_eq!(args, vec![OscArg::Int(1)]);
+/// ```
+pub fn set_color(dca_id: u8, color: Color) -> (String, Vec<OscArg>) {
+    let address = format!("/dca/{}/config/color", dca_id);
+    let args = vec![OscArg::Int(color as i32)];
+    (address, args)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::create_socket;
-    use std::net::UdpSocket as StdUdpSocket;
-    use std::thread;
 
     #[test]
-    fn test_dca_commands_array() {
-        assert_eq!(DCA_COMMANDS.len(), 57);
-        assert_eq!(DCA_COMMANDS[0].path, "/dca");
-        assert_eq!(DCA_COMMANDS[0].arg_type, DcaArgType::Header);
-        assert_eq!(DCA_COMMANDS[1].path, "/dca/1");
-        assert_eq!(DCA_COMMANDS[8].path, "/dca/2");
-        assert_eq!(DCA_COMMANDS[56].path, "/dca/8/config/color");
-        assert_eq!(DCA_COMMANDS[56].arg_type, DcaArgType::Color);
+    fn test_set_fader() {
+        let (address, args) = set_fader(1, 0.75);
+        assert_eq!(address, "/dca/1/fader");
+        assert_eq!(args, vec![OscArg::Float(0.75)]);
     }
 
     #[test]
-    fn test_set_dca_fader() {
-        let server = StdUdpSocket::bind("127.0.0.1:0").unwrap();
-        let server_addr = server.local_addr().unwrap();
-
-        let client_socket = create_socket(&server_addr.ip().to_string(), 200).unwrap();
-        client_socket.connect(server_addr).unwrap();
-
-        let handle = thread::spawn(move || {
-            let mut buf = [0; 512];
-            let (len, _) = server.recv_from(&mut buf).unwrap();
-            let msg = OscMessage::from_bytes(&buf[..len]).unwrap();
-            assert_eq!(msg.path, "/dca/1/fader");
-            assert_eq!(msg.args.len(), 1);
-            assert_eq!(msg.args[0], OscArg::Float(0.75));
-        });
-
-        set_dca_fader(&client_socket, 1, 0.75).unwrap();
-        handle.join().unwrap();
-    }
-
-    #[test]
-    fn test_set_dca_on() {
-        let server = StdUdpSocket::bind("127.0.0.1:0").unwrap();
-        let server_addr = server.local_addr().unwrap();
-
-        let client_socket = create_socket(&server_addr.ip().to_string(), 200).unwrap();
-        client_socket.connect(server_addr).unwrap();
-
-        let handle = thread::spawn(move || {
-            let mut buf = [0; 512];
-            let (len, _) = server.recv_from(&mut buf).unwrap();
-            let msg = OscMessage::from_bytes(&buf[..len]).unwrap();
-            assert_eq!(msg.path, "/dca/2/on");
-            assert_eq!(msg.args.len(), 1);
-            assert_eq!(msg.args[0], OscArg::Int(1));
-        });
-
-        set_dca_on(&client_socket, 2, true).unwrap();
-        handle.join().unwrap();
+    fn test_set_on() {
+        let (address, args) = set_on(1, On::On);
+        assert_eq!(address, "/dca/1/on");
+        assert_eq!(args, vec![OscArg::Int(1)]);
     }
 }

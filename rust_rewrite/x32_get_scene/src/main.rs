@@ -1,7 +1,7 @@
 
 use clap::Parser;
 use std::io::{self, BufRead};
-use x32_lib::{create_socket, Result};
+use x32_lib::{create_socket, error::Result};
 use osc_lib::{OscMessage, OscArg};
 
 #[derive(Parser, Debug)]

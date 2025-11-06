@@ -1,756 +1,322 @@
-//! This module contains a Rust rewrite of the data structures and static data
-//! from the original C `X32Fx.h` header file. The data defines OSC commands
-//! and parameters for controlling effects on the Behringer X32/X-Air mixers.
+//! # FX Module
+//!
+//! Controls the 8 internal FX processors on the X32/M32.
+//!
+//! This module provides functions for setting the type, source, and parameters of each FX processor.
 
-// Command flags from X32.c, used in the `flags` field of `X32Command`.
-pub const F_GET: i32 = 0x0001;
-pub const F_SET: i32 = 0x0002;
-pub const F_XET: i32 = F_GET | F_SET;
-#[allow(dead_code)]
-pub const F_NPR: i32 = 0x0004;
-pub const F_FND: i32 = 0x0008;
+use crate::common::FxSource;
+use osc_lib::OscArg;
 
-/// Represents the `enum types` from the original C code. This enum defines the
-/// type of data associated with an OSC command.
-#[derive(Debug, PartialEq, Eq, Copy, Clone)]
-#[repr(i32)]
-pub enum CommandType {
-    Nil = 0,
-    I32 = 1,
-    F32 = 2,
-    S32 = 3,
-    B32 = 4,
-    E32 = 5,
-    P32 = 6,
-    Fx32 = 10,
-    FxTyp1 = 45,
-    FxSrc = 46,
-    FxPar1 = 47,
-    FxTyp2 = 48,
-    FxPar2 = 49,
+/// Represents the types of effects available in FX slots 1-4.
+#[derive(Debug, Clone, Copy, PartialEq)]
+#[repr(u8)]
+pub enum FxType1 {
+    Hall = 0,
+    Ambi,
+    Rplt,
+    Room,
+    Cham,
+    Plat,
+    Vrev,
+    Vrm,
+    Gate,
+    Rvrs,
+    Dly,
+    Tap3,
+    Tap4,
+    Crs,
+    Flng,
+    Phas,
+    Dimc,
+    Filt,
+    Rota,
+    Pan,
+    Sub,
+    DRv,
+    CrR,
+    FlR,
+    DCr,
+    DFl,
+    Modd,
 }
 
-/// A Rust representation of the `X32command` struct from the original C code.
+impl FxType1 {
+    pub fn from_id(id: u8) -> Option<Self> {
+        match id {
+            0 => Some(FxType1::Hall),
+            1 => Some(FxType1::Ambi),
+            2 => Some(FxType1::Rplt),
+            3 => Some(FxType1::Room),
+            4 => Some(FxType1::Cham),
+            5 => Some(FxType1::Plat),
+            6 => Some(FxType1::Vrev),
+            7 => Some(FxType1::Vrm),
+            8 => Some(FxType1::Gate),
+            9 => Some(FxType1::Rvrs),
+            10 => Some(FxType1::Dly),
+            11 => Some(FxType1::Tap3),
+            12 => Some(FxType1::Tap4),
+            13 => Some(FxType1::Crs),
+            14 => Some(FxType1::Flng),
+            15 => Some(FxType1::Phas),
+            16 => Some(FxType1::Dimc),
+            17 => Some(FxType1::Filt),
+            18 => Some(FxType1::Rota),
+            19 => Some(FxType1::Pan),
+            20 => Some(FxType1::Sub),
+            21 => Some(FxType1::DRv),
+            22 => Some(FxType1::CrR),
+            23 => Some(FxType1::FlR),
+            24 => Some(FxType1::DCr),
+            25 => Some(FxType1::DFl),
+            26 => Some(FxType1::Modd),
+            _ => None,
+        }
+    }
+}
+
+/// Represents the types of effects available in FX slots 5-8.
+#[derive(Debug, Clone, Copy, PartialEq)]
+#[repr(u8)]
+pub enum FxType2 {
+    Geq2 = 0,
+    Geq,
+    Teq2,
+    Teq,
+    Des2,
+    Des,
+    P1a,
+    P1a2,
+    Pq5,
+    Pq5s,
+    Wavd,
+    Lim,
+    Cmb,
+    Cmb2,
+    Fac,
+    Fac1m,
+    Fac2,
+    Lec,
+    Lec2,
+    Ulc,
+    Ulc2,
+    Enh2,
+    Enh,
+    Exc2,
+    Exc,
+    Img,
+    Edi,
+    Son,
+    Amp2,
+    Amp,
+    Drv2,
+    Drv,
+    Phas,
+    Filt,
+    Pan,
+    Sub,
+}
+
+impl FxType2 {
+    pub fn from_id(id: u8) -> Option<Self> {
+        match id {
+            0 => Some(FxType2::Geq2),
+            1 => Some(FxType2::Geq),
+            2 => Some(FxType2::Teq2),
+            3 => Some(FxType2::Teq),
+            4 => Some(FxType2::Des2),
+            5 => Some(FxType2::Des),
+            6 => Some(FxType2::P1a),
+            7 => Some(FxType2::P1a2),
+            8 => Some(FxType2::Pq5),
+            9 => Some(FxType2::Pq5s),
+            10 => Some(FxType2::Wavd),
+            11 => Some(FxType2::Lim),
+            12 => Some(FxType2::Cmb),
+            13 => Some(FxType2::Cmb2),
+            14 => Some(FxType2::Fac),
+            15 => Some(FxType2::Fac1m),
+            16 => Some(FxType2::Fac2),
+            17 => Some(FxType2::Lec),
+            18 => Some(FxType2::Lec2),
+            19 => Some(FxType2::Ulc),
+            20 => Some(FxType2::Ulc2),
+            21 => Some(FxType2::Enh2),
+            22 => Some(FxType2::Enh),
+            23 => Some(FxType2::Exc2),
+            24 => Some(FxType2::Exc),
+            25 => Some(FxType2::Img),
+            26 => Some(FxType2::Edi),
+            27 => Some(FxType2::Son),
+            28 => Some(FxType2::Amp2),
+            29 => Some(FxType2::Amp),
+            30 => Some(FxType2::Drv2),
+            31 => Some(FxType2::Drv),
+            32 => Some(FxType2::Phas),
+            33 => Some(FxType2::Filt),
+            34 => Some(FxType2::Pan),
+            35 => Some(FxType2::Sub),
+            _ => None,
+        }
+    }
+}
+
+/// Sets the effect type for a specific FX slot (1-4).
 ///
-/// This struct is used to define static data for OSC commands. The `format` and
-/// `value` fields have been simplified from C unions to `i32` because the
-/// static data in `X32Fx.h` only ever initializes them with integer values.
-pub struct X32Command {
-    pub command: &'static str,
-    pub format: i32,
-    pub flags: i32,
-    pub value: i32,
-    pub node: Option<&'static [&'static str]>,
+/// # Arguments
+///
+/// * `fx_slot` - The ID of the FX slot (1-4).
+/// * `fx_type` - The effect type to set.
+///
+/// # Example
+///
+/// ```
+/// use x32_lib::fx;
+/// use x32_lib::fx::FxType1;
+/// use osc_lib::OscArg;
+///
+/// let (address, args) = fx::set_fx_type1(1, FxType1::Hall);
+/// assert_eq!(address, "/fx/1/type");
+/// assert_eq!(args, vec![OscArg::Int(0)]);
+/// ```
+pub fn set_fx_type1(fx_slot: u8, fx_type: FxType1) -> (String, Vec<OscArg>) {
+    let address = format!("/fx/{}/type", fx_slot);
+    let args = vec![OscArg::Int(fx_type as i32)];
+    (address, args)
 }
 
-// Ported from the original C `X32Fx.h` file. These arrays provide string
-// representations for various OSC command parameters.
-#[rustfmt::skip]
-pub mod arrays {
-    pub const S_SOURCE: &[&str] = &[" OFF", " LR", " LR+C", " LRPFL", " LRAFL", " AUX56", " AUX78"];
-    pub const S_OSC_TYPE: &[&str] = &[" SINE", " PINK", " WHITE"];
-    pub const S_ROUT_IN: &[&str] = &[
-        " AN1-8", " AN9-16", " AN17-24", " AN25-32", " A1-8", " A9-16", " A17-24", " A25-32", " A33-40",
-        " A41-48", " B1-8", " B9-16", " B17-24", " B25-32", " B33-40", " B41-48", " CARD1-8",
-        " CARD9-16", " CARD17-24", " CARD25-32",
-    ];
-    pub const S_ROUT_AUX: &[&str] = &[
-        " AUX1-4", " AN1-2", " AN1-4", " AN1-6", " A1-2", " A1-4", " A1-6", " B1-2", " B1-4", " B1-6",
-        " CARD1-2", "CARD1-4", "CARD1-6",
-    ];
-    pub const S_ROUT_AC: &[&str] = &[
-        " AN1-8", " AN9-16", " AN17-24", " AN25-32", " A1-8", " A9-16", " A17-24", " A25-32",
-        " A33-40", " A41-48", " B1-8", " B9-16", " B17-24", " B25-32", " B33-40", " B41-48",
-        " CARD1-8", " CARD9-16", " CARD17-24", " CARD25-32", " OUT1-8", " OUT9-16", " P161-8",
-        " P169-16", " AUX1-6/Mon", " AuxIN1-6/TB",
-    ];
-    pub const S_ROUT_O1: &[&str] = &[
-        " AN1-4", " AN9-12", " AN17-20", " AN25-28", " A1-4", " A9-12", " A17-20", " A25-28",
-        " A33-36", " A41-44", " B1-4", " B9-12", " B17-20", " B25-28", " B33-46", " B41-44",
-        " CARD1-4", " CARD9-12", " CARD17-20", " CARD25-28", " OUT1-4", " OUT9-12", " P161-4",
-        " P169-12", " AUX/CR", " AUX/TB",
-    ];
-    pub const S_ROUT_O2: &[&str] = &[
-        " AN5-8", " AN13-16", " AN21-24", " AN29-32", " A5-8", " A13-16", " A21-24", " A29-32",
-        " A37-40", " A45-48", " B5-8", " B13-16", " B21-24", " B29-32", " B37-40", " B45-48",
-        " CARD5-8", " CARD13-16", " CARD21-24", " CARD29-32", " OUT5-8", " OUT13-16", " P165-8",
-        " P1613-16", " AUX/CR", " AUX/TB",
-    ];
-    pub const S_COLOR: &[&str] = &[
-        " OFF", " RD", " GN", " YE", " BL", " MG", " CY", " WH", " OFFi", " RDi", " GNi", " YEi",
-        " BLi", " MGi", " CYi", " WHi",
-    ];
-    pub const S_F_SLOPE: &[&str] = &[" 12", " 18", " 24"];
-    pub const S_AMIX: &[&str] = &[" OFF", " X", " Y"];
-    pub const S_G_MODE: &[&str] = &[" EXP2", " EXP3", " EXP4", " GATE", " DUCK"];
-    pub const S_GF_TYPE: &[&str] = &[
-        " LC6", " LC12", " HC6", " HC12", " 1.0", " 2.0", " 3.0", " 5.0", " 10.0",
-    ];
-    pub const S_D_MODE: &[&str] = &[" COMP", " EXP"];
-    pub const S_D_DET: &[&str] = &[" PEAK", " RMS"];
-    pub const S_D_ENV: &[&str] = &[" LIN", " LOG"];
-    pub const S_D_RATIO: &[&str] = &[
-        " 1.1", " 1.3", " 1.5", " 2.0", " 2.5", " 3.0", " 4.0", " 5.0", " 7.0", " 10", " 20",
-        " 100",
-    ];
-    pub const S_IN_SEL: &[&str] = &[
-        " OFF", " FX1L", " FX1R", " FX2L", " FX2R", " FX3L", " FX3R", " FX4L", " FX4R", " FX5L",
-        " FX5R", " FX6L", " FX6R", " FX7L", " FX7R", " FX8L", " FX8R", " AUX1", " AUX2", " AUX3",
-        " AUX4", " AUX5", " AUX6",
-    ];
-    pub const S_D_POS: &[&str] = &[" PRE", " POST"];
-    pub const S_E_TYPE: &[&str] = &[
-        " Lcut", " LShv", " PEQ", " VEQ", " HShv", " HCut", " BU6", " BU12", " BS12", " LR12",
-        " BU18", " BU24", " BS24", " LR24",
-    ];
-    pub const S_C_TYPE: &[&str] = &[" IN/LC", " <-EQ", " EQ->", " PRE", " POST", " GRP"];
-    pub const S_M_POS: &[&str] = &[
-        " IN/LC", " IN/LC+M", " <-EQ", " <-EQ+M", " EQ->", " EQ->+M", " PRE", " PRE+M", " POST",
-    ];
-    pub const S_FACTOR: &[&str] = &[" 1/4", " 3/8", " 1/2", " 2/3", " 1", " 4/3", " 3/2", " 2", " 3"];
-    pub const S_MODE: &[&str] = &[" ST", " X", " M"];
-    pub const S_F_MODE: &[&str] = &[" LP", " HP", " BP", " NO"];
-    pub const S_F_WAVE: &[&str] = &[" TRI", " SIN", " SAW", " SAW-", " RMP", " SQU", " RND"];
-    pub const S_F_RANGE: &[&str] = &[" LO", " MID", " HI"];
-    pub const S_F_PATTERN: &[&str] = &[
-        " 1/4", " 1/3", " 3/8", " 1/2", " 2/3", " 3/4", " 1", " 1/4X", " 1/3X", " 3/8X", " 1/2X",
-        " 2/3X", " 3/4X", "1X",
-    ];
-    pub const S_FD_TYPE: &[&str] = &[" AMB", " CLUB", " HALL"];
-    pub const S_FD_DELAY: &[&str] = &[" 1", " 1/2", " 2/3", " 3/2"];
-    pub const S_FPL_FREQ: &[&str] = &[" 20", " 30", " 60", " 100"];
-    pub const S_FPM_FREQ: &[&str] = &[" 3K", " 4K", " 5K", " 8K", " 10K", " 12K", " 16K"];
-    pub const S_FPH_FREQ: &[&str] = &[" 5K", " 10K", " 20K"];
-    pub const S_FQL_FREQ: &[&str] = &[" 200", " 300", " 500", " 700", " 1000"];
-    pub const S_FQM_FREQ: &[&str] = &[
-        " 200", " 300", " 500", " 700", " 1k", " 1k5", " 2k", " 3k", " 4k", " 5k", " 7k",
-    ];
-    pub const S_FQH_FREQ: &[&str] = &[" 1k5", " 2k", " 3k", " 4k", " 5k"];
-    pub const S_FL_CMB: &[&str] = &[" OFF", " Bd1", " Bd2", " Bd3", " Bd4", " Bd5"];
-    pub const S_FR_CMB: &[&str] = &[
-        " 1.1", " 1.2", " 1.3", " 1.5", " 1.7", " 2", " 2.5", " 3", " 3.5", " 4", " 5", " 7", " 10",
-        " LIM",
-    ];
-    pub const S_FM_CMB: &[&str] = &[" GR", " SBC", " PEAK"];
-    pub const S_FRU_LC: &[&str] = &[" 4", " 8", " 12", " 20", " ALL"];
+/// Sets the effect type for a specific FX slot (5-8).
+///
+/// # Arguments
+///
+/// * `fx_slot` - The ID of the FX slot (5-8).
+/// * `fx_type` - The effect type to set.
+///
+/// # Example
+///
+/// ```
+/// use x32_lib::fx;
+/// use x32_lib::fx::FxType2;
+/// use osc_lib::OscArg;
+///
+/// let (address, args) = fx::set_fx_type2(5, FxType2::Geq2);
+/// assert_eq!(address, "/fx/5/type");
+/// assert_eq!(args, vec![OscArg::Int(0)]);
+/// ```
+pub fn set_fx_type2(fx_slot: u8, fx_type: FxType2) -> (String, Vec<OscArg>) {
+    let address = format!("/fx/{}/type", fx_slot);
+    let args = vec![OscArg::Int(fx_type as i32)];
+    (address, args)
 }
 
-use CommandType::*;
+/// Sets the left source for a specific FX slot.
+///
+/// # Arguments
+///
+/// * `fx_slot` - The ID of the FX slot (1-8).
+/// * `source` - The source to set.
+///
+/// # Example
+///
+/// ```
+/// use x32_lib::fx;
+/// use x32_lib::common::FxSource;
+/// use osc_lib::OscArg;
+///
+/// let (address, args) = fx::set_fx_source_left(1, FxSource::MixBus(1));
+/// assert_eq!(address, "/fx/1/source/l");
+/// assert_eq!(args, vec![OscArg::Int(1)]);
+/// ```
+pub fn set_fx_source_left(fx_slot: u8, source: FxSource) -> (String, Vec<OscArg>) {
+    let address = format!("/fx/{}/source/l", fx_slot);
+    let args = vec![OscArg::Int(source.to_id() as i32)];
+    (address, args)
+}
 
-pub const SFX_TYP1: &[&str] = &[
-    " HALL", " AMBI", " RPLT", " ROOM", " CHAM", " PLAT", " VREV", " VRM", " GATE", " RVRS", " DLY",
-    " 3TAP", " 4TAP", " CRS", " FLNG", " PHAS", " DIMC", " FILT", " ROTA", " PAN", " SUB", " D/RV",
-    " CR/R", " FL/R", " D/CR", " D/FL", " MODD", " GEQ2", " TEQ2", " GEQ", " TEQ", " DES2", " DES",
-    " P1A2", " P1A", " PQ5S", " PQ5", " WAVD", " LIM", " CMB2", " CMB", " FAC2", " FAC1M", " FAC",
-    " LEC2", " LEC", " ULC2", " ULC", " ENH2", " ENH", " EXC2", " EXC", " IMG", " EDI", " SON",
-    " AMP2", " AMP", " DRV2", " DRV", " PIT2", " PIT",
-];
-pub const SFX_TYP2: &[&str] = &[
-    " GEQ2", " TEQ2", " GEQ", " TEQ", " DES2", " DES", " P1A", " P1A2", " PQ5", " PQ5S", " WAVD",
-    " LIM", " FAC", " FAC1M", " FAC2", " LEC", " LEC2", " ULC", " ULC2", " ENH2", " ENH", " EXC2",
-    " EXC", " IMG", " EDI", " SON", " AMP2", " AMP", " DRV2", " DRV", " PHAS", " FILT", " PAN",
-    " SUB",
-];
-pub const SFX_SRC: &[&str] = &[
-    " INS", " MIX1", " MIX2", " MIX3", " MIX4", " MIX5", " MIX6", " MIX7", " MIX8", " MIX9",
-    " MIX10", " MIX11", " MIX12", " MIX13", " MIX14", " MIX15", " MIX16", " M/C",
-];
-#[rustfmt::skip]
-#[allow(dead_code)]
-pub const XFX1: &[X32Command] = &[
-    X32Command { command: "/fx", format: FxTyp1 as i32, flags: F_FND, value: 0, node: None },
-    X32Command { command: "/fx/1", format: FxTyp1 as i32, flags: F_FND, value: 0, node: None },
-    X32Command { command: "/fx/1/type", format: E32 as i32, flags: F_XET, value: 0, node: Some(SFX_TYP1) },
-    X32Command { command: "/fx/1/source", format: FxSrc as i32, flags: F_FND, value: 0, node: None },
-    X32Command { command: "/fx/1/source/l", format: E32 as i32, flags: F_XET, value: 0, node: Some(SFX_SRC) },
-    X32Command { command: "/fx/1/source/r", format: E32 as i32, flags: F_XET, value: 0, node: Some(SFX_SRC) },
-    X32Command { command: "/fx/1/par", format: FxPar1 as i32, flags: F_FND, value: 0, node: None },
-    X32Command { command: "/fx/1/par/01", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/1/par/02", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/1/par/03", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/1/par/04", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/1/par/05", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/1/par/06", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/1/par/07", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/1/par/08", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/1/par/09", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/1/par/10", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/1/par/11", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/1/par/12", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/1/par/13", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/1/par/14", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/1/par/15", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/1/par/16", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/1/par/17", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/1/par/18", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/1/par/19", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/1/par/20", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/1/par/21", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/1/par/22", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/1/par/23", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/1/par/24", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/1/par/25", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/1/par/26", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/1/par/27", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/1/par/28", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/1/par/29", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/1/par/30", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/1/par/31", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/1/par/32", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/1/par/33", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/1/par/34", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/1/par/35", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/1/par/36", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/1/par/37", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/1/par/38", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/1/par/39", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/1/par/40", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/1/par/41", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/1/par/42", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/1/par/43", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/1/par/44", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/1/par/45", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/1/par/46", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/1/par/47", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/1/par/48", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/1/par/49", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/1/par/50", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/1/par/51", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/1/par/52", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/1/par/53", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/1/par/54", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/1/par/55", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/1/par/56", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/1/par/57", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/1/par/58", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/1/par/59", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/1/par/60", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/1/par/61", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/1/par/62", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/1/par/63", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/1/par/64", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-];
+/// Sets the right source for a specific FX slot.
+///
+/// # Arguments
+///
+/// * `fx_slot` - The ID of the FX slot (1-8).
+/// * `source` - The source to set.
+///
+/// # Example
+///
+/// ```
+/// use x32_lib::fx;
+/// use x32_lib::common::FxSource;
+/// use osc_lib::OscArg;
+///
+/// let (address, args) = fx::set_fx_source_right(1, FxSource::MixBus(2));
+/// assert_eq!(address, "/fx/1/source/r");
+/// assert_eq!(args, vec![OscArg::Int(2)]);
+/// ```
+pub fn set_fx_source_right(fx_slot: u8, source: FxSource) -> (String, Vec<OscArg>) {
+    let address = format!("/fx/{}/source/r", fx_slot);
+    let args = vec![OscArg::Int(source.to_id() as i32)];
+    (address, args)
+}
 
-#[rustfmt::skip]
-#[allow(dead_code)]
-pub const XFX2: &[X32Command] = &[
-    X32Command { command: "/fx", format: FxTyp1 as i32, flags: F_FND, value: 0, node: None },
-    X32Command { command: "/fx/2", format: FxTyp1 as i32, flags: F_FND, value: 0, node: None },
-    X32Command { command: "/fx/2/type", format: E32 as i32, flags: F_XET, value: 0, node: Some(SFX_TYP1) },
-    X32Command { command: "/fx/2/source", format: FxSrc as i32, flags: F_FND, value: 0, node: None },
-    X32Command { command: "/fx/2/source/l", format: E32 as i32, flags: F_XET, value: 0, node: Some(SFX_SRC) },
-    X32Command { command: "/fx/2/source/r", format: E32 as i32, flags: F_XET, value: 0, node: Some(SFX_SRC) },
-    X32Command { command: "/fx/2/par", format: FxPar1 as i32, flags: F_FND, value: 0, node: None },
-    X32Command { command: "/fx/2/par/01", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/2/par/02", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/2/par/03", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/2/par/04", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/2/par/05", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/2/par/06", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/2/par/07", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/2/par/08", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/2/par/09", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/2/par/10", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/2/par/11", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/2/par/12", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/2/par/13", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/2/par/14", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/2/par/15", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/2/par/16", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/2/par/17", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/2/par/18", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/2/par/19", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/2/par/20", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/2/par/21", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/2/par/22", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/2/par/23", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/2/par/24", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/2/par/25", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/2/par/26", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/2/par/27", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/2/par/28", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/2/par/29", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/2/par/30", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/2/par/31", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/2/par/32", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/2/par/33", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/2/par/34", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/2/par/35", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/2/par/36", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/2/par/37", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/2/par/38", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/2/par/39", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/2/par/40", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/2/par/41", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/2/par/42", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/2/par/43", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/2/par/44", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/2/par/45", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/2/par/46", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/2/par/47", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/2/par/48", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/2/par/49", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/2/par/50", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/2/par/51", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/2/par/52", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/2/par/53", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/2/par/54", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/2/par/55", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/2/par/56", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/2/par/57", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/2/par/58", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/2/par/59", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/2/par/60", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/2/par/61", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/2/par/62", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/2/par/63", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/2/par/64", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-];
+/// Sets a specific parameter for an FX processor.
+///
+/// # Arguments
+///
+/// * `fx_slot` - The ID of the FX slot (1-8).
+/// * `param` - The parameter ID (1-64).
+/// * `value` - The value to set (0.0 to 1.0).
+///
+/// # Example
+///
+/// ```
+/// use x32_lib::fx;
+/// use osc_lib::OscArg;
+///
+/// let (address, args) = fx::set_fx_param(1, 1, 0.5);
+/// assert_eq!(address, "/fx/1/par/01");
+/// assert_eq!(args, vec![OscArg::Float(0.5)]);
+/// ```
+pub fn set_fx_param(fx_slot: u8, param: u8, value: f32) -> (String, Vec<OscArg>) {
+    let address = format!("/fx/{}/par/{:02}", fx_slot, param);
+    let args = vec![OscArg::Float(value)];
+    (address, args)
+}
 
-#[rustfmt::skip]
-#[allow(dead_code)]
-pub const XFX3: &[X32Command] = &[
-    X32Command { command: "/fx", format: FxTyp1 as i32, flags: F_FND, value: 0, node: None },
-    X32Command { command: "/fx/3", format: FxTyp1 as i32, flags: F_FND, value: 0, node: None },
-    X32Command { command: "/fx/3/type", format: E32 as i32, flags: F_XET, value: 0, node: Some(SFX_TYP1) },
-    X32Command { command: "/fx/3/source", format: FxSrc as i32, flags: F_FND, value: 0, node: None },
-    X32Command { command: "/fx/3/source/l", format: E32 as i32, flags: F_XET, value: 0, node: Some(SFX_SRC) },
-    X32Command { command: "/fx/3/source/r", format: E32 as i32, flags: F_XET, value: 0, node: Some(SFX_SRC) },
-    X32Command { command: "/fx/3/par", format: FxPar1 as i32, flags: F_FND, value: 0, node: None },
-    X32Command { command: "/fx/3/par/01", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/3/par/02", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/3/par/03", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/3/par/04", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/3/par/05", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/3/par/06", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/3/par/07", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/3/par/08", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/3/par/09", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/3/par/10", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/3/par/11", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/3/par/12", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/3/par/13", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/3/par/14", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/3/par/15", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/3/par/16", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/3/par/17", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/3/par/18", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/3/par/19", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/3/par/20", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/3/par/21", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/3/par/22", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/3/par/23", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/3/par/24", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/3/par/25", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/3/par/26", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/3/par/27", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/3/par/28", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/3/par/29", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/3/par/30", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/3/par/31", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/3/par/32", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/3/par/33", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/3/par/34", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/3/par/35", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/3/par/36", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/3/par/37", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/3/par/38", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/3/par/39", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/3/par/40", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/3/par/41", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/3/par/42", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/3/par/43", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/3/par/44", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/3/par/45", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/3/par/46", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/3/par/47", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/3/par/48", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/3/par/49", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/3/par/50", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/3/par/51", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/3/par/52", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/3/par/53", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/3/par/54", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/3/par/55", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/3/par/56", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/3/par/57", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/3/par/58", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/3/par/59", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/3/par/60", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/3/par/61", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/3/par/62", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/3/par/63", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/3/par/64", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-];
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-#[rustfmt::skip]
-#[allow(dead_code)]
-pub const XFX4: &[X32Command] = &[
-    X32Command { command: "/fx", format: FxTyp1 as i32, flags: F_FND, value: 0, node: None },
-    X32Command { command: "/fx/4", format: FxTyp1 as i32, flags: F_FND, value: 0, node: None },
-    X32Command { command: "/fx/4/type", format: E32 as i32, flags: F_XET, value: 0, node: Some(SFX_TYP1) },
-    X32Command { command: "/fx/4/source", format: FxSrc as i32, flags: F_FND, value: 0, node: None },
-    X32Command { command: "/fx/4/source/l", format: E32 as i32, flags: F_XET, value: 0, node: Some(SFX_SRC) },
-    X32Command { command: "/fx/4/source/r", format: E32 as i32, flags: F_XET, value: 0, node: Some(SFX_SRC) },
-    X32Command { command: "/fx/4/par", format: FxPar1 as i32, flags: F_FND, value: 0, node: None },
-    X32Command { command: "/fx/4/par/01", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/4/par/02", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/4/par/03", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/4/par/04", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/4/par/05", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/4/par/06", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/4/par/07", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/4/par/08", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/4/par/09", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/4/par/10", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/4/par/11", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/4/par/12", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/4/par/13", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/4/par/14", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/4/par/15", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/4/par/16", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/4/par/17", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/4/par/18", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/4/par/19", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/4/par/20", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/4/par/21", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/4/par/22", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/4/par/23", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/4/par/24", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/4/par/25", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/4/par/26", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/4/par/27", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/4/par/28", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/4/par/29", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/4/par/30", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/4/par/31", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/4/par/32", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/4/par/33", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/4/par/34", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/4/par/35", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/4/par/36", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/4/par/37", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/4/par/38", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/4/par/39", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/4/par/40", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/4/par/41", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/4/par/42", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/4/par/43", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/4/par/44", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/4/par/45", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/4/par/46", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/4/par/47", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/4/par/48", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/4/par/49", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/4/par/50", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/4/par/51", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/4/par/52", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/4/par/53", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/4/par/54", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/4/par/55", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/4/par/56", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/4/par/57", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/4/par/58", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/4/par/59", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/4/par/60", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/4/par/61", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/4/par/62", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/4/par/63", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/4/par/64", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-];
+    #[test]
+    fn test_set_fx_type1() {
+        let (address, args) = set_fx_type1(1, FxType1::Hall);
+        assert_eq!(address, "/fx/1/type");
+        assert_eq!(args, vec![OscArg::Int(0i32)]);
+    }
 
-#[rustfmt::skip]
-#[allow(dead_code)]
-pub const XFX5: &[X32Command] = &[
-    X32Command { command: "/fx", format: FxTyp2 as i32, flags: F_FND, value: 0, node: None },
-    X32Command { command: "/fx/5", format: FxTyp2 as i32, flags: F_FND, value: 0, node: None },
-    X32Command { command: "/fx/5/type", format: E32 as i32, flags: F_XET, value: 0, node: Some(SFX_TYP2) },
-    X32Command { command: "/fx/5/par", format: FxPar2 as i32, flags: F_FND, value: 0, node: None },
-    X32Command { command: "/fx/5/par/01", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/5/par/02", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/5/par/03", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/5/par/04", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/5/par/05", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/5/par/06", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/5/par/07", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/5/par/08", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/5/par/09", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/5/par/10", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/5/par/11", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/5/par/12", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/5/par/13", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/5/par/14", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/5/par/15", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/5/par/16", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/5/par/17", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/5/par/18", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/5/par/19", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/5/par/20", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/5/par/21", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/5/par/22", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/5/par/23", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/5/par/24", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/5/par/25", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/5/par/26", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/5/par/27", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/5/par/28", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/5/par/29", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/5/par/30", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/5/par/31", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/5/par/32", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/5/par/33", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/5/par/34", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/5/par/35", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/5/par/36", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/5/par/37", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/5/par/38", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/5/par/39", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/5/par/40", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/5/par/41", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/5/par/42", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/5/par/43", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/5/par/44", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/5/par/45", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/5/par/46", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/5/par/47", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/5/par/48", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/5/par/49", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/5/par/50", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/5/par/51", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/5/par/52", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/5/par/53", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/5/par/54", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/5/par/55", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/5/par/56", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/5/par/57", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/5/par/58", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/5/par/59", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/5/par/60", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/5/par/61", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/5/par/62", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/5/par/63", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/5/par/64", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-];
+    #[test]
+    fn test_set_fx_type2() {
+        let (address, args) = set_fx_type2(5, FxType2::Geq2);
+        assert_eq!(address, "/fx/5/type");
+        assert_eq!(args, vec![OscArg::Int(0i32)]);
+    }
 
-#[rustfmt::skip]
-#[allow(dead_code)]
-pub const XFX6: &[X32Command] = &[
-    X32Command { command: "/fx", format: FxTyp2 as i32, flags: F_FND, value: 0, node: None },
-    X32Command { command: "/fx/6", format: FxTyp2 as i32, flags: F_FND, value: 0, node: None },
-    X32Command { command: "/fx/6/type", format: E32 as i32, flags: F_XET, value: 0, node: Some(SFX_TYP2) },
-    X32Command { command: "/fx/6/par", format: FxPar2 as i32, flags: F_FND, value: 0, node: None },
-    X32Command { command: "/fx/6/par/01", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/6/par/02", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/6/par/03", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/6/par/04", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/6/par/05", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/6/par/06", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/6/par/07", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/6/par/08", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/6/par/09", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/6/par/10", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/6/par/11", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/6/par/12", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/6/par/13", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/6/par/14", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/6/par/15", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/6/par/16", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/6/par/17", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/6/par/18", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/6/par/19", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/6/par/20", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/6/par/21", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/6/par/22", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/6/par/23", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/6/par/24", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/6/par/25", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/6/par/26", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/6/par/27", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/6/par/28", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/6/par/29", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/6/par/30", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/6/par/31", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/6/par/32", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/6/par/33", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/6/par/34", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/6/par/35", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/6/par/36", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/6/par/37", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/6/par/38", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/6/par/39", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/6/par/40", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/6/par/41", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/6/par/42", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/6/par/43", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/6/par/44", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/6/par/45", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/6/par/46", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/6/par/47", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/6/par/48", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/6/par/49", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/6/par/50", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/6/par/51", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/6/par/52", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/6/par/53", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/6/par/54", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/6/par/55", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/6/par/56", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/6/par/57", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/6/par/58", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/6/par/59", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/6/par/60", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/6/par/61", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/6/par/62", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/6/par/63", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/6/par/64", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-];
+    #[test]
+    fn test_set_fx_source_left() {
+        let (address, args) = set_fx_source_left(1, FxSource::Off);
+        assert_eq!(address, "/fx/1/source/l");
+        assert_eq!(args, vec![OscArg::Int(0i32)]);
+    }
 
-#[rustfmt::skip]
-#[allow(dead_code)]
-pub const XFX7: &[X32Command] = &[
-    X32Command { command: "/fx", format: FxTyp2 as i32, flags: F_FND, value: 0, node: None },
-    X32Command { command: "/fx/7", format: FxTyp2 as i32, flags: F_FND, value: 0, node: None },
-    X32Command { command: "/fx/7/type", format: E32 as i32, flags: F_XET, value: 0, node: Some(SFX_TYP2) },
-    X32Command { command: "/fx/7/par", format: FxPar2 as i32, flags: F_FND, value: 0, node: None },
-    X32Command { command: "/fx/7/par/01", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/7/par/02", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/7/par/03", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/7/par/04", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/7/par/05", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/7/par/06", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/7/par/07", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/7/par/08", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/7/par/09", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/7/par/10", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/7/par/11", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/7/par/12", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/7/par/13", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/7/par/14", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/7/par/15", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/7/par/16", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/7/par/17", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/7/par/18", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/7/par/19", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/7/par/20", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/7/par/21", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/7/par/22", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/7/par/23", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/7/par/24", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/7/par/25", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/7/par/26", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/7/par/27", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/7/par/28", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/7/par/29", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/7/par/30", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/7/par/31", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/7/par/32", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/7/par/33", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/7/par/34", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/7/par/35", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/7/par/36", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/7/par/37", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/7/par/38", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/7/par/39", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/7/par/40", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/7/par/41", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/7/par/42", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/7/par/43", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/7/par/44", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/7/par/45", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/7/par/46", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/7/par/47", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/7/par/48", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/7/par/49", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/7/par/50", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/7/par/51", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/7/par/52", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/7/par/53", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/7/par/54", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/7/par/55", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/7/par/56", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/7/par/57", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/7/par/58", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/7/par/59", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/7/par/60", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/7/par/61", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/7/par/62", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/7/par/63", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/7/par/64", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-];
+    #[test]
+    fn test_set_fx_source_right() {
+        let (address, args) = set_fx_source_right(1, FxSource::MixBus(1));
+        assert_eq!(address, "/fx/1/source/r");
+        assert_eq!(args, vec![OscArg::Int(1i32)]);
+    }
 
-#[rustfmt::skip]
-#[allow(dead_code)]
-pub const XFX8: &[X32Command] = &[
-    X32Command { command: "/fx", format: FxTyp2 as i32, flags: F_FND, value: 0, node: None },
-    X32Command { command: "/fx/8", format: FxTyp2 as i32, flags: F_FND, value: 0, node: None },
-    X32Command { command: "/fx/8/type", format: E32 as i32, flags: F_XET, value: 0, node: Some(SFX_TYP2) },
-    X32Command { command: "/fx/8/par", format: FxPar2 as i32, flags: F_FND, value: 0, node: None },
-    X32Command { command: "/fx/8/par/01", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/8/par/02", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/8/par/03", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/8/par/04", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/8/par/05", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/8/par/06", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/8/par/07", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/8/par/08", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/8/par/09", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/8/par/10", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/8/par/11", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/8/par/12", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/8/par/13", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/8/par/14", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/8/par/15", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/8/par/16", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/8/par/17", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/8/par/18", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/8/par/19", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/8/par/20", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/8/par/21", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/8/par/22", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/8/par/23", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/8/par/24", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/8/par/25", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/8/par/26", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/8/par/27", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/8/par/28", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/8/par/29", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/8/par/30", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/8/par/31", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/8/par/32", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/8/par/33", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/8/par/34", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/8/par/35", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/8/par/36", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/8/par/37", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/8/par/38", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/8/par/39", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/8/par/40", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/8/par/41", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/8/par/42", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/8/par/43", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/8/par/44", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/8/par/45", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/8/par/46", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/8/par/47", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/8/par/48", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/8/par/49", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/8/par/50", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/8/par/51", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/8/par/52", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/8/par/53", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/8/par/54", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/8/par/55", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/8/par/56", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/8/par/57", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/8/par/58", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/8/par/59", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/8/par/60", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/8/par/61", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/8/par/62", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/8/par/63", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-    X32Command { command: "/fx/8/par/64", format: Fx32 as i32, flags: F_XET, value: 0, node: None },
-];
-
-pub const XFX_SET: [&[X32Command]; 8] = [
-    &XFX1, &XFX2, &XFX3, &XFX4, &XFX5, &XFX6, &XFX7, &XFX8,
-];
+    #[test]
+    fn test_set_fx_param() {
+        let (address, args) = set_fx_param(1, 1, 0.5);
+        assert_eq!(address, "/fx/1/par/01");
+        assert_eq!(args, vec![OscArg::Float(0.5f32)]);
+    }
+}
