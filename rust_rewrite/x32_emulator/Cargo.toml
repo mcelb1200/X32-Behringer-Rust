@@ -6,4 +6,5 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.82"
 clap = { version = "4.5.4", features = ["derive"] }
+ctrlc = "3.4.4"
 x32_core = { path = "../x32_core" }
