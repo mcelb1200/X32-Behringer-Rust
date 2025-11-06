@@ -2,6 +2,9 @@
 //! It provides common functionality for creating sockets, sending and receiving OSC messages,
 //! and handling X32-specific errors.
 
+#[cfg(test)]
+mod tests;
+
 pub mod dca;
 pub mod fx;
 
@@ -81,10 +84,22 @@ pub type Result<T> = std::result::Result<T, X32Error>;
 /// * `ip` - The IP address of the X32 console.
 /// * `timeout_ms` - The read timeout in milliseconds.
 pub fn create_socket(ip: &str, timeout_ms: u64) -> Result<UdpSocket> {
-    let socket = UdpSocket::bind("0.0.0.0:0")?;
+    let x32_addr: SocketAddr = match ip.parse() {
+        Ok(addr) => addr,
+        Err(_) => {
+            let ip_addr: std::net::IpAddr = ip.parse()?;
+            std::net::SocketAddr::new(ip_addr, 10023)
+        }
+    };
+
+    let socket = if x32_addr.is_ipv4() {
+        UdpSocket::bind("0.0.0.0:0")?
+    } else {
+        UdpSocket::bind("[::]:0")?
+    };
+
     socket.set_read_timeout(Some(Duration::from_millis(timeout_ms)))?;
 
-    let x32_addr: SocketAddr = ip.parse().unwrap_or_else(|_| format!("{}:10023", ip).parse().unwrap());
     socket.connect(x32_addr)?;
 
     Ok(socket)

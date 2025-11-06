@@ -44,7 +44,7 @@ fn test_message_to_string() {
         args: vec![OscArg::Float(0.75)],
     };
     let s = message.to_string();
-    assert_eq!(s, "/ch/01/mix/fader ,f 0.75");
+    assert_eq!(s, "/ch/01/mix/fader,f 0.75");
 }
 
 #[test]
@@ -55,6 +55,32 @@ fn test_message_from_str_with_quoted_string() {
     assert_eq!(message.args.len(), 1);
     match &message.args[0] {
         OscArg::String(s) => assert_eq!(s, "My Fader"),
+        _ => panic!("Incorrect argument type"),
+    }
+}
+
+#[test]
+fn test_message_to_string_format() {
+    let message = OscMessage {
+        path: "/ch/01/mix/fader".to_string(),
+        args: vec![OscArg::Float(0.75)],
+    };
+    let s = message.to_string();
+    assert_eq!(s, "/ch/01/mix/fader,f 0.75");
+}
+
+#[test]
+fn test_tokenize_quoted_string_with_no_space_after() {
+    let s = "/cmd ,ss \"hello\"no-space";
+    let message = OscMessage::from_str(s).unwrap();
+    assert_eq!(message.path, "/cmd");
+    assert_eq!(message.args.len(), 2);
+    match &message.args[0] {
+        OscArg::String(s) => assert_eq!(s, "hello"),
+        _ => panic!("Incorrect argument type"),
+    }
+    match &message.args[1] {
+        OscArg::String(s) => assert_eq!(s, "no-space"),
         _ => panic!("Incorrect argument type"),
     }
 }

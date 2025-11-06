@@ -200,6 +200,9 @@ impl OscMessage {
                     _ => return Err(OscError::UnsupportedTypeTag(tag)),
                 }
             }
+            if it.next().is_some() {
+                return Err(OscError::ParseError("Extra arguments at end of command string".to_string()));
+            }
         }
 
         Ok(OscMessage { path, args })
@@ -209,7 +212,7 @@ impl OscMessage {
     pub fn to_string(&self) -> String {
         let mut s = self.path.clone();
         if !self.args.is_empty() {
-            s.push_str(" ,");
+            s.push(',');
             for arg in &self.args {
                 match arg {
                     OscArg::Int(_) => s.push('i'),
@@ -240,6 +243,11 @@ fn tokenize(s: &str) -> Result<Vec<String>> {
     for c in s.chars() {
         match c {
             '"' => {
+                if in_quote {
+                    // Closing quote
+                    tokens.push(current_token);
+                    current_token = String::new();
+                }
                 in_quote = !in_quote;
             }
             ' ' if !in_quote => {
