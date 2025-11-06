@@ -159,7 +159,7 @@ impl OscMessage {
     pub fn to_string(&self) -> String {
         let mut s = self.path.clone();
         if !self.args.is_empty() {
-            s.push_str(" ,");
+            s.push(',');
             for arg in &self.args {
                 match arg {
                     OscArg::Int(_) => s.push('i'),
