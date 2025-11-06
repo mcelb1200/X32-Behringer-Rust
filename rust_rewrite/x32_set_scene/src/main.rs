@@ -3,7 +3,7 @@ use clap::Parser;
 use std::io::{self, BufRead, Write};
 use std::thread;
 use std::time::Duration;
-use x32_lib::{create_socket, Result};
+use x32_lib::{create_socket, error::Result};
 use osc_lib::OscMessage;
 
 #[derive(Parser, Debug)]
