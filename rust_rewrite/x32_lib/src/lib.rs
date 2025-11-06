@@ -73,8 +73,9 @@ pub mod cfg_main;
 
 use std::net::{SocketAddr, UdpSocket};
 use std::time::Duration;
-use crate::error::Result;
-use osc_lib::{OscMessage, OscArg, OscError};
+pub use crate::error::{Result, X32Error};
+pub use osc_lib::{OscMessage, OscArg};
+use osc_lib::OscError;
 
 /// Creates a UDP socket and connects to the X32/M32 console.
 ///
@@ -82,9 +83,9 @@ use osc_lib::{OscMessage, OscArg, OscError};
 ///
 /// * `ip` - The IP address of the console.
 /// * `timeout` - The read timeout for the socket in milliseconds.
-pub fn create_socket(ip: &str, timeout: u64) -> Result<UdpSocket> {
-    let remote_addr: SocketAddr = format!("{}:10023", ip).parse()?;
-    let local_addr: SocketAddr = format!("{}:10024", ip).parse()?;
+pub fn create_socket(ip: &str, local_port: u16, remote_port: u16, timeout: u64) -> Result<UdpSocket> {
+    let remote_addr: SocketAddr = format!("{}:{}", ip, remote_port).parse()?;
+    let local_addr: SocketAddr = format!("{}:{}", ip, local_port).parse()?;
 
     let socket = UdpSocket::bind(local_addr)?;
     socket.connect(remote_addr)?;

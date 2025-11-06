@@ -1,8 +1,6 @@
 use anyhow::Result;
 use clap::Parser;
-use std::net::{SocketAddr, UdpSocket};
-
-use x32_core::Mixer;
+use x32_emulator::run;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -16,25 +14,15 @@ struct Cli {
     port: u16,
 }
 
+use x32_core::Mixer;
 fn main() -> Result<()> {
     let cli = Cli::parse();
-    let addr: SocketAddr = format!("{}:{}", cli.ip, cli.port).parse()?;
-    let socket = UdpSocket::bind(&addr)?;
     let mixer = Mixer::new();
-
+    let addr = run(mixer, cli.ip, cli.port)?;
     println!("X32 Emulator listening on {}", addr);
 
-    let mut buf = [0; 8192];
+    // Keep the main thread alive
     loop {
-        let (len, remote_addr) = socket.recv_from(&mut buf)?;
-        match mixer.dispatch(&buf[..len]) {
-            Ok(Some(response)) => {
-                socket.send_to(&response, remote_addr)?;
-            }
-            Ok(None) => {}
-            Err(e) => {
-                eprintln!("Error handling message: {}", e);
-            }
-        }
+        std::thread::sleep(std::time::Duration::from_secs(1));
     }
 }

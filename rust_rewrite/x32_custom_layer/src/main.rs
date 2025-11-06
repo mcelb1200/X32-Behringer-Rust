@@ -166,10 +166,10 @@ fn parse_assignments(assignments_str: &[String]) -> Result<Vec<Assignment>> {
     for a in assignments_str {
         let parts: Vec<&str> = a.split('=').collect();
         if parts.len() != 2 {
-            return Err(X32Error::Custom(format!("Invalid assignment format: {}", a)));
+            return Err(X32Error::String(format!("Invalid assignment format: {}", a)));
         }
-        let dest = parts[0].parse::<u8>().map_err(|_| X32Error::Custom(format!("Invalid destination channel: {}", parts[0])))?;
-        let src = parts[1].parse::<u8>().map_err(|_| X32Error::Custom(format!("Invalid source channel: {}", parts[1])))?;
+        let dest = parts[0].parse::<u8>().map_err(|_| X32Error::String(format!("Invalid destination channel: {}", parts[0])))?;
+        let src = parts[1].parse::<u8>().map_err(|_| X32Error::String(format!("Invalid source channel: {}", parts[1])))?;
         assignments.push(Assignment { dest, src });
     }
     Ok(assignments)
@@ -272,12 +272,12 @@ fn handle_save_command(ip: &str, file_path: &str) -> Result<()> {
 
 fn format_node_state(args: &[OscArg]) -> Result<String> {
     if args.is_empty() {
-        return Err(X32Error::Custom("Empty node response".to_string()));
+        return Err(X32Error::String("Empty node response".to_string()));
     }
     let mut s = if let OscArg::String(p) = &args[0] {
         p.clone()
     } else {
-        return Err(X32Error::Custom("Node response path is not a string".to_string()));
+        return Err(X32Error::String("Node response path is not a string".to_string()));
     };
 
     for arg in &args[1..] {
@@ -324,7 +324,7 @@ fn get_node_state(socket: &UdpSocket, node: &str) -> Result<String> {
         }
     }
 
-    Err(X32Error::Custom(format!("Timeout waiting for response for node {}", node)))
+    Err(X32Error::String(format!("Timeout waiting for response for node {}", node)))
 }
 
 fn handle_restore_command(ip: &str, file_path: &str) -> Result<()> {
@@ -367,7 +367,7 @@ fn handle_reset_command(ip: &str, channels_str: &str) -> Result<()> {
                 socket.send(&msg.to_bytes()?)?;
             }
         } else {
-            return Err(X32Error::Custom(format!("Invalid channel number: {}", channel)));
+            return Err(X32Error::String(format!("Invalid channel number: {}", channel)));
         }
     }
 
@@ -379,16 +379,16 @@ fn parse_channel_range(range_str: &str) -> Result<Vec<u8>> {
     let mut channels = Vec::new();
     for part in range_str.split(',') {
         if let Some(range) = part.split_once('-') {
-            let start = range.0.trim().parse::<u8>().map_err(|_| X32Error::Custom("Invalid channel range format".to_string()))?;
-            let end = range.1.trim().parse::<u8>().map_err(|_| X32Error::Custom("Invalid channel range format".to_string()))?;
+            let start = range.0.trim().parse::<u8>().map_err(|_| X32Error::String("Invalid channel range format".to_string()))?;
+            let end = range.1.trim().parse::<u8>().map_err(|_| X32Error::String("Invalid channel range format".to_string()))?;
             if start > end {
-                return Err(X32Error::Custom("Invalid channel range: start > end".to_string()));
+                return Err(X32Error::String("Invalid channel range: start > end".to_string()));
             }
             for i in start..=end {
                 channels.push(i);
             }
         } else {
-            let channel = part.trim().parse::<u8>().map_err(|_| X32Error::Custom("Invalid channel format".to_string()))?;
+            let channel = part.trim().parse::<u8>().map_err(|_| X32Error::String("Invalid channel format".to_string()))?;
             channels.push(channel);
         }
     }
@@ -428,7 +428,7 @@ fn get_source_name(socket: &UdpSocket, channel: u8) -> Result<String> {
     } else if channel >= 33 && channel <= 40 {
         (format!("/auxin/{:02}/config/source", channel - 32), format!("/auxin/{:02}/config/source", channel - 32))
     } else {
-        return Err(X32Error::Custom(format!("Invalid channel number: {}", channel)));
+        return Err(X32Error::String(format!("Invalid channel number: {}", channel)));
     };
 
     let msg = OscMessage::new(path, vec![]);
@@ -453,7 +453,7 @@ fn get_source_name(socket: &UdpSocket, channel: u8) -> Result<String> {
         }
     }
 
-    Err(X32Error::Custom(format!("Timeout waiting for response for channel source {}", channel)))
+    Err(X32Error::String(format!("Timeout waiting for response for channel source {}", channel)))
 }
 
 fn map_source_id_to_name(id: i32) -> &'static str {

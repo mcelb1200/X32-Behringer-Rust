@@ -345,6 +345,7 @@ pub struct X32Header {
 
 pub struct Mixer {
     handlers: HashMap<[u8; 4], CommandHandler>,
+    data: HashMap<String, OscArg>,
 }
 
 impl Mixer {
@@ -365,10 +366,46 @@ impl Mixer {
             handlers.insert(header.command_prefix, header.handler);
         }
 
-        Self { handlers }
+        Self { handlers, data: HashMap::new() }
+    }
+
+    pub fn seed(&mut self, path: String, value: OscArg) {
+        self.data.insert(path, value);
     }
 
     pub fn dispatch(&self, msg: &[u8]) -> Result<Option<Vec<u8>>, Box<dyn Error>> {
+        if let Ok(s) = std::str::from_utf8(msg) {
+            if let Some(value) = self.data.get(s.trim_end_matches('\0')) {
+                let response = OscMessage {
+                    path: s.trim_end_matches('\0').to_string(),
+                    args: vec![value.clone()],
+                };
+                return Ok(Some(response.to_bytes()?));
+            }
+        }
+
+        if let Ok(osc_message) = OscMessage::from_bytes(msg) {
+            if osc_message.path == "/node" {
+                if let OscArg::String(s) = &osc_message.args[0] {
+                    if let Some(value) = self.data.get(s) {
+                        let response = OscMessage {
+                            path: "/node".to_string(),
+                            args: vec![value.clone()],
+                        };
+                        return Ok(Some(response.to_bytes()?));
+                    }
+                }
+            }
+
+            if let Some(value) = self.data.get(&osc_message.path) {
+                let response = OscMessage {
+                    path: osc_message.path,
+                    args: vec![value.clone()],
+                };
+                return Ok(Some(response.to_bytes()?));
+            }
+        }
+
         if msg.len() < 4 {
             return Err("Invalid message format".into());
         }
