@@ -83,8 +83,19 @@ use osc_lib::{OscMessage, OscArg, OscError};
 /// * `ip` - The IP address of the console.
 /// * `timeout` - The read timeout for the socket in milliseconds.
 pub fn create_socket(ip: &str, timeout: u64) -> Result<UdpSocket> {
-    let remote_addr: SocketAddr = format!("{}:10023", ip).parse()?;
-    let local_addr: SocketAddr = format!("{}:10024", ip).parse()?;
+    let remote_addr_str = if ip.contains(':') {
+        ip.to_string()
+    } else {
+        format!("{}:10023", ip)
+    };
+    let remote_addr: SocketAddr = remote_addr_str.parse()?;
+
+    // Bind to a local address based on the family of the remote address.
+    let local_addr: SocketAddr = if remote_addr.is_ipv4() {
+        "0.0.0.0:0".parse().unwrap()
+    } else {
+        "[::]:0".parse().unwrap()
+    };
 
     let socket = UdpSocket::bind(local_addr)?;
     socket.connect(remote_addr)?;
