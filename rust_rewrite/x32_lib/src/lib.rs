@@ -71,7 +71,7 @@ pub mod show;
 pub mod cfg_main;
 
 
-use std::net::{SocketAddr, UdpSocket};
+use std::net::{ToSocketAddrs, SocketAddr, UdpSocket};
 use std::time::Duration;
 use crate::error::Result;
 use osc_lib::{OscMessage, OscArg, OscError};
@@ -80,11 +80,21 @@ use osc_lib::{OscMessage, OscArg, OscError};
 ///
 /// # Arguments
 ///
-/// * `ip` - The IP address of the console.
+/// * `ip` - The IP address of the console, with or without a port.
 /// * `timeout` - The read timeout for the socket in milliseconds.
 pub fn create_socket(ip: &str, timeout: u64) -> Result<UdpSocket> {
-    let remote_addr: SocketAddr = format!("{}:10023", ip).parse()?;
-    let local_addr: SocketAddr = format!("{}:10024", ip).parse()?;
+    let full_addr = if ip.contains(':') {
+        ip.to_string()
+    } else {
+        format!("{}:10023", ip)
+    };
+    let remote_addr: SocketAddr = full_addr.to_socket_addrs()?.next().unwrap();
+
+    let local_addr: SocketAddr = if remote_addr.is_ipv4() {
+        "0.0.0.0:0".parse().unwrap()
+    } else {
+        "[::]:0".parse().unwrap()
+    };
 
     let socket = UdpSocket::bind(local_addr)?;
     socket.connect(remote_addr)?;
