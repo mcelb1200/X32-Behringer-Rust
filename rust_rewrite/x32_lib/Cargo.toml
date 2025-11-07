@@ -23,3 +23,6 @@ show = []
 misc = []
 prefstat = []
 libs = []
+
+[dev-dependencies]
+x32_emulator = { path = "../x32_emulator" }

@@ -7,3 +7,9 @@ edition = "2021"
 anyhow = "1.0.82"
 clap = { version = "4.5.4", features = ["derive"] }
 x32_core = { path = "../x32_core" }
+osc_lib = { path = "../osc_lib" }
+x32_lib = { path = "../x32_lib" }
+
+[lib]
+name = "x32_emulator"
+path = "src/lib.rs"
