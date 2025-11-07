@@ -1,4 +1,4 @@
-use std::net::UdpSocket;
+use std::net::{SocketAddr, UdpSocket};
 use std::thread;
 use std::time::Duration;
 use std::fs::File;
@@ -7,8 +7,9 @@ use assert_cmd::Command;
 use predicates::prelude::*;
 use osc_lib::OscMessage;
 
-fn setup_mock_x32_server() -> UdpSocket {
-    let socket = UdpSocket::bind("127.0.0.1:10024").expect("couldn't bind to address");
+fn setup_mock_x32_server() -> (UdpSocket, SocketAddr) {
+    let socket = UdpSocket::bind("127.0.0.1:0").expect("couldn't bind to address");
+    let server_addr = socket.local_addr().unwrap();
     socket.set_read_timeout(Some(Duration::from_millis(100))).unwrap();
     let server_socket = socket.try_clone().unwrap();
     thread::spawn(move || {
@@ -28,12 +29,12 @@ fn setup_mock_x32_server() -> UdpSocket {
     });
     // Give the server a moment to start up
     thread::sleep(Duration::from_millis(100));
-    socket
+    (socket, server_addr)
 }
 
 #[test]
 fn test_desk_restore_command() {
-    let _socket = setup_mock_x32_server();
+    let (_socket, server_addr) = setup_mock_x32_server();
 
     // Create a mock data file
     let mut file = File::create("test_restore.txt").unwrap();
@@ -42,11 +43,11 @@ fn test_desk_restore_command() {
     writeln!(file, "/-prefs/remote ,s \"HUI\"").unwrap();
 
     let mut cmd = Command::cargo_bin("x32_desk_restore").unwrap();
-    cmd.args(&["--ip", "127.0.0.1", "test_restore.txt"]);
+    cmd.args(&["--ip", &server_addr.to_string(), "test_restore.txt"]);
 
     cmd.assert()
         .success()
-        .stdout(predicate::str::contains("Successfully connected to X32 at 127.0.0.1"))
+        .stdout(predicate::str::contains(&format!("Successfully connected to X32 at {}", server_addr)))
         .stdout(predicate::str::contains("Successfully restored data from test_restore.txt"));
 
     // Clean up the files

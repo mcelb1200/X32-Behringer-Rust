@@ -57,7 +57,7 @@ fn get_desk_data(socket: &UdpSocket, commands: &[String]) -> Result<Vec<String>,
     let mut buf = [0; 512];
 
     for cmd in commands {
-        let msg = OscMessage::new("/node".to_string(), vec![OscArg::String(",s".to_string()), OscArg::String(cmd.to_string())]);
+        let msg = OscMessage::new("/node".to_string(), vec![OscArg::String(cmd.to_string())]);
         socket.send(&msg.to_bytes()?)?;
         let len = socket.recv(&mut buf)?;
         let response = OscMessage::from_bytes(&buf[..len])?;
@@ -102,7 +102,7 @@ fn main() -> Result<(), X32Error> {
         return Ok(());
     }
 
-    let socket = create_socket(&args.ip, 2000)?;
+    let socket = create_socket(&args.ip, 0, 10023, 2000)?;
     println!("Successfully connected to X32 at {}", &args.ip);
 
     let data = get_desk_data(&socket, &commands)?;

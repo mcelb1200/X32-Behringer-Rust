@@ -50,7 +50,7 @@ fn main() -> Result<()> {
     let args = Args::parse();
     println!("Connecting to X32 at {}...", args.ip);
 
-    let socket = create_socket(&args.ip, 1000)?;
+    let socket = create_socket(&args.ip, 0, 10023, 1000)?;
     socket.set_nonblocking(true)?;
 
     run_automix(args, socket)

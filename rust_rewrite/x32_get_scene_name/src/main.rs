@@ -37,7 +37,7 @@ fn main() -> Result<(), X32Error> {
         println!("Connecting to X32 at {}...", &args.ip);
     }
 
-    let socket = create_socket(&args.ip, 500)?;
+    let socket = create_socket(&args.ip, 10024, 10023, 500)?;
     socket.set_read_timeout(Some(Duration::from_millis(10)))?;
 
     let info_msg = OscMessage::new("/info".to_string(), vec![]);

@@ -1,6 +1,7 @@
+
 use anyhow::Result;
 use clap::Parser;
-use x32_emulator::run;
+use x32_emulator::X32Emulator;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -14,12 +15,12 @@ struct Cli {
     port: u16,
 }
 
-use x32_core::Mixer;
 fn main() -> Result<()> {
-    let cli = Cli::parse();
-    let mixer = Mixer::new();
-    let addr = run(mixer, cli.ip, cli.port)?;
-    println!("X32 Emulator listening on {}", addr);
+    let _cli = Cli::parse();
+    let mut emulator = X32Emulator::new();
+    emulator.start();
+    println!("X32 Emulator listening on {}", emulator.local_addr());
+
 
     // Keep the main thread alive
     loop {

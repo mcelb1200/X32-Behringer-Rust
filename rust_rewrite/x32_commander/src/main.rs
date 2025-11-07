@@ -86,7 +86,7 @@ fn run(args: Args) -> Result<(), X32Error> {
     println!("Successfully parsed {} commands.", commands.len());
 
     println!("Connecting to X32 at {}...", args.ip);
-    let x32_socket = create_socket(&args.ip, 100)?;
+    let x32_socket = create_socket(&args.ip, 10024, 10023, 100)?;
 
     let out_socket = if let Some(ref output_addr) = args.output {
         let socket = UdpSocket::bind("0.0.0.0:0")?;

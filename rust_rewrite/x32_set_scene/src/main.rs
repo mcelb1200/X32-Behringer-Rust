@@ -20,7 +20,7 @@ struct Args {
 
 fn main() -> Result<()> {
     let args = Args::parse();
-    let socket = create_socket(&args.ip, 100)?;
+    let socket = create_socket(&args.ip, 10024, 10023, 100)?;
 
     let stdin = io::stdin();
     for line in stdin.lock().lines() {

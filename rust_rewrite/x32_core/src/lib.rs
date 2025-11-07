@@ -334,48 +334,37 @@ pub struct X32Command {
     pub node: Option<Vec<&'static str>>,
 }
 
-// Represents a handler function for a command prefix.
-pub type CommandHandler = fn(&[u8]) -> Result<Option<Vec<u8>>, Box<dyn Error>>;
-
-// Represents the `X32header` struct from X32.c
-pub struct X32Header {
-    pub command_prefix: [u8; 4],
-    pub handler: CommandHandler,
-}
-
 pub struct Mixer {
-    handlers: HashMap<[u8; 4], CommandHandler>,
-    data: HashMap<String, OscArg>,
+    data: HashMap<String, Vec<OscArg>>,
 }
 
 impl Mixer {
     pub fn new() -> Self {
-        let mut handlers = HashMap::new();
-        let headers = vec![
-            X32Header {
-                command_prefix: *b"/inf",
-                handler: handle_info,
-            },
-            X32Header {
-                command_prefix: *b"/sta",
-                handler: handle_status,
-            },
-        ];
-
-        for header in headers {
-            handlers.insert(header.command_prefix, header.handler);
+        Self {
+            data: HashMap::new(),
         }
-
-        Self { handlers, data: HashMap::new() }
     }
 
-    pub fn seed(&mut self, path: String, value: OscArg) {
-        self.data.insert(path, value);
+    pub fn seed(&mut self, data: Vec<(&str, Vec<OscArg>)>) {
+        for (path, args) in data {
+            self.data.insert(path.to_string(), args);
+        }
     }
-
 
     pub fn dispatch(&mut self, msg: &[u8]) -> Result<Option<Vec<u8>>, Box<dyn Error>> {
         if let Ok(osc_message) = OscMessage::from_bytes(msg) {
+            if osc_message.path == "/info" {
+                let response = OscMessage {
+                    path: "/info".to_string(),
+                    args: vec![
+                        OscArg::String("V2.07".to_string()),
+                        OscArg::String("X32 Emulator".to_string()),
+                        OscArg::String("X32".to_string()),
+                        OscArg::String("4.06".to_string()),
+                    ],
+                };
+                return Ok(Some(response.to_bytes()?));
+            }
             if osc_message.path == "/load" {
                 let response = OscMessage {
                     path: "/load".to_string(),
@@ -386,71 +375,36 @@ impl Mixer {
 
             if osc_message.path == "/node" {
                 if let OscArg::String(s) = &osc_message.args[0] {
-                    if let Some(value) = self.data.get(s) {
-                        let mut args: Vec<OscArg> = vec![];
-                        let string_value = match value {
-                            OscArg::String(s) => s,
-                            _ => "",
-                        };
-                        args.push(OscArg::String(s.to_string()));
-                        for item in string_value.split(" ") {
-                            if item.starts_with("\"") {
-                                args.push(OscArg::String(item.replace("\"", "")));
-                            } else if let Ok(i) = item.parse::<i32>() {
-                                args.push(OscArg::Int(i));
-                            } else if let Ok(f) = item.parse::<f32>() {
-                                args.push(OscArg::Float(f));
-                            }
+                    if let Some(values) = self.data.get(s) {
+                        let mut response_args = vec![OscArg::String(s.to_string())];
+                        for value in values {
+                            response_args.push(value.clone());
                         }
 
                         let response = OscMessage {
                             path: "/node".to_string(),
-                            args,
+                            args: response_args,
                         };
                         return Ok(Some(response.to_bytes()?));
                     }
                 }
             }
 
-            if let Some(value) = self.data.get(&osc_message.path) {
+            if let Some(values) = self.data.get(&osc_message.path) {
                 let response = OscMessage {
                     path: osc_message.path,
-                    args: vec![value.clone()],
+                    args: values.clone(),
                 };
                 return Ok(Some(response.to_bytes()?));
             }
         }
 
-        if msg.len() < 4 {
-            return Err("Invalid message format".into());
-        }
-        let prefix: [u8; 4] = msg[0..4].try_into()?;
-        if let Some(handler) = self.handlers.get(&prefix) {
-            handler(msg)
-        } else {
-            println!("No handler for prefix: {:?}", std::str::from_utf8(&prefix));
-            Ok(None)
-        }
+        println!(
+            "No handler for message: {:?}",
+            String::from_utf8_lossy(msg)
+        );
+        Ok(None)
     }
-}
-
-// Placeholder handler functions
-fn handle_info(_msg: &[u8]) -> Result<Option<Vec<u8>>, Box<dyn Error>> {
-    let response = OscMessage {
-        path: "/info".to_string(),
-        args: vec![
-            OscArg::String("V2.07".to_string()),
-            OscArg::String("X32 Emulator".to_string()),
-            OscArg::String("X32".to_string()),
-            OscArg::String("4.06".to_string()),
-        ],
-    };
-    Ok(Some(response.to_string().into_bytes()))
-}
-
-fn handle_status(_msg: &[u8]) -> Result<Option<Vec<u8>>, Box<dyn Error>> {
-    println!("Handling /status command");
-    Ok(None)
 }
 
 #[cfg(test)]
@@ -459,13 +413,22 @@ mod tests {
 
     #[test]
     fn test_dispatch() {
-        let mixer = Mixer::new();
-        let info_msg = b"/info\0\0\0,s\0\0";
-        let status_msg = b"/status\0\0\0,s\0\0";
-        let unknown_msg = b"/xxxx\0\0\0,s\0\0";
+        let mut mixer = Mixer::new();
+        let info_msg = OscMessage {
+            path: "/info".to_string(),
+            args: vec![],
+        }
+        .to_bytes()
+        .unwrap();
 
-        assert!(mixer.dispatch(info_msg).unwrap().is_some());
-        assert!(mixer.dispatch(status_msg).unwrap().is_none());
-        assert!(mixer.dispatch(unknown_msg).unwrap().is_none());
+        let unknown_msg = OscMessage {
+            path: "/xxxx".to_string(),
+            args: vec![],
+        }
+        .to_bytes()
+        .unwrap();
+
+        assert!(mixer.dispatch(&info_msg).unwrap().is_some());
+        assert!(mixer.dispatch(&unknown_msg).unwrap().is_none());
     }
 }

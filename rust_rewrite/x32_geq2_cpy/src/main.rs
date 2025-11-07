@@ -56,7 +56,7 @@ fn main() -> Result<()> {
         println!("Arguments: {:?}", args);
     }
 
-    let socket = create_socket(&args.ip, 1000)?;
+    let socket = create_socket(&args.ip, 10024, 10023, 1000)?;
     if args.verbose {
         println!("Connected to X32 at {}", args.ip);
     }

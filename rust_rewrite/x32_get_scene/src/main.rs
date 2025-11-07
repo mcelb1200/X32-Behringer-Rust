@@ -22,7 +22,7 @@ struct Args {
 
 fn main() -> Result<()> {
     let args = Args::parse();
-    let socket = create_socket(&args.ip, 100)?;
+    let socket = create_socket(&args.ip, 10024, 10023, 100)?;
 
     let scene_name = match args.scene_name {
         Some(name) => name,

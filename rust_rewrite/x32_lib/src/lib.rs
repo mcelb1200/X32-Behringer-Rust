@@ -84,8 +84,16 @@ use osc_lib::OscError;
 /// * `ip` - The IP address of the console.
 /// * `timeout` - The read timeout for the socket in milliseconds.
 pub fn create_socket(ip: &str, local_port: u16, remote_port: u16, timeout: u64) -> Result<UdpSocket> {
-    let remote_addr: SocketAddr = format!("{}:{}", ip, remote_port).parse()?;
-    let local_addr: SocketAddr = format!("{}:{}", ip, local_port).parse()?;
+    let remote_addr: SocketAddr = match ip.parse() {
+        Ok(addr) => addr,
+        Err(_) => format!("{}:{}", ip, remote_port).parse()?,
+    };
+
+    let local_addr: SocketAddr = if remote_addr.is_ipv4() {
+        format!("0.0.0.0:{}", local_port).parse()?
+    } else {
+        format!("[::]:{}", local_port).parse()?
+    };
 
     let socket = UdpSocket::bind(local_addr)?;
     socket.connect(remote_addr)?;

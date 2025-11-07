@@ -110,7 +110,7 @@ fn main() -> Result<()> {
 
     // Ensure we have an IP address before proceeding.
     if let Some(ip) = &config.ip {
-        let socket = create_socket(ip, 1000)?;
+        let socket = create_socket(ip, 10024, 10023, 1000)?;
         if args.verbose {
             println!("Connected to X32 at {}", ip);
         }

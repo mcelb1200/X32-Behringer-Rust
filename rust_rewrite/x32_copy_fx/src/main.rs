@@ -68,7 +68,7 @@ fn main() -> Result<(), X32Error> {
         return Err(X32Error::from("Destination FX slot must be between 1 and 8.".to_string()));
     }
 
-    let socket = create_socket(&args.ip, 200)?;
+    let socket = create_socket(&args.ip, 10024, 10023, 200)?;
 
     match args.action {
         Action::Reset => reset_fx(&socket, args.from, args.defaults_file),

@@ -88,7 +88,7 @@ fn main() -> Result<()> {
         return Ok(());
     }
 
-    let socket = create_socket(&args.ip, 2000)?;
+    let socket = create_socket(&args.ip, 10024, 10023, 2000)?;
     println!("Successfully connected to X32 at {}", args.ip);
 
     send_commands(&socket, &commands)?;
