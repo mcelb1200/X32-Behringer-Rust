@@ -6,6 +6,7 @@
 
 use crate::common::{FxSource, CommandFlags, CommandFormat, CommandValue, X32Command};
 use osc_lib::OscArg;
+use lazy_static::lazy_static;
 
 /// Represents the types of effects available in FX slots 1-4.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -300,17 +301,27 @@ pub const SFX_SRC: &[&str] = &[
     " MIX10", " MIX11", " MIX12", " MIX13", " MIX14", " MIX15", " MIX16", " M/C",
 ];
 
-#[rustfmt::skip]
-#[allow(dead_code)]
-pub const XFX1: &[X32Command] = &[
-    X32Command { command: "/fx".to_string(), format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None },
-    X32Command { command: "/fx/1".to_string(), format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None },
-    X32Command { command: "/fx/1/type".to_string(), format: CommandFormat::StringList(&SFX_TYP1), flags: CommandFlags::F_XET, value: CommandValue::None },
-    X32Command { command: "/fx/1/source".to_string(), format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None },
-    X32Command { command: "/fx/1/source/l".to_string(), format: CommandFormat::StringList(&SFX_SRC), flags: CommandFlags::F_XET, value: CommandValue::None },
-    X32Command { command: "/fx/1/source/r".to_string(), format: CommandFormat::StringList(&SFX_SRC), flags: CommandFlags::F_XET, value: CommandValue::None },
-    X32Command { command: "/fx/1/par".to_string(), format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None },
-];
+lazy_static! {
+    pub static ref XFX1: Vec<X32Command> = {
+        let mut commands = Vec::new();
+        commands.push(X32Command { command: "/fx".to_string(), format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None });
+        for i in 1..=8 {
+            let base = format!("/fx/{}", i);
+            commands.push(X32Command { command: base.clone(), format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None });
+            if i <= 4 {
+                commands.push(X32Command { command: format!("{}/type", base), format: CommandFormat::StringList(&SFX_TYP1), flags: CommandFlags::F_XET, value: CommandValue::None });
+            } else {
+                commands.push(X32Command { command: format!("{}/type", base), format: CommandFormat::StringList(&SFX_TYP2), flags: CommandFlags::F_XET, value: CommandValue::None });
+            }
+            let source_base = format!("{}/source", base);
+            commands.push(X32Command { command: source_base.clone(), format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None });
+            commands.push(X32Command { command: format!("{}/l", source_base), format: CommandFormat::StringList(&SFX_SRC), flags: CommandFlags::F_XET, value: CommandValue::None });
+            commands.push(X32Command { command: format!("{}/r", source_base), format: CommandFormat::StringList(&SFX_SRC), flags: CommandFlags::F_XET, value: CommandValue::None });
+            commands.push(X32Command { command: format!("{}/par", base), format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None });
+        }
+        commands
+    };
+}
 
 #[cfg(test)]
 mod tests {

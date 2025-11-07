@@ -2,7 +2,8 @@ mod fx_defaults;
 
 use clap::Parser;
 use std::net::UdpSocket;
-use x32_lib::{create_socket, X32Error};
+use x32_lib::create_socket;
+use x32_lib::error::X32Error;
 use osc_lib::{OscMessage, OscArg};
 use std::collections::HashMap;
 use std::fs::File;
@@ -113,7 +114,7 @@ fn reset_fx(socket: &UdpSocket, from: u8, defaults_file: Option<PathBuf>) -> Res
     if let Some(OscArg::Int(fx_type_id)) = received_msg.args.get(0) {
         let fx_name = get_fx_name_from_id(*fx_type_id)?;
 
-        let defaults_str = if let Some(ref defaults) = user_defaults {
+        let defaults_str: Option<&str> = if let Some(ref defaults) = user_defaults {
             defaults.get(fx_name).map(|s| s.as_str())
         } else {
             None

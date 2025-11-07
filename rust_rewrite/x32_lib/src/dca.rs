@@ -6,6 +6,7 @@
 
 use crate::common::{Color, On, CommandFlags, CommandFormat, CommandValue, X32Command};
 use osc_lib::OscArg;
+use lazy_static::lazy_static;
 
 /// Sets the fader level for a specific DCA.
 ///
@@ -101,65 +102,23 @@ pub fn set_color(dca_id: u8, color: Color) -> (String, Vec<OscArg>) {
     (address, args)
 }
 
-pub const DCA_COMMANDS: &[X32Command] = &[
-    X32Command { command: "/dca".to_string(), format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None },
-    X32Command { command: "/dca/1".to_string(), format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None },
-    X32Command { command: "/dca/1/on".to_string(), format: CommandFormat::Int, flags: CommandFlags::F_XET, value: CommandValue::None },
-    X32Command { command: "/dca/1/fader".to_string(), format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
-    X32Command { command: "/dca/1/config".to_string(), format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None },
-    X32Command { command: "/dca/1/config/name".to_string(), format: CommandFormat::String, flags: CommandFlags::F_XET, value: CommandValue::None },
-    X32Command { command: "/dca/1/config/icon".to_string(), format: CommandFormat::Int, flags: CommandFlags::F_XET, value: CommandValue::None },
-    X32Command { command: "/dca/1/config/color".to_string(), format: CommandFormat::Int, flags: CommandFlags::F_XET, value: CommandValue::None },
-    X32Command { command: "/dca/2".to_string(), format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None },
-    X32Command { command: "/dca/2/on".to_string(), format: CommandFormat::Int, flags: CommandFlags::F_XET, value: CommandValue::None },
-    X32Command { command: "/dca/2/fader".to_string(), format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
-    X32Command { command: "/dca/2/config".to_string(), format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None },
-    X32Command { command: "/dca/2/config/name".to_string(), format: CommandFormat::String, flags: CommandFlags::F_XET, value: CommandValue::None },
-    X32Command { command: "/dca/2/config/icon".to_string(), format: CommandFormat::Int, flags: CommandFlags::F_XET, value: CommandValue::None },
-    X32Command { command: "/dca/2/config/color".to_string(), format: CommandFormat::Int, flags: CommandFlags::F_XET, value: CommandValue::None },
-    X32Command { command: "/dca/3".to_string(), format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None },
-    X32Command { command: "/dca/3/on".to_string(), format: CommandFormat::Int, flags: CommandFlags::F_XET, value: CommandValue::None },
-    X32Command { command: "/dca/3/fader".to_string(), format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
-    X32Command { command: "/dca/3/config".to_string(), format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None },
-    X32Command { command: "/dca/3/config/name".to_string(), format: CommandFormat::String, flags: CommandFlags::F_XET, value: CommandValue::None },
-    X32Command { command: "/dca/3/config/icon".to_string(), format: CommandFormat::Int, flags: CommandFlags::F_XET, value: CommandValue::None },
-    X32Command { command: "/dca/3/config/color".to_string(), format: CommandFormat::Int, flags: CommandFlags::F_XET, value: CommandValue::None },
-    X32Command { command: "/dca/4".to_string(), format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None },
-    X32Command { command: "/dca/4/on".to_string(), format: CommandFormat::Int, flags: CommandFlags::F_XET, value: CommandValue::None },
-    X32Command { command: "/dca/4/fader".to_string(), format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
-    X32Command { command: "/dca/4/config".to_string(), format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None },
-    X32Command { command: "/dca/4/config/name".to_string(), format: CommandFormat::String, flags: CommandFlags::F_XET, value: CommandValue::None },
-    X32Command { command: "/dca/4/config/icon".to_string(), format: CommandFormat::Int, flags: CommandFlags::F_XET, value: CommandValue::None },
-    X32Command { command: "/dca/4/config/color".to_string(), format: CommandFormat::Int, flags: CommandFlags::F_XET, value: CommandValue::None },
-    X32Command { command: "/dca/5".to_string(), format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None },
-    X32Command { command: "/dca/5/on".to_string(), format: CommandFormat::Int, flags: CommandFlags::F_XET, value: CommandValue::None },
-    X32Command { command: "/dca/5/fader".to_string(), format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
-    X32Command { command: "/dca/5/config".to_string(), format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None },
-    X32Command { command: "/dca/5/config/name".to_string(), format: CommandFormat::String, flags: CommandFlags::F_XET, value: CommandValue::None },
-    X32Command { command: "/dca/5/config/icon".to_string(), format: CommandFormat::Int, flags: CommandFlags::F_XET, value: CommandValue::None },
-    X32Command { command: "/dca/5/config/color".to_string(), format: CommandFormat::Int, flags: CommandFlags::F_XET, value: CommandValue::None },
-    X32Command { command: "/dca/6".to_string(), format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None },
-    X32Command { command: "/dca/6/on".to_string(), format: CommandFormat::Int, flags: CommandFlags::F_XET, value: CommandValue::None },
-    X32Command { command: "/dca/6/fader".to_string(), format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
-    X32Command { command: "/dca/6/config".to_string(), format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None },
-    X32Command { command: "/dca/6/config/name".to_string(), format: CommandFormat::String, flags: CommandFlags::F_XET, value: CommandValue::None },
-    X32Command { command: "/dca/6/config/icon".to_string(), format: CommandFormat::Int, flags: CommandFlags::F_XET, value: CommandValue::None },
-    X32Command { command: "/dca/6/config/color".to_string(), format: CommandFormat::Int, flags: CommandFlags::F_XET, value: CommandValue::None },
-    X32Command { command: "/dca/7".to_string(), format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None },
-    X32Command { command: "/dca/7/on".to_string(), format: CommandFormat::Int, flags: CommandFlags::F_XET, value: CommandValue::None },
-    X32Command { command: "/dca/7/fader".to_string(), format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
-    X32Command { command: "/dca/7/config".to_string(), format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None },
-    X32Command { command: "/dca/7/config/name".to_string(), format: CommandFormat::String, flags: CommandFlags::F_XET, value: CommandValue::None },
-    X32Command { command: "/dca/7/config/icon".to_string(), format: CommandFormat::Int, flags: CommandFlags::F_XET, value: CommandValue::None },
-    X32Command { command: "/dca/7/config/color".to_string(), format: CommandFormat::Int, flags: CommandFlags::F_XET, value: CommandValue::None },
-    X32Command { command: "/dca/8".to_string(), format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None },
-    X32Command { command: "/dca/8/on".to_string(), format: CommandFormat::Int, flags: CommandFlags::F_XET, value: CommandValue::None },
-    X32Command { command: "/dca/8/fader".to_string(), format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
-    X32Command { command: "/dca/8/config".to_string(), format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None },
-    X32Command { command: "/dca/8/config/name".to_string(), format: CommandFormat::String, flags: CommandFlags::F_XET, value: CommandValue::None },
-    X32Command { command: "/dca/8/config/icon".to_string(), format: CommandFormat::Int, flags: CommandFlags::F_XET, value: CommandValue::None },
-    X32Command { command: "/dca/8/config/color".to_string(), format: CommandFormat::Int, flags: CommandFlags::F_XET, value: CommandValue::None },
-];
+lazy_static! {
+    pub static ref DCA_COMMANDS: Vec<X32Command> = {
+        let mut commands = Vec::new();
+        for i in 1..=8 {
+            let base = format!("/dca/{}", i);
+            commands.push(X32Command { command: base.clone(), format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None });
+            commands.push(X32Command { command: format!("{}/on", base), format: CommandFormat::Int, flags: CommandFlags::F_XET, value: CommandValue::None });
+            commands.push(X32Command { command: format!("{}/fader", base), format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None });
+            let config_base = format!("{}/config", base);
+            commands.push(X32Command { command: config_base.clone(), format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None });
+            commands.push(X32Command { command: format!("{}/name", config_base), format: CommandFormat::String, flags: CommandFlags::F_XET, value: CommandValue::None });
+            commands.push(X32Command { command: format!("{}/icon", config_base), format: CommandFormat::Int, flags: CommandFlags::F_XET, value: CommandValue::None });
+            commands.push(X32Command { command: format!("{}/color", config_base), format: CommandFormat::Int, flags: CommandFlags::F_XET, value: CommandValue::None });
+        }
+        commands
+    };
+}
 
 #[cfg(test)]
 mod tests {
@@ -174,11 +133,10 @@ mod tests {
 
     #[test]
     fn test_dca_commands_array() {
-        assert_eq!(DCA_COMMANDS.len(), 57);
-        assert_eq!(DCA_COMMANDS[0].command, "/dca");
-        assert_eq!(DCA_COMMANDS[1].command, "/dca/1");
-        assert_eq!(DCA_COMMANDS[8].command, "/dca/2");
-        assert_eq!(DCA_COMMANDS[56].command, "/dca/8/config/color");
+        assert_eq!(DCA_COMMANDS.len(), 56);
+        assert_eq!(DCA_COMMANDS[0].command, "/dca/1");
+        assert_eq!(DCA_COMMANDS[7].command, "/dca/2");
+        assert_eq!(DCA_COMMANDS[55].command, "/dca/8/config/color");
     }
 
     #[test]
