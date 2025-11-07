@@ -6,6 +6,7 @@
 
 use crate::common::{Color, On, CommandFlags, CommandFormat, CommandValue, X32Command};
 use osc_lib::OscArg;
+use lazy_static::lazy_static;
 
 /// Sets the fader level for a specific DCA.
 ///

@@ -6,6 +6,7 @@
 
 use crate::common::{FxSource, CommandFlags, CommandFormat, CommandValue, X32Command};
 use osc_lib::OscArg;
+use lazy_static::lazy_static;
 
 /// Represents the types of effects available in FX slots 1-4.
 #[derive(Debug, Clone, Copy, PartialEq)]

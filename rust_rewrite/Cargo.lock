@@ -711,6 +711,7 @@ name = "x32_lib"
 version = "0.1.0"
 dependencies = [
  "bitflags",
+ "lazy_static",
  "osc_lib",
 ]
 
@@ -720,5 +721,17 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "osc_lib",
+ "x32_lib",
+]
+
+[[package]]
+name = "x32_tcp"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "assert_cmd",
+ "clap",
+ "osc_lib",
+ "predicates",
  "x32_lib",
 ]
