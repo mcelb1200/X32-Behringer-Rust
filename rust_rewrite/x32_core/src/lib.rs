@@ -334,86 +334,91 @@ pub struct X32Command {
     pub node: Option<Vec<&'static str>>,
 }
 
-// Represents a handler function for a command prefix.
-pub type CommandHandler = fn(&[u8]) -> Result<Option<Vec<u8>>, Box<dyn Error>>;
+#[derive(Debug, Clone)]
+pub struct MixerState {
+    values: HashMap<String, OscArg>,
+}
 
-// Represents the `X32header` struct from X32.c
-pub struct X32Header {
-    pub command_prefix: [u8; 4],
-    pub handler: CommandHandler,
+impl MixerState {
+    pub fn new() -> Self {
+        Self {
+            values: HashMap::new(),
+        }
+    }
+
+    pub fn set(&mut self, path: &str, arg: OscArg) {
+        self.values.insert(path.to_string(), arg);
+    }
+
+    pub fn get(&self, path: &str) -> Option<&OscArg> {
+        self.values.get(path)
+    }
 }
 
 pub struct Mixer {
-    handlers: HashMap<[u8; 4], CommandHandler>,
+    state: MixerState,
 }
 
 impl Mixer {
     pub fn new() -> Self {
-        let mut handlers = HashMap::new();
-        let headers = vec![
-            X32Header {
-                command_prefix: *b"/inf",
-                handler: handle_info,
-            },
-            X32Header {
-                command_prefix: *b"/sta",
-                handler: handle_status,
-            },
-        ];
-
-        for header in headers {
-            handlers.insert(header.command_prefix, header.handler);
+        Self {
+            state: MixerState::new(),
         }
-
-        Self { handlers }
     }
 
-    pub fn dispatch(&self, msg: &[u8]) -> Result<Option<Vec<u8>>, Box<dyn Error>> {
-        if msg.len() < 4 {
-            return Err("Invalid message format".into());
+    pub fn seed_from_lines(&mut self, lines: Vec<&str>) {
+        for line in lines {
+            let parts: Vec<&str> = line.splitn(2, ',').collect();
+            if parts.len() == 2 {
+                let path = parts[0].trim();
+                let arg_parts: Vec<&str> = parts[1].trim().splitn(2, '\t').collect();
+                if arg_parts.len() == 2 {
+                    let arg_type = arg_parts[0];
+                    let arg_value = arg_parts[1];
+                    let arg = match arg_type {
+                        "i" => OscArg::Int(arg_value.parse().unwrap()),
+                        "f" => OscArg::Float(arg_value.parse().unwrap()),
+                        "s" => OscArg::String(arg_value.to_string()),
+                        _ => continue,
+                    };
+                    self.state.set(path, arg);
+                }
+            }
         }
-        let prefix: [u8; 4] = msg[0..4].try_into()?;
-        if let Some(handler) = self.handlers.get(&prefix) {
-            handler(msg)
+    }
+
+    pub fn dispatch(&mut self, msg: &[u8]) -> Result<Option<Vec<u8>>, Box<dyn Error>> {
+        let osc_msg = OscMessage::from_bytes(msg)?;
+
+        if osc_msg.path == "/info" {
+            let response = OscMessage {
+                path: "/info".to_string(),
+                args: vec![
+                    OscArg::String("V2.07".to_string()),
+                    OscArg::String("X32 Emulator".to_string()),
+                    OscArg::String("X32".to_string()),
+                    OscArg::String("4.06".to_string()),
+                ],
+            };
+            return Ok(Some(response.to_bytes()?));
+        }
+
+        if osc_msg.args.is_empty() {
+            // It's a request for a value
+            if let Some(arg) = self.state.get(&osc_msg.path) {
+                let response = OscMessage {
+                    path: osc_msg.path.clone(),
+                    args: vec![arg.clone()],
+                };
+                return Ok(Some(response.to_bytes()?));
+            }
         } else {
-            println!("No handler for prefix: {:?}", std::str::from_utf8(&prefix));
-            Ok(None)
+            // It's a command to set a value
+            if let Some(arg) = osc_msg.args.get(0) {
+                self.state.set(&osc_msg.path, arg.clone());
+            }
         }
-    }
-}
 
-// Placeholder handler functions
-fn handle_info(_msg: &[u8]) -> Result<Option<Vec<u8>>, Box<dyn Error>> {
-    let response = OscMessage {
-        path: "/info".to_string(),
-        args: vec![
-            OscArg::String("V2.07".to_string()),
-            OscArg::String("X32 Emulator".to_string()),
-            OscArg::String("X32".to_string()),
-            OscArg::String("4.06".to_string()),
-        ],
-    };
-    Ok(Some(response.to_string().into_bytes()))
-}
-
-fn handle_status(_msg: &[u8]) -> Result<Option<Vec<u8>>, Box<dyn Error>> {
-    println!("Handling /status command");
-    Ok(None)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_dispatch() {
-        let mixer = Mixer::new();
-        let info_msg = b"/info\0\0\0,s\0\0";
-        let status_msg = b"/status\0\0\0,s\0\0";
-        let unknown_msg = b"/xxxx\0\0\0,s\0\0";
-
-        assert!(mixer.dispatch(info_msg).unwrap().is_some());
-        assert!(mixer.dispatch(status_msg).unwrap().is_none());
-        assert!(mixer.dispatch(unknown_msg).unwrap().is_none());
+        Ok(None)
     }
 }

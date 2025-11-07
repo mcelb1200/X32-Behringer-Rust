@@ -867,7 +867,9 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "clap",
+ "osc_lib",
  "x32_core",
+ "x32_lib",
 ]
 
 [[package]]
@@ -943,11 +945,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "x32_usb"
 name = "x32_wav_xlive"
 version = "0.1.0"
 dependencies = [
  "anyhow",
  "assert_cmd",
+ "clap",
+ "osc_lib",
+ "predicates",
+ "x32_emulator",
+ "x32_lib",
  "byteorder",
  "chrono",
  "clap",
