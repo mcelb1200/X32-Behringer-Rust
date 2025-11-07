@@ -69,6 +69,7 @@ pub mod output;
 pub mod prefstat;
 pub mod show;
 pub mod cfg_main;
+pub mod udp;
 
 
 use std::net::{SocketAddr, UdpSocket};
@@ -83,8 +84,16 @@ use osc_lib::{OscMessage, OscArg, OscError};
 /// * `ip` - The IP address of the console.
 /// * `timeout` - The read timeout for the socket in milliseconds.
 pub fn create_socket(ip: &str, timeout: u64) -> Result<UdpSocket> {
-    let remote_addr: SocketAddr = format!("{}:10023", ip).parse()?;
-    let local_addr: SocketAddr = format!("{}:10024", ip).parse()?;
+    let remote_addr: SocketAddr = if ip.contains(':') {
+        ip.parse()?
+    } else {
+        format!("{}:10023", ip).parse()?
+    };
+    let local_addr: SocketAddr = if remote_addr.is_ipv4() {
+        "0.0.0.0:0".parse().unwrap()
+    } else {
+        "[::]:0".parse().unwrap()
+    };
 
     let socket = UdpSocket::bind(local_addr)?;
     socket.connect(remote_addr)?;

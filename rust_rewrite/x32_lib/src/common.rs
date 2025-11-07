@@ -34,7 +34,7 @@ bitflags! {
 
 #[derive(Debug, Clone)]
 pub struct X32Command {
-    pub command: String,
+    pub command: &'static str,
     pub format: CommandFormat,
     pub flags: CommandFlags,
     pub value: CommandValue,

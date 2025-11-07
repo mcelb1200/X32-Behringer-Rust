@@ -303,13 +303,13 @@ pub const SFX_SRC: &[&str] = &[
 #[rustfmt::skip]
 #[allow(dead_code)]
 pub const XFX1: &[X32Command] = &[
-    X32Command { command: "/fx".to_string(), format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None },
-    X32Command { command: "/fx/1".to_string(), format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None },
-    X32Command { command: "/fx/1/type".to_string(), format: CommandFormat::StringList(&SFX_TYP1), flags: CommandFlags::F_XET, value: CommandValue::None },
-    X32Command { command: "/fx/1/source".to_string(), format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None },
-    X32Command { command: "/fx/1/source/l".to_string(), format: CommandFormat::StringList(&SFX_SRC), flags: CommandFlags::F_XET, value: CommandValue::None },
-    X32Command { command: "/fx/1/source/r".to_string(), format: CommandFormat::StringList(&SFX_SRC), flags: CommandFlags::F_XET, value: CommandValue::None },
-    X32Command { command: "/fx/1/par".to_string(), format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None },
+    X32Command { command: "/fx", format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None },
+    X32Command { command: "/fx/1", format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None },
+    X32Command { command: "/fx/1/type", format: CommandFormat::StringList(&SFX_TYP1), flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/source", format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None },
+    X32Command { command: "/fx/1/source/l", format: CommandFormat::StringList(&SFX_SRC), flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/source/r", format: CommandFormat::StringList(&SFX_SRC), flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/par", format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None },
 ];
 
 #[cfg(test)]

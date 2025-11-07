@@ -21,6 +21,8 @@ pub enum OscError {
     UnsupportedTypeTag(char),
     /// A general parsing error occurred.
     ParseError(String),
+    /// The response from the server was not what was expected.
+    UnexpectedResponse,
 }
 
 impl std::fmt::Display for OscError {
@@ -31,6 +33,7 @@ impl std::fmt::Display for OscError {
             OscError::InvalidTypeTag => write!(f, "Invalid OSC type tag string"),
             OscError::UnsupportedTypeTag(c) => write!(f, "Unsupported OSC type tag: {}", c),
             OscError::ParseError(s) => write!(f, "Parse error: {}", s),
+            OscError::UnexpectedResponse => write!(f, "Unexpected response from server"),
         }
     }
 }
