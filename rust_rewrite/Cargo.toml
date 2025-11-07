@@ -17,4 +17,6 @@ members = [
     "x32_get_scene_name",
     "x32_set_scene",
     "x32_tcp",
+    "x32_usb",
+    "x32_wav_xlive",
 ]
