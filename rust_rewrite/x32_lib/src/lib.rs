@@ -73,7 +73,7 @@ pub mod cfg_main;
 
 use std::net::{SocketAddr, UdpSocket};
 use std::time::Duration;
-use crate::error::Result;
+pub use crate::error::Result;
 use osc_lib::{OscMessage, OscArg, OscError};
 
 /// Creates a UDP socket and connects to the X32/M32 console.

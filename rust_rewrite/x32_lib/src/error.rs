@@ -39,3 +39,16 @@ impl From<String> for X32Error {
         X32Error::String(err)
     }
 }
+
+impl std::fmt::Display for X32Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            X32Error::Io(e) => write!(f, "IO error: {}", e),
+            X32Error::AddrParse(e) => write!(f, "Address parse error: {}", e),
+            X32Error::Osc(e) => write!(f, "OSC error: {}", e),
+            X32Error::String(s) => write!(f, "{}", s),
+        }
+    }
+}
+
+impl std::error::Error for X32Error {}

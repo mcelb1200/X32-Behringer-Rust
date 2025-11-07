@@ -1,6 +1,7 @@
 use clap::{Parser, ValueEnum};
 use anyhow::Result;
 use x32_lib::{create_socket, verify_fx_type, get_parameter, set_parameter};
+use x32_lib::error::X32Error;
 use std::thread;
 use std::time::Duration;
 

@@ -1,0 +1,11 @@
+[package]
+name = "x32_midi2osc"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+clap = { version = "4.5.4", features = ["derive"] }
+anyhow = "1.0.86"
+midir = "0.9.1"
+osc_lib = { path = "../osc_lib" }
+x32_lib = { path = "../x32_lib" }

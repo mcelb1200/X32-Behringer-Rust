@@ -8,6 +8,7 @@
 
 use crate::common::{Color, EqType, On, CommandFlags, CommandFormat, CommandValue, X32Command};
 use osc_lib::OscArg;
+use std::borrow::Cow;
 
 // Config
 /// Sets the name for a specific auxiliary input.
@@ -142,13 +143,13 @@ pub fn set_on(auxin_id: u8, on: On) -> (String, Vec<OscArg>) {
 }
 
     commands.push(X32Command {
-        command: "/auxin".to_string(),
+        command: Cow::from("/auxin".to_string()),
         format: CommandFormat::StringList(&[]),
         flags: CommandFlags::F_FND,
         value: CommandValue::None,
     });
     commands.push(X32Command {
-        command: base.clone(),
+        command: Cow::from(base.clone()),
         format: CommandFormat::StringList(&[]),
         flags: CommandFlags::F_FND,
         value: CommandValue::None,
@@ -157,31 +158,31 @@ pub fn set_on(auxin_id: u8, on: On) -> (String, Vec<OscArg>) {
     // Config
     let config_base = format!("{}/config", base);
     commands.push(X32Command {
-        command: config_base.clone(),
+        command: Cow::from(config_base.clone()),
         format: CommandFormat::StringList(&[]),
         flags: CommandFlags::F_FND,
         value: CommandValue::None,
     });
     commands.push(X32Command {
-        command: format!("{}/name", config_base),
+        command: Cow::from(format!("{}/name", config_base)),
         format: CommandFormat::String,
         flags: CommandFlags::F_XET,
         value: CommandValue::None,
     });
     commands.push(X32Command {
-        command: format!("{}/icon", config_base),
+        command: Cow::from(format!("{}/icon", config_base)),
         format: CommandFormat::Int,
         flags: CommandFlags::F_XET,
         value: CommandValue::None,
     });
     commands.push(X32Command {
-        command: format!("{}/color", config_base),
+        command: Cow::from(format!("{}/color", config_base)),
         format: CommandFormat::Int,
         flags: CommandFlags::F_XET,
         value: CommandValue::None,
     });
     commands.push(X32Command {
-        command: format!("{}/source", config_base),
+        command: Cow::from(format!("{}/source", config_base)),
         format: CommandFormat::Int,
         flags: CommandFlags::F_XET,
         value: CommandValue::None,
@@ -190,19 +191,19 @@ pub fn set_on(auxin_id: u8, on: On) -> (String, Vec<OscArg>) {
     // Preamp
     let preamp_base = format!("{}/preamp", base);
     commands.push(X32Command {
-        command: preamp_base.clone(),
+        command: Cow::from(preamp_base.clone()),
         format: CommandFormat::StringList(&[]),
         flags: CommandFlags::F_FND,
         value: CommandValue::None,
     });
     commands.push(X32Command {
-        command: format!("{}/trim", preamp_base),
+        command: Cow::from(format!("{}/trim", preamp_base)),
         format: CommandFormat::Float,
         flags: CommandFlags::F_XET,
         value: CommandValue::None,
     });
     commands.push(X32Command {
-        command: format!("{}/invert", preamp_base),
+        command: Cow::from(format!("{}/invert", preamp_base)),
         format: CommandFormat::Int,
         flags: CommandFlags::F_XET,
         value: CommandValue::None,
@@ -211,13 +212,13 @@ pub fn set_on(auxin_id: u8, on: On) -> (String, Vec<OscArg>) {
     // EQ
     let eq_base = format!("{}/eq", base);
     commands.push(X32Command {
-        command: eq_base.clone(),
+        command: Cow::from(eq_base.clone()),
         format: CommandFormat::StringList(&[]),
         flags: CommandFlags::F_FND,
         value: CommandValue::None,
     });
     commands.push(X32Command {
-        command: format!("{}/on", eq_base),
+        command: Cow::from(format!("{}/on", eq_base)),
         format: CommandFormat::Int,
         flags: CommandFlags::F_XET,
         value: CommandValue::None,
@@ -225,31 +226,31 @@ pub fn set_on(auxin_id: u8, on: On) -> (String, Vec<OscArg>) {
     for i in 1..=4 {
         let band_base = format!("{}/{}", eq_base, i);
         commands.push(X32Command {
-            command: band_base.clone(),
+            command: Cow::from(band_base.clone()),
             format: CommandFormat::StringList(&[]),
             flags: CommandFlags::F_FND,
             value: CommandValue::None,
         });
         commands.push(X32Command {
-            command: format!("{}/type", band_base),
+            command: Cow::from(format!("{}/type", band_base)),
             format: CommandFormat::Int,
             flags: CommandFlags::F_XET,
             value: CommandValue::None,
         });
         commands.push(X32Command {
-            command: format!("{}/f", band_base),
+            command: Cow::from(format!("{}/f", band_base)),
             format: CommandFormat::Float,
             flags: CommandFlags::F_XET,
             value: CommandValue::None,
         });
         commands.push(X32Command {
-            command: format!("{}/g", band_base),
+            command: Cow::from(format!("{}/g", band_base)),
             format: CommandFormat::Float,
             flags: CommandFlags::F_XET,
             value: CommandValue::None,
         });
         commands.push(X32Command {
-            command: format!("{}/q", band_base),
+            command: Cow::from(format!("{}/q", band_base)),
             format: CommandFormat::Float,
             flags: CommandFlags::F_XET,
             value: CommandValue::None,
@@ -259,43 +260,43 @@ pub fn set_on(auxin_id: u8, on: On) -> (String, Vec<OscArg>) {
     // Mix
     let mix_base = format!("{}/mix", base);
     commands.push(X32Command {
-        command: mix_base.clone(),
+        command: Cow::from(mix_base.clone()),
         format: CommandFormat::StringList(&[]),
         flags: CommandFlags::F_FND,
         value: CommandValue::None,
     });
     commands.push(X32Command {
-        command: format!("{}/on", mix_base),
+        command: Cow::from(format!("{}/on", mix_base)),
         format: CommandFormat::Int,
         flags: CommandFlags::F_XET,
         value: CommandValue::None,
     });
     commands.push(X32Command {
-        command: format!("{}/fader", mix_base),
+        command: Cow::from(format!("{}/fader", mix_base)),
         format: CommandFormat::Float,
         flags: CommandFlags::F_XET,
         value: CommandValue::None,
     });
     commands.push(X32Command {
-        command: format!("{}/st", mix_base),
+        command: Cow::from(format!("{}/st", mix_base)),
         format: CommandFormat::Int,
         flags: CommandFlags::F_XET,
         value: CommandValue::None,
     });
     commands.push(X32Command {
-        command: format!("{}/pan", mix_base),
+        command: Cow::from(format!("{}/pan", mix_base)),
         format: CommandFormat::Float,
         flags: CommandFlags::F_XET,
         value: CommandValue::None,
     });
     commands.push(X32Command {
-        command: format!("{}/mono", mix_base),
+        command: Cow::from(format!("{}/mono", mix_base)),
         format: CommandFormat::Int,
         flags: CommandFlags::F_XET,
         value: CommandValue::None,
     });
     commands.push(X32Command {
-        command: format!("{}/mlevel", mix_base),
+        command: Cow::from(format!("{}/mlevel", mix_base)),
         format: CommandFormat::Float,
         flags: CommandFlags::F_XET,
         value: CommandValue::None,
@@ -304,19 +305,19 @@ pub fn set_on(auxin_id: u8, on: On) -> (String, Vec<OscArg>) {
     for i in 1..=16 {
         let send_base = format!("{}/{:02}", mix_base, i);
         commands.push(X32Command {
-            command: send_base.clone(),
+            command: Cow::from(send_base.clone()),
             format: CommandFormat::StringList(&[]),
             flags: CommandFlags::F_FND,
             value: CommandValue::None,
         });
         commands.push(X32Command {
-            command: format!("{}/on", send_base),
+            command: Cow::from(format!("{}/on", send_base)),
             format: CommandFormat::Int,
             flags: CommandFlags::F_XET,
             value: CommandValue::None,
         });
         commands.push(X32Command {
-            command: format!("{}/level", send_base),
+            command: Cow::from(format!("{}/level", send_base)),
             format: CommandFormat::Float,
             flags: CommandFlags::F_XET,
             value: CommandValue::None,
@@ -324,19 +325,19 @@ pub fn set_on(auxin_id: u8, on: On) -> (String, Vec<OscArg>) {
         // Odd numbered mixes also have pan, type, and panFollow parameters
         if i % 2 != 0 {
             commands.push(X32Command {
-                command: format!("{}/pan", send_base),
+                command: Cow::from(format!("{}/pan", send_base)),
                 format: CommandFormat::Float,
                 flags: CommandFlags::F_XET,
                 value: CommandValue::None,
             });
             commands.push(X32Command {
-                command: format!("{}/type", send_base),
+                command: Cow::from(format!("{}/type", send_base)),
                 format: CommandFormat::Int,
                 flags: CommandFlags::F_XET,
                 value: CommandValue::None,
             });
             commands.push(X32Command {
-                command: format!("{}/panFollow", send_base),
+                command: Cow::from(format!("{}/panFollow", send_base)),
                 format: CommandFormat::Int,
                 flags: CommandFlags::F_XET,
                 value: CommandValue::None,
@@ -347,19 +348,19 @@ pub fn set_on(auxin_id: u8, on: On) -> (String, Vec<OscArg>) {
     // Group
     let grp_base = format!("{}/grp", base);
     commands.push(X32Command {
-        command: grp_base.clone(),
+        command: Cow::from(grp_base.clone()),
         format: CommandFormat::StringList(&[]),
         flags: CommandFlags::F_FND,
         value: CommandValue::None,
     });
     commands.push(X32Command {
-        command: format!("{}/dca", grp_base),
+        command: Cow::from(format!("{}/dca", grp_base)),
         format: CommandFormat::Int,
         flags: CommandFlags::F_XET,
         value: CommandValue::None,
     });
     commands.push(X32Command {
-        command: format!("{}/mute", grp_base),
+        command: Cow::from(format!("{}/mute", grp_base)),
         format: CommandFormat::Int,
         flags: CommandFlags::F_XET,
         value: CommandValue::None,

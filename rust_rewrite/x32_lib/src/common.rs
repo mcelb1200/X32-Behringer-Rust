@@ -4,6 +4,7 @@
 //! These enums provide a type-safe way to interact with the X32/M32 console's parameters.
 
 use bitflags::bitflags;
+use std::borrow::Cow;
 
 #[derive(Debug, Clone)]
 pub enum CommandFormat {
@@ -34,7 +35,7 @@ bitflags! {
 
 #[derive(Debug, Clone)]
 pub struct X32Command {
-    pub command: String,
+    pub command: Cow<'static, str>,
     pub format: CommandFormat,
     pub flags: CommandFlags,
     pub value: CommandValue,

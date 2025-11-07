@@ -2,6 +2,6 @@
 members = [
     "x32_lib",
     "osc_lib",
-    "x32_get_scene", "x32_set_scene", "x32_copy_fx", "x32_fade", "x32_geq2_cpy", "x32_automix", "x32_core", "x32_emulator", "x32_custom_layer", "x32_desk_save", "x32_desk_restore", "x32_get_scene_name", "x32_commander",
+    "x32_get_scene", "x32_set_scene", "x32_copy_fx", "x32_fade", "x32_geq2_cpy", "x32_automix", "x32_core", "x32_emulator", "x32_custom_layer", "x32_desk_save", "x32_desk_restore", "x32_get_scene_name", "x32_commander", "x32_midi2osc",
 ]
 resolver = "2"

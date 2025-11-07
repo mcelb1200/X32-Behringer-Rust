@@ -2,7 +2,8 @@ mod fx_defaults;
 
 use clap::Parser;
 use std::net::UdpSocket;
-use x32_lib::{create_socket, X32Error};
+use x32_lib::create_socket;
+use x32_lib::error::X32Error;
 use osc_lib::{OscMessage, OscArg};
 use std::collections::HashMap;
 use std::fs::File;

@@ -7,7 +7,8 @@ use std::path::PathBuf;
 use std::net::UdpSocket;
 use std::fs::File;
 use std::io::{self, BufRead, Write};
-use x32_lib::{create_socket, X32Error};
+use x32_lib::create_socket;
+use x32_lib::error::X32Error;
 use osc_lib::{OscMessage, OscArg};
 
 mod nodes;
