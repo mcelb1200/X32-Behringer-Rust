@@ -2,11 +2,11 @@
 //! It allows you to send OSC commands to the mixer using a simple text-based TCP protocol.
 
 use clap::Parser;
-use std::net::{TcpListener, TcpStream, UdpSocket};
+use std::net::{TcpListener, TcpStream};
 use std::thread;
 use anyhow::Result;
 use std::io::{BufRead, BufReader, Write};
-use osc_lib::{OscMessage, OscArg};
+use osc_lib::OscMessage;
 use x32_lib::create_socket;
 
 /// A TCP to UDP bridge for the Behringer X32 digital mixer.

@@ -17,7 +17,7 @@
 //! The following example demonstrates how to generate an OSC message to set the fader level of channel 1.
 //!
 //! ```
-//! use x32_lib::channel;
+//! use x32_lib::command::channel;
 //! use osc_lib::OscArg;
 //!
 //! fn main() {
@@ -52,29 +52,16 @@
 #[cfg(test)]
 mod tests;
 
-pub mod dca;
-pub mod fx;
-pub mod bus;
-pub mod auxin;
-pub mod channel;
+pub mod command;
 pub mod common;
 pub mod error;
-pub mod fxrtn;
-pub mod headamp;
-pub mod libs;
 pub mod main_bus;
-pub mod misc;
-pub mod mtx;
-pub mod output;
-pub mod prefstat;
-pub mod show;
-pub mod cfg_main;
 
 
 use std::net::{SocketAddr, UdpSocket};
 use std::time::Duration;
 use crate::error::Result;
-use osc_lib::{OscMessage, OscArg, OscError};
+pub use osc_lib::{OscMessage, OscArg, OscError};
 
 /// Creates a UDP socket and connects to the X32/M32 console.
 ///
@@ -197,5 +184,3 @@ pub fn set_parameter(socket: &UdpSocket, address: &str, value: f32) -> Result<()
     socket.send(&msg.to_bytes()?)?;
     Ok(())
 }
-
-
