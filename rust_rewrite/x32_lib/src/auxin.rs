@@ -43,9 +43,9 @@ pub fn set_name(auxin_id: u8, name: &str) -> (String, Vec<OscArg>) {
 /// # Example
 ///
 /// ```
-/// use x32_lib::auxin;
 /// use x32_lib::common::Color;
 /// use osc_lib::OscArg;
+/// use x32_lib::auxin::set_color;
 ///
 /// let (address, args) = set_color(1, Color::Red);
 /// assert_eq!(address, "/auxin/01/config/color");
@@ -69,9 +69,9 @@ pub fn set_color(auxin_id: u8, color: Color) -> (String, Vec<OscArg>) {
 /// # Example
 ///
 /// ```
-/// use x32_lib::auxin;
 /// use x32_lib::common::EqType;
 /// use osc_lib::OscArg;
+/// use x32_lib::auxin::set_eq_band_type;
 ///
 /// let (address, args) = set_eq_band_type(1, 1, EqType::Peq);
 /// assert_eq!(address, "/auxin/01/eq/1/type");
@@ -94,8 +94,8 @@ pub fn set_eq_band_type(auxin_id: u8, band: u8, eq_type: EqType) -> (String, Vec
 /// # Example
 ///
 /// ```
-/// use x32_lib::auxin;
 /// use osc_lib::OscArg;
+/// use x32_lib::auxin::set_fader;
 ///
 /// let (address, args) = set_fader(1, 0.75);
 /// assert_eq!(address, "/auxin/01/mix/fader");
@@ -117,9 +117,9 @@ pub fn set_fader(auxin_id: u8, level: f32) -> (String, Vec<OscArg>) {
 /// # Example
 ///
 /// ```
-/// use x32_lib::auxin;
 /// use x32_lib::common::On;
 /// use osc_lib::OscArg;
+/// use x32_lib::auxin::set_on;
 ///
 /// let (address, args) = set_on(1, On::On);
 /// assert_eq!(address, "/auxin/01/mix/on");
