@@ -275,6 +275,497 @@ pub fn set_eq_band_type(channel_id: u8, band: u8, eq_type: EqType) -> (String, V
     (address, args)
 }
 
+pub fn get_channel_commands(channel_num: u8) -> Result<Vec<X32Command<String>>, String> {
+    if !(1..=32).contains(&channel_num) {
+        return Err(format!(
+            "Invalid channel number: {}. Must be between 1 and 32.",
+            channel_num
+        ));
+    }
+    let mut commands = Vec::new();
+    let base = format!("/ch/{:02}", channel_num);
+
+    commands.push(X32Command {
+        command: "/ch".to_string(),
+        format: CommandFormat::StringList(&[]),
+        flags: CommandFlags::F_FND,
+        value: CommandValue::None,
+    });
+    commands.push(X32Command {
+        command: base.clone(),
+        format: CommandFormat::StringList(&[]),
+        flags: CommandFlags::F_FND,
+        value: CommandValue::None,
+    });
+
+    // Config
+    let config_base = format!("{}/config", base);
+    commands.push(X32Command {
+        command: config_base.clone(),
+        format: CommandFormat::StringList(&[]),
+        flags: CommandFlags::F_FND,
+        value: CommandValue::None,
+    });
+    commands.push(X32Command {
+        command: format!("{}/name", config_base),
+        format: CommandFormat::String,
+        flags: CommandFlags::F_XET,
+        value: CommandValue::None,
+    });
+    commands.push(X32Command {
+        command: format!("{}/icon", config_base),
+        format: CommandFormat::Int,
+        flags: CommandFlags::F_XET,
+        value: CommandValue::None,
+    });
+    commands.push(X32Command {
+        command: format!("{}/color", config_base),
+        format: CommandFormat::Int,
+        flags: CommandFlags::F_XET,
+        value: CommandValue::None,
+    });
+    commands.push(X32Command {
+        command: format!("{}/source", config_base),
+        format: CommandFormat::Int,
+        flags: CommandFlags::F_XET,
+        value: CommandValue::None,
+    });
+
+    // Preamp
+    let preamp_base = format!("{}/preamp", base);
+    commands.push(X32Command {
+        command: preamp_base.clone(),
+        format: CommandFormat::StringList(&[]),
+        flags: CommandFlags::F_FND,
+        value: CommandValue::None,
+    });
+    commands.push(X32Command {
+        command: format!("{}/trim", preamp_base),
+        format: CommandFormat::Float,
+        flags: CommandFlags::F_XET,
+        value: CommandValue::None,
+    });
+    commands.push(X32Command {
+        command: format!("{}/invert", preamp_base),
+        format: CommandFormat::Int,
+        flags: CommandFlags::F_XET,
+        value: CommandValue::None,
+    });
+
+    // Gate
+    let gate_base = format!("{}/gate", base);
+    commands.push(X32Command {
+        command: gate_base.clone(),
+        format: CommandFormat::StringList(&[]),
+        flags: CommandFlags::F_FND,
+        value: CommandValue::None,
+    });
+    commands.push(X32Command {
+        command: format!("{}/on", gate_base),
+        format: CommandFormat::Int,
+        flags: CommandFlags::F_XET,
+        value: CommandValue::None,
+    });
+    commands.push(X32Command {
+        command: format!("{}/mode", gate_base),
+        format: CommandFormat::Int,
+        flags: CommandFlags::F_XET,
+        value: CommandValue::None,
+    });
+    commands.push(X32Command {
+        command: format!("{}/thr", gate_base),
+        format: CommandFormat::Float,
+        flags: CommandFlags::F_XET,
+        value: CommandValue::None,
+    });
+    commands.push(X32Command {
+        command: format!("{}/range", gate_base),
+        format: CommandFormat::Float,
+        flags: CommandFlags::F_XET,
+        value: CommandValue::None,
+    });
+    commands.push(X32Command {
+        command: format!("{}/attack", gate_base),
+        format: CommandFormat::Float,
+        flags: CommandFlags::F_XET,
+        value: CommandValue::None,
+    });
+    commands.push(X32Command {
+        command: format!("{}/hold", gate_base),
+        format: CommandFormat::Float,
+        flags: CommandFlags::F_XET,
+        value: CommandValue::None,
+    });
+    commands.push(X32Command {
+        command: format!("{}/release", gate_base),
+        format: CommandFormat::Float,
+        flags: CommandFlags::F_XET,
+        value: CommandValue::None,
+    });
+    commands.push(X32Command {
+        command: format!("{}/keysrc", gate_base),
+        format: CommandFormat::Int,
+        flags: CommandFlags::F_XET,
+        value: CommandValue::None,
+    });
+    let filter_base = format!("{}/filter", gate_base);
+    commands.push(X32Command {
+        command: filter_base.clone(),
+        format: CommandFormat::StringList(&[]),
+        flags: CommandFlags::F_FND,
+        value: CommandValue::None,
+    });
+    commands.push(X32Command {
+        command: format!("{}/on", filter_base),
+        format: CommandFormat::Int,
+        flags: CommandFlags::F_XET,
+        value: CommandValue::None,
+    });
+    commands.push(X32Command {
+        command: format!("{}/type", filter_base),
+        format: CommandFormat::Int,
+        flags: CommandFlags::F_XET,
+        value: CommandValue::None,
+    });
+    commands.push(X32Command {
+        command: format!("{}/f", filter_base),
+        format: CommandFormat::Float,
+        flags: CommandFlags::F_XET,
+        value: CommandValue::None,
+    });
+
+    // Dynamics
+    let dyn_base = format!("{}/dyn", base);
+    commands.push(X32Command {
+        command: dyn_base.clone(),
+        format: CommandFormat::StringList(&[]),
+        flags: CommandFlags::F_FND,
+        value: CommandValue::None,
+    });
+    commands.push(X32Command {
+        command: format!("{}/on", dyn_base),
+        format: CommandFormat::Int,
+        flags: CommandFlags::F_XET,
+        value: CommandValue::None,
+    });
+    commands.push(X32Command {
+        command: format!("{}/mode", dyn_base),
+        format: CommandFormat::Int,
+        flags: CommandFlags::F_XET,
+        value: CommandValue::None,
+    });
+    commands.push(X32Command {
+        command: format!("{}/det", dyn_base),
+        format: CommandFormat::Int,
+        flags: CommandFlags::F_XET,
+        value: CommandValue::None,
+    });
+    commands.push(X32Command {
+        command: format!("{}/env", dyn_base),
+        format: CommandFormat::Int,
+        flags: CommandFlags::F_XET,
+        value: CommandValue::None,
+    });
+    commands.push(X32Command {
+        command: format!("{}/thr", dyn_base),
+        format: CommandFormat::Float,
+        flags: CommandFlags::F_XET,
+        value: CommandValue::None,
+    });
+    commands.push(X32Command {
+        command: format!("{}/ratio", dyn_base),
+        format: CommandFormat::Float,
+        flags: CommandFlags::F_XET,
+        value: CommandValue::None,
+    });
+    commands.push(X32Command {
+        command: format!("{}/knee", dyn_base),
+        format: CommandFormat::Float,
+        flags: CommandFlags::F_XET,
+        value: CommandValue::None,
+    });
+    commands.push(X32Command {
+        command: format!("{}/mgain", dyn_base),
+        format: CommandFormat::Float,
+        flags: CommandFlags::F_XET,
+        value: CommandValue::None,
+    });
+    commands.push(X32Command {
+        command: format!("{}/attack", dyn_base),
+        format: CommandFormat::Float,
+        flags: CommandFlags::F_XET,
+        value: CommandValue::None,
+    });
+    commands.push(X32Command {
+        command: format!("{}/hold", dyn_base),
+        format: CommandFormat::Float,
+        flags: CommandFlags::F_XET,
+        value: CommandValue::None,
+    });
+    commands.push(X32Command {
+        command: format!("{}/release", dyn_base),
+        format: CommandFormat::Float,
+        flags: CommandFlags::F_XET,
+        value: CommandValue::None,
+    });
+    commands.push(X32Command {
+        command: format!("{}/pos", dyn_base),
+        format: CommandFormat::Int,
+        flags: CommandFlags::F_XET,
+        value: CommandValue::None,
+    });
+    commands.push(X32Command {
+        command: format!("{}/keysrc", dyn_base),
+        format: CommandFormat::Int,
+        flags: CommandFlags::F_XET,
+        value: CommandValue::None,
+    });
+    commands.push(X32Command {
+        command: format!("{}/mix", dyn_base),
+        format: CommandFormat::Float,
+        flags: CommandFlags::F_XET,
+        value: CommandValue::None,
+    });
+    commands.push(X32Command {
+        command: format!("{}/auto", dyn_base),
+        format: CommandFormat::Int,
+        flags: CommandFlags::F_XET,
+        value: CommandValue::None,
+    });
+    let dyn_filter_base = format!("{}/filter", dyn_base);
+    commands.push(X32Command {
+        command: dyn_filter_base.clone(),
+        format: CommandFormat::StringList(&[]),
+        flags: CommandFlags::F_FND,
+        value: CommandValue::None,
+    });
+    commands.push(X32Command {
+        command: format!("{}/on", dyn_filter_base),
+        format: CommandFormat::Int,
+        flags: CommandFlags::F_XET,
+        value: CommandValue::None,
+    });
+    commands.push(X32Command {
+        command: format!("{}/type", dyn_filter_base),
+        format: CommandFormat::Int,
+        flags: CommandFlags::F_XET,
+        value: CommandValue::None,
+    });
+    commands.push(X32Command {
+        command: format!("{}/f", dyn_filter_base),
+        format: CommandFormat::Float,
+        flags: CommandFlags::F_XET,
+        value: CommandValue::None,
+    });
+
+    // Insert
+    let insert_base = format!("{}/insert", base);
+    commands.push(X32Command {
+        command: insert_base.clone(),
+        format: CommandFormat::StringList(&[]),
+        flags: CommandFlags::F_FND,
+        value: CommandValue::None,
+    });
+    commands.push(X32Command {
+        command: format!("{}/on", insert_base),
+        format: CommandFormat::Int,
+        flags: CommandFlags::F_XET,
+        value: CommandValue::None,
+    });
+    commands.push(X32Command {
+        command: format!("{}/pos", insert_base),
+        format: CommandFormat::Int,
+        flags: CommandFlags::F_XET,
+        value: CommandValue::None,
+    });
+    commands.push(X32Command {
+        command: format!("{}/sel", insert_base),
+        format: CommandFormat::Int,
+        flags: CommandFlags::F_XET,
+        value: CommandValue::None,
+    });
+
+    // EQ
+    let eq_base = format!("{}/eq", base);
+    commands.push(X32Command {
+        command: eq_base.clone(),
+        format: CommandFormat::StringList(&[]),
+        flags: CommandFlags::F_FND,
+        value: CommandValue::None,
+    });
+    commands.push(X32Command {
+        command: format!("{}/on", eq_base),
+        format: CommandFormat::Int,
+        flags: CommandFlags::F_XET,
+        value: CommandValue::None,
+    });
+    for i in 1..=4 {
+        let band_base = format!("{}/{}", eq_base, i);
+        commands.push(X32Command {
+            command: band_base.clone(),
+            format: CommandFormat::StringList(&[]),
+            flags: CommandFlags::F_FND,
+            value: CommandValue::None,
+        });
+        commands.push(X32Command {
+            command: format!("{}/type", band_base),
+            format: CommandFormat::Int,
+            flags: CommandFlags::F_XET,
+            value: CommandValue::None,
+        });
+        commands.push(X32Command {
+            command: format!("{}/f", band_base),
+            format: CommandFormat::Float,
+            flags: CommandFlags::F_XET,
+            value: CommandValue::None,
+        });
+        commands.push(X32Command {
+            command: format!("{}/g", band_base),
+            format: CommandFormat::Float,
+            flags: CommandFlags::F_XET,
+            value: CommandValue::None,
+        });
+        commands.push(X32Command {
+            command: format!("{}/q", band_base),
+            format: CommandFormat::Float,
+            flags: CommandFlags::F_XET,
+            value: CommandValue::None,
+        });
+    }
+
+    // Mix
+    let mix_base = format!("{}/mix", base);
+    commands.push(X32Command {
+        command: mix_base.clone(),
+        format: CommandFormat::StringList(&[]),
+        flags: CommandFlags::F_FND,
+        value: CommandValue::None,
+    });
+    commands.push(X32Command {
+        command: format!("{}/on", mix_base),
+        format: CommandFormat::Int,
+        flags: CommandFlags::F_XET,
+        value: CommandValue::None,
+    });
+    commands.push(X32Command {
+        command: format!("{}/fader", mix_base),
+        format: CommandFormat::Float,
+        flags: CommandFlags::F_XET,
+        value: CommandValue::None,
+    });
+    commands.push(X32Command {
+        command: format!("{}/st", mix_base),
+        format: CommandFormat::Int,
+        flags: CommandFlags::F_XET,
+        value: CommandValue::None,
+    });
+    commands.push(X32Command {
+        command: format!("{}/pan", mix_base),
+        format: CommandFormat::Float,
+        flags: CommandFlags::F_XET,
+        value: CommandValue::None,
+    });
+    commands.push(X32Command {
+        command: format!("{}/mono", mix_base),
+        format: CommandFormat::Int,
+        flags: CommandFlags::F_XET,
+        value: CommandValue::None,
+    });
+    commands.push(X32Command {
+        command: format!("{}/mlevel", mix_base),
+        format: CommandFormat::Float,
+        flags: CommandFlags::F_XET,
+        value: CommandValue::None,
+    });
+
+    for i in 1..=16 {
+        let send_base = format!("{}/{:02}", mix_base, i);
+        commands.push(X32Command {
+            command: send_base.clone(),
+            format: CommandFormat::StringList(&[]),
+            flags: CommandFlags::F_FND,
+            value: CommandValue::None,
+        });
+        commands.push(X32Command {
+            command: format!("{}/on", send_base),
+            format: CommandFormat::Int,
+            flags: CommandFlags::F_XET,
+            value: CommandValue::None,
+        });
+        commands.push(X32Command {
+            command: format!("{}/level", send_base),
+            format: CommandFormat::Float,
+            flags: CommandFlags::F_XET,
+            value: CommandValue::None,
+        });
+        // Odd numbered mixes also have pan, type, and panFollow parameters
+        if i % 2 != 0 {
+            commands.push(X32Command {
+                command: format!("{}/pan", send_base),
+                format: CommandFormat::Float,
+                flags: CommandFlags::F_XET,
+                value: CommandValue::None,
+            });
+            commands.push(X32Command {
+                command: format!("{}/type", send_base),
+                format: CommandFormat::Int,
+                flags: CommandFlags::F_XET,
+                value: CommandValue::None,
+            });
+            commands.push(X32Command {
+                command: format!("{}/panFollow", send_base),
+                format: CommandFormat::Int,
+                flags: CommandFlags::F_XET,
+                value: CommandValue::None,
+            });
+        }
+    }
+
+    // Group
+    let grp_base = format!("{}/grp", base);
+    commands.push(X32Command {
+        command: grp_base.clone(),
+        format: CommandFormat::StringList(&[]),
+        flags: CommandFlags::F_FND,
+        value: CommandValue::None,
+    });
+    commands.push(X32Command {
+        command: format!("{}/dca", grp_base),
+        format: CommandFormat::Int,
+        flags: CommandFlags::F_XET,
+        value: CommandValue::None,
+    });
+    commands.push(X32Command {
+        command: format!("{}/mute", grp_base),
+        format: CommandFormat::Int,
+        flags: CommandFlags::F_XET,
+        value: CommandValue::None,
+    });
+
+    // Automix
+    let amix_base = format!("{}/automix", base);
+    commands.push(X32Command {
+        command: amix_base.clone(),
+        format: CommandFormat::StringList(&[]),
+        flags: CommandFlags::F_FND,
+        value: CommandValue::None,
+    });
+    commands.push(X32Command {
+        command: format!("{}/group", amix_base),
+        format: CommandFormat::Int,
+        flags: CommandFlags::F_XET,
+        value: CommandValue::None,
+    });
+    commands.push(X32Command {
+        command: format!("{}/weight", amix_base),
+        format: CommandFormat::Float,
+        flags: CommandFlags::F_XET,
+        value: CommandValue::None,
+    });
+
+    Ok(commands)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -155,7 +155,7 @@ pub fn set_on(bus_id: u8, on: On) -> (String, Vec<OscArg>) {
     (address, args)
 }
 
-pub fn get_bus_commands(bus_number: i32) -> Vec<X32Command> {
+pub fn get_bus_commands(bus_number: i32) -> Vec<X32Command<String>> {
     let bus_prefix = format!("/bus/{:02}", bus_number);
     let mut commands = vec![
         X32Command {

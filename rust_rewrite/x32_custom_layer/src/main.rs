@@ -2,7 +2,7 @@ use clap::{Parser, Subcommand};
 use std::net::UdpSocket;
 use std::fs::File;
 use std::io::{Write, BufReader, BufRead};
-use x32_lib::{create_socket, X32Error, Result};
+use x32_lib::{create_socket, error::{X32Error, Result}};
 use osc_lib::{OscMessage, OscArg};
 
 const SNIP_HEAD: &str = "#2.1# \"CustLayer\" 8191 -1 255 0 1\n";

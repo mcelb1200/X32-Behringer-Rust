@@ -7,33 +7,37 @@ use assert_cmd::Command;
 use predicates::prelude::*;
 use osc_lib::OscMessage;
 
-fn setup_mock_x32_server() -> UdpSocket {
-    let socket = UdpSocket::bind("127.0.0.1:10024").expect("couldn't bind to address");
-    socket.set_read_timeout(Some(Duration::from_millis(100))).unwrap();
+fn setup_mock_x32_server() -> String {
+    let socket = UdpSocket::bind("127.0.0.1:0").expect("couldn't bind to address");
+    let server_addr = socket.local_addr().unwrap().to_string();
     let server_socket = socket.try_clone().unwrap();
     thread::spawn(move || {
         let mut buf = [0; 512];
+        // Set a short read timeout so the thread doesn't block forever
+        server_socket.set_read_timeout(Some(Duration::from_millis(500))).unwrap();
         loop {
             match server_socket.recv_from(&mut buf) {
                 Ok((number_of_bytes, src_addr)) => {
-                    let received_msg = OscMessage::from_bytes(&buf[..number_of_bytes]).unwrap();
-                    server_socket.send_to(received_msg.to_bytes().unwrap().as_slice(), src_addr).expect("couldn't send data");
+                    if let Ok(received_msg) = OscMessage::from_bytes(&buf[..number_of_bytes]) {
+                        // Echo the message back to the client
+                        server_socket.send_to(&received_msg.to_bytes().unwrap(), src_addr).expect("couldn't send data");
+                    }
                 }
-                Err(_) => {
-                    // Timeout, break the loop
-                    break;
+                Err(e) => {
+                    if e.kind() != std::io::ErrorKind::WouldBlock && e.kind() != std::io::ErrorKind::TimedOut {
+                        // An actual error occurred
+                        break;
+                    }
                 }
             }
         }
     });
-    // Give the server a moment to start up
-    thread::sleep(Duration::from_millis(100));
-    socket
+    server_addr
 }
 
 #[test]
 fn test_desk_restore_command() {
-    let _socket = setup_mock_x32_server();
+    let server_addr = setup_mock_x32_server();
 
     // Create a mock data file
     let mut file = File::create("test_restore.txt").unwrap();
@@ -42,11 +46,11 @@ fn test_desk_restore_command() {
     writeln!(file, "/-prefs/remote ,s \"HUI\"").unwrap();
 
     let mut cmd = Command::cargo_bin("x32_desk_restore").unwrap();
-    cmd.args(&["--ip", "127.0.0.1", "test_restore.txt"]);
+    cmd.args(&["--ip", &server_addr, "test_restore.txt"]);
 
     cmd.assert()
         .success()
-        .stdout(predicate::str::contains("Successfully connected to X32 at 127.0.0.1"))
+        .stdout(predicate::str::contains(format!("Successfully connected to X32 at {}", server_addr)))
         .stdout(predicate::str::contains("Successfully restored data from test_restore.txt"));
 
     // Clean up the files

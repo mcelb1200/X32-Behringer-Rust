@@ -5,7 +5,7 @@ use std::net::UdpSocket;
 use std::time::{Duration, Instant};
 
 use osc_lib::OscMessage;
-use x32_lib::{create_socket, X32Error};
+use x32_lib::{create_socket, error::X32Error};
 
 /// A Rust implementation of the X32Commander utility.
 #[derive(Parser, Debug)]
