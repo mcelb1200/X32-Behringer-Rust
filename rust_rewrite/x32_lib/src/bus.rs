@@ -7,6 +7,7 @@
 
 use crate::common::{Color, EqType, On, CommandFlags, CommandFormat, CommandValue, X32Command, XCOLORS, OFF_ON, XDYMODE, XDYDET, XDYENV, XDYPPOS, XDYFTYP, XISEL, XEQTY1};
 use osc_lib::OscArg;
+use lazy_static::lazy_static;
 
 // Config
 /// Sets the name for a specific mix bus.
@@ -155,369 +156,89 @@ pub fn set_on(bus_id: u8, on: On) -> (String, Vec<OscArg>) {
     (address, args)
 }
 
-pub fn get_bus_commands(bus_number: i32) -> Vec<X32Command> {
-    let bus_prefix = format!("/bus/{:02}", bus_number);
-    let mut commands = vec![
-        X32Command {
-            command: "/bus".to_string(),
-            format: CommandFormat::StringList(&[]),
-            flags: CommandFlags::F_FND,
-            value: CommandValue::None,
-        },
-        X32Command {
-            command: format!("{}", bus_prefix),
-            format: CommandFormat::StringList(&[]),
-            flags: CommandFlags::F_FND,
-            value: CommandValue::None,
-        },
-        X32Command {
-            command: format!("{}/config", bus_prefix),
-            format: CommandFormat::StringList(&[]),
-            flags: CommandFlags::F_FND,
-            value: CommandValue::None,
-        },
-        X32Command {
-            command: format!("{}/config/name", bus_prefix),
-            format: CommandFormat::String,
-            flags: CommandFlags::F_XET,
-            value: CommandValue::None,
-        },
-        X32Command {
-            command: format!("{}/config/icon", bus_prefix),
-            format: CommandFormat::Int,
-            flags: CommandFlags::F_XET,
-            value: CommandValue::None,
-        },
-        X32Command {
-            command: format!("{}/config/color", bus_prefix),
-            format: CommandFormat::StringList(&XCOLORS),
-            flags: CommandFlags::F_XET,
-            value: CommandValue::None,
-        },
-        X32Command {
-            command: format!("{}/dyn", bus_prefix),
-            format: CommandFormat::StringList(&[]),
-            flags: CommandFlags::F_FND,
-            value: CommandValue::None,
-        },
-        X32Command {
-            command: format!("{}/dyn/on", bus_prefix),
-            format: CommandFormat::StringList(&OFF_ON),
-            flags: CommandFlags::F_XET,
-            value: CommandValue::None,
-        },
-        X32Command {
-            command: format!("{}/dyn/mode", bus_prefix),
-            format: CommandFormat::StringList(&XDYMODE),
-            flags: CommandFlags::F_XET,
-            value: CommandValue::None,
-        },
-        X32Command {
-            command: format!("{}/dyn/det", bus_prefix),
-            format: CommandFormat::StringList(&XDYDET),
-            flags: CommandFlags::F_XET,
-            value: CommandValue::None,
-        },
-        X32Command {
-            command: format!("{}/dyn/env", bus_prefix),
-            format: CommandFormat::StringList(&XDYENV),
-            flags: CommandFlags::F_XET,
-            value: CommandValue::None,
-        },
-        X32Command {
-            command: format!("{}/dyn/thr", bus_prefix),
-            format: CommandFormat::Float,
-            flags: CommandFlags::F_XET,
-            value: CommandValue::None,
-        },
-        X32Command {
-            command: format!("{}/dyn/ratio", bus_prefix),
-            format: CommandFormat::StringList(&OFF_ON),
-            flags: CommandFlags::F_XET,
-            value: CommandValue::None,
-        },
-        X32Command {
-            command: format!("{}/dyn/knee", bus_prefix),
-            format: CommandFormat::Float,
-            flags: CommandFlags::F_XET,
-            value: CommandValue::None,
-        },
-        X32Command {
-            command: format!("{}/dyn/mgain", bus_prefix),
-            format: CommandFormat::Float,
-            flags: CommandFlags::F_XET,
-            value: CommandValue::None,
-        },
-        X32Command {
-            command: format!("{}/dyn/attack", bus_prefix),
-            format: CommandFormat::Float,
-            flags: CommandFlags::F_XET,
-            value: CommandValue::None,
-        },
-        X32Command {
-            command: format!("{}/dyn/hold", bus_prefix),
-            format: CommandFormat::Float,
-            flags: CommandFlags::F_XET,
-            value: CommandValue::None,
-        },
-        X32Command {
-            command: format!("{}/dyn/release", bus_prefix),
-            format: CommandFormat::Float,
-            flags: CommandFlags::F_XET,
-            value: CommandValue::None,
-        },
-        X32Command {
-            command: format!("{}/dyn/pos", bus_prefix),
-            format: CommandFormat::StringList(&XDYPPOS),
-            flags: CommandFlags::F_XET,
-            value: CommandValue::None,
-        },
-        X32Command {
-            command: format!("{}/dyn/keysrc", bus_prefix),
-            format: CommandFormat::Int,
-            flags: CommandFlags::F_XET,
-            value: CommandValue::None,
-        },
-        X32Command {
-            command: format!("{}/dyn/mix", bus_prefix),
-            format: CommandFormat::Float,
-            flags: CommandFlags::F_XET,
-            value: CommandValue::None,
-        },
-        X32Command {
-            command: format!("{}/dyn/auto", bus_prefix),
-            format: CommandFormat::StringList(&OFF_ON),
-            flags: CommandFlags::F_XET,
-            value: CommandValue::None,
-        },
-        X32Command {
-            command: format!("{}/dyn/filter", bus_prefix),
-            format: CommandFormat::StringList(&[]),
-            flags: CommandFlags::F_FND,
-            value: CommandValue::None,
-        },
-        X32Command {
-            command: format!("{}/dyn/filter/on", bus_prefix),
-            format: CommandFormat::StringList(&OFF_ON),
-            flags: CommandFlags::F_XET,
-            value: CommandValue::None,
-        },
-        X32Command {
-            command: format!("{}/dyn/filter/type", bus_prefix),
-            format: CommandFormat::StringList(&XDYFTYP),
-            flags: CommandFlags::F_XET,
-            value: CommandValue::None,
-        },
-        X32Command {
-            command: format!("{}/dyn/filter/f", bus_prefix),
-            format: CommandFormat::Float,
-            flags: CommandFlags::F_XET,
-            value: CommandValue::None,
-        },
-        X32Command {
-            command: format!("{}/insert", bus_prefix),
-            format: CommandFormat::StringList(&[]),
-            flags: CommandFlags::F_FND,
-            value: CommandValue::None,
-        },
-        X32Command {
-            command: format!("{}/insert/on", bus_prefix),
-            format: CommandFormat::StringList(&OFF_ON),
-            flags: CommandFlags::F_XET,
-            value: CommandValue::None,
-        },
-        X32Command {
-            command: format!("{}/insert/pos", bus_prefix),
-            format: CommandFormat::StringList(&XDYPPOS),
-            flags: CommandFlags::F_XET,
-            value: CommandValue::None,
-        },
-        X32Command {
-            command: format!("{}/insert/sel", bus_prefix),
-            format: CommandFormat::StringList(&XISEL),
-            flags: CommandFlags::F_XET,
-            value: CommandValue::None,
-        },
-        X32Command {
-            command: format!("{}/eq", bus_prefix),
-            format: CommandFormat::StringList(&[]),
-            flags: CommandFlags::F_FND,
-            value: CommandValue::Int(1),
-        },
-        X32Command {
-            command: format!("{}/eq/on", bus_prefix),
-            format: CommandFormat::StringList(&OFF_ON),
-            flags: CommandFlags::F_XET,
-            value: CommandValue::None,
-        },
-    ];
-
-    for i in 1..=6 {
-        commands.extend(vec![
-            X32Command {
-                command: format!("{}/eq/{}", bus_prefix, i),
-                format: CommandFormat::StringList(&[]),
-                flags: CommandFlags::F_FND,
-                value: CommandValue::None,
-            },
-            X32Command {
-                command: format!("{}/eq/{}/type", bus_prefix, i),
-                format: CommandFormat::StringList(&XEQTY1),
-                flags: CommandFlags::F_XET,
-                value: CommandValue::None,
-            },
-            X32Command {
-                command: format!("{}/eq/{}/f", bus_prefix, i),
-                format: CommandFormat::Float,
-                flags: CommandFlags::F_XET,
-                value: CommandValue::None,
-            },
-            X32Command {
-                command: format!("{}/eq/{}/g", bus_prefix, i),
-                format: CommandFormat::Float,
-                flags: CommandFlags::F_XET,
-                value: CommandValue::None,
-            },
-            X32Command {
-                command: format!("{}/eq/{}/q", bus_prefix, i),
-                format: CommandFormat::Float,
-                flags: CommandFlags::F_XET,
-                value: CommandValue::None,
-            },
-        ]);
-    }
-
-    commands.extend(vec![
-        X32Command {
-            command: format!("{}/mix", bus_prefix),
-            format: CommandFormat::StringList(&[]),
-            flags: CommandFlags::F_FND,
-            value: CommandValue::None,
-        },
-        X32Command {
-            command: format!("{}/mix/on", bus_prefix),
-            format: CommandFormat::StringList(&OFF_ON),
-            flags: CommandFlags::F_XET,
-            value: CommandValue::None,
-        },
-        X32Command {
-            command: format!("{}/mix/fader", bus_prefix),
-            format: CommandFormat::Float,
-            flags: CommandFlags::F_XET,
-            value: CommandValue::None,
-        },
-        X32Command {
-            command: format!("{}/mix/st", bus_prefix),
-            format: CommandFormat::StringList(&OFF_ON),
-            flags: CommandFlags::F_XET,
-            value: CommandValue::None,
-        },
-        X32Command {
-            command: format!("{}/mix/pan", bus_prefix),
-            format: CommandFormat::Float,
-            flags: CommandFlags::F_XET,
-            value: CommandValue::None,
-        },
-        X32Command {
-            command: format!("{}/mix/mono", bus_prefix),
-            format: CommandFormat::StringList(&OFF_ON),
-            flags: CommandFlags::F_XET,
-            value: CommandValue::None,
-        },
-        X32Command {
-            command: format!("{}/mix/mlevel", bus_prefix),
-            format: CommandFormat::Float,
-            flags: CommandFlags::F_XET,
-            value: CommandValue::None,
-        },
-    ]);
-
-    for i in 1..=6 {
-        if i % 2 != 0 {
+lazy_static! {
+    pub static ref BUS_COMMANDS: Vec<X32Command> = {
+        let mut commands = Vec::new();
+        commands.push(X32Command { command: "/bus".to_string(), format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None });
+        for i in 1..=16 {
+            let bus_prefix = format!("/bus/{:02}", i);
             commands.extend(vec![
-                X32Command {
-                    command: format!("{}/mix/{:02}", bus_prefix, i),
-                    format: CommandFormat::StringList(&[]),
-                    flags: CommandFlags::F_FND,
-                    value: CommandValue::None,
-                },
-                X32Command {
-                    command: format!("{}/mix/{:02}/on", bus_prefix, i),
-                    format: CommandFormat::StringList(&OFF_ON),
-                    flags: CommandFlags::F_XET,
-                    value: CommandValue::None,
-                },
-                X32Command {
-                    command: format!("{}/mix/{:02}/level", bus_prefix, i),
-                    format: CommandFormat::Float,
-                    flags: CommandFlags::F_XET,
-                    value: CommandValue::None,
-                },
-                X32Command {
-                    command: format!("{}/mix/{:02}/pan", bus_prefix, i),
-                    format: CommandFormat::Float,
-                    flags: CommandFlags::F_XET,
-                    value: CommandValue::None,
-                },
-                X32Command {
-                    command: format!("{}/mix/{:02}/type", bus_prefix, i),
-                    format: CommandFormat::StringList(&OFF_ON),
-                    flags: CommandFlags::F_XET,
-                    value: CommandValue::None,
-                },
-                X32Command {
-                    command: format!("{}/mix/{:02}/panFollow", bus_prefix, i),
-                    format: CommandFormat::Int,
-                    flags: CommandFlags::F_XET,
-                    value: CommandValue::None,
-                },
+                X32Command { command: bus_prefix.clone(), format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None },
+                X32Command { command: format!("{}/config", bus_prefix), format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None },
+                X32Command { command: format!("{}/config/name", bus_prefix), format: CommandFormat::String, flags: CommandFlags::F_XET, value: CommandValue::None },
+                X32Command { command: format!("{}/config/icon", bus_prefix), format: CommandFormat::Int, flags: CommandFlags::F_XET, value: CommandValue::None },
+                X32Command { command: format!("{}/config/color", bus_prefix), format: CommandFormat::StringList(&XCOLORS), flags: CommandFlags::F_XET, value: CommandValue::None },
+                X32Command { command: format!("{}/dyn", bus_prefix), format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None },
+                X32Command { command: format!("{}/dyn/on", bus_prefix), format: CommandFormat::StringList(&OFF_ON), flags: CommandFlags::F_XET, value: CommandValue::None },
+                X32Command { command: format!("{}/dyn/mode", bus_prefix), format: CommandFormat::StringList(&XDYMODE), flags: CommandFlags::F_XET, value: CommandValue::None },
+                X32Command { command: format!("{}/dyn/det", bus_prefix), format: CommandFormat::StringList(&XDYDET), flags: CommandFlags::F_XET, value: CommandValue::None },
+                X32Command { command: format!("{}/dyn/env", bus_prefix), format: CommandFormat::StringList(&XDYENV), flags: CommandFlags::F_XET, value: CommandValue::None },
+                X32Command { command: format!("{}/dyn/thr", bus_prefix), format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+                X32Command { command: format!("{}/dyn/ratio", bus_prefix), format: CommandFormat::StringList(&OFF_ON), flags: CommandFlags::F_XET, value: CommandValue::None },
+                X32Command { command: format!("{}/dyn/knee", bus_prefix), format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+                X32Command { command: format!("{}/dyn/mgain", bus_prefix), format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+                X32Command { command: format!("{}/dyn/attack", bus_prefix), format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+                X32Command { command: format!("{}/dyn/hold", bus_prefix), format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+                X32Command { command: format!("{}/dyn/release", bus_prefix), format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+                X32Command { command: format!("{}/dyn/pos", bus_prefix), format: CommandFormat::StringList(&XDYPPOS), flags: CommandFlags::F_XET, value: CommandValue::None },
+                X32Command { command: format!("{}/dyn/keysrc", bus_prefix), format: CommandFormat::Int, flags: CommandFlags::F_XET, value: CommandValue::None },
+                X32Command { command: format!("{}/dyn/mix", bus_prefix), format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+                X32Command { command: format!("{}/dyn/auto", bus_prefix), format: CommandFormat::StringList(&OFF_ON), flags: CommandFlags::F_XET, value: CommandValue::None },
+                X32Command { command: format!("{}/dyn/filter", bus_prefix), format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None },
+                X32Command { command: format!("{}/dyn/filter/on", bus_prefix), format: CommandFormat::StringList(&OFF_ON), flags: CommandFlags::F_XET, value: CommandValue::None },
+                X32Command { command: format!("{}/dyn/filter/type", bus_prefix), format: CommandFormat::StringList(&XDYFTYP), flags: CommandFlags::F_XET, value: CommandValue::None },
+                X32Command { command: format!("{}/dyn/filter/f", bus_prefix), format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+                X32Command { command: format!("{}/insert", bus_prefix), format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None },
+                X32Command { command: format!("{}/insert/on", bus_prefix), format: CommandFormat::StringList(&OFF_ON), flags: CommandFlags::F_XET, value: CommandValue::None },
+                X32Command { command: format!("{}/insert/pos", bus_prefix), format: CommandFormat::StringList(&XDYPPOS), flags: CommandFlags::F_XET, value: CommandValue::None },
+                X32Command { command: format!("{}/insert/sel", bus_prefix), format: CommandFormat::StringList(&XISEL), flags: CommandFlags::F_XET, value: CommandValue::None },
+                X32Command { command: format!("{}/eq", bus_prefix), format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::Int(1) },
+                X32Command { command: format!("{}/eq/on", bus_prefix), format: CommandFormat::StringList(&OFF_ON), flags: CommandFlags::F_XET, value: CommandValue::None },
             ]);
-        } else {
+            for j in 1..=6 {
+                commands.extend(vec![
+                    X32Command { command: format!("{}/eq/{}", bus_prefix, j), format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None },
+                    X32Command { command: format!("{}/eq/{}/type", bus_prefix, j), format: CommandFormat::StringList(&XEQTY1), flags: CommandFlags::F_XET, value: CommandValue::None },
+                    X32Command { command: format!("{}/eq/{}/f", bus_prefix, j), format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+                    X32Command { command: format!("{}/eq/{}/g", bus_prefix, j), format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+                    X32Command { command: format!("{}/eq/{}/q", bus_prefix, j), format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+                ]);
+            }
             commands.extend(vec![
-                X32Command {
-                    command: format!("{}/mix/{:02}", bus_prefix, i),
-                    format: CommandFormat::StringList(&[]),
-                    flags: CommandFlags::F_FND,
-                    value: CommandValue::None,
-                },
-                X32Command {
-                    command: format!("{}/mix/{:02}/on", bus_prefix, i),
-                    format: CommandFormat::StringList(&OFF_ON),
-                    flags: CommandFlags::F_XET,
-                    value: CommandValue::None,
-                },
-                X32Command {
-                    command: format!("{}/mix/{:02}/level", bus_prefix, i),
-                    format: CommandFormat::Float,
-                    flags: CommandFlags::F_XET,
-                    value: CommandValue::None,
-                },
+                X32Command { command: format!("{}/mix", bus_prefix), format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None },
+                X32Command { command: format!("{}/mix/on", bus_prefix), format: CommandFormat::StringList(&OFF_ON), flags: CommandFlags::F_XET, value: CommandValue::None },
+                X32Command { command: format!("{}/mix/fader", bus_prefix), format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+                X32Command { command: format!("{}/mix/st", bus_prefix), format: CommandFormat::StringList(&OFF_ON), flags: CommandFlags::F_XET, value: CommandValue::None },
+                X32Command { command: format!("{}/mix/pan", bus_prefix), format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+                X32Command { command: format!("{}/mix/mono", bus_prefix), format: CommandFormat::StringList(&OFF_ON), flags: CommandFlags::F_XET, value: CommandValue::None },
+                X32Command { command: format!("{}/mix/mlevel", bus_prefix), format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+            ]);
+            for j in 1..=6 {
+                if j % 2 != 0 {
+                    commands.extend(vec![
+                        X32Command { command: format!("{}/mix/{:02}", bus_prefix, j), format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None },
+                        X32Command { command: format!("{}/mix/{:02}/on", bus_prefix, j), format: CommandFormat::StringList(&OFF_ON), flags: CommandFlags::F_XET, value: CommandValue::None },
+                        X32Command { command: format!("{}/mix/{:02}/level", bus_prefix, j), format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+                        X32Command { command: format!("{}/mix/{:02}/pan", bus_prefix, j), format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+                        X32Command { command: format!("{}/mix/{:02}/type", bus_prefix, j), format: CommandFormat::StringList(&OFF_ON), flags: CommandFlags::F_XET, value: CommandValue::None },
+                        X32Command { command: format!("{}/mix/{:02}/panFollow", bus_prefix, j), format: CommandFormat::Int, flags: CommandFlags::F_XET, value: CommandValue::None },
+                    ]);
+                } else {
+                    commands.extend(vec![
+                        X32Command { command: format!("{}/mix/{:02}", bus_prefix, j), format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None },
+                        X32Command { command: format!("{}/mix/{:02}/on", bus_prefix, j), format: CommandFormat::StringList(&OFF_ON), flags: CommandFlags::F_XET, value: CommandValue::None },
+                        X32Command { command: format!("{}/mix/{:02}/level", bus_prefix, j), format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+                    ]);
+                }
+            }
+            commands.extend(vec![
+                X32Command { command: format!("{}/grp", bus_prefix), format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None },
+                X32Command { command: format!("{}/grp/dca", bus_prefix), format: CommandFormat::Int, flags: CommandFlags::F_XET, value: CommandValue::None },
+                X32Command { command: format!("{}/grp/mute", bus_prefix), format: CommandFormat::Int, flags: CommandFlags::F_XET, value: CommandValue::None },
             ]);
         }
-    }
-
-    commands.extend(vec![
-        X32Command {
-            command: format!("{}/grp", bus_prefix),
-            format: CommandFormat::StringList(&[]),
-            flags: CommandFlags::F_FND,
-            value: CommandValue::None,
-        },
-        X32Command {
-            command: format!("{}/grp/dca", bus_prefix),
-            format: CommandFormat::Int,
-            flags: CommandFlags::F_XET,
-            value: CommandValue::None,
-        },
-        X32Command {
-            command: format!("{}/grp/mute", bus_prefix),
-            format: CommandFormat::Int,
-            flags: CommandFlags::F_XET,
-            value: CommandValue::None,
-        },
-    ]);
-
-    commands
+        commands
+    };
 }
 
 #[cfg(test)]

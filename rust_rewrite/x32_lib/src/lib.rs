@@ -182,5 +182,3 @@ pub fn set_parameter(socket: &UdpSocket, address: &str, value: f32) -> Result<()
     socket.send(&msg.to_bytes()?)?;
     Ok(())
 }
-
-

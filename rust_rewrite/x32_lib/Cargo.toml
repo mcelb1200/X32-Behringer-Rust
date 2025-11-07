@@ -5,20 +5,25 @@ edition = "2021"
 
 [dependencies]
 osc_lib = { path = "../osc_lib" }
-bitflags = "2.4.1"
+bitflags = "2.5.0"
+lazy_static = "1.4.0"
 
 [features]
+default = []
 dca = []
-channel = []
-auxin = []
-bus = []
-mtx = []
-main_bus = []
 fx = []
+bus = []
+auxin = []
+channel = []
+common = []
+error = []
 fxrtn = []
-output = []
 headamp = []
-show = []
-misc = []
-prefstat = []
 libs = []
+main_bus = []
+misc = []
+mtx = []
+output = []
+prefstat = []
+show = []
+cfg_main = []
