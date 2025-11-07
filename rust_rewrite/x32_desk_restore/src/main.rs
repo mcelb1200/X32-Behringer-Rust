@@ -4,7 +4,8 @@
 
 use clap::Parser;
 use std::path::PathBuf;
-use x32_lib::{create_socket, X32Error, Result};
+use x32_lib::{create_socket};
+use x32_lib::error::{Result, X32Error};
 use osc_lib::{OscMessage};
 use std::fs::File;
 use std::io::{self, BufRead};
@@ -17,6 +18,10 @@ struct Args {
     /// X32 console IP address
     #[arg(short, long, default_value = "192.168.1.64")]
     ip: String,
+
+    /// X32 console port
+    #[arg(short, long, default_value = "10023")]
+    port: u16,
 
     /// The source file path to restore data from.
     #[arg(index = 1)]
@@ -88,8 +93,8 @@ fn main() -> Result<()> {
         return Ok(());
     }
 
-    let socket = create_socket(&args.ip, 2000)?;
-    println!("Successfully connected to X32 at {}", args.ip);
+    let socket = create_socket(&format!("{}:{}", args.ip, args.port), 2000)?;
+    println!("Successfully connected to X32 at {}:{}", args.ip, args.port);
 
     send_commands(&socket, &commands)?;
 

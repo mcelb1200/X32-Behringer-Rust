@@ -21,6 +21,8 @@ pub enum OscError {
     UnsupportedTypeTag(char),
     /// A general parsing error occurred.
     ParseError(String),
+    /// An unexpected response was received from the OSC server.
+    UnexpectedResponse,
 }
 
 impl std::fmt::Display for OscError {
@@ -31,6 +33,7 @@ impl std::fmt::Display for OscError {
             OscError::InvalidTypeTag => write!(f, "Invalid OSC type tag string"),
             OscError::UnsupportedTypeTag(c) => write!(f, "Unsupported OSC type tag: {}", c),
             OscError::ParseError(s) => write!(f, "Parse error: {}", s),
+            OscError::UnexpectedResponse => write!(f, "Unexpected response from OSC server"),
         }
     }
 }
@@ -236,7 +239,7 @@ impl OscMessage {
 }
 
 /// Tokenizes a string for OSC message parsing, handling quoted strings.
-fn tokenize(s: &str) -> Result<Vec<String>> {
+pub fn tokenize(s: &str) -> Result<Vec<String>> {
     let mut tokens = Vec::new();
     let mut current_token = String::new();
     let mut in_quote = false;

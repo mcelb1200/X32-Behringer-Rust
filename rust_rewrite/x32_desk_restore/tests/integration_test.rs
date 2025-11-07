@@ -8,7 +8,7 @@ use predicates::prelude::*;
 use osc_lib::OscMessage;
 
 fn setup_mock_x32_server() -> UdpSocket {
-    let socket = UdpSocket::bind("127.0.0.1:10024").expect("couldn't bind to address");
+    let socket = UdpSocket::bind("127.0.0.1:0").expect("couldn't bind to address");
     socket.set_read_timeout(Some(Duration::from_millis(100))).unwrap();
     let server_socket = socket.try_clone().unwrap();
     thread::spawn(move || {
@@ -33,7 +33,11 @@ fn setup_mock_x32_server() -> UdpSocket {
 
 #[test]
 fn test_desk_restore_command() {
-    let _socket = setup_mock_x32_server();
+    let socket = setup_mock_x32_server();
+    let addr = socket.local_addr().unwrap();
+    let ip = addr.ip().to_string();
+    let port = addr.port().to_string();
+
 
     // Create a mock data file
     let mut file = File::create("test_restore.txt").unwrap();
@@ -42,11 +46,11 @@ fn test_desk_restore_command() {
     writeln!(file, "/-prefs/remote ,s \"HUI\"").unwrap();
 
     let mut cmd = Command::cargo_bin("x32_desk_restore").unwrap();
-    cmd.args(&["--ip", "127.0.0.1", "test_restore.txt"]);
+    cmd.args(&["--ip", &ip, "--port", &port, "test_restore.txt"]);
 
     cmd.assert()
         .success()
-        .stdout(predicate::str::contains("Successfully connected to X32 at 127.0.0.1"))
+        .stdout(predicate::str::contains(format!("Successfully connected to X32 at {}:{}", ip, port)))
         .stdout(predicate::str::contains("Successfully restored data from test_restore.txt"));
 
     // Clean up the files

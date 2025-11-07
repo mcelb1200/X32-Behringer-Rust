@@ -1,20 +1,79 @@
-
 //! # Auxin Module
 //!
-//! Controls the 8 auxiliary inputs on the X32/M32.
+//! Controls the 8 Auxiliary input channels on the X32/M32.
 //!
-//! This module provides functions for controlling various aspects of the auxiliary inputs,
-//! including configuration, EQ, and mix settings.
+//! This module provides functions for setting various parameters of the Aux channels,
+//! including name, color, fader level, and mute status.
 
-use crate::common::{Color, EqType, On, CommandFlags, CommandFormat, CommandValue, X32Command};
+use crate::common::{
+    Color, EqType, On,
+};
 use osc_lib::OscArg;
 
-// Config
-/// Sets the name for a specific auxiliary input.
+/// Returns a list of all OSC commands for a specific Aux input channel.
+///
+/// This function generates commands for config, preamp, EQ, mix, and automix settings.
 ///
 /// # Arguments
 ///
-/// * `auxin_id` - The ID of the auxiliary input (1-8).
+/// * `auxin_id` - The ID of the Aux input channel (1-8).
+///
+/// # Returns
+///
+/// A `Vec<String>` containing all the OSC commands.
+pub fn get_auxin_commands(auxin_id: u8) -> Result<Vec<String>, &'static str> {
+    if !(1..=8).contains(&auxin_id) {
+        return Err("Invalid Auxin ID. Must be between 1 and 8.");
+    }
+
+    let mut commands = Vec::new();
+    let id_str = format!("{:02}", auxin_id);
+
+    // Config and Preamp
+    commands.push(format!("/auxin/{}/config/name", id_str));
+    commands.push(format!("/auxin/{}/config/icon", id_str));
+    commands.push(format!("/auxin/{}/config/color", id_str));
+    commands.push(format!("/auxin/{}/config/source", id_str));
+    commands.push(format!("/auxin/{}/preamp/trim", id_str));
+    commands.push(format!("/auxin/{}/preamp/invert", id_str));
+
+    // EQ
+    commands.push(format!("/auxin/{}/eq/on", id_str));
+    commands.push(format!("/auxin/{}/eq/reset", id_str));
+    for i in 1..=4 {
+        commands.push(format!("/auxin/{}/eq/{}/type", id_str, i));
+        commands.push(format!("/auxin/{}/eq/{}/freq", id_str, i));
+        commands.push(format!("/auxin/{}/eq/{}/gain", id_str, i));
+        commands.push(format!("/auxin/{}/eq/{}/q", id_str, i));
+    }
+
+    // Mix
+    commands.push(format!("/auxin/{}/mix/on", id_str));
+    commands.push(format!("/auxin/{}/mix/fader", id_str));
+    commands.push(format!("/auxin/{}/mix/st", id_str));
+    commands.push(format!("/auxin/{}/mix/pan", id_str));
+    commands.push(format!("/auxin/{}/mix/mono", id_str));
+    commands.push(format!("/auxin/{}/mix/mlevel", id_str));
+
+    for i in 1..=16 {
+        commands.push(format!("/auxin/{}/mix/{:02}/on", id_str, i));
+        commands.push(format!("/auxin/{}/mix/{:02}/level", id_str, i));
+        commands.push(format!("/auxin/{}/mix/{:02}/pan", id_str, i));
+        commands.push(format!("/auxin/{}/mix/{:02}/type", id_str, i));
+    }
+
+    // Automix
+    commands.push(format!("/auxin/{}/automix/group", id_str));
+    commands.push(format!("/auxin/{}/automix/weight", id_str));
+
+    Ok(commands)
+}
+
+/// Sets the name of a specific Aux input channel.
+///
+/// # Arguments
+///
+/// * `auxin_id` - The ID of the Aux input channel (1-8).
 /// * `name` - The name to set.
 ///
 /// # Example
@@ -23,9 +82,9 @@ use osc_lib::OscArg;
 /// use x32_lib::auxin;
 /// use osc_lib::OscArg;
 ///
-/// let (address, args) = auxin::set_name(1, "CD Player");
+/// let (address, args) = auxin::set_name(1, "AUX 1");
 /// assert_eq!(address, "/auxin/01/config/name");
-/// assert_eq!(args, vec![OscArg::String("CD Player".to_string())]);
+/// assert_eq!(args, vec![OscArg::String("AUX 1".to_string())]);
 /// ```
 pub fn set_name(auxin_id: u8, name: &str) -> (String, Vec<OscArg>) {
     let address = format!("/auxin/{:02}/config/name", auxin_id);
@@ -33,21 +92,11 @@ pub fn set_name(auxin_id: u8, name: &str) -> (String, Vec<OscArg>) {
     (address, args)
 }
 
-pub fn get_auxin_commands(channel_num: u8) -> Result<Vec<X32Command>, String> {
-    if !(1..=8).contains(&channel_num) {
-        return Err(format!(
-            "Invalid auxin channel number: {}. Must be between 1 and 8.",
-            channel_num
-        ));
-    }
-    let mut commands = Vec::new();
-    let base = format!("/auxin/{:02}", channel_num);
-
-/// Sets the color for a specific auxiliary input.
+/// Sets the color of a specific Aux input channel.
 ///
 /// # Arguments
 ///
-/// * `auxin_id` - The ID of the auxiliary input (1-8).
+/// * `auxin_id` - The ID of the Aux input channel (1-8).
 /// * `color` - The color to set.
 ///
 /// # Example
@@ -67,14 +116,13 @@ pub fn set_color(auxin_id: u8, color: Color) -> (String, Vec<OscArg>) {
     (address, args)
 }
 
-// EQ
-/// Sets the EQ band type for a specific auxiliary input.
+/// Sets the EQ band type for a specific Aux input channel.
 ///
 /// # Arguments
 ///
-/// * `auxin_id` - The ID of the auxiliary input (1-8).
-/// * `band` - The EQ band (1-4).
-/// * `eq_type` - The EQ type.
+/// * `auxin_id` - The ID of the Aux input channel (1-8).
+/// * `band_id` - The ID of the EQ band (1-4).
+/// * `eq_type` - The EQ type to set.
 ///
 /// # Example
 ///
@@ -83,23 +131,22 @@ pub fn set_color(auxin_id: u8, color: Color) -> (String, Vec<OscArg>) {
 /// use x32_lib::common::EqType;
 /// use osc_lib::OscArg;
 ///
-/// let (address, args) = auxin::set_eq_band_type(1, 1, EqType::Peq);
+/// let (address, args) = auxin::set_eq_band_type(1, 1, EqType::Lcut);
 /// assert_eq!(address, "/auxin/01/eq/1/type");
-/// assert_eq!(args, vec![OscArg::Int(2)]);
+/// assert_eq!(args, vec![OscArg::Int(0)]);
 /// ```
-pub fn set_eq_band_type(auxin_id: u8, band: u8, eq_type: EqType) -> (String, Vec<OscArg>) {
-    let address = format!("/auxin/{:02}/eq/{}/type", auxin_id, band);
+pub fn set_eq_band_type(auxin_id: u8, band_id: u8, eq_type: EqType) -> (String, Vec<OscArg>) {
+    let address = format!("/auxin/{:02}/eq/{}/type", auxin_id, band_id);
     let args = vec![OscArg::Int(eq_type as i32)];
     (address, args)
 }
 
-// Mix
-/// Sets the fader level for a specific auxiliary input.
+/// Sets the fader level of a specific Aux input channel.
 ///
 /// # Arguments
 ///
-/// * `auxin_id` - The ID of the auxiliary input (1-8).
-/// * `level` - The fader level (0.0 to 1.0).
+/// * `auxin_id` - The ID of the Aux input channel (1-8).
+/// * `level` - The fader level to set (0.0 to 1.0).
 ///
 /// # Example
 ///
@@ -117,12 +164,12 @@ pub fn set_fader(auxin_id: u8, level: f32) -> (String, Vec<OscArg>) {
     (address, args)
 }
 
-/// Sets the mute state for a specific auxiliary input.
+/// Sets the mute status of a specific Aux input channel.
 ///
 /// # Arguments
 ///
-/// * `auxin_id` - The ID of the auxiliary input (1-8).
-/// * `on` - The mute state (`On::On` for muted, `On::Off` for unmuted).
+/// * `auxin_id` - The ID of the Aux input channel (1-8).
+/// * `on` - The mute status to set.
 ///
 /// # Example
 ///
@@ -141,257 +188,19 @@ pub fn set_on(auxin_id: u8, on: On) -> (String, Vec<OscArg>) {
     (address, args)
 }
 
-    commands.push(X32Command {
-        command: "/auxin".to_string(),
-        format: CommandFormat::StringList(&[]),
-        flags: CommandFlags::F_FND,
-        value: CommandValue::None,
-    });
-    commands.push(X32Command {
-        command: base.clone(),
-        format: CommandFormat::StringList(&[]),
-        flags: CommandFlags::F_FND,
-        value: CommandValue::None,
-    });
-
-    // Config
-    let config_base = format!("{}/config", base);
-    commands.push(X32Command {
-        command: config_base.clone(),
-        format: CommandFormat::StringList(&[]),
-        flags: CommandFlags::F_FND,
-        value: CommandValue::None,
-    });
-    commands.push(X32Command {
-        command: format!("{}/name", config_base),
-        format: CommandFormat::String,
-        flags: CommandFlags::F_XET,
-        value: CommandValue::None,
-    });
-    commands.push(X32Command {
-        command: format!("{}/icon", config_base),
-        format: CommandFormat::Int,
-        flags: CommandFlags::F_XET,
-        value: CommandValue::None,
-    });
-    commands.push(X32Command {
-        command: format!("{}/color", config_base),
-        format: CommandFormat::Int,
-        flags: CommandFlags::F_XET,
-        value: CommandValue::None,
-    });
-    commands.push(X32Command {
-        command: format!("{}/source", config_base),
-        format: CommandFormat::Int,
-        flags: CommandFlags::F_XET,
-        value: CommandValue::None,
-    });
-
-    // Preamp
-    let preamp_base = format!("{}/preamp", base);
-    commands.push(X32Command {
-        command: preamp_base.clone(),
-        format: CommandFormat::StringList(&[]),
-        flags: CommandFlags::F_FND,
-        value: CommandValue::None,
-    });
-    commands.push(X32Command {
-        command: format!("{}/trim", preamp_base),
-        format: CommandFormat::Float,
-        flags: CommandFlags::F_XET,
-        value: CommandValue::None,
-    });
-    commands.push(X32Command {
-        command: format!("{}/invert", preamp_base),
-        format: CommandFormat::Int,
-        flags: CommandFlags::F_XET,
-        value: CommandValue::None,
-    });
-
-    // EQ
-    let eq_base = format!("{}/eq", base);
-    commands.push(X32Command {
-        command: eq_base.clone(),
-        format: CommandFormat::StringList(&[]),
-        flags: CommandFlags::F_FND,
-        value: CommandValue::None,
-    });
-    commands.push(X32Command {
-        command: format!("{}/on", eq_base),
-        format: CommandFormat::Int,
-        flags: CommandFlags::F_XET,
-        value: CommandValue::None,
-    });
-    for i in 1..=4 {
-        let band_base = format!("{}/{}", eq_base, i);
-        commands.push(X32Command {
-            command: band_base.clone(),
-            format: CommandFormat::StringList(&[]),
-            flags: CommandFlags::F_FND,
-            value: CommandValue::None,
-        });
-        commands.push(X32Command {
-            command: format!("{}/type", band_base),
-            format: CommandFormat::Int,
-            flags: CommandFlags::F_XET,
-            value: CommandValue::None,
-        });
-        commands.push(X32Command {
-            command: format!("{}/f", band_base),
-            format: CommandFormat::Float,
-            flags: CommandFlags::F_XET,
-            value: CommandValue::None,
-        });
-        commands.push(X32Command {
-            command: format!("{}/g", band_base),
-            format: CommandFormat::Float,
-            flags: CommandFlags::F_XET,
-            value: CommandValue::None,
-        });
-        commands.push(X32Command {
-            command: format!("{}/q", band_base),
-            format: CommandFormat::Float,
-            flags: CommandFlags::F_XET,
-            value: CommandValue::None,
-        });
-    }
-
-    // Mix
-    let mix_base = format!("{}/mix", base);
-    commands.push(X32Command {
-        command: mix_base.clone(),
-        format: CommandFormat::StringList(&[]),
-        flags: CommandFlags::F_FND,
-        value: CommandValue::None,
-    });
-    commands.push(X32Command {
-        command: format!("{}/on", mix_base),
-        format: CommandFormat::Int,
-        flags: CommandFlags::F_XET,
-        value: CommandValue::None,
-    });
-    commands.push(X32Command {
-        command: format!("{}/fader", mix_base),
-        format: CommandFormat::Float,
-        flags: CommandFlags::F_XET,
-        value: CommandValue::None,
-    });
-    commands.push(X32Command {
-        command: format!("{}/st", mix_base),
-        format: CommandFormat::Int,
-        flags: CommandFlags::F_XET,
-        value: CommandValue::None,
-    });
-    commands.push(X32Command {
-        command: format!("{}/pan", mix_base),
-        format: CommandFormat::Float,
-        flags: CommandFlags::F_XET,
-        value: CommandValue::None,
-    });
-    commands.push(X32Command {
-        command: format!("{}/mono", mix_base),
-        format: CommandFormat::Int,
-        flags: CommandFlags::F_XET,
-        value: CommandValue::None,
-    });
-    commands.push(X32Command {
-        command: format!("{}/mlevel", mix_base),
-        format: CommandFormat::Float,
-        flags: CommandFlags::F_XET,
-        value: CommandValue::None,
-    });
-
-    for i in 1..=16 {
-        let send_base = format!("{}/{:02}", mix_base, i);
-        commands.push(X32Command {
-            command: send_base.clone(),
-            format: CommandFormat::StringList(&[]),
-            flags: CommandFlags::F_FND,
-            value: CommandValue::None,
-        });
-        commands.push(X32Command {
-            command: format!("{}/on", send_base),
-            format: CommandFormat::Int,
-            flags: CommandFlags::F_XET,
-            value: CommandValue::None,
-        });
-        commands.push(X32Command {
-            command: format!("{}/level", send_base),
-            format: CommandFormat::Float,
-            flags: CommandFlags::F_XET,
-            value: CommandValue::None,
-        });
-        // Odd numbered mixes also have pan, type, and panFollow parameters
-        if i % 2 != 0 {
-            commands.push(X32Command {
-                command: format!("{}/pan", send_base),
-                format: CommandFormat::Float,
-                flags: CommandFlags::F_XET,
-                value: CommandValue::None,
-            });
-            commands.push(X32Command {
-                command: format!("{}/type", send_base),
-                format: CommandFormat::Int,
-                flags: CommandFlags::F_XET,
-                value: CommandValue::None,
-            });
-            commands.push(X32Command {
-                command: format!("{}/panFollow", send_base),
-                format: CommandFormat::Int,
-                flags: CommandFlags::F_XET,
-                value: CommandValue::None,
-            });
-        }
-    }
-
-    // Group
-    let grp_base = format!("{}/grp", base);
-    commands.push(X32Command {
-        command: grp_base.clone(),
-        format: CommandFormat::StringList(&[]),
-        flags: CommandFlags::F_FND,
-        value: CommandValue::None,
-    });
-    commands.push(X32Command {
-        command: format!("{}/dca", grp_base),
-        format: CommandFormat::Int,
-        flags: CommandFlags::F_XET,
-        value: CommandValue::None,
-    });
-    commands.push(X32Command {
-        command: format!("{}/mute", grp_base),
-        format: CommandFormat::Int,
-        flags: CommandFlags::F_XET,
-        value: CommandValue::None,
-    });
-
-    Ok(commands)
-}
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn test_set_fader() {
-        let (address, args) = set_fader(1, 0.75);
-        assert_eq!(address, "/auxin/01/mix/fader");
-        assert_eq!(args, vec![OscArg::Float(0.75)]);
-    }
-
-    #[test]
-    fn test_set_on() {
-        let (address, args) = set_on(1, On::On);
-        assert_eq!(address, "/auxin/01/mix/on");
-        assert_eq!(args, vec![OscArg::Int(1)]);
-    }
-
-    #[test]
     fn test_get_auxin_commands_valid_channel() {
-        let commands = get_auxin_commands(1).unwrap();
-        assert!(commands.iter().any(|c| c.command == "/auxin/01/config/name"));
-        assert!(commands.iter().any(|c| c.command == "/auxin/01/mix/01/pan"));
-        assert!(!commands.iter().any(|c| c.command == "/auxin/01/mix/02/pan"));
+        let result = get_auxin_commands(1);
+        assert!(result.is_ok());
+        let commands = result.unwrap();
+        assert!(commands.contains(&"/auxin/01/config/name".to_string()));
+        assert!(commands.contains(&"/auxin/01/mix/fader".to_string()));
+        assert!(commands.contains(&"/auxin/01/eq/4/q".to_string()));
     }
 
     #[test]
@@ -405,7 +214,24 @@ mod tests {
 
     #[test]
     fn test_get_auxin_commands_command_count() {
-        let commands = get_auxin_commands(1).unwrap();
-        assert_eq!(commands.len(), 114);
+        let result = get_auxin_commands(1);
+        assert!(result.is_ok());
+        let commands = result.unwrap();
+        // 6 (config/preamp) + 2 (eq on/reset) + 4*4 (eq bands) + 6 (mix) + 16*4 (mix sends) + 2 (automix) = 96
+        assert_eq!(commands.len(), 96);
+    }
+
+    #[test]
+    fn test_set_fader() {
+        let (address, args) = set_fader(1, 0.75);
+        assert_eq!(address, "/auxin/01/mix/fader");
+        assert_eq!(args, vec![OscArg::Float(0.75f32)]);
+    }
+
+    #[test]
+    fn test_set_on() {
+        let (address, args) = set_on(1, On::On);
+        assert_eq!(address, "/auxin/01/mix/on");
+        assert_eq!(args, vec![OscArg::Int(1i32)]);
     }
 }

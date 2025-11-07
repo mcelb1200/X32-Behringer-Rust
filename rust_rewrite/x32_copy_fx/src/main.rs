@@ -2,7 +2,8 @@ mod fx_defaults;
 
 use clap::Parser;
 use std::net::UdpSocket;
-use x32_lib::{create_socket, X32Error};
+use x32_lib::create_socket;
+use x32_lib::error::X32Error;
 use osc_lib::{OscMessage, OscArg};
 use std::collections::HashMap;
 use std::fs::File;
@@ -62,10 +63,10 @@ fn main() -> Result<(), X32Error> {
     let args = Args::parse();
 
     if args.from < 1 || args.from > 8 {
-        return Err(X32Error::from("Source FX slot must be between 1 and 8.".to_string()));
+        return Err(X32Error::Custom("Source FX slot must be between 1 and 8.".to_string()));
     }
     if args.to > 8 {
-        return Err(X32Error::from("Destination FX slot must be between 1 and 8.".to_string()));
+        return Err(X32Error::Custom("Destination FX slot must be between 1 and 8.".to_string()));
     }
 
     let socket = create_socket(&args.ip, 200)?;
@@ -117,7 +118,7 @@ fn reset_fx(socket: &UdpSocket, from: u8, defaults_file: Option<PathBuf>) -> Res
             defaults.get(fx_name).map(|s| s.as_str())
         } else {
             None
-        }.or_else(|| fx_defaults::FX_DEFAULTS.get(fx_name).map(|s| *s));
+        }.or_else(|| fx_defaults::FX_DEFAULTS.get(fx_name).map(|s: &&'static str| *s));
 
 
         if let Some(defaults) = defaults_str {
@@ -136,10 +137,10 @@ fn reset_fx(socket: &UdpSocket, from: u8, defaults_file: Option<PathBuf>) -> Res
             socket.send(&msg.to_bytes()?)?;
             Ok(())
         } else {
-            Err(X32Error::from(format!("Defaults not found for FX type: {}", fx_name)))
+            Err(X32Error::Custom(format!("Defaults not found for FX type: {}", fx_name)))
         }
     } else {
-        Err(X32Error::from("Could not determine FX type.".to_string()))
+        Err(X32Error::Custom("Could not determine FX type.".to_string()))
     }
 }
 
@@ -157,7 +158,7 @@ fn get_fx_name_from_id(id: i32) -> Result<&'static str, X32Error> {
     if id >= 0 && id < fx_names.len() as i32 {
         Ok(fx_names[id as usize])
     } else {
-        Err(X32Error::from(format!("Invalid FX type ID: {}", id)))
+        Err(X32Error::Custom(format!("Invalid FX type ID: {}", id)))
     }
 }
 
@@ -177,7 +178,7 @@ fn copy_param(socket: &UdpSocket, from_fx: u8, from_param: u8, to_fx: u8, to_par
 
 fn copy_fx(socket: &UdpSocket, from: u8, to: u8, master: bool) -> Result<(), X32Error> {
     if to == 0 {
-        return Err(X32Error::from("Destination FX slot must be provided for copy action.".to_string()));
+        return Err(X32Error::Custom("Destination FX slot must be provided for copy action.".to_string()));
     }
     println!("Copying FX from slot {} to {}.", from, to);
     for i in 1..32 {

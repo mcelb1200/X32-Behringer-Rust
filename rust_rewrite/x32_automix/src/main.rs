@@ -2,7 +2,8 @@ use clap::Parser;
 use std::io::ErrorKind;
 use std::net::UdpSocket;
 use std::time::{Duration, Instant};
-use x32_lib::{create_socket, Result};
+use x32_lib::create_socket;
+use x32_lib::error::Result;
 use osc_lib::{OscMessage, OscArg};
 
 /// A utility to provide automixing functionality for the Behringer X32/X-Air consoles.

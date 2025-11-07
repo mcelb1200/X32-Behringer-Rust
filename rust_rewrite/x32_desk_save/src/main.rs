@@ -7,7 +7,8 @@ use std::path::PathBuf;
 use std::net::UdpSocket;
 use std::fs::File;
 use std::io::{self, BufRead, Write};
-use x32_lib::{create_socket, X32Error};
+use x32_lib::create_socket;
+use x32_lib::error::X32Error;
 use osc_lib::{OscMessage, OscArg};
 
 mod nodes;
@@ -57,7 +58,7 @@ fn get_desk_data(socket: &UdpSocket, commands: &[String]) -> Result<Vec<String>,
     let mut buf = [0; 512];
 
     for cmd in commands {
-        let msg = OscMessage::new("/node".to_string(), vec![OscArg::String(",s".to_string()), OscArg::String(cmd.to_string())]);
+        let msg = OscMessage::new("/node".to_string(), vec![OscArg::String(cmd.to_string())]);
         socket.send(&msg.to_bytes()?)?;
         let len = socket.recv(&mut buf)?;
         let response = OscMessage::from_bytes(&buf[..len])?;

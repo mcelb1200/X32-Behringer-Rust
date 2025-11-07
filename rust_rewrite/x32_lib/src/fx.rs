@@ -5,6 +5,7 @@
 //! This module provides functions for setting the type, source, and parameters of each FX processor.
 
 use crate::common::{FxSource, CommandFlags, CommandFormat, CommandValue, X32Command};
+use lazy_static::lazy_static;
 use osc_lib::OscArg;
 
 /// Represents the types of effects available in FX slots 1-4.
@@ -300,17 +301,30 @@ pub const SFX_SRC: &[&str] = &[
     " MIX10", " MIX11", " MIX12", " MIX13", " MIX14", " MIX15", " MIX16", " M/C",
 ];
 
-#[rustfmt::skip]
-#[allow(dead_code)]
-pub const XFX1: &[X32Command] = &[
-    X32Command { command: "/fx".to_string(), format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None },
-    X32Command { command: "/fx/1".to_string(), format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None },
-    X32Command { command: "/fx/1/type".to_string(), format: CommandFormat::StringList(&SFX_TYP1), flags: CommandFlags::F_XET, value: CommandValue::None },
-    X32Command { command: "/fx/1/source".to_string(), format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None },
-    X32Command { command: "/fx/1/source/l".to_string(), format: CommandFormat::StringList(&SFX_SRC), flags: CommandFlags::F_XET, value: CommandValue::None },
-    X32Command { command: "/fx/1/source/r".to_string(), format: CommandFormat::StringList(&SFX_SRC), flags: CommandFlags::F_XET, value: CommandValue::None },
-    X32Command { command: "/fx/1/par".to_string(), format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None },
-];
+lazy_static! {
+    #[rustfmt::skip]
+    #[allow(dead_code)]
+    pub static ref XFX1: Vec<X32Command> = {
+        let mut commands = vec![
+            X32Command { command: "/fx".to_string(), format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None },
+            X32Command { command: "/fx/1".to_string(), format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None },
+            X32Command { command: "/fx/1/type".to_string(), format: CommandFormat::StringList(&SFX_TYP1), flags: CommandFlags::F_XET, value: CommandValue::None },
+            X32Command { command: "/fx/1/source".to_string(), format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None },
+            X32Command { command: "/fx/1/source/l".to_string(), format: CommandFormat::StringList(&SFX_SRC), flags: CommandFlags::F_XET, value: CommandValue::None },
+            X32Command { command: "/fx/1/source/r".to_string(), format: CommandFormat::StringList(&SFX_SRC), flags: CommandFlags::F_XET, value: CommandValue::None },
+            X32Command { command: "/fx/1/par".to_string(), format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None },
+        ];
+        for i in 1..=64 {
+            commands.push(X32Command {
+                command: format!("/fx/1/par/{:02}", i),
+                format: CommandFormat::Float,
+                flags: CommandFlags::F_XET,
+                value: CommandValue::None,
+            });
+        }
+        commands
+    };
+}
 
 #[cfg(test)]
 mod tests {
@@ -349,5 +363,10 @@ mod tests {
         let (address, args) = set_fx_param(1, 1, 0.5);
         assert_eq!(address, "/fx/1/par/01");
         assert_eq!(args, vec![OscArg::Float(0.5f32)]);
+    }
+
+    #[test]
+    fn test_xfx1_array() {
+        assert_eq!(XFX1.len(), 71);
     }
 }

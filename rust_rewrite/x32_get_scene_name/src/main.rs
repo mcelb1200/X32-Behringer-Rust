@@ -5,7 +5,8 @@
 
 use clap::Parser;
 use std::time::{Duration, Instant};
-use x32_lib::{create_socket, X32Error};
+use x32_lib::{create_socket};
+use x32_lib::error::{Result, X32Error};
 use osc_lib::{OscMessage, OscArg};
 
 /// A command line utility to get scene names when a scene change takes place.
@@ -29,7 +30,7 @@ struct Args {
 ///
 /// This function parses command-line arguments, connects to the X32, subscribes to scene
 /// change events, and prints the name of the new scene to standard output.
-fn main() -> Result<(), X32Error> {
+fn main() -> Result<()> {
     let args = Args::parse();
 
     if args.verbose != 0 {
