@@ -1,15 +1,15 @@
 [package]
-name = "x32_emulator"
+name = "x32_usb"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
 anyhow = "1.0.82"
 clap = { version = "4.5.4", features = ["derive"] }
-x32_core = { path = "../x32_core" }
 osc_lib = { path = "../osc_lib" }
 x32_lib = { path = "../x32_lib" }
 
-[lib]
-name = "x32_emulator"
-path = "src/lib.rs"
+[dev-dependencies]
+assert_cmd = "2.0.14"
+predicates = "3.1.0"
+x32_emulator = { path = "../x32_emulator" }
