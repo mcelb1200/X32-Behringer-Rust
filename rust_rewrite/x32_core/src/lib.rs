@@ -373,24 +373,10 @@ impl Mixer {
         self.data.insert(path, value);
     }
 
-    pub fn load_preset(&mut self, preset_type: &str, index: i32, channel: i32) {
-        let preset_path = format!("-libs/{}/{:03}", preset_type, index + 1);
-        if let Some(OscArg::String(_preset_name)) = self.data.get(&preset_path) {
-            let ch_prefix = format!("/ch/{:02}", channel + 1);
-            for (key, value) in self.data.clone().iter() {
-                if key.starts_with(&ch_prefix) {
-                    self.data.insert(key.clone(), value.clone());
-                }
-            }
-        }
-    }
 
     pub fn dispatch(&mut self, msg: &[u8]) -> Result<Option<Vec<u8>>, Box<dyn Error>> {
         if let Ok(osc_message) = OscMessage::from_bytes(msg) {
             if osc_message.path == "/load" {
-                if let (Some(OscArg::String(preset_type)), Some(OscArg::Int(index)), Some(OscArg::Int(channel))) = (osc_message.args.get(0), osc_message.args.get(1), osc_message.args.get(2)) {
-                    self.load_preset(preset_type, *index, *channel);
-                }
                 let response = OscMessage {
                     path: "/load".to_string(),
                     args: vec![OscArg::Int(1)],
@@ -400,23 +386,29 @@ impl Mixer {
 
             if osc_message.path == "/node" {
                 if let OscArg::String(s) = &osc_message.args[0] {
-                    let mut result = "".to_string();
-                    for (key, value) in self.data.iter() {
-                        if key.starts_with(s) {
-                            let value_str = match value {
-                                OscArg::Int(i) => i.to_string(),
-                                OscArg::Float(f) => f.to_string(),
-                                OscArg::String(s) => format!("\"{}\"", s),
-                                _ => "".to_string(),
-                            };
-                            result.push_str(&format!("{} {}", key, value_str));
+                    if let Some(value) = self.data.get(s) {
+                        let mut args: Vec<OscArg> = vec![];
+                        let string_value = match value {
+                            OscArg::String(s) => s,
+                            _ => "",
+                        };
+                        args.push(OscArg::String(s.to_string()));
+                        for item in string_value.split(" ") {
+                            if item.starts_with("\"") {
+                                args.push(OscArg::String(item.replace("\"", "")));
+                            } else if let Ok(i) = item.parse::<i32>() {
+                                args.push(OscArg::Int(i));
+                            } else if let Ok(f) = item.parse::<f32>() {
+                                args.push(OscArg::Float(f));
+                            }
                         }
+
+                        let response = OscMessage {
+                            path: "/node".to_string(),
+                            args,
+                        };
+                        return Ok(Some(response.to_bytes()?));
                     }
-                    let response = OscMessage {
-                        path: "/node".to_string(),
-                        args: vec![OscArg::String(result)],
-                    };
-                    return Ok(Some(response.to_bytes()?));
                 }
             }
 

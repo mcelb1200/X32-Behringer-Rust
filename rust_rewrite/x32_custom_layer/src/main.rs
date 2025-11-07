@@ -194,7 +194,7 @@ fn main() {
 }
 
 fn handle_set_command(ip: &str, assignments_str: &[String]) -> Result<()> {
-    let socket = create_socket(ip, 200)?;
+    let socket = create_socket(ip, 10024, 10023, 200)?;
     let assignments = parse_assignments(assignments_str)?;
     let mut saved_strips: Vec<(u8, Vec<String>)> = Vec::new();
 
@@ -241,7 +241,7 @@ fn handle_set_command(ip: &str, assignments_str: &[String]) -> Result<()> {
 
 
 fn handle_save_command(ip: &str, file_path: &str) -> Result<()> {
-    let socket = create_socket(ip, 200)?;
+    let socket = create_socket(ip, 10024, 10023, 200)?;
     let mut file = File::create(file_path)?;
     file.write_all(SNIP_HEAD.as_bytes())?;
 
@@ -328,7 +328,7 @@ fn get_node_state(socket: &UdpSocket, node: &str) -> Result<String> {
 }
 
 fn handle_restore_command(ip: &str, file_path: &str) -> Result<()> {
-    let socket = create_socket(ip, 200)?;
+    let socket = create_socket(ip, 10024, 10023, 200)?;
     let file = File::open(file_path)?;
     let reader = BufReader::new(file);
 
@@ -348,7 +348,7 @@ fn handle_restore_command(ip: &str, file_path: &str) -> Result<()> {
 
 
 fn handle_reset_command(ip: &str, channels_str: &str) -> Result<()> {
-    let socket = create_socket(ip, 200)?;
+    let socket = create_socket(ip, 10024, 10023, 200)?;
     let channels = parse_channel_range(channels_str)?;
 
     for channel in channels {
@@ -399,7 +399,7 @@ fn parse_channel_range(range_str: &str) -> Result<Vec<u8>> {
 
 
 fn handle_list_command(ip: &str) -> Result<()> {
-    let socket = create_socket(ip, 200)?;
+    let socket = create_socket(ip, 10024, 10023, 200)?;
     println!("  Channel\tSource\t\tChannel\t\tSource");
 
     for i in 0..16 {
