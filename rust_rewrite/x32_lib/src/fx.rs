@@ -303,19 +303,79 @@ pub const SFX_SRC: &[&str] = &[
 
 #[rustfmt::skip]
 #[allow(dead_code)]
-lazy_static! {
-    pub static ref XFX1: Vec<X32Command> = {
-        let mut commands = Vec::new();
-        commands.push(X32Command { command: "/fx".to_string(), format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None });
-        commands.push(X32Command { command: "/fx/1".to_string(), format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None });
-        commands.push(X32Command { command: "/fx/1/type".to_string(), format: CommandFormat::StringList(&SFX_TYP1), flags: CommandFlags::F_XET, value: CommandValue::None });
-        commands.push(X32Command { command: "/fx/1/source".to_string(), format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None });
-        commands.push(X32Command { command: "/fx/1/source/l".to_string(), format: CommandFormat::StringList(&SFX_SRC), flags: CommandFlags::F_XET, value: CommandValue::None });
-        commands.push(X32Command { command: "/fx/1/source/r".to_string(), format: CommandFormat::StringList(&SFX_SRC), flags: CommandFlags::F_XET, value: CommandValue::None });
-        commands.push(X32Command { command: "/fx/1/par".to_string(), format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None });
-        commands
-    };
-}
+pub const XFX1: &[X32Command<&str>] = &[
+    X32Command { command: "/fx", format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None },
+    X32Command { command: "/fx/1", format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None },
+    X32Command { command: "/fx/1/type", format: CommandFormat::StringList(&SFX_TYP1), flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/source", format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None },
+    X32Command { command: "/fx/1/source/l", format: CommandFormat::StringList(&SFX_SRC), flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/source/r", format: CommandFormat::StringList(&SFX_SRC), flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/par", format: CommandFormat::StringList(&[]), flags: CommandFlags::F_FND, value: CommandValue::None },
+    X32Command { command: "/fx/1/par/01", format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/par/02", format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/par/03", format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/par/04", format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/par/05", format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/par/06", format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/par/07", format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/par/08", format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/par/09", format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/par/10", format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/par/11", format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/par/12", format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/par/13", format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/par/14", format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/par/15", format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/par/16", format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/par/17", format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/par/18", format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/par/19", format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/par/20", format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/par/21", format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/par/22", format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/par/23", format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/par/24", format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/par/25", format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/par/26", format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/par/27", format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/par/28", format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/par/29", format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/par/30", format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/par/31", format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/par/32", format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/par/33", format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/par/34", format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/par/35", format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/par/36", format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/par/37", format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/par/38", format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/par/39", format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/par/40", format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/par/41", format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/par/42", format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/par/43", format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/par/44", format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/par/45", format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/par/46", format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/par/47", format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/par/48", format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/par/49", format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/par/50", format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/par/51", format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/par/52", format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/par/53", format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/par/54", format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/par/55", format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/par/56", format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/par/57", format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/par/58", format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/par/59", format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/par/60", format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/par/61", format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/par/62", format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/par/63", format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+    X32Command { command: "/fx/1/par/64", format: CommandFormat::Float, flags: CommandFlags::F_XET, value: CommandValue::None },
+];
 
 #[cfg(test)]
 mod tests {

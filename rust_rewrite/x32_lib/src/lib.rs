@@ -83,18 +83,22 @@ use osc_lib::{OscMessage, OscArg, OscError};
 /// * `ip` - The IP address of the console.
 /// * `timeout` - The read timeout for the socket in milliseconds.
 pub fn create_socket(ip: &str, timeout: u64) -> Result<UdpSocket> {
-    let remote_addr_str = if ip.contains(':') {
+    // If the IP address does not contain a port, add the default X32 port.
+    let full_ip = if ip.contains(':') && !ip.starts_with('[') {
         ip.to_string()
-    } else {
+    } else if ip.contains("]:") {
+        ip.to_string()
+    }
+    else {
         format!("{}:10023", ip)
     };
-    let remote_addr: SocketAddr = remote_addr_str.parse()?;
+    let remote_addr: SocketAddr = full_ip.parse()?;
 
-    // Bind to a local address based on the family of the remote address.
+    // Bind to a local address compatible with the remote address family.
     let local_addr: SocketAddr = if remote_addr.is_ipv4() {
-        "0.0.0.0:0".parse().unwrap()
+        "0.0.0.0:0".parse()?
     } else {
-        "[::]:0".parse().unwrap()
+        "[::]:0".parse()?
     };
 
     let socket = UdpSocket::bind(local_addr)?;
@@ -119,7 +123,7 @@ pub fn get_fx_type(socket: &UdpSocket, slot: u8) -> Result<i32> {
     if let Some(OscArg::Int(fx_type)) = response.args.get(0) {
         Ok(*fx_type)
     } else {
-        Err(OscError::UnexpectedResponse.into())
+        Err(OscError::ParseError("Unexpected response from mixer".to_string()).into())
     }
 }
 
@@ -138,7 +142,7 @@ pub fn get_fader_level(socket: &UdpSocket, fader_addr: &str) -> Result<f32> {
     if let Some(OscArg::Float(level)) = response.args.get(0) {
         Ok(*level)
     } else {
-        Err(OscError::UnexpectedResponse.into())
+        Err(OscError::ParseError("Unexpected response from mixer".to_string()).into())
     }
 }
 
@@ -177,7 +181,7 @@ pub fn get_parameter(socket: &UdpSocket, address: &str) -> Result<f32> {
     if let Some(OscArg::Float(value)) = response.args.get(0) {
         Ok(*value)
     } else {
-        Err(OscError::UnexpectedResponse.into())
+        Err(OscError::ParseError("Unexpected response from mixer".to_string()).into())
     }
 }
 

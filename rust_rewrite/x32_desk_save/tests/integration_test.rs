@@ -14,10 +14,16 @@ fn setup_mock_x32_server() -> SocketAddr {
         let mut buf = [0; 512];
         loop {
             if let Ok((number_of_bytes, src_addr)) = socket.recv_from(&mut buf) {
-                let received_msg = OscMessage::from_bytes(&buf[..number_of_bytes]).unwrap();
-                let response_msg = OscMessage::new(received_msg.path, vec![OscArg::String("mock_response".to_string())]);
-                socket.send_to(&response_msg.to_bytes().unwrap(), src_addr).expect("couldn't send data");
+                if let Ok(received_msg) = OscMessage::from_bytes(&buf[..number_of_bytes]) {
+                    if received_msg.path == "/node" {
+                        if let Some(OscArg::String(node_path)) = received_msg.args.get(0) {
+                            let response_msg = OscMessage::new("/node".to_string(), vec![OscArg::String(node_path.clone()), OscArg::String("mock_value".to_string())]);
+                            socket.send_to(&response_msg.to_bytes().unwrap(), src_addr).expect("couldn't send data");
+                        }
+                    }
+                }
             } else {
+                // An error occurred, break the loop
                 break;
             }
         }
@@ -41,7 +47,8 @@ fn test_desk_save_command() {
 
     // Verify the content of the output file
     let content = std::fs::read_to_string("test_output.txt").unwrap();
-    assert!(content.contains("/node ,s \"mock_response\""));
+    let lines: Vec<&str> = content.lines().collect();
+    assert!(lines.iter().any(|&line| line == "/node,ss \"-stat/solosw\" \"mock_value\""));
 
     // Clean up the output file
     std::fs::remove_file("test_output.txt").unwrap();
@@ -67,8 +74,11 @@ fn test_pattern_file_command() {
 
     // Verify the content of the output file
     let content = std::fs::read_to_string("test_output.txt").unwrap();
-    assert!(content.contains("/node ,s \"mock_response\""));
-    assert_eq!(content.lines().count(), 2);
+    let lines: Vec<&str> = content.lines().collect();
+    assert_eq!(lines.len(), 2);
+    assert!(lines.iter().any(|&line| line == "/node,ss \"/-stat/solosw\" \"mock_value\""));
+    assert!(lines.iter().any(|&line| line == "/node,ss \"/-prefs/remote\" \"mock_value\""));
+
 
     // Clean up the files
     std::fs::remove_file("test_pattern.txt").unwrap();

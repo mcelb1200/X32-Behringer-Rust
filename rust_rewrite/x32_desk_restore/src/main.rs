@@ -4,7 +4,7 @@
 
 use clap::Parser;
 use std::path::PathBuf;
-use x32_lib::{create_socket, X32Error, Result};
+use x32_lib::{create_socket, error::{X32Error, Result}};
 use osc_lib::{OscMessage};
 use std::fs::File;
 use std::io::{self, BufRead};

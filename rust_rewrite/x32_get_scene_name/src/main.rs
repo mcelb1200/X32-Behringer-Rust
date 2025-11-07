@@ -5,7 +5,7 @@
 
 use clap::Parser;
 use std::time::{Duration, Instant};
-use x32_lib::{create_socket, X32Error};
+use x32_lib::{create_socket, error::X32Error};
 use osc_lib::{OscMessage, OscArg};
 
 /// A command line utility to get scene names when a scene change takes place.

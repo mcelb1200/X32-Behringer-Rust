@@ -2,7 +2,7 @@ mod fx_defaults;
 
 use clap::Parser;
 use std::net::UdpSocket;
-use x32_lib::{create_socket, X32Error};
+use x32_lib::{create_socket, error::X32Error};
 use osc_lib::{OscMessage, OscArg};
 use std::collections::HashMap;
 use std::fs::File;
@@ -96,7 +96,7 @@ fn load_user_defaults(path: PathBuf) -> Result<HashMap<String, String>, X32Error
 fn reset_fx(socket: &UdpSocket, from: u8, defaults_file: Option<PathBuf>) -> Result<(), X32Error> {
     println!("Resetting FX slot {}.", from);
 
-    let user_defaults = if let Some(path) = defaults_file {
+    let user_defaults: Option<HashMap<String, String>> = if let Some(path) = defaults_file {
         Some(load_user_defaults(path)?)
     } else {
         None

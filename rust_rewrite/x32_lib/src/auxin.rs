@@ -33,16 +33,6 @@ pub fn set_name(auxin_id: u8, name: &str) -> (String, Vec<OscArg>) {
     (address, args)
 }
 
-pub fn get_auxin_commands(channel_num: u8) -> Result<Vec<X32Command>, String> {
-    if !(1..=8).contains(&channel_num) {
-        return Err(format!(
-            "Invalid auxin channel number: {}. Must be between 1 and 8.",
-            channel_num
-        ));
-    }
-    let mut commands = Vec::new();
-    let base = format!("/auxin/{:02}", channel_num);
-
 /// Sets the color for a specific auxiliary input.
 ///
 /// # Arguments
@@ -53,11 +43,11 @@ pub fn get_auxin_commands(channel_num: u8) -> Result<Vec<X32Command>, String> {
 /// # Example
 ///
 /// ```
-/// use x32_lib::auxin;
 /// use x32_lib::common::Color;
 /// use osc_lib::OscArg;
+/// use x32_lib::auxin::set_color;
 ///
-/// let (address, args) = auxin::set_color(1, Color::Red);
+/// let (address, args) = set_color(1, Color::Red);
 /// assert_eq!(address, "/auxin/01/config/color");
 /// assert_eq!(args, vec![OscArg::Int(1)]);
 /// ```
@@ -79,11 +69,11 @@ pub fn set_color(auxin_id: u8, color: Color) -> (String, Vec<OscArg>) {
 /// # Example
 ///
 /// ```
-/// use x32_lib::auxin;
 /// use x32_lib::common::EqType;
 /// use osc_lib::OscArg;
+/// use x32_lib::auxin::set_eq_band_type;
 ///
-/// let (address, args) = auxin::set_eq_band_type(1, 1, EqType::Peq);
+/// let (address, args) = set_eq_band_type(1, 1, EqType::Peq);
 /// assert_eq!(address, "/auxin/01/eq/1/type");
 /// assert_eq!(args, vec![OscArg::Int(2)]);
 /// ```
@@ -104,10 +94,10 @@ pub fn set_eq_band_type(auxin_id: u8, band: u8, eq_type: EqType) -> (String, Vec
 /// # Example
 ///
 /// ```
-/// use x32_lib::auxin;
 /// use osc_lib::OscArg;
+/// use x32_lib::auxin::set_fader;
 ///
-/// let (address, args) = auxin::set_fader(1, 0.75);
+/// let (address, args) = set_fader(1, 0.75);
 /// assert_eq!(address, "/auxin/01/mix/fader");
 /// assert_eq!(args, vec![OscArg::Float(0.75)]);
 /// ```
@@ -127,11 +117,11 @@ pub fn set_fader(auxin_id: u8, level: f32) -> (String, Vec<OscArg>) {
 /// # Example
 ///
 /// ```
-/// use x32_lib::auxin;
 /// use x32_lib::common::On;
 /// use osc_lib::OscArg;
+/// use x32_lib::auxin::set_on;
 ///
-/// let (address, args) = auxin::set_on(1, On::On);
+/// let (address, args) = set_on(1, On::On);
 /// assert_eq!(address, "/auxin/01/mix/on");
 /// assert_eq!(args, vec![OscArg::Int(1)]);
 /// ```
@@ -140,6 +130,16 @@ pub fn set_on(auxin_id: u8, on: On) -> (String, Vec<OscArg>) {
     let args = vec![OscArg::Int(on as i32)];
     (address, args)
 }
+
+pub fn get_auxin_commands(channel_num: u8) -> Result<Vec<X32Command<String>>, String> {
+    if !(1..=8).contains(&channel_num) {
+        return Err(format!(
+            "Invalid auxin channel number: {}. Must be between 1 and 8.",
+            channel_num
+        ));
+    }
+    let mut commands = Vec::new();
+    let base = format!("/auxin/{:02}", channel_num);
 
     commands.push(X32Command {
         command: "/auxin".to_string(),
