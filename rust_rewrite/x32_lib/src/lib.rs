@@ -4,7 +4,7 @@
 //! It provides a set of functions that map directly to the OSC (Open Sound Control) commands
 //! supported by the mixers, allowing for programmatic control over nearly every aspect of the hardware.
 //!
-//! This library is a Rust rewrite of the original C library by Patrick-Gilles Maillot.
+//! This library is a Rust rewrite of the original C library by Patrick-gilles Maillot.
 //!
 //! ## Features
 //!
@@ -71,7 +71,7 @@ pub mod show;
 pub mod cfg_main;
 
 
-use std::net::{SocketAddr, UdpSocket};
+use std::net::{SocketAddr, UdpSocket, ToSocketAddrs};
 use std::time::Duration;
 use crate::error::Result;
 use osc_lib::{OscMessage, OscArg, OscError};
@@ -83,10 +83,19 @@ use osc_lib::{OscMessage, OscArg, OscError};
 /// * `ip` - The IP address of the console.
 /// * `timeout` - The read timeout for the socket in milliseconds.
 pub fn create_socket(ip: &str, timeout: u64) -> Result<UdpSocket> {
-    let remote_addr: SocketAddr = format!("{}:10023", ip).parse()?;
-    let local_addr: SocketAddr = format!("{}:10024", ip).parse()?;
+    let full_ip = if ip.contains(':') {
+        ip.to_string()
+    } else {
+        format!("{}:10023", ip)
+    };
+    let mut addrs_iter = full_ip.to_socket_addrs()?;
+    let remote_addr = addrs_iter.next().unwrap();
 
-    let socket = UdpSocket::bind(local_addr)?;
+    let socket = match remote_addr {
+        SocketAddr::V4(_) => UdpSocket::bind("0.0.0.0:0")?,
+        SocketAddr::V6(_) => UdpSocket::bind("[::]:0")?,
+    };
+
     socket.connect(remote_addr)?;
     socket.set_read_timeout(Some(Duration::from_millis(timeout)))?;
 
@@ -182,5 +191,4 @@ pub fn set_parameter(socket: &UdpSocket, address: &str, value: f32) -> Result<()
     socket.send(&msg.to_bytes()?)?;
     Ok(())
 }
-
 

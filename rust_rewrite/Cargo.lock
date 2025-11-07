@@ -711,7 +711,20 @@ name = "x32_lib"
 version = "0.1.0"
 dependencies = [
  "bitflags",
+ "lazy_static",
  "osc_lib",
+]
+
+[[package]]
+name = "x32_reaper"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "osc_lib",
+ "serde",
+ "serde_json",
+ "x32_lib",
 ]
 
 [[package]]

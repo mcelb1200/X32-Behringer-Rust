@@ -8,6 +8,8 @@
 
 use crate::common::{Color, EqType, On, CommandFlags, CommandFormat, CommandValue, X32Command};
 use osc_lib::OscArg;
+use lazy_static::lazy_static;
+use std::collections::HashMap;
 
 // Config
 /// Sets the name for a specific auxiliary input.
@@ -32,16 +34,6 @@ pub fn set_name(auxin_id: u8, name: &str) -> (String, Vec<OscArg>) {
     let args = vec![OscArg::String(name.to_string())];
     (address, args)
 }
-
-pub fn get_auxin_commands(channel_num: u8) -> Result<Vec<X32Command>, String> {
-    if !(1..=8).contains(&channel_num) {
-        return Err(format!(
-            "Invalid auxin channel number: {}. Must be between 1 and 8.",
-            channel_num
-        ));
-    }
-    let mut commands = Vec::new();
-    let base = format!("/auxin/{:02}", channel_num);
 
 /// Sets the color for a specific auxiliary input.
 ///
@@ -140,6 +132,10 @@ pub fn set_on(auxin_id: u8, on: On) -> (String, Vec<OscArg>) {
     let args = vec![OscArg::Int(on as i32)];
     (address, args)
 }
+
+fn generate_auxin_commands(channel_num: u8) -> Vec<X32Command> {
+    let mut commands = Vec::new();
+    let base = format!("/auxin/{:02}", channel_num);
 
     commands.push(X32Command {
         command: "/auxin".to_string(),
@@ -365,7 +361,24 @@ pub fn set_on(auxin_id: u8, on: On) -> (String, Vec<OscArg>) {
         value: CommandValue::None,
     });
 
-    Ok(commands)
+    commands
+}
+
+lazy_static! {
+    static ref AUXIN_COMMANDS_MAP: HashMap<u8, Vec<X32Command>> = {
+        let mut map = HashMap::new();
+        for i in 1..=8 {
+            map.insert(i, generate_auxin_commands(i));
+        }
+        map
+    };
+}
+
+pub fn get_auxin_commands(channel_num: u8) -> Result<&'static [X32Command], String> {
+    AUXIN_COMMANDS_MAP.get(&channel_num).map(|v| v.as_slice()).ok_or_else(|| format!(
+        "Invalid auxin channel number: {}. Must be between 1 and 8.",
+        channel_num
+    ))
 }
 
 #[cfg(test)]

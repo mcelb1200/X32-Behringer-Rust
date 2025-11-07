@@ -1,9 +1,74 @@
 {
-  "ip": "192.168.1.100",
-  "faders": [
-    "/ch/01/mix/fader"
+  "verbose": false,
+  "delay-bank": 5,
+  "delay-generic": 2,
+  "x32-ip": "192.168.1.64",
+  "reaper-ip": "127.0.0.1",
+  "reaper-receive-port": 10024,
+  "reaper-send-port": 10025,
+  "transport-on": false,
+  "channel-bank-on": false,
+  "marker-button-on": false,
+  "bank-c-color": 0,
+  "eq-control-on": false,
+  "master-on": true,
+  "channel-map": {
+    "min": 1,
+    "max": 32
+  },
+  "aux-map": {
+    "min": 33,
+    "max": 40
+  },
+  "fx-return-map": {
+    "min": 41,
+    "max": 48
+  },
+  "bus-map": {
+    "min": 49,
+    "max": 64
+  },
+  "dca-map": {
+    "min": 65,
+    "max": 72
+  },
+  "track-send-offset": 0,
+  "reaper-dca-map": [
+    {
+      "min": 0,
+      "max": 0
+    },
+    {
+      "min": 0,
+      "max": 0
+    },
+    {
+      "min": 0,
+      "max": 0
+    },
+    {
+      "min": 0,
+      "max": 0
+    },
+    {
+      "min": 0,
+      "max": 0
+    },
+    {
+      "min": 0,
+      "max": 0
+    },
+    {
+      "min": 0,
+      "max": 0
+    },
+    {
+      "min": 0,
+      "max": 0
+    }
   ],
-  "fade_in": 2.0,
-  "fade_out": null,
-  "steps": 50
+  "bank-up-button": 9,
+  "bank-down-button": 10,
+  "marker-button": 8,
+  "bank-size": 32
 }
