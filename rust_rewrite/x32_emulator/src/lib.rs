@@ -18,7 +18,7 @@ struct Cli {
     port: u16,
 }
 
-pub fn run(mixer: Mixer, ip: String, port: u16) -> Result<SocketAddr> {
+pub fn run(mut mixer: Mixer, ip: String, port: u16) -> Result<SocketAddr> {
     let addr: SocketAddr = format!("{}:{}", ip, port).parse()?;
     let socket = UdpSocket::bind(&addr)?;
     let local_addr = socket.local_addr()?;
