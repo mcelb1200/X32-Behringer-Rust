@@ -83,8 +83,17 @@ use osc_lib::{OscMessage, OscArg, OscError};
 /// * `ip` - The IP address of the console.
 /// * `timeout` - The read timeout for the socket in milliseconds.
 pub fn create_socket(ip: &str, timeout: u64) -> Result<UdpSocket> {
-    let remote_addr: SocketAddr = format!("{}:10023", ip).parse()?;
-    let local_addr: SocketAddr = format!("{}:10024", ip).parse()?;
+    let remote_addr: SocketAddr = if ip.contains(':') {
+        ip.parse()?
+    } else {
+        format!("{}:10023", ip).parse()?
+    };
+
+    let local_addr: SocketAddr = if remote_addr.is_ipv4() {
+        "0.0.0.0:0".parse()?
+    } else {
+        "[::]:0".parse()?
+    };
 
     let socket = UdpSocket::bind(local_addr)?;
     socket.connect(remote_addr)?;
@@ -108,7 +117,7 @@ pub fn get_fx_type(socket: &UdpSocket, slot: u8) -> Result<i32> {
     if let Some(OscArg::Int(fx_type)) = response.args.get(0) {
         Ok(*fx_type)
     } else {
-        Err(OscError::UnexpectedResponse.into())
+        Err(OscError::ParseError("Unexpected response from X32".to_string()).into())
     }
 }
 
@@ -127,7 +136,7 @@ pub fn get_fader_level(socket: &UdpSocket, fader_addr: &str) -> Result<f32> {
     if let Some(OscArg::Float(level)) = response.args.get(0) {
         Ok(*level)
     } else {
-        Err(OscError::UnexpectedResponse.into())
+        Err(OscError::ParseError("Unexpected response from X32".to_string()).into())
     }
 }
 
@@ -166,7 +175,7 @@ pub fn get_parameter(socket: &UdpSocket, address: &str) -> Result<f32> {
     if let Some(OscArg::Float(value)) = response.args.get(0) {
         Ok(*value)
     } else {
-        Err(OscError::UnexpectedResponse.into())
+        Err(OscError::ParseError("Unexpected response from X32".to_string()).into())
     }
 }
 

@@ -711,6 +711,7 @@ name = "x32_lib"
 version = "0.1.0"
 dependencies = [
  "bitflags",
+ "lazy_static",
  "osc_lib",
 ]
 

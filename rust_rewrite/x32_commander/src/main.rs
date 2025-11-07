@@ -5,7 +5,8 @@ use std::net::UdpSocket;
 use std::time::{Duration, Instant};
 
 use osc_lib::OscMessage;
-use x32_lib::{create_socket, X32Error};
+use x32_lib::create_socket;
+use x32_lib::error::X32Error;
 
 /// A Rust implementation of the X32Commander utility.
 #[derive(Parser, Debug)]
@@ -82,7 +83,7 @@ fn parse_command_file(path: &str) -> io::Result<Vec<Command>> {
 fn run(args: Args) -> Result<(), X32Error> {
     // This application is a partial rewrite of the original X32Commander.c utility.
     // Currently, only OSC commands are supported. MIDI functionality is not yet implemented.
-    let commands = parse_command_file(&args.file).map_err(|e| X32Error::Custom(format!("Failed to parse command file: {}", e)))?;
+    let commands = parse_command_file(&args.file).map_err(|e| X32Error::String(format!("Failed to parse command file: {}", e)))?;
     println!("Successfully parsed {} commands.", commands.len());
 
     println!("Connecting to X32 at {}...", args.ip);

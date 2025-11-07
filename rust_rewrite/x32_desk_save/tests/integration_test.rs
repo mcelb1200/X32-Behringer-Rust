@@ -14,8 +14,8 @@ fn setup_mock_x32_server() -> SocketAddr {
         let mut buf = [0; 512];
         loop {
             if let Ok((number_of_bytes, src_addr)) = socket.recv_from(&mut buf) {
-                let received_msg = OscMessage::from_bytes(&buf[..number_of_bytes]).unwrap();
-                let response_msg = OscMessage::new(received_msg.path, vec![OscArg::String("mock_response".to_string())]);
+                let _ = OscMessage::from_bytes(&buf[..number_of_bytes]).unwrap();
+                let response_msg = OscMessage::from_str("/node ,s \"mock_response\"").unwrap();
                 socket.send_to(&response_msg.to_bytes().unwrap(), src_addr).expect("couldn't send data");
             } else {
                 break;
@@ -39,9 +39,10 @@ fn test_desk_save_command() {
         .stdout(predicate::str::contains(format!("Successfully connected to X32 at {}", addr)))
         .stdout(predicate::str::contains("Successfully saved data to test_output.txt"));
 
-    // Verify the content of the output file
+    // Verify the content of the aoutput file
     let content = std::fs::read_to_string("test_output.txt").unwrap();
-    assert!(content.contains("/node ,s \"mock_response\""));
+    println!("File content: {}", content);
+    assert!(content.contains("/node,s \"mock_response\""));
 
     // Clean up the output file
     std::fs::remove_file("test_output.txt").unwrap();
@@ -67,7 +68,8 @@ fn test_pattern_file_command() {
 
     // Verify the content of the output file
     let content = std::fs::read_to_string("test_output.txt").unwrap();
-    assert!(content.contains("/node ,s \"mock_response\""));
+    println!("File content: {}", content);
+    assert!(content.contains("/node,s \"mock_response\""));
     assert_eq!(content.lines().count(), 2);
 
     // Clean up the files

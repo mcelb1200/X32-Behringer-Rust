@@ -3,6 +3,7 @@
 //! Defines the custom error type for the `x32_lib`.
 
 use std::net::AddrParseError;
+use std::fmt;
 use std::io;
 use osc_lib::OscError;
 
@@ -15,6 +16,19 @@ pub enum X32Error {
     Osc(OscError),
     String(String),
 }
+
+impl fmt::Display for X32Error {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            X32Error::Io(ref err) => write!(f, "IO error: {}", err),
+            X32Error::AddrParse(ref err) => write!(f, "Address parse error: {}", err),
+            X32Error::Osc(ref err) => write!(f, "OSC error: {}", err),
+            X32Error::String(ref err) => write!(f, "{}", err),
+        }
+    }
+}
+
+impl std::error::Error for X32Error {}
 
 impl From<io::Error> for X32Error {
     fn from(err: io::Error) -> X32Error {

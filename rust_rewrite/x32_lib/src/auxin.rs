@@ -33,16 +33,6 @@ pub fn set_name(auxin_id: u8, name: &str) -> (String, Vec<OscArg>) {
     (address, args)
 }
 
-pub fn get_auxin_commands(channel_num: u8) -> Result<Vec<X32Command>, String> {
-    if !(1..=8).contains(&channel_num) {
-        return Err(format!(
-            "Invalid auxin channel number: {}. Must be between 1 and 8.",
-            channel_num
-        ));
-    }
-    let mut commands = Vec::new();
-    let base = format!("/auxin/{:02}", channel_num);
-
 /// Sets the color for a specific auxiliary input.
 ///
 /// # Arguments
@@ -140,6 +130,16 @@ pub fn set_on(auxin_id: u8, on: On) -> (String, Vec<OscArg>) {
     let args = vec![OscArg::Int(on as i32)];
     (address, args)
 }
+
+pub fn get_auxin_commands(channel_num: u8) -> Result<Vec<X32Command>, String> {
+    if !(1..=8).contains(&channel_num) {
+        return Err(format!(
+            "Invalid auxin channel number: {}. Must be between 1 and 8.",
+            channel_num
+        ));
+    }
+    let mut commands = Vec::new();
+    let base = format!("/auxin/{:02}", channel_num);
 
     commands.push(X32Command {
         command: "/auxin".to_string(),
@@ -371,6 +371,7 @@ pub fn set_on(auxin_id: u8, on: On) -> (String, Vec<OscArg>) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use super::{set_fader, set_on};
 
     #[test]
     fn test_set_fader() {
