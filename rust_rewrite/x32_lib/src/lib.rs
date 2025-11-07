@@ -69,6 +69,8 @@ pub mod output;
 pub mod prefstat;
 pub mod show;
 pub mod cfg_main;
+#[cfg(feature = "set_lib")]
+pub mod set_lib;
 
 
 use std::net::{SocketAddr, UdpSocket};
