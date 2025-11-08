@@ -1,6 +1,15 @@
-//! This module provides the command definitions for the X32 auxin faders.
+//! Provides functions for generating OSC commands to control X32/M32 auxiliary inputs (AuxIn 1-8).
+//!
+//! The AuxIn channels have a more limited set of controls compared to the main input channels,
+//! primarily focusing on configuration (name, color), EQ, and mix/fader settings.
+//!
+//! As with other `command` modules, you can use `set_*` functions to generate OSC messages
+//! for setting parameters, and the corresponding address getter functions to retrieve the
+//! OSC address for querying values.
 use super::{Command, CommandFlags, CommandType};
+use osc_lib::OscArg;
 
+/// A static array of all available commands for the AuxIn channels.
 pub const XAUXIN_COMMANDS: &[Command] = &[
     Command { path: "/auxin/01/mix/fader", command_type: CommandType::Float, flags: CommandFlags::GET.union(CommandFlags::SET), nodes: None },
     Command { path: "/auxin/01/mix/on", command_type: CommandType::Enum, flags: CommandFlags::GET.union(CommandFlags::SET), nodes: None },
@@ -12,9 +21,38 @@ pub const XAUXIN_COMMANDS: &[Command] = &[
     Command { path: "/auxin/04/mix/on", command_type: CommandType::Enum, flags: CommandFlags::GET.union(CommandFlags::SET), nodes: None },
 ];
 
-use osc_lib::OscArg;
 
-/// Sets the name of an auxin channel.
+// --- Address String Getters ---
+
+/// Returns the OSC address for an auxin channel's name.
+pub fn name(channel_num: u8) -> String {
+    format!("/auxin/{:02}/config/name", channel_num)
+}
+
+/// Returns the OSC address for an auxin channel's color.
+pub fn color(channel_num: u8) -> String {
+    format!("/auxin/{:02}/config/color", channel_num)
+}
+
+/// Returns the OSC address for an auxin channel's EQ band type.
+pub fn eq_band_type(channel_num: u8, band: u8) -> String {
+    format!("/auxin/{:02}/eq/{}/type", channel_num, band)
+}
+
+/// Returns the OSC address for an auxin channel's fader level.
+pub fn fader_level(channel_num: u8) -> String {
+    format!("/auxin/{:02}/mix/fader", channel_num)
+}
+
+/// Returns the OSC address for an auxin channel's on/off (mute) state.
+pub fn on(channel_num: u8) -> String {
+    format!("/auxin/{:02}/mix/on", channel_num)
+}
+
+
+// --- OSC Message Setters ---
+
+/// Creates an OSC message to set the name of an auxin channel.
 ///
 /// # Arguments
 ///
@@ -29,11 +67,10 @@ use osc_lib::OscArg;
 /// assert_eq!(args, vec![osc_lib::OscArg::String("Test".to_string())]);
 /// ```
 pub fn set_name(channel_num: u8, name: &str) -> (String, Vec<OscArg>) {
-    let address = format!("/auxin/{:02}/config/name", channel_num);
-    (address, vec![OscArg::String(name.to_string())])
+    (self::name(channel_num), vec![OscArg::String(name.to_string())])
 }
 
-/// Sets the color of an auxin channel.
+/// Creates an OSC message to set the color of an auxin channel.
 ///
 /// # Arguments
 ///
@@ -48,11 +85,10 @@ pub fn set_name(channel_num: u8, name: &str) -> (String, Vec<OscArg>) {
 /// assert_eq!(args, vec![osc_lib::OscArg::Int(2)]);
 /// ```
 pub fn set_color(channel_num: u8, color: i32) -> (String, Vec<OscArg>) {
-    let address = format!("/auxin/{:02}/config/color", channel_num);
-    (address, vec![OscArg::Int(color)])
+    (self::color(channel_num), vec![OscArg::Int(color)])
 }
 
-/// Sets the eq band type of an auxin channel.
+/// Creates an OSC message to set the eq band type of an auxin channel.
 ///
 /// # Arguments
 ///
@@ -68,11 +104,10 @@ pub fn set_color(channel_num: u8, color: i32) -> (String, Vec<OscArg>) {
 /// assert_eq!(args, vec![osc_lib::OscArg::Int(2)]);
 /// ```
 pub fn set_eq_band_type(channel_num: u8, band: u8, eq_type: i32) -> (String, Vec<OscArg>) {
-    let address = format!("/auxin/{:02}/eq/{}/type", channel_num, band);
-    (address, vec![OscArg::Int(eq_type)])
+    (self::eq_band_type(channel_num, band), vec![OscArg::Int(eq_type)])
 }
 
-/// Sets the fader level of an auxin channel.
+/// Creates an OSC message to set the fader level of an auxin channel.
 ///
 /// # Arguments
 ///
@@ -87,16 +122,15 @@ pub fn set_eq_band_type(channel_num: u8, band: u8, eq_type: i32) -> (String, Vec
 /// assert_eq!(args, vec![osc_lib::OscArg::Float(0.75)]);
 /// ```
 pub fn set_fader(channel_num: u8, level: f32) -> (String, Vec<OscArg>) {
-    let address = format!("/auxin/{:02}/mix/fader", channel_num);
-    (address, vec![OscArg::Float(level)])
+    (fader_level(channel_num), vec![OscArg::Float(level)])
 }
 
-/// Sets the on state of an auxin channel.
+/// Creates an OSC message to set the on state of an auxin channel.
 ///
 /// # Arguments
 ///
 /// * `channel_num` - The auxin channel number (1-8).
-/// * `on` - The new on state for the channel (0 or 1).
+/// * `on` - The new on state for the channel (0 for Off, 1 for On).
 ///
 /// ```
 /// use x32_lib::command::auxin;
@@ -106,8 +140,7 @@ pub fn set_fader(channel_num: u8, level: f32) -> (String, Vec<OscArg>) {
 /// assert_eq!(args, vec![osc_lib::OscArg::Int(1)]);
 /// ```
 pub fn set_on(channel_num: u8, on: i32) -> (String, Vec<OscArg>) {
-    let address = format!("/auxin/{:02}/mix/on", channel_num);
-    (address, vec![OscArg::Int(on)])
+    (self::on(channel_num), vec![OscArg::Int(on)])
 }
 
 #[cfg(test)]

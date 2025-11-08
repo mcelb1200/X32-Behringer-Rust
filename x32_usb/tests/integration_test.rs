@@ -4,7 +4,6 @@ use std::thread::{self, JoinHandle};
 use std::time::Duration;
 use x32_emulator::Mixer;
 use std::sync::mpsc::{channel, Sender};
-use predicates::prelude::*;
 
 fn run_server_with_seeder<F>(port: u16, seeder: F) -> (JoinHandle<()>, Sender<()>)
 where
@@ -27,7 +26,7 @@ fn test_not_connected() {
         .arg("ls")
         .assert()
         .failure()
-        .stderr(predicates::str::contains("Error:"));
+        .stdout(predicates::str::contains("Not connected to X32."));
 }
 
 #[test]

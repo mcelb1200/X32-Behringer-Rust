@@ -1,66 +1,52 @@
 # x32_geq2_cpy
 
-`x32_geq2_cpy` is a command-line utility for copying and resetting Graphic EQ (GEQ) settings within and between FX slots on a Behringer X32 or Midas M32 digital mixing console. It is a Rust rewrite of the original `X32GEQ2cpy.c` program by Patrick-Gilles Maillot.
+`x32_geq2_cpy` is a command-line utility for managing Graphic EQ (GEQ) settings on Behringer X32 and Midas M32 consoles. It provides a simple and efficient way to copy settings within and between FX slots, as well as reset GEQs to their default state. This tool is a Rust rewrite of the original `X32GEQ2cpy.c` utility by Patrick-Gilles Maillot.
 
-## Functionality
+## How It Works
 
-This tool allows you to:
-- Copy the settings of a dual-channel GEQ from side A to side B.
-- Copy the settings of a dual-channel GEQ from side B to side A.
-- Reset all the bands of a GEQ to their default value (0.5).
-- Copy the entire settings of one GEQ in one FX slot to another.
-- Choose whether or not to include the master level controls in the copy/reset operation.
+The tool connects to the X32 and sends a series of OSC (Open Sound Control) messages to read and write the parameters of the GEQs loaded into the FX slots. Before performing any action, it verifies that the target FX slot actually contains a GEQ effect.
 
-## Usage
+## Command-Line Arguments
 
-```
-x32_geq2_cpy [OPTIONS]
-```
+| Argument   | Short Flag | Long Flag   | Default Value  | Description                                                                 |
+| ---------- | ---------- | ----------- | -------------- | --------------------------------------------------------------------------- |
+| IP Address | `-i`       | `--ip`      | `192.168.0.64` | The IP address of the X32/M32 console.                                        |
+| From Slot  | `-f`       | `--from`    | `1`            | The source FX slot number (1-8).                                            |
+| To Slot    | `-t`       | `--to`      | `1`            | The destination FX slot number (1-8). Only used with the `copy-to` direction. |
+| Direction  | `-d`       | `--direction`| `ato-b`        | The copy or reset operation to perform. See directions below.               |
+| Master     | `-m`       | `--master`  | `true`         | A boolean (`true` or `false`) indicating whether to include the master level controls in the operation. |
+| Verbose    | `-v`       | `--verbose` | `false`        | If specified, enables verbose output.                                       |
 
-### Arguments
+## Directions
 
-| Argument | Description | Default |
-|---|---|---|
-| `-i`, `--ip <IP>` | IP address of the X32 console. | `192.168.0.64` |
-| `-f`, `--from <SLOT>` | Source FX slot number (1-8). | `1` |
-| `-t`, `--to <SLOT>` | Destination FX slot number (1-8). Only used for `copy-to`. | `1` |
-| `-d`, `--direction <DIR>`| The direction of the copy or reset operation. | `ato-b` |
-| `-m`, `--master <BOOL>` | Include the master level in the copy/reset. | `true` |
-| `-v`, `--verbose` | Enable verbose output. | `false` |
-| `-D`, `--debug` | Enable debug output. | `false` |
-| `-h`, `--help` | Print help information. | |
-| `-V`, `--version` | Print version information. | |
+The `--direction` argument accepts the following values:
 
-### Directions
+| Value     | Description                                                          |
+| --------- | -------------------------------------------------------------------- |
+| `ato-b`   | Copies the settings from side A to side B of the GEQ in the source slot. |
+| `bto-a`   | Copies the settings from side B to side A of the GEQ in the source slot. |
+| `reset`   | Resets all bands on both sides of the GEQ in the source slot.        |
+| `copy-to` | Copies the entire GEQ settings from the source slot to the destination slot. |
 
-The `-d` or `--direction` argument accepts the following values:
-- `ato-b`: Copies the settings from side A to side B of the GEQ in the source slot.
-- `bto-a`: Copies the settings from side B to side A of the GEQ in the source slot.
-- `reset`: Resets all bands on both sides of the GEQ in the source slot.
-- `copy-to`: Copies the entire GEQ settings from the source slot to the destination slot.
+## Example Usage
 
-### Examples
+### Copy GEQ Settings from Side A to B
 
-**1. Copy GEQ Side A to B**
-
-Copy the GEQ settings from side A to side B in FX slot 1.
-
+To copy the GEQ settings from side A to side B in FX slot 1:
 ```bash
-cargo run --bin x32_geq2_cpy -- --ip 192.168.1.100 --from 1 --direction ato-b
+x32_geq2_cpy --ip 192.168.1.64 --from 1 --direction ato-b
 ```
 
-**2. Reset GEQ in Slot 4**
+### Reset a GEQ
 
-Reset all the bands of the GEQ in FX slot 4, including the master levels.
-
+To reset all the bands of the GEQ in FX slot 4, including the master levels:
 ```bash
-cargo run --bin x32_geq2_cpy -- --ip 192.168.1.100 --from 4 --direction reset
+x32_geq2_cpy --ip 192.168.1.64 --from 4 --direction reset
 ```
 
-**3. Copy GEQ from Slot 1 to Slot 2**
+### Copy a GEQ to a Different Slot
 
-Copy the entire GEQ from FX slot 1 to FX slot 2, without copying the master levels.
-
+To copy the entire GEQ from FX slot 2 to FX slot 3, without copying the master levels:
 ```bash
-cargo run --bin x32_geq2_cpy -- --ip 192.168.1.100 --from 1 --to 2 --direction copy-to --master false
+x32_geq2_cpy --ip 192.168.1.64 --from 2 --to 3 --direction copy-to --master false
 ```

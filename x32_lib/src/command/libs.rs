@@ -1,7 +1,31 @@
-//! This module provides the command definitions for the X32 libs.
+//! Provides functions for generating OSC commands to control X32/M32 library presets.
+//!
+//! The X32 allows users to save and recall presets for channels, effects, and routing.
+//! This module provides functions for interacting with these presets.
 use osc_lib::OscArg;
 
-/// Sets the name of a channel preset.
+
+// --- Address String Getters ---
+
+/// Returns the OSC address for a channel preset's name.
+pub fn channel_preset_name(preset_num: u8) -> String {
+    format!("/libs/ch/{:03}/name", preset_num)
+}
+
+/// Returns the OSC address for a routing preset's name.
+pub fn routing_preset_name(preset_num: u8) -> String {
+    format!("/libs/routing/{:03}/name", preset_num)
+}
+
+/// Returns the OSC address for an fx preset's name.
+pub fn fx_preset_name(preset_num: u8) -> String {
+    format!("/libs/fx/{:03}/name", preset_num)
+}
+
+
+// --- OSC Message Setters ---
+
+/// Creates an OSC message to set the name of a channel preset.
 ///
 /// # Arguments
 ///
@@ -16,11 +40,10 @@ use osc_lib::OscArg;
 /// assert_eq!(args, vec![osc_lib::OscArg::String("Test".to_string())]);
 /// ```
 pub fn set_channel_preset_name(preset_num: u8, name: &str) -> (String, Vec<OscArg>) {
-    let address = format!("/libs/ch/{:03}/name", preset_num);
-    (address, vec![OscArg::String(name.to_string())])
+    (channel_preset_name(preset_num), vec![OscArg::String(name.to_string())])
 }
 
-/// Sets the name of a routing preset.
+/// Creates an OSC message to set the name of a routing preset.
 ///
 /// # Arguments
 ///
@@ -35,11 +58,10 @@ pub fn set_channel_preset_name(preset_num: u8, name: &str) -> (String, Vec<OscAr
 /// assert_eq!(args, vec![osc_lib::OscArg::String("Test".to_string())]);
 /// ```
 pub fn set_routing_preset_name(preset_num: u8, name: &str) -> (String, Vec<OscArg>) {
-    let address = format!("/libs/routing/{:03}/name", preset_num);
-    (address, vec![OscArg::String(name.to_string())])
+    (routing_preset_name(preset_num), vec![OscArg::String(name.to_string())])
 }
 
-/// Sets the name of a fx preset.
+/// Creates an OSC message to set the name of a fx preset.
 ///
 /// # Arguments
 ///
@@ -54,8 +76,7 @@ pub fn set_routing_preset_name(preset_num: u8, name: &str) -> (String, Vec<OscAr
 /// assert_eq!(args, vec![osc_lib::OscArg::String("Test".to_string())]);
 /// ```
 pub fn set_fx_preset_name(preset_num: u8, name: &str) -> (String, Vec<OscArg>) {
-    let address = format!("/libs/fx/{:03}/name", preset_num);
-    (address, vec![OscArg::String(name.to_string())])
+    (fx_preset_name(preset_num), vec![OscArg::String(name.to_string())])
 }
 
 #[cfg(test)]

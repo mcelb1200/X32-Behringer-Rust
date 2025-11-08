@@ -1,7 +1,26 @@
-//! This module provides the command definitions for the X32 headamp channels.
+//! Provides functions for generating OSC commands to control X32/M32 headamps (preamps).
+//!
+//! The headamp controls are responsible for the analog gain of the microphone preamplifiers
+//! and for switching 48V phantom power on or off.
 use osc_lib::OscArg;
 
-/// Sets the gain of a headamp channel.
+
+// --- Address String Getters ---
+
+/// Returns the OSC address for a headamp channel's gain.
+pub fn gain(channel_num: u8) -> String {
+    format!("/headamp/{:02}/gain", channel_num)
+}
+
+/// Returns the OSC address for a headamp channel's phantom power state.
+pub fn phantom(channel_num: u8) -> String {
+    format!("/headamp/{:02}/phantom", channel_num)
+}
+
+
+// --- OSC Message Setters ---
+
+/// Creates an OSC message to set the gain of a headamp channel.
 ///
 /// # Arguments
 ///
@@ -16,16 +35,15 @@ use osc_lib::OscArg;
 /// assert_eq!(args, vec![osc_lib::OscArg::Float(0.75)]);
 /// ```
 pub fn set_gain(channel_num: u8, gain: f32) -> (String, Vec<OscArg>) {
-    let address = format!("/headamp/{:02}/gain", channel_num);
-    (address, vec![OscArg::Float(gain)])
+    (self::gain(channel_num), vec![OscArg::Float(gain)])
 }
 
-/// Sets the phantom power of a headamp channel.
+/// Creates an OSC message to set the phantom power of a headamp channel.
 ///
 /// # Arguments
 ///
 /// * `channel_num` - The headamp channel number (1-32).
-/// * `on` - The new phantom power state for the channel (0 or 1).
+/// * `on` - The new phantom power state for the channel (0 for Off, 1 for On).
 ///
 /// ```
 /// use x32_lib::command::headamp;
@@ -35,8 +53,7 @@ pub fn set_gain(channel_num: u8, gain: f32) -> (String, Vec<OscArg>) {
 /// assert_eq!(args, vec![osc_lib::OscArg::Int(1)]);
 /// ```
 pub fn set_phantom(channel_num: u8, on: i32) -> (String, Vec<OscArg>) {
-    let address = format!("/headamp/{:02}/phantom", channel_num);
-    (address, vec![OscArg::Int(on)])
+    (self::phantom(channel_num), vec![OscArg::Int(on)])
 }
 
 #[cfg(test)]

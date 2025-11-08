@@ -1,20 +1,28 @@
-//! # Error Module
-//!
-//! Defines the custom error type for the `x32_lib`.
+//! `x32_lib`'s custom `Error` and `Result` types.
 
 use std::net::AddrParseError;
 use std::io;
 use osc_lib::OscError;
-
-pub type Result<T> = std::result::Result<T, X32Error>;
-
 use std::fmt;
 
+/// A type alias for `Result` with the error type `X32Error`.
+pub type Result<T> = std::result::Result<T, X32Error>;
+
+/// The error type for operations within the `x32_lib`.
+///
+/// This enum encapsulates the various kinds of errors that can occur,
+/// including I/O errors, OSC message parsing errors, and network
+/// address parsing errors.
 #[derive(Debug)]
 pub enum X32Error {
+    /// An I/O error, typically from reading or writing to a UDP socket.
     Io(io::Error),
+    /// An error that occurred while parsing a network IP address.
     AddrParse(AddrParseError),
+    /// An error from the underlying `osc_lib`, such as a malformed
+    /// OSC message or an unsupported type tag.
     Osc(OscError),
+    /// A custom, application-level error.
     Custom(String),
 }
 
