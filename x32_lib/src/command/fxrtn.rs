@@ -1,7 +1,37 @@
-//! This module provides the command definitions for the X32 fxrtn channels.
+//! Provides functions for generating OSC commands to control X32/M32 effects returns (FX Returns 1-8).
+//!
+//! Effects returns are the stereo channels that bring the output of the effects processors back
+//! into the mix. This module provides functions for controlling their configuration, fader levels,
+//! and sends to mix buses.
 use osc_lib::OscArg;
 
-/// Sets the name of a fxrtn channel.
+
+// --- Address String Getters ---
+
+/// Returns the OSC address for an fxrtn channel's name.
+pub fn name(channel_num: u8) -> String {
+    format!("/fxrtn/{:02}/config/name", channel_num)
+}
+
+/// Returns the OSC address for an fxrtn channel's color.
+pub fn color(channel_num: u8) -> String {
+    format!("/fxrtn/{:02}/config/color", channel_num)
+}
+
+/// Returns the OSC address for an fxrtn channel's fader level.
+pub fn fader_level(channel_num: u8) -> String {
+    format!("/fxrtn/{:02}/mix/fader", channel_num)
+}
+
+/// Returns the OSC address for an fxrtn channel's bus send level.
+pub fn bus_send_level(channel_num: u8, bus: u8) -> String {
+    format!("/fxrtn/{:02}/mix/{:02}/level", channel_num, bus)
+}
+
+
+// --- OSC Message Setters ---
+
+/// Creates an OSC message to set the name of a fxrtn channel.
 ///
 /// # Arguments
 ///
@@ -16,11 +46,10 @@ use osc_lib::OscArg;
 /// assert_eq!(args, vec![osc_lib::OscArg::String("Test".to_string())]);
 /// ```
 pub fn set_name(channel_num: u8, name: &str) -> (String, Vec<OscArg>) {
-    let address = format!("/fxrtn/{:02}/config/name", channel_num);
-    (address, vec![OscArg::String(name.to_string())])
+    (self::name(channel_num), vec![OscArg::String(name.to_string())])
 }
 
-/// Sets the color of a fxrtn channel.
+/// Creates an OSC message to set the color of a fxrtn channel.
 ///
 /// # Arguments
 ///
@@ -35,12 +64,11 @@ pub fn set_name(channel_num: u8, name: &str) -> (String, Vec<OscArg>) {
 /// assert_eq!(args, vec![osc_lib::OscArg::Int(2)]);
 /// ```
 pub fn set_color(channel_num: u8, color: i32) -> (String, Vec<OscArg>) {
-    let address = format!("/fxrtn/{:02}/config/color", channel_num);
-    (address, vec![OscArg::Int(color)])
+    (self::color(channel_num), vec![OscArg::Int(color)])
 }
 
 
-/// Sets the fader level of a fxrtn channel.
+/// Creates an OSC message to set the fader level of a fxrtn channel.
 ///
 /// # Arguments
 ///
@@ -55,11 +83,10 @@ pub fn set_color(channel_num: u8, color: i32) -> (String, Vec<OscArg>) {
 /// assert_eq!(args, vec![osc_lib::OscArg::Float(0.75)]);
 /// ```
 pub fn set_fader(channel_num: u8, level: f32) -> (String, Vec<OscArg>) {
-    let address = format!("/fxrtn/{:02}/mix/fader", channel_num);
-    (address, vec![OscArg::Float(level)])
+    (fader_level(channel_num), vec![OscArg::Float(level)])
 }
 
-/// Sets the bus send level of a fxrtn channel.
+/// Creates an OSC message to set the bus send level of a fxrtn channel.
 ///
 /// # Arguments
 ///
@@ -75,8 +102,7 @@ pub fn set_fader(channel_num: u8, level: f32) -> (String, Vec<OscArg>) {
 /// assert_eq!(args, vec![osc_lib::OscArg::Float(0.75)]);
 /// ```
 pub fn set_bus_send_level(channel_num: u8, bus: u8, level: f32) -> (String, Vec<OscArg>) {
-    let address = format!("/fxrtn/{:02}/mix/{:02}/level", channel_num, bus);
-    (address, vec![OscArg::Float(level)])
+    (bus_send_level(channel_num, bus), vec![OscArg::Float(level)])
 }
 
 

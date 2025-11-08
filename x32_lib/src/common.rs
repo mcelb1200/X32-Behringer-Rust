@@ -1,7 +1,8 @@
-//! # Common Module
+//! This module contains common enumerations and structs used across the `x32_lib`.
 //!
-//! This module contains common enumerations and structs used across the library.
-//! These enums provide a type-safe way to interact with the X32/M32 console's parameters.
+//! These enums provide a type-safe way to interact with the X32/M32 console's
+//! parameters, ensuring that only valid values are used for settings like
+//! channel color, EQ type, and insert positions.
 
 use bitflags::bitflags;
 
@@ -22,12 +23,18 @@ pub enum CommandValue {
 }
 
 bitflags! {
+    /// Flags that define the behavior and properties of an X32 command.
     #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
     pub struct CommandFlags: u32 {
+        /// The command can be used to get a value from the mixer.
         const F_GET = 0x0001;
+        /// The command can be used to set a value on the mixer.
         const F_SET = 0x0002;
+        /// The command can be used to both get and set a value.
         const F_XET = Self::F_GET.bits() | Self::F_SET.bits();
+        /// A flag indicating that the command is not a preset.
         const F_NPR = 0x0004;
+        /// A flag indicating that the command can be found.
         const F_FND = 0x0008;
     }
 }
@@ -108,11 +115,17 @@ impl Color {
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[repr(u8)]
 pub enum EqType {
+    /// Low Cut
     Lcut = 0,
+    /// Low Shelf
     LShv,
+    /// Parametric EQ
     Peq,
+    /// Vintage EQ
     Veq,
+    /// High Shelf
     HShv,
+    /// High Cut
     Hcut,
 }
 
@@ -244,18 +257,27 @@ impl FxSource {
     }
 }
 
+/// A list of scribble strip color names.
 pub static XCOLORS: [&'static str; 16] = [
     "OFF", "RD", "GN", "YE", "BL", "MG", "CY", "WH",
     "OFFi", "RDi", "GNi", "YEi", "BLi", "MGi", "CYi", "WHi"];
 
+/// A list of "OFF" and "ON" strings.
 pub static OFF_ON: [&'static str; 2] = ["OFF", "ON"];
+/// A list of dynamics modes.
 pub static XDYMODE: [&'static str; 2] = ["COMP", "EXP"];
+/// A list of dynamics detector types.
 pub static XDYDET: [&'static str; 2] = ["PEAK", "RMS"];
+/// A list of dynamics envelope types.
 pub static XDYENV: [&'static str; 2] = ["LIN", "LOG"];
+/// A list of dynamics processing positions.
 pub static XDYPPOS: [&'static str; 2] = ["PRE", "POST"];
+/// A list of dynamics filter types.
 pub static XDYFTYP: [&'static str; 9] = ["LC6", "LC12", "HC6", "HC12", "1.0", "2.0", "3.0", "5.0", "10.0"];
+/// A list of insert selections.
 pub static XISEL: [&'static str; 23] = [
     "OFF", "FX1L", "FX1R", "FX2L", "FX2R", "FX3L", "FX3R", "FX4L", "FX4R",
     "FX5L", "FX5R", "FX6L", "FX6R", "FX7L", "FX7R", "FX8L", "FX8R", "AUX1",
     "AUX2", "AUX3", "AUX4", "AUX5", "AUX6"];
+/// A list of EQ types.
 pub static XEQTY1: [&'static str; 6] = ["LCut", "LShv", "PEQ", "VEQ", "HShv", "HCut"];

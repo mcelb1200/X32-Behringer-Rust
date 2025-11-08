@@ -1,59 +1,73 @@
 # x32_desk_save
 
-`x32_desk_save` is a command-line utility for saving preferences, scenes, and routing data from a Behringer X32 digital mixer to a file. It is a Rust implementation of the original `X32DeskSave.c` tool by Patrick-Gilles Maillot.
+`x32_desk_save` is a command-line utility for saving the state of a Behringer X32 or Midas M32 console to a file. It can save the entire scene, just the routing, or a custom set of parameters defined in a pattern file. This tool is a Rust rewrite of the original `X32DeskSave.c` utility by Patrick-Gilles Maillot.
 
-## Usage
+## How It Works
 
-```
-x32_desk_save [OPTIONS] <DESTINATION_FILE>
-```
+The tool connects to the X32 and sends a series of OSC (Open Sound Control) messages to query the values of various parameters. The responses are then formatted and saved to a local file. This file can be used with `x32_desk_restore` to load the saved state back onto the mixer.
 
-### Arguments
+## Command-Line Arguments
 
-*   `<DESTINATION_FILE>` - The destination file path to save the retrieved data.
+| Argument          | Short Flag | Long Flag         | Default Value  | Description                                                                                             |
+| ----------------- | ---------- | ----------------- | -------------- | ------------------------------------------------------------------------------------------------------- |
+| Destination File  |            |                   | (none)         | **Required.** The path to the file where the data will be saved.                                           |
+| IP Address        | `-i`       | `--ip`            | `192.168.1.64` | The IP address of the X32/M32 console.                                                                    |
+| Pattern File      | `-p`       | `--pattern-file`  | (none)         | An optional path to a file containing a list of OSC commands to query.                                    |
 
-### Options
+## Save Modes
 
-*   `-i`, `--ip <IP>` - X32 console IP address [default: `192.168.1.64`].
-*   `-p`, `--pattern-file <PATTERN_FILE>` - File path to a pattern file containing OSC commands to be retrieved from the X32.
-*   `-d`, `--desk-save` - Save a DeskSave file, containing the mixer's preferences and status.
-*   `-s`, `--scene` - Save a Scene file, containing the mixer's channel and configuration settings.
-*   `-r`, `--routing` - Save a Routing file, containing the mixer's input/output routing configuration.
-*   `-h`, `--help` - Print help information.
-*   `-V`, `--version` - Print version information.
+You must specify one of the following save modes:
 
-## Examples
+| Mode        | Short Flag | Long Flag     | Description                                                                 |
+| ----------- | ---------- | ------------- | --------------------------------------------------------------------------- |
+| Desk Save   | `-d`       | `--desk-save` | Saves the mixer's preferences and status to a `.xds` file.                  |
+| Scene       | `-s`       | `--scene`     | Saves the mixer's channel and configuration settings to a `.scn` file.      |
+| Routing     | `-r`       | `--routing`   | Saves the mixer's input/output routing configuration to a `.rou` file.      |
 
-### Save a DeskSave File
+## Example Usage
 
-To save the mixer's preferences and status to a file named `my_desksave.xds`, run the following command:
+### Save a Full Scene
 
-```
-x32_desk_save -i 192.168.1.32 -d my_desksave.xds
-```
+To save the mixer's current scene to a file named `my_live_show.scn`:
 
-### Save a Scene File
-
-To save the mixer's current scene to a file named `my_scene.scn`, run the following command:
-
-```
-x32_desk_save -i 192.168.1.32 -s my_scene.scn
+```bash
+x32_desk_save --ip 192.168.1.32 --scene my_live_show.scn
 ```
 
-### Save a Routing File
+### Save Only the Routing
 
-To save the mixer's routing configuration to a file named `my_routing.rou`, run the following command:
+To save only the routing configuration to a file named `routing_preset.rou`:
 
-```
-x32_desk_save -i 192.168.1.32 -r my_routing.rou
-```
-
-### Save Data Using a Pattern File
-
-To save a custom set of OSC commands from a pattern file named `my_pattern.txt`, run the following command:
-
-```
-x32_desk_save -i 192.168.1.32 -p my_pattern.txt my_custom_data.txt
+```bash
+x32_desk_save --ip 192.168.1.32 --routing routing_preset.rou
 ```
 
-The `my_pattern.txt` file should contain one OSC command per line. Lines starting with `#` are treated as comments and are ignored.
+### Save a Custom Set of Parameters
+
+To save a custom set of parameters defined in `my_pattern.txt` to a file named `custom_settings.txt`:
+
+```bash
+x32_desk_save --ip 192.168.1.32 --pattern-file my_pattern.txt custom_settings.txt
+```
+
+#### Example `my_pattern.txt`:
+
+```
+# Get the name and fader level for the first 8 channels
+/ch/01/config/name
+/ch/01/mix/fader
+/ch/02/config/name
+/ch/02/mix/fader
+/ch/03/config/name
+/ch/03/mix/fader
+/ch/04/config/name
+/ch/04/mix/fader
+/ch/05/config/name
+/ch/05/mix/fader
+/ch/06/config/name
+/ch/06/mix/fader
+/ch/07/config/name
+/ch/07/mix/fader
+/ch/08/config/name
+/ch/08/mix/fader
+```

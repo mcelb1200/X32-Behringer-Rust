@@ -1,4 +1,35 @@
 //! `osc_lib` is a library for encoding and decoding Open Sound Control (OSC) 1.0 messages.
+//!
+//! This library provides data structures for representing OSC messages and arguments,
+//! along with methods for serializing and deserializing them to and from byte streams
+//! and string representations.
+//!
+//! # Examples
+//!
+//! ## Creating and serializing an OSC message
+//!
+//! ```
+//! use osc_lib::{OscMessage, OscArg};
+//!
+//! let msg = OscMessage::new("/ch/01/mix/fader".to_string(), vec![OscArg::Float(0.75)]);
+//! let bytes = msg.to_bytes().unwrap();
+//!
+//! // The resulting byte vector can be sent over a network.
+//! ```
+//!
+//!
+//! ## Parsing an OSC message from a string
+//!
+//! ```
+//! use osc_lib::{OscMessage, OscArg};
+//! use std::str::FromStr;
+//!
+//! let msg_str = r#"/ch/01/mix/fader ,f 0.75"#;
+//! let msg = OscMessage::from_str(msg_str).unwrap();
+//!
+//! assert_eq!(msg.path, "/ch/01/mix/fader");
+//! assert_eq!(msg.args, vec![OscArg::Float(0.75)]);
+//! ```
 
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use std::io::{self, Cursor, Read, Write};
@@ -58,31 +89,40 @@ pub type Result<T> = std::result::Result<T, OscError>;
 /// Represents a single argument in an OSC message.
 #[derive(Debug, PartialEq, Clone)]
 pub enum OscArg {
-    /// A 32-bit integer.
+    /// A 32-bit integer (`i` in OSC type tags).
     Int(i32),
-    /// A 32-bit float.
+    /// A 32-bit float (`f` in OSC type tags).
     Float(f32),
-    /// A string.
+    /// A string (`s` in OSC type tags).
     String(String),
+    /// A blob of binary data (`b` in OSC type tags).
     Blob(Vec<u8>),
 }
 
 /// Represents a single OSC message, containing a path and a list of arguments.
 #[derive(Debug, PartialEq)]
 pub struct OscMessage {
-    /// The OSC address pattern.
+    /// The OSC address pattern (e.g., `/ch/01/mix/fader`).
     pub path: String,
     /// The arguments to the message.
     pub args: Vec<OscArg>,
 }
 
 impl OscMessage {
-    /// Creates a new `OscMessage`.
+    /// Creates a new `OscMessage` with the given path and arguments.
+    ///
+    /// # Arguments
+    ///
+    /// * `path` - The OSC address pattern.
+    /// * `args` - A vector of `OscArg` values.
     pub fn new(path: String, args: Vec<OscArg>) -> Self {
         OscMessage { path, args }
     }
 
     /// Deserializes an `OscMessage` from a byte slice.
+    ///
+    /// The byte slice should be a valid OSC 1.0 message, including the path,
+    /// type tag string, and arguments, all properly padded.
     pub fn from_bytes(bytes: &[u8]) -> Result<Self> {
         let mut cursor = Cursor::new(bytes);
 
@@ -125,6 +165,9 @@ impl OscMessage {
     }
 
     /// Serializes the `OscMessage` to a `Vec<u8>`.
+    ///
+    /// The resulting byte vector will be a valid OSC 1.0 message, ready to be
+    /// sent over a network.
     pub fn to_bytes(&self) -> Result<Vec<u8>> {
         let mut bytes = Vec::new();
 
@@ -158,7 +201,10 @@ impl OscMessage {
 
         Ok(bytes)
     }
+}
 
+impl FromStr for OscMessage {
+    type Err = OscError;
     /// Creates an `OscMessage` from a string representation.
     ///
     /// The string format is the OSC path followed by a space, then the type tag string,
@@ -169,13 +215,14 @@ impl OscMessage {
     ///
     /// ```
     /// use osc_lib::{OscMessage, OscArg};
+    /// use std::str::FromStr;
     ///
     /// let msg_str = r#"/ch/01/mix/fader ,f 0.75"#;
     /// let msg = OscMessage::from_str(msg_str).unwrap();
     /// assert_eq!(msg.path, "/ch/01/mix/fader");
     /// assert_eq!(msg.args, vec![OscArg::Float(0.75)]);
     /// ```
-    pub fn from_str(s: &str) -> Result<Self> {
+    fn from_str(s: &str) -> Result<Self> {
         let tokens = tokenize(s)?;
         let mut it = tokens.iter();
         let path = it.next().ok_or(OscError::ParseError("Empty command string".to_string()))?.to_string();
@@ -210,9 +257,22 @@ impl OscMessage {
 
         Ok(OscMessage { path, args })
     }
+}
 
+impl ToString for OscMessage {
     /// Converts the `OscMessage` to a string representation.
-    pub fn to_string(&self) -> String {
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use osc_lib::{OscMessage, OscArg};
+    ///
+    /// let msg = OscMessage::new("/ch/01/mix/fader".to_string(), vec![OscArg::Float(0.75)]);
+    /// let msg_str = msg.to_string();
+    ///
+    /// assert_eq!(msg_str, "/ch/01/mix/fader,f 0.75");
+    /// ```
+    fn to_string(&self) -> String {
         let mut s = self.path.clone();
         if !self.args.is_empty() {
             s.push(',');
@@ -238,8 +298,12 @@ impl OscMessage {
     }
 }
 
+
 /// Tokenizes a string for OSC message parsing, handling quoted strings.
-fn tokenize(s: &str) -> Result<Vec<String>> {
+///
+/// This function splits a string into tokens by whitespace, but treats text
+/// enclosed in double quotes as a single token.
+pub fn tokenize(s: &str) -> Result<Vec<String>> {
     let mut tokens = Vec::new();
     let mut current_token = String::new();
     let mut in_quote = false;

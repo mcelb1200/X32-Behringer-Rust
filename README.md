@@ -1,6 +1,15 @@
 # X32 Tools - Rust Rewrite
 
-This project is a complete rewrite of the X32 command-line tools in Rust, focusing on simplicity, stability, and reliability. The goal is to provide a modern, high-quality, and easy-to-maintain suite of tools for controlling Behringer X32 and X-Air digital mixers.
+This project is a complete rewrite of the X32 command-line tools in Rust, focusing on simplicity, stability, and reliability. The goal is to provide a modern, high-quality, and easy-to-maintain suite of tools for controlling Behringer X32 and Midas M32 digital mixers.
+
+## Table of Contents
+
+- [Original Author](#original-author)
+- [License](#license)
+- [Architecture](#architecture)
+- [Workspace Crates](#workspace-crates)
+- [Building the Tools](#building-the-tools)
+- [Running the Tools](#running-the-tools)
 
 ## Original Author
 
@@ -9,86 +18,125 @@ This project is a fork and rewrite of the original X32 libraries. All credit for
 *   **Author:** Patrick-Gilles Maillot
 *   **Original Work:** [https://sites.google.com/site/patrickmaillot/x32](https://sites.google.com/site/patrickmaillot/x32)
 
-The link above is to the original author's website and is not affiliated with this fork.
-
 ## License
 
 This Rust rewrite is licensed under the **GNU General Public License v3.0**. A full copy of the license is available in the `LICENSE` file in this directory.
 
-## Current Status
+## Architecture
 
-This project is under active development. The following tools have been rewritten in Rust and are available in this workspace:
+The project is structured as a Cargo workspace with three core library crates and a collection of binary crates that provide the command-line tools.
 
-*   `x32_get_scene`: Retrieves and prints the current scene number and name from the mixer.
-*   `x32_set_scene`: Loads a specific scene number on the mixer.
-*   `x32_desk_restore`: Restores the mixer's state from a file containing OSC commands.
+```mermaid
+graph TD;
+    subgraph Libraries
+        osc_lib;
+        x32_lib;
+        x32_core;
+    end
 
-## Building and Running the Tools
+    subgraph Binaries
+        x32_automix;
+        x32_commander;
+        x32_copy_fx;
+        x32_custom_layer;
+        x32_desk_restore;
+        x32_desk_save;
+        x32_emulator;
+        x32_fade;
+        x32_geq2_cpy;
+        x32_get_scene;
+        x32_get_scene_name;
+        x32_set_scene;
+        x32_tcp;
+        x32_usb;
+        x32_wav_xlive;
+    end
+
+    x32_lib --> osc_lib;
+    x32_core --> osc_lib;
+    x32_emulator --> x32_core;
+    x32_emulator --> x32_lib;
+
+    x32_automix --> x32_lib;
+    x32_commander --> x32_lib;
+    x32_copy_fx --> x32_lib;
+    x32_custom_layer --> x32_lib;
+    x32_desk_restore --> x32_lib;
+    x32_desk_save --> x32_lib;
+    x32_fade --> x32_lib;
+    x32_geq2_cpy --> x32_lib;
+    x32_get_scene --> x32_lib;
+    x32_get_scene_name --> x32_lib;
+    x32_set_scene --> x32_lib;
+    x32_tcp --> x32_lib;
+    x32_usb --> x32_lib;
+
+    x32_automix --> osc_lib;
+    x32_commander --> osc_lib;
+    x32_copy_fx --> osc_lib;
+    x32_custom_layer --> osc_lib;
+    x32_desk_restore --> osc_lib;
+    x32_desk_save --> osc_lib;
+    x32_emulator --> osc_lib;
+    x32_fade --> osc_lib;
+    x32_geq2_cpy --> osc_lib;
+    x32_get_scene --> osc_lib;
+    x32_get_scene_name --> osc_lib;
+    x32_set_scene --> osc_lib;
+    x32_tcp --> osc_lib;
+    x32_usb --> osc_lib;
+```
+
+## Workspace Crates
+
+### Library Crates
+
+| Crate       | Description                                                                                             |
+| ----------- | ------------------------------------------------------------------------------------------------------- |
+| `osc_lib`   | A foundational library for encoding and decoding Open Sound Control (OSC) messages.                   |
+| `x32_lib`   | The primary library for generating and parsing X32-specific OSC commands.                               |
+| `x32_core`  | The core logic for the X32 emulator, which simulates the behavior of a real mixer.                      |
+
+### Binary Crates
+
+| Crate                | Description                                                                                             |
+| -------------------- | ------------------------------------------------------------------------------------------------------- |
+| `x32_automix`        | Provides automixing functionality by monitoring channel levels and adjusting faders.                      |
+| `x32_commander`      | A bridge that triggers OSC or MIDI commands in response to incoming OSC messages.                         |
+| `x32_copy_fx`        | A utility for copying and resetting FX parameters.                                                      |
+| `x32_custom_layer`   | A tool for creating, saving, and restoring custom channel layers.                                         |
+| `x32_desk_restore`   | Restores the mixer's state from a file containing OSC commands.                                           |
+| `x32_desk_save`      | Saves the mixer's state (scene, routing, etc.) to a file.                                                 |
+| `x32_emulator`       | A command-line utility that simulates an X32 console for offline testing and development.                 |
+| `x32_fade`           | A tool for creating smooth, timed fader transitions.                                                    |
+| `x32_geq2_cpy`       | A utility for copying and resetting Graphic EQ (GEQ) settings.                                            |
+| `x32_get_scene`      | Retrieves scene data from the mixer.                                                                    |
+| `x32_get_scene_name` | Retrieves the name of the currently active scene.                                                       |
+| `x32_set_scene`      | Sends a series of OSC commands from standard input to the mixer.                                          |
+| `x32_tcp`            | A TCP to UDP bridge for sending OSC commands to the mixer over a text-based TCP connection.               |
+| `x32_usb`            | A shell-like interface for managing a USB drive connected to the console.                                 |
+| `x32_wav_xlive`      | A utility for merging multiple mono WAV files into a multi-channel X-Live! session.                       |
+
+For more detailed information on each tool, please refer to the `README.md` file in the respective crate's directory.
+
+## Building the Tools
 
 This project is structured as a Rust workspace. To build all the tools, you will need to have a recent version of the Rust toolchain installed.
 
 1.  **Clone the repository.**
-2.  **Navigate to the `rust_rewrite` directory.**
+2.  **Navigate to the root of the repository.**
 3.  **Build the entire workspace:**
 
     ```bash
     cargo build --release
     ```
 
-The compiled binaries will be located in the `rust_rewrite/target/release/` directory.
+The compiled binaries will be located in the `target/release/` directory.
 
-## Tools
+## Running the Tools
 
-This section provides details on the function and usage of each tool.
-
-### `x32_desk_restore`
-
-Restores the state of an X32 mixer from a file containing OSC commands. This tool is useful for loading a previously saved mixer state, scene, or snippet.
-
-**Function:**
-
-The tool reads a specified file line by line. Each line is interpreted as an OSC command and sent to the mixer. Lines starting with `#` are treated as comments and ignored.
-
-**Arguments:**
-
-*   `-i, --ip <IP>`: The IP address of the X32 mixer. Defaults to `192.168.1.64`.
-*   `<FILE>`: The path to the file containing the OSC commands to be sent to the mixer.
-
-**Example Usage:**
-
-To restore the mixer state from a file named `myscene.scn` on a mixer at IP address `192.168.1.32`:
+Once built, you can run any of the tools from the `target/release/` directory. For example, to run `x32_get_scene_name`:
 
 ```bash
-./rust_rewrite/target/release/x32_desk_restore -i 192.168.1.32 /path/to/myscene.scn
-```
-
-### `x32_get_scene`
-
-Retrieves and prints the current scene number and name from the mixer.
-
-**Arguments:**
-
-*   `-i, --ip <IP>`: The IP address of the X32 mixer. Defaults to `192.168.1.64`.
-
-**Example Usage:**
-
-```bash
-./rust_rewrite/target/release/x32_get_scene -i 192.168.1.32
-```
-
-### `x32_set_scene`
-
-Loads a specific scene on the mixer.
-
-**Arguments:**
-
-*   `-i, --ip <IP>`: The IP address of the X32 mixer. Defaults to `192.168.1.64`.
-*   `<SCENE>`: The scene number to load (0-99).
-
-**Example Usage:**
-
-To load scene number 5 on the mixer:
-
-```bash
-./rust_rewrite/target/release/x32_set_scene -i 192.168.1.32 5
+./target/release/x32_get_scene_name --ip 192.168.1.64
 ```

@@ -1,7 +1,21 @@
-//! This module provides the command definitions for the X32 output channels.
+//! Provides functions for generating OSC commands to control X32/M32 physical outputs.
+//!
+//! This module is responsible for routing signals to the physical output connectors on the
+//! back of the console, such as the main XLR outputs, auxiliary outputs, and AES/EBU outputs.
 use osc_lib::OscArg;
 
-/// Sets the main output source.
+
+// --- Address String Getters ---
+
+/// Returns the OSC address for a main output's source.
+pub fn main_output_source(output_num: u8) -> String {
+    format!("/outputs/main/{:02}/src", output_num)
+}
+
+
+// --- OSC Message Setters ---
+
+/// Creates an OSC message to set the main output source.
 ///
 /// # Arguments
 ///
@@ -16,6 +30,5 @@ use osc_lib::OscArg;
 /// assert_eq!(args, vec![osc_lib::OscArg::Int(2)]);
 /// ```
 pub fn set_main_output_source(output_num: u8, source: i32) -> (String, Vec<OscArg>) {
-    let address = format!("/outputs/main/{:02}/src", output_num);
-    (address, vec![OscArg::Int(source)])
+    (main_output_source(output_num), vec![OscArg::Int(source)])
 }

@@ -1,7 +1,26 @@
-//! This module provides the command definitions for the X32 show channels.
+//! Provides functions for generating OSC commands to control X32/M32 show management.
+//!
+//! This module covers the commands related to loading and managing shows, scenes, cues,
+//! and snippets.
 use osc_lib::OscArg;
 
-/// Sets the name of a show.
+
+// --- Address String Getters ---
+
+/// Returns the OSC address for the show name.
+pub fn show_name() -> String {
+    "/-show/name".to_string()
+}
+
+/// Returns the OSC address for a cue's name.
+pub fn cue_name(cue_num: u8) -> String {
+    format!("/-show/cue/{:03}/name", cue_num)
+}
+
+
+// --- OSC Message Setters ---
+
+/// Creates an OSC message to set the name of a show.
 ///
 /// # Arguments
 ///
@@ -15,11 +34,10 @@ use osc_lib::OscArg;
 /// assert_eq!(args, vec![osc_lib::OscArg::String("Test".to_string())]);
 /// ```
 pub fn set_show_name(name: &str) -> (String, Vec<OscArg>) {
-    let address = "/-show/name".to_string();
-    (address, vec![OscArg::String(name.to_string())])
+    (show_name(), vec![OscArg::String(name.to_string())])
 }
 
-/// Sets the name of a cue.
+/// Creates an OSC message to set the name of a cue.
 ///
 /// # Arguments
 ///
@@ -34,6 +52,5 @@ pub fn set_show_name(name: &str) -> (String, Vec<OscArg>) {
 /// assert_eq!(args, vec![osc_lib::OscArg::String("Test".to_string())]);
 /// ```
 pub fn set_cue_name(cue_num: u8, name: &str) -> (String, Vec<OscArg>) {
-    let address = format!("/-show/cue/{:03}/name", cue_num);
-    (address, vec![OscArg::String(name.to_string())])
+    (cue_name(cue_num), vec![OscArg::String(name.to_string())])
 }

@@ -1,35 +1,33 @@
 # x32_get_scene_name
 
-`x32_get_scene_name` is a command-line utility that connects to a Behringer X32 digital mixer, listens for scene change events, and prints the name of the new scene to standard output. It is a Rust implementation of the original `GetSceneName.c` tool by Patrick-Gilles Maillot.
+`x32_get_scene_name` is a command-line utility that retrieves the name of the currently active scene on a Behringer X32 or Midas M32 console. It can be run in a one-time mode to get the current scene name and then exit, or in a continuous monitoring mode to print the name of each new scene as it is loaded. This tool is a Rust rewrite of the original `GetSceneName.c` utility by Patrick-Gilles Maillot.
 
-## Usage
+## How It Works
 
-```
-x32_get_scene_name [OPTIONS]
-```
+The tool connects to the X32 and subscribes to notifications for scene changes. When a scene is loaded on the console, the mixer sends an OSC message containing the scene number and name. `x32_get_scene_name` captures this message and prints the name to standard output.
 
-### Options
+## Command-Line Arguments
 
-*   `-i`, `--ip <IP>` - X32 console IP address [default: `192.168.1.62`].
-*   `-v`, `--verbose <VERBOSE>` - Prints welcome and connection status messages (0 or 1) [default: 1].
-*   `-o`, `--onetime <ONETIME>` - Exits at first occurrence (0 or 1) [default: 1].
-*   `-h`, `--help` - Print help information.
-*   `-V`, `--version` - Print version information.
+| Argument   | Short Flag | Long Flag   | Default Value  | Description                                                                 |
+| ---------- | ---------- | ----------- | -------------- | --------------------------------------------------------------------------- |
+| IP Address | `-i`       | `--ip`      | `192.168.1.62` | The IP address of the X32/M32 console.                                        |
+| Verbose    | `-v`       | `--verbose` | `1`            | Set to `1` to print welcome and connection status messages, or `0` to run silently. |
+| One-time   | `-o`       | `--onetime` | `1`            | Set to `1` to exit after the first scene name is received, or `0` to run continuously. |
 
-## Examples
+## Example Usage
 
-### Get Scene Name Once
+### Get the Current Scene Name and Exit
 
-To connect to an X32 at `192.168.1.32`, get the next scene name, and then exit, run the following command:
+To connect to an X32 at `192.168.1.32`, get the next scene name that is loaded, and then exit:
 
-```
-x32_get_scene_name -i 192.168.1.32 -o 1
+```bash
+x32_get_scene_name --ip 192.168.1.32 --onetime 1
 ```
 
 ### Continuously Monitor for Scene Changes
 
-To continuously monitor for scene changes and print the name of each new scene, run the following command:
+To connect to an X32 at `192.168.1.32` and continuously monitor for scene changes, printing the name of each new scene as it is loaded:
 
-```
-x32_get_scene_name -i 192.168.1.32 -o 0
+```bash
+x32_get_scene_name --ip 192.168.1.32 --onetime 0
 ```

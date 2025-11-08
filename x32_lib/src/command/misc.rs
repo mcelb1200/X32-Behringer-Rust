@@ -1,7 +1,31 @@
-//! This module provides the command definitions for the X32 misc channels.
+//! Provides functions for generating OSC commands for miscellaneous X32/M32 settings.
+//!
+//! This module covers a range of settings that don't fit into the other categories,
+//! such as USB playback routing, auxiliary input inserts, and headamp routing.
 use osc_lib::OscArg;
 
-/// Sets the usb path of a misc channel.
+
+// --- Address String Getters ---
+
+/// Returns the OSC address for the USB player path.
+pub fn usb_path() -> String {
+    "/-usb/path".to_string()
+}
+
+/// Returns the OSC address for an auxiliary input's insert.
+pub fn aux_insert(aux_num: u8) -> String {
+    format!("/config/ins/aux/{}", aux_num)
+}
+
+/// Returns the OSC address for a headamp's routing.
+pub fn ha_routing(ha_num: u8) -> String {
+    format!("/config/routing/p/{:02}", ha_num)
+}
+
+
+// --- OSC Message Setters ---
+
+/// Creates an OSC message to set the usb path of a misc channel.
 ///
 /// # Arguments
 ///
@@ -15,11 +39,10 @@ use osc_lib::OscArg;
 /// assert_eq!(args, vec![osc_lib::OscArg::String("Test".to_string())]);
 /// ```
 pub fn set_usb_path(path: &str) -> (String, Vec<OscArg>) {
-    let address = "/-usb/path".to_string();
-    (address, vec![OscArg::String(path.to_string())])
+    (usb_path(), vec![OscArg::String(path.to_string())])
 }
 
-/// Sets the aux insert of a misc channel.
+/// Creates an OSC message to set the aux insert of a misc channel.
 ///
 /// # Arguments
 ///
@@ -34,11 +57,10 @@ pub fn set_usb_path(path: &str) -> (String, Vec<OscArg>) {
 /// assert_eq!(args, vec![osc_lib::OscArg::Int(2)]);
 /// ```
 pub fn set_aux_insert(aux_num: u8, insert: i32) -> (String, Vec<OscArg>) {
-    let address = format!("/config/ins/aux/{}", aux_num);
-    (address, vec![OscArg::Int(insert)])
+    (aux_insert(aux_num), vec![OscArg::Int(insert)])
 }
 
-/// Sets the ha routing of a misc channel.
+/// Creates an OSC message to set the ha routing of a misc channel.
 ///
 /// # Arguments
 ///
@@ -53,8 +75,7 @@ pub fn set_aux_insert(aux_num: u8, insert: i32) -> (String, Vec<OscArg>) {
 /// assert_eq!(args, vec![osc_lib::OscArg::Int(2)]);
 /// ```
 pub fn set_ha_routing(ha_num: u8, routing: i32) -> (String, Vec<OscArg>) {
-    let address = format!("/config/routing/p/{:02}", ha_num);
-    (address, vec![OscArg::Int(routing)])
+    (ha_routing(ha_num), vec![OscArg::Int(routing)])
 }
 
 

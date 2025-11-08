@@ -9,6 +9,7 @@ use osc_lib::{OscMessage};
 use std::fs::File;
 use std::io::{self, BufRead};
 use std::net::UdpSocket;
+use std::str::FromStr;
 
 /// A Rust implementation of the X32DeskRestore tool.
 #[derive(Parser, Debug)]

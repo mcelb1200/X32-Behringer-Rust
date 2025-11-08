@@ -1,116 +1,121 @@
-# X32 Custom Layer
+# x32_custom_layer
 
-This tool is a Rust rewrite of the `X32CustomLayer.c` utility by Patrick-Gilles Maillot. It provides a command-line interface for creating, saving, restoring, and resetting custom channel layers on a Behringer X32 or Midas M32 digital mixing console.
+`x32_custom_layer` is a powerful command-line utility for managing custom channel layers on Behringer X32 and Midas M32 consoles. It provides a suite of tools for creating, saving, restoring, and resetting channel layouts, making it easy to reconfigure the mixer for different events or workflows. This tool is a Rust rewrite of the original `X32CustomLayer.c` utility by Patrick-Gilles Maillot.
 
-## Usage
+## How It Works
 
-```
-x32_custom_layer <COMMAND>
-```
+The tool communicates with the X32 over the network using OSC (Open Sound Control) messages to manipulate the channel strip assignments and settings. It can save the entire state of the mixer's input channels to a `.snp` (snippet) file, which can be reloaded later to restore that exact configuration.
 
-### Commands
-
-- `set`: Sets a custom layer on the X32 mixer.
-- `save`: Saves the current custom layer to a file.
-- `restore`: Restores a custom layer from a file.
-- `reset`: Resets channels to their default settings.
-- `list`: Lists the current channel sources.
-
----
+## Commands
 
 ### `set`
 
-This command allows you to reassign channel strips to create a custom layer. You can specify one or more assignments in the format `DEST=SRC`, where `DEST` is the destination channel strip and `SRC` is the source channel strip.
+Remaps one or more source channels to different destination channel strips, creating a custom fader layer.
 
 **Usage:**
-```
+```bash
 x32_custom_layer set --ip <IP_ADDRESS> <ASSIGNMENTS>...
 ```
 
+**Arguments:**
+
+| Argument      | Description                                                                                             |
+| ------------- | ------------------------------------------------------------------------------------------------------- |
+| `--ip`        | **Required.** The IP address of the X32/M32 console.                                                       |
+| `ASSIGNMENTS` | A space-separated list of assignments in the format `DEST=SRC` (e.g., `1=5 2=10 3=15`). `DEST` is the destination channel strip you want to control, and `SRC` is the source channel that will be controlled. |
+
 **Example:**
+```bash
+x32_custom_layer set --ip 192.168.1.64 1=17 2=18 3=19 4=20
 ```
-x32_custom_layer set --ip 192.168.1.60 1=5 2=10 3=15
-```
-This command will set channel strip 1 to the settings of channel 5, channel strip 2 to the settings of channel 10, and channel strip 3 to the settings of channel 15.
 
 ---
 
 ### `save`
 
-This command saves the current state of all channel strips (1-32) and aux inputs (1-8) to a snippet file. This file can be used later to restore the mixer's state.
+Saves the current configuration of all input channels (1-32) and auxiliary inputs (1-8) to a snippet (`.snp`) file.
 
 **Usage:**
-```
+```bash
 x32_custom_layer save --ip <IP_ADDRESS> --file <FILE_PATH>
 ```
 
+**Arguments:**
+
+| Argument | Description                                      |
+| -------- | ------------------------------------------------ |
+| `--ip`   | **Required.** The IP address of the X32/M32 console. |
+| `--file` | **Required.** The path to the snippet file to be created. |
+
 **Example:**
-```
-x32_custom_layer save --ip 192.168.1.60 --file my_layer.snp
+```bash
+x32_custom_layer save --ip 192.168.1.64 --file my_drum_kit.snp
 ```
 
 ---
 
 ### `restore`
 
-This command restores the state of all channel strips and aux inputs from a previously saved snippet file.
+Restores a previously saved channel configuration from a snippet file.
 
 **Usage:**
-```
+```bash
 x32_custom_layer restore --ip <IP_ADDRESS> --file <FILE_PATH>
 ```
 
+**Arguments:**
+
+| Argument | Description                                      |
+| -------- | ------------------------------------------------ |
+| `--ip`   | **Required.** The IP address of the X32/M32 console. |
+| `--file` | **Required.** The path to the snippet file to be loaded. |
+
 **Example:**
-```
-x32_custom_layer restore --ip 192.168.1.60 --file my_layer.snp
+```bash
+x32_custom_layer restore --ip 192.168.1.64 --file my_drum_kit.snp
 ```
 
 ---
 
 ### `reset`
 
-This command resets one or more channel strips to their default settings. You can specify a single channel, a comma-separated list of channels, or a range of channels.
+Resets one or more channel strips to their default factory settings.
 
 **Usage:**
-```
+```bash
 x32_custom_layer reset --ip <IP_ADDRESS> --channels <CHANNELS>
 ```
 
-**Examples:**
-- Reset a single channel:
-  ```
-  x32_custom_layer reset --ip 192.168.1.60 --channels 5
-  ```
-- Reset multiple channels:
-  ```
-  x32_custom_layer reset --ip 192.168.1.60 --channels 1,3,5
-  ```
-- Reset a range of channels:
-  ```
-  x32_custom_layer reset --ip 192.168.1.60 --channels 1-8
-  ```
-- Reset a combination of single channels and ranges:
-  ```
-  x32_custom_layer reset --ip 192.168.1.60 --channels 1,3,5-8
-  ```
+**Arguments:**
+
+| Argument     | Description                                                                                             |
+| -------------- | ------------------------------------------------------------------------------------------------------- |
+| `--ip`         | **Required.** The IP address of the X32/M32 console.                                                       |
+| `--channels`   | **Required.** A comma-separated list and/or hyphenated range of channels to reset (e.g., `1,3,5-8`).      |
+
+**Example:**
+```bash
+x32_custom_layer reset --ip 192.168.1.64 --channels 1-8,17,24
+```
 
 ---
 
 ### `list`
 
-This command lists the current input source for each channel strip and aux input.
+Displays the current input source for each channel strip and auxiliary input.
 
 **Usage:**
-```
+```bash
 x32_custom_layer list --ip <IP_ADDRESS>
 ```
 
-**Example:**
-```
-x32_custom_layer list --ip 192.168.1.60
-```
-This will print a table showing the source for each channel, similar to the following:
+**Arguments:**
 
+| Argument | Description                                      |
+| -------- | ------------------------------------------------ |
+| `--ip`   | **Required.** The IP address of the X32/M32 console. |
+
+**Example Output:**
 ```
   Channel	Source		Channel		Source
      01		In01		17		    In17

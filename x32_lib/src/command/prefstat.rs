@@ -1,7 +1,31 @@
-//! This module provides the command definitions for the X32 prefstat channels.
+//! Provides functions for generating OSC commands to control X32/M32 preferences and status.
+//!
+//! This module covers global settings and status indicators, such as the currently selected
+//! screen, solo status, and other preferences.
 use osc_lib::OscArg;
 
-/// Sets the name of a prefstat channel.
+
+// --- Address String Getters ---
+
+/// Returns the OSC address for the screen name.
+pub fn name() -> String {
+    "/-stat/screen/name".to_string()
+}
+
+/// Returns the OSC address for the solo channel.
+pub fn solo_channel() -> String {
+    "/-stat/solosw/ch".to_string()
+}
+
+/// Returns the OSC address for the solo on/off state.
+pub fn solo_on_addr() -> String {
+    "/-stat/solosw/on".to_string()
+}
+
+
+// --- OSC Message Setters ---
+
+/// Creates an OSC message to set the name of a prefstat channel.
 ///
 /// # Arguments
 ///
@@ -15,11 +39,10 @@ use osc_lib::OscArg;
 /// assert_eq!(args, vec![osc_lib::OscArg::String("Test".to_string())]);
 /// ```
 pub fn set_name(name: &str) -> (String, Vec<OscArg>) {
-    let address = "/-stat/screen/name".to_string();
-    (address, vec![OscArg::String(name.to_string())])
+    (self::name(), vec![OscArg::String(name.to_string())])
 }
 
-/// Sets the solo channel of a prefstat channel.
+/// Creates an OSC message to set the solo channel of a prefstat channel.
 ///
 /// # Arguments
 ///
@@ -33,15 +56,14 @@ pub fn set_name(name: &str) -> (String, Vec<OscArg>) {
 /// assert_eq!(args, vec![osc_lib::OscArg::Int(1)]);
 /// ```
 pub fn set_solo_channel(channel_num: i32) -> (String, Vec<OscArg>) {
-    let address = "/-stat/solosw/ch".to_string();
-    (address, vec![OscArg::Int(channel_num)])
+    (solo_channel(), vec![OscArg::Int(channel_num)])
 }
 
-/// Sets the solo on state of a prefstat channel.
+/// Creates an OSC message to set the solo on state of a prefstat channel.
 ///
 /// # Arguments
 ///
-/// * `on` - The new solo on state for the channel (0 or 1).
+/// * `on` - The new solo on state for the channel (0 for Off, 1 for On).
 ///
 /// ```
 /// use x32_lib::command::prefstat;
@@ -51,6 +73,5 @@ pub fn set_solo_channel(channel_num: i32) -> (String, Vec<OscArg>) {
 /// assert_eq!(args, vec![osc_lib::OscArg::Int(1)]);
 /// ```
 pub fn solo_on(on: i32) -> (String, Vec<OscArg>) {
-    let address = "/-stat/solosw/on".to_string();
-    (address, vec![OscArg::Int(on)])
+    (solo_on_addr(), vec![OscArg::Int(on)])
 }
