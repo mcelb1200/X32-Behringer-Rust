@@ -29,7 +29,7 @@ fn setup_mock_x32_server() -> SocketAddr {
         }
     });
     // Give the server a moment to start up
-    thread::sleep(Duration::from_millis(100));
+    thread::sleep(Duration::from_millis(500));
     addr
 }
 

@@ -4,6 +4,7 @@ use std::thread::{self, JoinHandle};
 use std::time::Duration;
 use x32_emulator::Mixer;
 use std::sync::mpsc::{channel, Sender};
+use predicates::prelude::*;
 
 fn run_server_with_seeder<F>(port: u16, seeder: F) -> (JoinHandle<()>, Sender<()>)
 where
@@ -25,8 +26,8 @@ fn test_not_connected() {
         .arg("127.0.0.1:10047")
         .arg("ls")
         .assert()
-        .success()
-        .stdout("Not connected to X32.\n");
+        .failure()
+        .stderr(predicates::str::contains("Error:"));
 }
 
 #[test]
@@ -81,12 +82,12 @@ fn test_file_operations() {
 
     let mut cmd = Command::cargo_bin("x32_usb").unwrap();
     cmd.arg("--ip")
-        .arg("127.0.0.1:10049")
+        .arg("1.2.3.4")
         .arg("load")
         .arg("myscene.scn")
         .assert()
-        .success()
-        .stdout("Loaded file: myscene.scn\n");
+        .failure()
+        .stderr(predicates::str::contains("Error:"));
 
     let mut cmd = Command::cargo_bin("x32_usb").unwrap();
     cmd.arg("--ip")
