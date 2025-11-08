@@ -1,10 +1,9 @@
-use tempfile::tempdir;
-use hound::{WavWriter, WavSpec, WavReader};
-use std::path::Path;
+use byteorder::{LittleEndian, ReadBytesExt};
+use hound::{WavReader, WavSpec, WavWriter};
 use std::fs::{self, File};
 use std::io::{Cursor, Read};
-use byteorder::{LittleEndian, ReadBytesExt};
-
+use std::path::Path;
+use tempfile::tempdir;
 
 fn create_test_wav(dir: &Path, name: &str, spec: WavSpec, duration_ms: u32) {
     let path = dir.join(name);
@@ -33,16 +32,12 @@ fn test_cli_e2e() {
         .run()
         .unwrap();
     let mut cmd = bin.command();
-    cmd.arg(dir.path())
-        .arg("TestSession")
-        .arg("-m")
-        .arg("0.05");
+    cmd.arg(dir.path()).arg("TestSession").arg("-m").arg("0.05");
 
     let output = cmd.output().unwrap();
     assert!(output.status.success());
     let stdout = String::from_utf8(output.stdout).unwrap();
     assert!(stdout.contains("Found 2 WAV files to process."));
-
 
     let session_dir = fs::read_dir(dir.path())
         .unwrap()
@@ -58,7 +53,10 @@ fn test_cli_e2e() {
         .unwrap()
         .filter_map(|entry| {
             let path = entry.unwrap().path();
-            if path.extension().map_or(false, |ext| ext == "wav" || ext == "WAV") {
+            if path
+                .extension()
+                .map_or(false, |ext| ext == "wav" || ext == "WAV")
+            {
                 Some(path)
             } else {
                 None

@@ -56,7 +56,6 @@ fn test_desk_save_command() {
     assert!(stdout.contains(&format!("Successfully connected to X32 at {}", addr)));
     assert!(stdout.contains("Successfully saved data to test_output.txt"));
 
-
     // Verify the content of the output file
     let content = std::fs::read_to_string("test_output.txt").unwrap();
     let lines: Vec<&str> = content.lines().collect();
