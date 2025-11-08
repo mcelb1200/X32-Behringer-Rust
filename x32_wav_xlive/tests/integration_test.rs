@@ -3,8 +3,8 @@ use hound::{WavWriter, WavSpec, WavReader};
 use std::path::Path;
 use std::fs::{self, File};
 use std::io::{Cursor, Read};
-use byteorder::{LittleEndian, ReadBytesExt};
-
+use std::path::Path;
+use tempfile::tempdir;
 
 fn create_test_wav(dir: &Path, name: &str, spec: WavSpec, duration_ms: u32) {
     let path = dir.join(name);
@@ -58,7 +58,10 @@ fn test_cli_e2e() {
         .unwrap()
         .filter_map(|entry| {
             let path = entry.unwrap().path();
-            if path.extension().map_or(false, |ext| ext == "wav" || ext == "WAV") {
+            if path
+                .extension()
+                .map_or(false, |ext| ext == "wav" || ext == "WAV")
+            {
                 Some(path)
             } else {
                 None

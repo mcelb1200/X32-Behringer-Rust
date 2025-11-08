@@ -1,3 +1,6 @@
+use osc_lib::OscMessage;
+use std::fs::File;
+use std::io::Write;
 use std::net::UdpSocket;
 use std::thread;
 use std::time::Duration;
@@ -12,17 +15,23 @@ fn setup_mock_x32_server() -> String {
     thread::spawn(move || {
         let mut buf = [0; 512];
         // Set a short read timeout so the thread doesn't block forever
-        server_socket.set_read_timeout(Some(Duration::from_millis(500))).unwrap();
+        server_socket
+            .set_read_timeout(Some(Duration::from_millis(500)))
+            .unwrap();
         loop {
             match server_socket.recv_from(&mut buf) {
                 Ok((number_of_bytes, src_addr)) => {
                     if let Ok(received_msg) = OscMessage::from_bytes(&buf[..number_of_bytes]) {
                         // Echo the message back to the client
-                        server_socket.send_to(&received_msg.to_bytes().unwrap(), src_addr).expect("couldn't send data");
+                        server_socket
+                            .send_to(&received_msg.to_bytes().unwrap(), src_addr)
+                            .expect("couldn't send data");
                     }
                 }
                 Err(e) => {
-                    if e.kind() != std::io::ErrorKind::WouldBlock && e.kind() != std::io::ErrorKind::TimedOut {
+                    if e.kind() != std::io::ErrorKind::WouldBlock
+                        && e.kind() != std::io::ErrorKind::TimedOut
+                    {
                         // An actual error occurred
                         break;
                     }
