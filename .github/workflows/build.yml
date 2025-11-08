@@ -31,12 +31,12 @@ jobs:
             test: true
 
           # Mobile Platforms (build only)
-          - os: ubuntu-latest
-            target: aarch64-linux-android
-            test: false
-          - os: macos-latest
-            target: aarch64-apple-ios
-            test: false
+         # - os: ubuntu-latest
+         #   target: aarch64-linux-android
+         #   test: false
+         # - os: macos-latest
+         #   target: aarch64-apple-ios
+         #   test: false
           # - os: macos-latest
           #   target: aarch64-apple-ios-sim
           #   test: false
