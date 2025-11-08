@@ -1,9 +1,9 @@
 //! `x32_lib`'s custom `Error` and `Result` types.
 
-use std::net::AddrParseError;
-use std::io;
 use osc_lib::OscError;
 use std::fmt;
+use std::io;
+use std::net::AddrParseError;
 
 /// A type alias for `Result` with the error type `X32Error`.
 pub type Result<T> = std::result::Result<T, X32Error>;

@@ -6,18 +6,23 @@
 //!
 //! This utility is a Rust rewrite of the original C program `X32USB.c` by Patrick-Gilles Maillot.
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use clap::{Parser, Subcommand};
-use x32_lib::{create_socket, error::X32Error};
-use osc_lib::{OscMessage, OscArg};
+use osc_lib::{OscArg, OscMessage};
 use std::net::UdpSocket;
 use std::str::FromStr;
+use x32_lib::{create_socket, error::X32Error};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about = "An X32 shell for remote managing USB files", long_about = None)]
 /// Command-line arguments for the x32_usb utility.
 struct Args {
-    #[arg(short, long, default_value = "127.0.0.1", help = "X32 console IP address")]
+    #[arg(
+        short,
+        long,
+        default_value = "127.0.0.1",
+        help = "X32 console IP address"
+    )]
     /// The IP address of the X32/M32 console.
     ip: String,
 
@@ -166,7 +171,9 @@ impl X32Client {
             Err(e) => {
                 if let Some(x32_err) = e.downcast_ref::<X32Error>() {
                     if let X32Error::Io(io_err) = x32_err {
-                        if io_err.kind() == std::io::ErrorKind::WouldBlock || io_err.kind() == std::io::ErrorKind::TimedOut {
+                        if io_err.kind() == std::io::ErrorKind::WouldBlock
+                            || io_err.kind() == std::io::ErrorKind::TimedOut
+                        {
                             return Ok(false);
                         }
                     }
@@ -208,25 +215,31 @@ impl X32Client {
 
     /// Selects a file or directory on the USB drive.
     fn select_file(&self, file_index: i32) -> Result<()> {
-        let msg = OscMessage::new("/-action/recselect".to_string(), vec![OscArg::Int(file_index)]);
+        let msg = OscMessage::new(
+            "/-action/recselect".to_string(),
+            vec![OscArg::Int(file_index)],
+        );
         self.send(&msg)
     }
 
     /// Finds a file or directory by its index or name.
     fn find_file(&self, target: &str) -> Result<FileEntry> {
         let files = self.get_file_list()?;
-        files.into_iter().find(|f| {
-            if let Ok(index) = target.parse::<i32>() {
-                f.index == index
-            } else {
-                let name_to_compare = if f.file_type == FileType::Directory {
-                    &f.name[1..f.name.len() - 1]
+        files
+            .into_iter()
+            .find(|f| {
+                if let Ok(index) = target.parse::<i32>() {
+                    f.index == index
                 } else {
-                    &f.name
-                };
-                name_to_compare == target
-            }
-        }).ok_or_else(|| anyhow!("File not found: {}", target))
+                    let name_to_compare = if f.file_type == FileType::Directory {
+                        &f.name[1..f.name.len() - 1]
+                    } else {
+                        &f.name
+                    };
+                    name_to_compare == target
+                }
+            })
+            .ok_or_else(|| anyhow!("File not found: {}", target))
     }
 
     /// Sets the playback state of the tape deck.
@@ -270,7 +283,11 @@ fn run(args: Args) -> Result<()> {
         Commands::Load { target } => {
             let file = client.find_file(target)?;
             match file.file_type {
-                FileType::Scene | FileType::Snippet | FileType::Effects | FileType::Routing | FileType::Channel => {
+                FileType::Scene
+                | FileType::Snippet
+                | FileType::Effects
+                | FileType::Routing
+                | FileType::Channel => {
                     client.select_file(file.index)?;
                     println!("Loaded file: {}", file.name);
                 }

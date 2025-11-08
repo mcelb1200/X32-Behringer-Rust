@@ -1,9 +1,8 @@
-use assert_cmd::Command;
-use x32_emulator::server;
+use std::sync::mpsc::{Sender, channel};
 use std::thread::{self, JoinHandle};
 use std::time::Duration;
 use x32_emulator::Mixer;
-use std::sync::mpsc::{channel, Sender};
+use x32_emulator::server;
 
 fn run_server_with_seeder<F>(port: u16, seeder: F) -> (JoinHandle<()>, Sender<()>)
 where
@@ -11,7 +10,12 @@ where
 {
     let (tx, rx) = channel();
     let handle = thread::spawn(move || {
-        server::run(&format!("127.0.0.1:{}", port), Some(Box::new(seeder)), Some(rx)).unwrap();
+        server::run(
+            &format!("127.0.0.1:{}", port),
+            Some(Box::new(seeder)),
+            Some(rx),
+        )
+        .unwrap();
     });
     thread::sleep(Duration::from_millis(200));
     (handle, tx)
@@ -20,13 +24,16 @@ where
 #[test]
 fn test_not_connected() {
     // We don't start a server for this test, to simulate a connection failure.
-    let mut cmd = Command::cargo_bin("x32_usb").unwrap();
+    let bin = escargot::CargoBuild::new().bin("x32_usb").run().unwrap();
+    let mut cmd = bin.command();
     cmd.arg("--ip")
         .arg("127.0.0.1:10047")
-        .arg("ls")
-        .assert()
-        .failure()
-        .stdout(predicates::str::contains("Not connected to X32."));
+        .arg("ls");
+
+    let output = cmd.output().unwrap();
+    assert!(!output.status.success());
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    assert!(stdout.contains("Not connected to X32."));
 }
 
 #[test]
@@ -41,17 +48,21 @@ fn test_ls_command() {
         ]);
     });
 
-    let mut cmd = Command::cargo_bin("x32_usb").unwrap();
+    let bin = escargot::CargoBuild::new().bin("x32_usb").run().unwrap();
+    let mut cmd = bin.command();
     cmd.arg("--ip")
         .arg("127.0.0.1:10048")
-        .arg("ls")
-        .assert()
-        .success()
-        .stdout(
-            "FileEntry { index: 1, name: \"[..]\", file_type: Parent }\n\
-             FileEntry { index: 2, name: \"[System Volume Information]\", file_type: Volume }\n\
-             FileEntry { index: 3, name: \"track01.wav\", file_type: Wav }\n",
-        );
+        .arg("ls");
+
+    let output = cmd.output().unwrap();
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    assert_eq!(
+        stdout,
+        "FileEntry { index: 1, name: \"[..]\", file_type: Parent }\n\
+         FileEntry { index: 2, name: \"[System Volume Information]\", file_type: Volume }\n\
+         FileEntry { index: 3, name: \"track01.wav\", file_type: Wav }\n"
+    );
 
     tx.send(()).unwrap();
     handle.join().unwrap();
@@ -70,32 +81,40 @@ fn test_file_operations() {
         ]);
     });
 
-    let mut cmd = Command::cargo_bin("x32_usb").unwrap();
+    let bin = escargot::CargoBuild::new().bin("x32_usb").run().unwrap();
+    let mut cmd = bin.command();
     cmd.arg("--ip")
         .arg("127.0.0.1:10049")
         .arg("cd")
-        .arg("MyScenes")
-        .assert()
-        .success()
-        .stdout("Changed directory to [MyScenes]\n");
+        .arg("MyScenes");
 
-    let mut cmd = Command::cargo_bin("x32_usb").unwrap();
+    let output = cmd.output().unwrap();
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    assert_eq!(stdout, "Changed directory to [MyScenes]\n");
+
+    let mut cmd = bin.command();
     cmd.arg("--ip")
         .arg("1.2.3.4")
         .arg("load")
-        .arg("myscene.scn")
-        .assert()
-        .failure()
-        .stderr(predicates::str::contains("Error:"));
+        .arg("myscene.scn");
 
-    let mut cmd = Command::cargo_bin("x32_usb").unwrap();
+    let output = cmd.output().unwrap();
+    assert!(!output.status.success());
+    let stderr = String::from_utf8(output.stderr).unwrap();
+    assert!(stderr.contains("Error:"));
+
+    let mut cmd = bin.command();
     cmd.arg("--ip")
         .arg("127.0.0.1:10049")
         .arg("play")
-        .arg("4")
-        .assert()
-        .success()
-        .stdout("Playing file: track02.wav\n");
+        .arg("4");
+
+    let output = cmd.output().unwrap();
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    assert_eq!(stdout, "Playing file: track02.wav\n");
+
 
     tx.send(()).unwrap();
     handle.join().unwrap();

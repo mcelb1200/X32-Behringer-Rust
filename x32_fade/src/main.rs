@@ -1,15 +1,15 @@
 //! `x32_fade` is a command-line utility for controlling and fading faders on a
 //! Behringer X32 or Midas M32 digital mixing console.
 
+use anyhow::Result;
 use clap::Parser;
+use osc_lib::{OscArg, OscMessage};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
 use std::thread;
 use std::time::Duration;
 use x32_lib::{create_socket, get_fader_level};
-use osc_lib::{OscMessage, OscArg};
-use anyhow::Result;
 
 /// A command-line tool to control and fade X32 faders.
 #[derive(Parser, Debug)]
@@ -126,7 +126,14 @@ fn main() -> Result<()> {
                         fade_in_duration, steps
                     );
                 }
-                fade(&socket, &config.faders, fade_in_duration, steps, true, args.verbose)?;
+                fade(
+                    &socket,
+                    &config.faders,
+                    fade_in_duration,
+                    steps,
+                    true,
+                    args.verbose,
+                )?;
             }
         }
 
@@ -139,7 +146,14 @@ fn main() -> Result<()> {
                         fade_out_duration, steps
                     );
                 }
-                fade(&socket, &config.faders, fade_out_duration, steps, false, args.verbose)?;
+                fade(
+                    &socket,
+                    &config.faders,
+                    fade_out_duration,
+                    steps,
+                    false,
+                    args.verbose,
+                )?;
             }
         }
     } else {
@@ -201,12 +215,12 @@ fn fade(
 
     // Send the final target level to ensure accuracy.
     for fader_addr in faders {
-         let msg = OscMessage::new(fader_addr.clone(), vec![OscArg::Float(target_level)]);
-         let buf = msg.to_bytes()?;
-         socket.send(&buf)?;
-         if verbose {
-             println!("Sent final: {} {}", fader_addr, target_level);
-         }
+        let msg = OscMessage::new(fader_addr.clone(), vec![OscArg::Float(target_level)]);
+        let buf = msg.to_bytes()?;
+        socket.send(&buf)?;
+        if verbose {
+            println!("Sent final: {} {}", fader_addr, target_level);
+        }
     }
 
     Ok(())

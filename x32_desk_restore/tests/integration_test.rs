@@ -3,8 +3,6 @@ use std::thread;
 use std::time::Duration;
 use std::fs::File;
 use std::io::Write;
-use assert_cmd::Command;
-use predicates::prelude::*;
 use osc_lib::OscMessage;
 
 fn setup_mock_x32_server() -> String {
@@ -45,13 +43,19 @@ fn test_desk_restore_command() {
     writeln!(file, "/-stat/solosw ,i 1").unwrap();
     writeln!(file, "/-prefs/remote ,s \"HUI\"").unwrap();
 
-    let mut cmd = Command::cargo_bin("x32_desk_restore").unwrap();
+    let bin = escargot::CargoBuild::new()
+        .bin("x32_desk_restore")
+        .run()
+        .unwrap();
+    let mut cmd = bin.command();
     cmd.args(&["--ip", &server_addr, "test_restore.txt"]);
 
-    cmd.assert()
-        .success()
-        .stdout(predicate::str::contains(format!("Successfully connected to X32 at {}", server_addr)))
-        .stdout(predicate::str::contains("Successfully restored data from test_restore.txt"));
+    let output = cmd.output().unwrap();
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    assert!(stdout.contains(&format!("Successfully connected to X32 at {}", server_addr)));
+    assert!(stdout.contains("Successfully restored data from test_restore.txt"));
+
 
     // Clean up the files
     std::fs::remove_file("test_restore.txt").unwrap();

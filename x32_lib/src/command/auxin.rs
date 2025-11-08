@@ -11,16 +11,55 @@ use osc_lib::OscArg;
 
 /// A static array of all available commands for the AuxIn channels.
 pub const XAUXIN_COMMANDS: &[Command] = &[
-    Command { path: "/auxin/01/mix/fader", command_type: CommandType::Float, flags: CommandFlags::GET.union(CommandFlags::SET), nodes: None },
-    Command { path: "/auxin/01/mix/on", command_type: CommandType::Enum, flags: CommandFlags::GET.union(CommandFlags::SET), nodes: None },
-    Command { path: "/auxin/02/mix/fader", command_type: CommandType::Float, flags: CommandFlags::GET.union(CommandFlags::SET), nodes: None },
-    Command { path: "/auxin/02/mix/on", command_type: CommandType::Enum, flags: CommandFlags::GET.union(CommandFlags::SET), nodes: None },
-    Command { path: "/auxin/03/mix/fader", command_type: CommandType::Float, flags: CommandFlags::GET.union(CommandFlags::SET), nodes: None },
-    Command { path: "/auxin/03/mix/on", command_type: CommandType::Enum, flags: CommandFlags::GET.union(CommandFlags::SET), nodes: None },
-    Command { path: "/auxin/04/mix/fader", command_type: CommandType::Float, flags: CommandFlags::GET.union(CommandFlags::SET), nodes: None },
-    Command { path: "/auxin/04/mix/on", command_type: CommandType::Enum, flags: CommandFlags::GET.union(CommandFlags::SET), nodes: None },
+    Command {
+        path: "/auxin/01/mix/fader",
+        command_type: CommandType::Float,
+        flags: CommandFlags::GET.union(CommandFlags::SET),
+        nodes: None,
+    },
+    Command {
+        path: "/auxin/01/mix/on",
+        command_type: CommandType::Enum,
+        flags: CommandFlags::GET.union(CommandFlags::SET),
+        nodes: None,
+    },
+    Command {
+        path: "/auxin/02/mix/fader",
+        command_type: CommandType::Float,
+        flags: CommandFlags::GET.union(CommandFlags::SET),
+        nodes: None,
+    },
+    Command {
+        path: "/auxin/02/mix/on",
+        command_type: CommandType::Enum,
+        flags: CommandFlags::GET.union(CommandFlags::SET),
+        nodes: None,
+    },
+    Command {
+        path: "/auxin/03/mix/fader",
+        command_type: CommandType::Float,
+        flags: CommandFlags::GET.union(CommandFlags::SET),
+        nodes: None,
+    },
+    Command {
+        path: "/auxin/03/mix/on",
+        command_type: CommandType::Enum,
+        flags: CommandFlags::GET.union(CommandFlags::SET),
+        nodes: None,
+    },
+    Command {
+        path: "/auxin/04/mix/fader",
+        command_type: CommandType::Float,
+        flags: CommandFlags::GET.union(CommandFlags::SET),
+        nodes: None,
+    },
+    Command {
+        path: "/auxin/04/mix/on",
+        command_type: CommandType::Enum,
+        flags: CommandFlags::GET.union(CommandFlags::SET),
+        nodes: None,
+    },
 ];
-
 
 // --- Address String Getters ---
 
@@ -49,7 +88,6 @@ pub fn on(channel_num: u8) -> String {
     format!("/auxin/{:02}/mix/on", channel_num)
 }
 
-
 // --- OSC Message Setters ---
 
 /// Creates an OSC message to set the name of an auxin channel.
@@ -67,7 +105,10 @@ pub fn on(channel_num: u8) -> String {
 /// assert_eq!(args, vec![osc_lib::OscArg::String("Test".to_string())]);
 /// ```
 pub fn set_name(channel_num: u8, name: &str) -> (String, Vec<OscArg>) {
-    (self::name(channel_num), vec![OscArg::String(name.to_string())])
+    (
+        self::name(channel_num),
+        vec![OscArg::String(name.to_string())],
+    )
 }
 
 /// Creates an OSC message to set the color of an auxin channel.
@@ -104,7 +145,10 @@ pub fn set_color(channel_num: u8, color: i32) -> (String, Vec<OscArg>) {
 /// assert_eq!(args, vec![osc_lib::OscArg::Int(2)]);
 /// ```
 pub fn set_eq_band_type(channel_num: u8, band: u8, eq_type: i32) -> (String, Vec<OscArg>) {
-    (self::eq_band_type(channel_num, band), vec![OscArg::Int(eq_type)])
+    (
+        self::eq_band_type(channel_num, band),
+        vec![OscArg::Int(eq_type)],
+    )
 }
 
 /// Creates an OSC message to set the fader level of an auxin channel.

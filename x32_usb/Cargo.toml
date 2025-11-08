@@ -13,3 +13,4 @@ x32_lib = { path = "../x32_lib" }
 assert_cmd = "2.0.14"
 predicates = "3.1.0"
 x32_emulator = { path = "../x32_emulator" }
+escargot = "0.5"

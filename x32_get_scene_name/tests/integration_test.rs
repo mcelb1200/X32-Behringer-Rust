@@ -1,8 +1,6 @@
 use std::net::{SocketAddr, UdpSocket};
 use std::thread;
 use std::time::Duration;
-use assert_cmd::Command;
-use predicates::prelude::*;
 use osc_lib::{OscMessage, OscArg};
 
 fn setup_mock_x32_server() -> SocketAddr {
@@ -45,10 +43,15 @@ fn setup_mock_x32_server() -> SocketAddr {
 fn test_get_scene_name_command() {
     let addr = setup_mock_x32_server();
 
-    let mut cmd = Command::cargo_bin("x32_get_scene_name").unwrap();
+    let bin = escargot::CargoBuild::new()
+        .bin("x32_get_scene_name")
+        .run()
+        .unwrap();
+    let mut cmd = bin.command();
     cmd.args(&["--ip", &addr.to_string(), "-o", "1"]);
 
-    cmd.assert()
-        .success()
-        .stdout(predicate::str::contains("05 - My Scene"));
+    let output = cmd.output().unwrap();
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    assert!(stdout.contains("05 - My Scene"));
 }

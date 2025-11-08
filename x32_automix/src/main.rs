@@ -1,9 +1,9 @@
 use clap::Parser;
+use osc_lib::{OscArg, OscMessage};
 use std::io::ErrorKind;
 use std::net::UdpSocket;
 use std::time::{Duration, Instant};
 use x32_lib::{create_socket, error::Result};
-use osc_lib::{OscMessage, OscArg};
 
 /// A utility to provide automixing functionality for the Behringer X32/X-Air consoles.
 #[derive(Parser, Debug)]
@@ -62,14 +62,19 @@ fn run_automix(args: Args, socket: UdpSocket) -> Result<()> {
     let mut active_channels = 0;
     let mut nom_level = 1;
 
-    let fader_addresses: Vec<(String, String)> = (1..=32).map(|ch| {
-        let base = format!("/ch/{:02}", ch);
-        if args.use_bus {
-            (format!("{}/mix/{:02}/level", base, args.bus_number), format!("{}/mix/{:02}/level", base, args.bus_number))
-        } else {
-            (format!("{}/mix/fader", base), format!("{}/mix/fader", base))
-        }
-    }).collect();
+    let fader_addresses: Vec<(String, String)> = (1..=32)
+        .map(|ch| {
+            let base = format!("/ch/{:02}", ch);
+            if args.use_bus {
+                (
+                    format!("{}/mix/{:02}/level", base, args.bus_number),
+                    format!("{}/mix/{:02}/level", base, args.bus_number),
+                )
+            } else {
+                (format!("{}/mix/fader", base), format!("{}/mix/fader", base))
+            }
+        })
+        .collect();
     let mix_address = if args.use_bus {
         format!("/bus/{:02}/mix/fader", args.bus_number)
     } else {
@@ -79,12 +84,18 @@ fn run_automix(args: Args, socket: UdpSocket) -> Result<()> {
     loop {
         if last_remote_time.elapsed() > Duration::from_secs(9) {
             socket.send(&OscMessage::new("/xremote".to_string(), vec![]).to_bytes()?)?;
-            socket.send(&OscMessage::new("/meters".to_string(), vec![
-                OscArg::String("/meters/1".to_string()),
-                OscArg::Int(0),
-                OscArg::Int(0),
-                OscArg::Int(args.meter_rate_ms as i32 / 50),
-            ]).to_bytes()?)?;
+            socket.send(
+                &OscMessage::new(
+                    "/meters".to_string(),
+                    vec![
+                        OscArg::String("/meters/1".to_string()),
+                        OscArg::Int(0),
+                        OscArg::Int(0),
+                        OscArg::Int(args.meter_rate_ms as i32 / 50),
+                    ],
+                )
+                .to_bytes()?,
+            )?;
             last_remote_time = Instant::now();
         }
 
@@ -93,14 +104,16 @@ fn run_automix(args: Args, socket: UdpSocket) -> Result<()> {
             Ok(len) => {
                 let response = OscMessage::from_bytes(&buf[..len])?;
                 if response.path == "/meters/1" {
-                    if let Some(OscArg::Blob(data)) = response.args.get(0) {
+                    if let Some(OscArg::Blob(data)) = response.args.first() {
                         let mut changed = false;
                         for ch in (args.start_channel - 1)..args.stop_channel {
                             let start = (ch * 4) as usize;
                             let end = start + 4;
                             if data.len() >= end {
-                                let level = f32::from_be_bytes(data[start..end].try_into().unwrap());
-                                let (is_active, last_active_time) = &mut channel_status[ch as usize];
+                                let level =
+                                    f32::from_be_bytes(data[start..end].try_into().unwrap());
+                                let (is_active, last_active_time) =
+                                    &mut channel_status[ch as usize];
 
                                 if level > args.sensitivity {
                                     *last_active_time = Instant::now();
@@ -108,36 +121,63 @@ fn run_automix(args: Args, socket: UdpSocket) -> Result<()> {
                                         *is_active = true;
                                         active_channels += 1;
                                         changed = true;
-                                        socket.send(&OscMessage::new(fader_addresses[ch as usize].1.clone(), vec![OscArg::Float(1.0)]).to_bytes()?)?;
+                                        socket.send(
+                                            &OscMessage::new(
+                                                fader_addresses[ch as usize].1.clone(),
+                                                vec![OscArg::Float(1.0)],
+                                            )
+                                            .to_bytes()?,
+                                        )?;
                                     }
-                                } else if *is_active && last_active_time.elapsed() > Duration::from_secs(args.down_delay) {
+                                } else if *is_active
+                                    && last_active_time.elapsed()
+                                        > Duration::from_secs(args.down_delay)
+                                {
                                     *is_active = false;
                                     active_channels -= 1;
                                     changed = true;
-                                    socket.send(&OscMessage::new(fader_addresses[ch as usize].0.clone(), vec![OscArg::Float(0.0)]).to_bytes()?)?;
+                                    socket.send(
+                                        &OscMessage::new(
+                                            fader_addresses[ch as usize].0.clone(),
+                                            vec![OscArg::Float(0.0)],
+                                        )
+                                        .to_bytes()?,
+                                    )?;
                                 }
                             }
                         }
                         if args.nom && changed {
-                            update_nom_gain(&socket, &mix_address, active_channels, &mut nom_level)?;
+                            update_nom_gain(
+                                &socket,
+                                &mix_address,
+                                active_channels,
+                                &mut nom_level,
+                            )?;
                         }
                     }
                 }
-            },
-            Err(ref e) if e.kind() == ErrorKind::WouldBlock => {},
+            }
+            Err(ref e) if e.kind() == ErrorKind::WouldBlock => {}
             Err(e) => return Err(e.into()),
         }
         std::thread::sleep(Duration::from_millis(10));
     }
 }
 
-fn update_nom_gain(socket: &UdpSocket, mix_address: &str, active_channels: i32, nom_level: &mut i32) -> Result<()> {
+fn update_nom_gain(
+    socket: &UdpSocket,
+    mix_address: &str,
+    active_channels: i32,
+    nom_level: &mut i32,
+) -> Result<()> {
     if active_channels >= *nom_level * 2 {
         *nom_level *= 2;
         adjust_gain(socket, mix_address, -3.0)?;
     } else if active_channels <= *nom_level / 2 {
         *nom_level /= 2;
-        if *nom_level < 1 { *nom_level = 1; }
+        if *nom_level < 1 {
+            *nom_level = 1;
+        }
         adjust_gain(socket, mix_address, 3.0)?;
     }
     Ok(())
@@ -149,28 +189,40 @@ fn adjust_gain(socket: &UdpSocket, address: &str, db_change: f32) -> Result<()> 
     let len = socket.recv(&mut buf)?;
     let response = OscMessage::from_bytes(&buf[..len])?;
 
-    if let Some(OscArg::Float(current_level)) = response.args.get(0) {
+    if let Some(OscArg::Float(current_level)) = response.args.first() {
         let db = level_to_db(*current_level);
-        let new_db = (db + db_change).max(-90.0).min(10.0);
+        let new_db = (db + db_change).clamp(-90.0, 10.0);
         let new_level = db_to_level(new_db);
-        socket.send(&OscMessage::new(address.to_string(), vec![OscArg::Float(new_level)]).to_bytes()?)?;
+        socket.send(
+            &OscMessage::new(address.to_string(), vec![OscArg::Float(new_level)]).to_bytes()?,
+        )?;
     }
     Ok(())
 }
 
 fn level_to_db(level: f32) -> f32 {
-    if level >= 0.5 { 40.0 * level - 30.0 }
-    else if level >= 0.25 { 80.0 * level - 50.0 }
-    else if level >= 0.0625 { 160.0 * level - 70.0 }
-    else { 480.0 * level - 90.0 }
+    if level >= 0.5 {
+        40.0 * level - 30.0
+    } else if level >= 0.25 {
+        80.0 * level - 50.0
+    } else if level >= 0.0625 {
+        160.0 * level - 70.0
+    } else {
+        480.0 * level - 90.0
+    }
 }
 
 fn db_to_level(db: f32) -> f32 {
-    let level = if db > -10.0 { (db + 30.0) / 40.0 }
-    else if db > -30.0 { (db + 50.0) / 80.0 }
-    else if db > -60.0 { (db + 70.0) / 160.0 }
-    else { (db + 90.0) / 480.0 };
-    level.max(0.0).min(1.0)
+    let level = if db > -10.0 {
+        (db + 30.0) / 40.0
+    } else if db > -30.0 {
+        (db + 50.0) / 80.0
+    } else if db > -60.0 {
+        (db + 70.0) / 160.0
+    } else {
+        (db + 90.0) / 480.0
+    };
+    level.clamp(0.0, 1.0)
 }
 
 #[cfg(test)]
@@ -191,16 +243,19 @@ mod tests {
             nom: false,
         };
 
-        let fader_addresses = (1..=32).map(|ch| {
-            let base = format!("/ch/{:02}", ch);
-            if args.use_bus {
-                (format!("{}/mix/{:02}/level", base, args.bus_number),
-                 format!("{}/mix/{:02}/level", base, args.bus_number))
-            } else {
-                (format!("{}/mix/fader", base),
-                 format!("{}/mix/fader", base))
-            }
-        }).collect::<Vec<(String, String)>>();
+        let fader_addresses = (1..=32)
+            .map(|ch| {
+                let base = format!("/ch/{:02}", ch);
+                if args.use_bus {
+                    (
+                        format!("{}/mix/{:02}/level", base, args.bus_number),
+                        format!("{}/mix/{:02}/level", base, args.bus_number),
+                    )
+                } else {
+                    (format!("{}/mix/fader", base), format!("{}/mix/fader", base))
+                }
+            })
+            .collect::<Vec<(String, String)>>();
 
         assert_eq!(fader_addresses[0].0, "/ch/01/mix/fader");
         assert_eq!(fader_addresses[31].0, "/ch/32/mix/fader");
@@ -220,16 +275,19 @@ mod tests {
             nom: false,
         };
 
-        let fader_addresses = (1..=32).map(|ch| {
-            let base = format!("/ch/{:02}", ch);
-            if args.use_bus {
-                (format!("{}/mix/{:02}/level", base, args.bus_number),
-                 format!("{}/mix/{:02}/level", base, args.bus_number))
-            } else {
-                (format!("{}/mix/fader", base),
-                 format!("{}/mix/fader", base))
-            }
-        }).collect::<Vec<(String, String)>>();
+        let fader_addresses = (1..=32)
+            .map(|ch| {
+                let base = format!("/ch/{:02}", ch);
+                if args.use_bus {
+                    (
+                        format!("{}/mix/{:02}/level", base, args.bus_number),
+                        format!("{}/mix/{:02}/level", base, args.bus_number),
+                    )
+                } else {
+                    (format!("{}/mix/fader", base), format!("{}/mix/fader", base))
+                }
+            })
+            .collect::<Vec<(String, String)>>();
 
         assert_eq!(fader_addresses[0].0, "/ch/01/mix/05/level");
         assert_eq!(fader_addresses[31].0, "/ch/32/mix/05/level");
