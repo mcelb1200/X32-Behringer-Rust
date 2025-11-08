@@ -29,12 +29,12 @@ jobs:
       working-directory: ./rust_rewrite
       run: cargo check
 
+    - name: Run pre-commit checks (allow failure)
+      uses: pre-commit/action@v3.0.1
+      continue-on-error: true
+      working-directory: ./rust_rewrite
+
     - name: Run cargo test (allow failure)
       working-directory: ./rust_rewrite
       continue-on-error: true
       run: cargo test --workspace
-
-    - name: Run cargo clippy (allow failure)
-      working-directory: ./rust_rewrite
-      continue-on-error: true
-      run: cargo clippy

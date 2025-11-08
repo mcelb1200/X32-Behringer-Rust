@@ -28,13 +28,9 @@ jobs:
       working-directory: ./rust_rewrite
       run: cargo check
 
-    - name: Run cargo fmt
+    - name: Run pre-commit checks
+      uses: pre-commit/action@v3.0.1
       working-directory: ./rust_rewrite
-      run: cargo fmt -- --check
-
-    - name: Run cargo clippy
-      working-directory: ./rust_rewrite
-      run: cargo clippy -- -D warnings
 
     - name: Run cargo test
       working-directory: ./rust_rewrite
