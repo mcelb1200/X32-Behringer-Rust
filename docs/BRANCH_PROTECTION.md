@@ -48,3 +48,48 @@ To maintain the stability and quality of our codebase, the `master` branch is pr
 *   **Documentation:** For changes to documentation, a pull request is still required. This allows for a review of the clarity and accuracy of the documentation.
 
 By following these rules, we can ensure that our project remains stable, reliable, and a pleasure to work on for everyone.
+
+## Automating Branch Protection with the GitHub API
+
+You can automate the application of these branch protection rules using the GitHub REST API. This is useful for setting up new repositories with a consistent ruleset.
+
+### JSON Ruleset
+
+The following JSON payload represents the branch protection rules described in this document. You can also find this in the `branch_protection.json` file in the root of this repository.
+
+```json
+{
+  "required_status_checks": {
+    "strict": true,
+    "contexts": [
+      "build (ubuntu-latest)",
+      "build (macos-latest)",
+      "build (windows-latest)"
+    ]
+  },
+  "enforce_admins": true,
+  "required_pull_request_reviews": {
+    "dismiss_stale_reviews": true,
+    "require_code_owner_reviews": false,
+    "required_approving_review_count": 1
+  },
+  "restrictions": null,
+  "required_linear_history": false,
+  "allow_force_pushes": false,
+  "allow_deletions": false
+}
+```
+
+### Applying the Ruleset with `curl`
+
+You can apply these rules to the `master` branch of your repository using the following `curl` command. Make sure to replace `YOUR_TOKEN`, `OWNER`, and `REPO` with your personal access token, the repository owner, and the repository name, respectively.
+
+```bash
+curl -L \
+  -X PUT \
+  -H "Accept: application/vnd.github+json" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "X-GitHub-Api-Version: 2022-11-28" \
+  https://api.github.com/repos/OWNER/REPO/branches/master/protection \
+  -d @branch_protection.json
+```
