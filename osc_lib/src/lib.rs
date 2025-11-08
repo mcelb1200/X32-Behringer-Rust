@@ -33,8 +33,8 @@
 
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use std::io::{self, Cursor, Read, Write};
-use std::string::FromUtf8Error;
 use std::str::FromStr;
+use std::string::FromUtf8Error;
 
 #[cfg(test)]
 mod tests;
@@ -225,7 +225,10 @@ impl FromStr for OscMessage {
     fn from_str(s: &str) -> Result<Self> {
         let tokens = tokenize(s)?;
         let mut it = tokens.iter();
-        let path = it.next().ok_or(OscError::ParseError("Empty command string".to_string()))?.to_string();
+        let path = it
+            .next()
+            .ok_or(OscError::ParseError("Empty command string".to_string()))?
+            .to_string();
         let mut args = Vec::new();
 
         if let Some(type_tags) = it.next() {
@@ -234,14 +237,19 @@ impl FromStr for OscMessage {
             }
 
             for tag in type_tags[1..].chars() {
-                let val_str = it.next().ok_or(OscError::ParseError(format!("Missing value for type tag '{}'", tag)))?;
+                let val_str = it.next().ok_or(OscError::ParseError(format!(
+                    "Missing value for type tag '{}'",
+                    tag
+                )))?;
                 match tag {
                     'i' => {
-                        let val = i32::from_str(val_str).map_err(|e| OscError::ParseError(e.to_string()))?;
+                        let val = i32::from_str(val_str)
+                            .map_err(|e| OscError::ParseError(e.to_string()))?;
                         args.push(OscArg::Int(val));
                     }
                     'f' => {
-                        let val = f32::from_str(val_str).map_err(|e| OscError::ParseError(e.to_string()))?;
+                        let val = f32::from_str(val_str)
+                            .map_err(|e| OscError::ParseError(e.to_string()))?;
                         args.push(OscArg::Float(val));
                     }
                     's' => {
@@ -251,7 +259,9 @@ impl FromStr for OscMessage {
                 }
             }
             if it.next().is_some() {
-                return Err(OscError::ParseError("Extra arguments at end of command string".to_string()));
+                return Err(OscError::ParseError(
+                    "Extra arguments at end of command string".to_string(),
+                ));
             }
         }
 
@@ -297,7 +307,6 @@ impl std::fmt::Display for OscMessage {
         Ok(())
     }
 }
-
 
 /// Tokenizes a string for OSC message parsing, handling quoted strings.
 ///

@@ -1,11 +1,11 @@
+use assert_cmd::Command;
+use osc_lib::{OscArg, OscMessage};
+use predicates::prelude::*;
+use std::fs::File;
+use std::io::Write;
 use std::net::{SocketAddr, UdpSocket};
 use std::thread;
 use std::time::Duration;
-use std::fs::File;
-use std::io::Write;
-use assert_cmd::Command;
-use predicates::prelude::*;
-use osc_lib::{OscMessage, OscArg};
 
 fn setup_mock_x32_server() -> SocketAddr {
     let socket = UdpSocket::bind("127.0.0.1:0").expect("couldn't bind to address");
@@ -17,8 +17,16 @@ fn setup_mock_x32_server() -> SocketAddr {
                 if let Ok(received_msg) = OscMessage::from_bytes(&buf[..number_of_bytes]) {
                     if received_msg.path == "/node" {
                         if let Some(OscArg::String(node_path)) = received_msg.args.get(0) {
-                            let response_msg = OscMessage::new("/node".to_string(), vec![OscArg::String(node_path.clone()), OscArg::String("mock_value".to_string())]);
-                            socket.send_to(&response_msg.to_bytes().unwrap(), src_addr).expect("couldn't send data");
+                            let response_msg = OscMessage::new(
+                                "/node".to_string(),
+                                vec![
+                                    OscArg::String(node_path.clone()),
+                                    OscArg::String("mock_value".to_string()),
+                                ],
+                            );
+                            socket
+                                .send_to(&response_msg.to_bytes().unwrap(), src_addr)
+                                .expect("couldn't send data");
                         }
                     }
                 }
@@ -42,13 +50,22 @@ fn test_desk_save_command() {
 
     cmd.assert()
         .success()
-        .stdout(predicate::str::contains(format!("Successfully connected to X32 at {}", addr)))
-        .stdout(predicate::str::contains("Successfully saved data to test_output.txt"));
+        .stdout(predicate::str::contains(format!(
+            "Successfully connected to X32 at {}",
+            addr
+        )))
+        .stdout(predicate::str::contains(
+            "Successfully saved data to test_output.txt",
+        ));
 
     // Verify the content of the output file
     let content = std::fs::read_to_string("test_output.txt").unwrap();
     let lines: Vec<&str> = content.lines().collect();
-    assert!(lines.iter().any(|&line| line == "/node,ss \"-stat/solosw\" \"mock_value\""));
+    assert!(
+        lines
+            .iter()
+            .any(|&line| line == "/node,ss \"-stat/solosw\" \"mock_value\"")
+    );
 
     // Clean up the output file
     std::fs::remove_file("test_output.txt").unwrap();
@@ -65,20 +82,38 @@ fn test_pattern_file_command() {
     writeln!(file, "/-prefs/remote").unwrap();
 
     let mut cmd = Command::cargo_bin("x32_desk_save").unwrap();
-    cmd.args(&["--ip", &addr.to_string(), "-p", "test_pattern.txt", "test_output.txt"]);
+    cmd.args(&[
+        "--ip",
+        &addr.to_string(),
+        "-p",
+        "test_pattern.txt",
+        "test_output.txt",
+    ]);
 
     cmd.assert()
         .success()
-        .stdout(predicate::str::contains(format!("Successfully connected to X32 at {}", addr)))
-        .stdout(predicate::str::contains("Successfully saved data to test_output.txt"));
+        .stdout(predicate::str::contains(format!(
+            "Successfully connected to X32 at {}",
+            addr
+        )))
+        .stdout(predicate::str::contains(
+            "Successfully saved data to test_output.txt",
+        ));
 
     // Verify the content of the output file
     let content = std::fs::read_to_string("test_output.txt").unwrap();
     let lines: Vec<&str> = content.lines().collect();
     assert_eq!(lines.len(), 2);
-    assert!(lines.iter().any(|&line| line == "/node,ss \"/-stat/solosw\" \"mock_value\""));
-    assert!(lines.iter().any(|&line| line == "/node,ss \"/-prefs/remote\" \"mock_value\""));
-
+    assert!(
+        lines
+            .iter()
+            .any(|&line| line == "/node,ss \"/-stat/solosw\" \"mock_value\"")
+    );
+    assert!(
+        lines
+            .iter()
+            .any(|&line| line == "/node,ss \"/-prefs/remote\" \"mock_value\"")
+    );
 
     // Clean up the files
     std::fs::remove_file("test_pattern.txt").unwrap();

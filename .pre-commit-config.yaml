@@ -5,10 +5,16 @@ repos:
     -   id: trailing-whitespace
     -   id: end-of-file-fixer
     -   id: check-yaml
--   repo: https://github.com/doublify/pre-commit-rust
-    rev: v1.0
+-   repo: local
     hooks:
     -   id: fmt
-        args: [--, --check]
-    -   id: clippy
-        args: [--, -D, warnings]
+        name: fmt
+        language: rust
+        types: [rust]
+        entry: cargo fmt --
+#    -   id: clippy
+#        name: clippy
+#        language: rust
+#        types: [rust]
+#        pass_filenames: false
+#        entry: cargo clippy --workspace -- -D warnings

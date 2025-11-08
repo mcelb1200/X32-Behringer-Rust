@@ -14,20 +14,29 @@ pub fn get_dca_commands(dca_num: u8) -> Vec<Command<'static>> {
     let mut commands = vec![];
     let flags = CommandFlags::GET.union(CommandFlags::SET);
 
-    let mut add = |path: String, command_type: CommandType, nodes: Option<&'static [&'static str]>| {
-        commands.push(Command {
-            path: Box::leak(path.into_boxed_str()),
-            command_type,
-            flags,
-            nodes,
-        });
-    };
+    let mut add =
+        |path: String, command_type: CommandType, nodes: Option<&'static [&'static str]>| {
+            commands.push(Command {
+                path: Box::leak(path.into_boxed_str()),
+                command_type,
+                flags,
+                nodes,
+            });
+        };
 
     add(format!("/dca/{}/fader", dca), CommandType::Float, None);
     add(format!("/dca/{}/on", dca), CommandType::Enum, Some(OFF_ON));
-    add(format!("/dca/{}/config/name", dca), CommandType::String, None);
+    add(
+        format!("/dca/{}/config/name", dca),
+        CommandType::String,
+        None,
+    );
     add(format!("/dca/{}/config/icon", dca), CommandType::Int, None);
-    add(format!("/dca/{}/config/color", dca), CommandType::Enum, Some(XCOLORS));
+    add(
+        format!("/dca/{}/config/color", dca),
+        CommandType::Enum,
+        Some(XCOLORS),
+    );
     commands
 }
 
@@ -41,7 +50,10 @@ lazy_static! {
 
 /// Creates an OSC message to set the fader level of a DCA.
 pub fn set_fader(dca_num: u8, level: f32) -> (String, Vec<OscArg>) {
-    (format!("/dca/{}/fader", dca_num), vec![OscArg::Float(level)])
+    (
+        format!("/dca/{}/fader", dca_num),
+        vec![OscArg::Float(level)],
+    )
 }
 
 /// Creates an OSC message to set the on state of a DCA.
@@ -51,9 +63,11 @@ pub fn set_on(dca_num: u8, on: i32) -> (String, Vec<OscArg>) {
 
 /// Creates an OSC message to set the name of a DCA.
 pub fn set_name(dca_num: u8, name: &str) -> (String, Vec<OscArg>) {
-    (format!("/dca/{}/config/name", dca_num), vec![OscArg::String(name.to_string())])
+    (
+        format!("/dca/{}/config/name", dca_num),
+        vec![OscArg::String(name.to_string())],
+    )
 }
-
 
 #[cfg(test)]
 mod tests {

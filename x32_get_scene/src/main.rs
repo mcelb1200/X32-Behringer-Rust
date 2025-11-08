@@ -1,8 +1,7 @@
-
 use clap::Parser;
+use osc_lib::{OscArg, OscMessage};
 use std::io::{self, BufRead};
 use x32_lib::{create_socket, error::Result};
-use osc_lib::{OscMessage, OscArg};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -44,7 +43,10 @@ fn main() -> Result<()> {
         }
     };
 
-    println!("#2.7# \"{}\" \"{}\" %000000000 1 X32GetScene V1.5 (c)2014 Patrick-Gilles Maillot\n", scene_name, note);
+    println!(
+        "#2.7# \"{}\" \"{}\" %000000000 1 X32GetScene V1.5 (c)2014 Patrick-Gilles Maillot\n",
+        scene_name, note
+    );
 
     let stdin = io::stdin();
     for line in stdin.lock().lines() {

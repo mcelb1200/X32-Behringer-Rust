@@ -80,9 +80,7 @@ pub use osc_lib::{OscArg, OscError, OscMessage};
 /// connection fails.
 pub fn create_socket(ip: &str, timeout: u64) -> Result<UdpSocket> {
     // If the IP address does not contain a port, add the default X32 port.
-    let full_ip = if ip.contains(':') && !ip.starts_with('[') {
-        ip.to_string()
-    } else if ip.contains("]:") {
+    let full_ip = if (ip.contains(':') && !ip.starts_with('[')) || ip.contains("]:") {
         ip.to_string()
     } else {
         format!("{}:10023", ip)
@@ -119,7 +117,7 @@ pub fn get_fx_type(socket: &UdpSocket, slot: u8) -> Result<i32> {
     let mut buf = [0; 512];
     let len = socket.recv(&mut buf)?;
     let response = OscMessage::from_bytes(&buf[..len])?;
-    if let Some(OscArg::Int(fx_type)) = response.args.get(0) {
+    if let Some(OscArg::Int(fx_type)) = response.args.first() {
         Ok(*fx_type)
     } else {
         Err(OscError::ParseError("Unexpected response from mixer".to_string()).into())
@@ -142,7 +140,7 @@ pub fn get_fader_level(socket: &UdpSocket, fader_addr: &str) -> Result<f32> {
     let mut buf = [0; 512];
     let len = socket.recv(&mut buf)?;
     let response = OscMessage::from_bytes(&buf[..len])?;
-    if let Some(OscArg::Float(level)) = response.args.get(0) {
+    if let Some(OscArg::Float(level)) = response.args.first() {
         Ok(*level)
     } else {
         Err(OscError::ParseError("Unexpected response from mixer".to_string()).into())
@@ -164,12 +162,15 @@ pub fn get_fader_level(socket: &UdpSocket, fader_addr: &str) -> Result<f32> {
 ///
 /// A `Result` containing `true` if the effect type matches, or `false` otherwise.
 pub fn verify_fx_type(socket: &UdpSocket, slot: u8, expected_type: &str) -> Result<bool> {
-    let msg = OscMessage::new("/node".to_string(), vec![OscArg::String(format!("fx/{}", slot))]);
+    let msg = OscMessage::new(
+        "/node".to_string(),
+        vec![OscArg::String(format!("fx/{}", slot))],
+    );
     socket.send(&msg.to_bytes()?)?;
     let mut buf = [0; 512];
     let len = socket.recv(&mut buf)?;
     let response = OscMessage::from_bytes(&buf[..len])?;
-    if let Some(OscArg::String(response_str)) = response.args.get(0) {
+    if let Some(OscArg::String(response_str)) = response.args.first() {
         Ok(response_str.contains(expected_type))
     } else {
         Ok(false)
@@ -192,7 +193,7 @@ pub fn get_parameter(socket: &UdpSocket, address: &str) -> Result<f32> {
     let mut buf = [0; 512];
     let len = socket.recv(&mut buf)?;
     let response = OscMessage::from_bytes(&buf[..len])?;
-    if let Some(OscArg::Float(value)) = response.args.get(0) {
+    if let Some(OscArg::Float(value)) = response.args.first() {
         Ok(*value)
     } else {
         Err(OscError::ParseError("Unexpected response from mixer".to_string()).into())

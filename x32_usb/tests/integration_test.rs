@@ -1,9 +1,9 @@
 use assert_cmd::Command;
-use x32_emulator::server;
+use std::sync::mpsc::{Sender, channel};
 use std::thread::{self, JoinHandle};
 use std::time::Duration;
 use x32_emulator::Mixer;
-use std::sync::mpsc::{channel, Sender};
+use x32_emulator::server;
 
 fn run_server_with_seeder<F>(port: u16, seeder: F) -> (JoinHandle<()>, Sender<()>)
 where
@@ -11,7 +11,12 @@ where
 {
     let (tx, rx) = channel();
     let handle = thread::spawn(move || {
-        server::run(&format!("127.0.0.1:{}", port), Some(Box::new(seeder)), Some(rx)).unwrap();
+        server::run(
+            &format!("127.0.0.1:{}", port),
+            Some(Box::new(seeder)),
+            Some(rx),
+        )
+        .unwrap();
     });
     thread::sleep(Duration::from_millis(200));
     (handle, tx)
