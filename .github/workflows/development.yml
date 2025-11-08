@@ -1,0 +1,40 @@
+name: Relaxed CI for development branches
+
+on:
+  push:
+    branches-ignore:
+      - 'master'
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Install Rust toolchain
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        components: clippy
+
+    - name: Install portmidi on Linux
+      if: runner.os == 'Linux'
+      run: sudo apt-get update && sudo apt-get install -y libportmidi-dev
+
+    - name: Run cargo check
+      working-directory: ./rust_rewrite
+      run: cargo check
+
+    - name: Run cargo test (allow failure)
+      working-directory: ./rust_rewrite
+      continue-on-error: true
+      run: cargo test --workspace
+
+    - name: Run cargo clippy (allow failure)
+      working-directory: ./rust_rewrite
+      continue-on-error: true
+      run: cargo clippy
