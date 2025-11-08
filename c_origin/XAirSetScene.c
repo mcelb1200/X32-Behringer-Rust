@@ -159,4 +159,3 @@ char				c1;
 }
 
 void 	Xlogf(char *header, char *buf, int len) {} // dummy function for XAirSetScene
-

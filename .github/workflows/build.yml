@@ -42,24 +42,17 @@ jobs:
           #   test: false
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Install Rust toolchain
-      uses: actions-rs/toolchain@v1
+      uses: actions-rust-lang/setup-rust-toolchain@v1
       with:
-        toolchain: stable
+        rust-version: stable
         target: ${{ matrix.target }}
-        override: true
 
     - name: Build
-      uses: actions-rs/cargo@v1
-      with:
-        command: build
-        args: --workspace --release --target ${{ matrix.target }}
+      run: cargo build --workspace --release --target ${{ matrix.target }}
 
     - name: Run tests
       if: matrix.test == true
-      uses: actions-rs/cargo@v1
-      with:
-        command: test
-        args: --workspace --release --target ${{ matrix.target }}
+      run: cargo test --workspace --release --target ${{ matrix.target }}

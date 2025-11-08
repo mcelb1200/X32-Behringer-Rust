@@ -13,12 +13,12 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Install Rust toolchain
-      uses: actions-rs/toolchain@v1
+      uses: actions-rust-lang/setup-rust-toolchain@v1
       with:
-        toolchain: stable
+        rust-version: stable
         components: clippy
 
     - name: Install portmidi on Linux
@@ -29,12 +29,12 @@ jobs:
       working-directory: ./rust_rewrite
       run: cargo check
 
+    - name: Run pre-commit checks (allow failure)
+      uses: pre-commit/action@v3.0.1
+      continue-on-error: true
+      working-directory: ./rust_rewrite
+
     - name: Run cargo test (allow failure)
       working-directory: ./rust_rewrite
       continue-on-error: true
       run: cargo test --workspace
-
-    - name: Run cargo clippy (allow failure)
-      working-directory: ./rust_rewrite
-      continue-on-error: true
-      run: cargo clippy

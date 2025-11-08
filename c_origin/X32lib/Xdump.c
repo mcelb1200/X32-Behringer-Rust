@@ -260,4 +260,3 @@ void Xsdump(char *str_out, char *buf, int len)
 	sprintf(out++, "\n");
 	*out++ = 0;
 }
-

@@ -325,4 +325,3 @@ int CopytoClipboard() {
 	}
 	return 0;
 }
-
