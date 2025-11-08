@@ -7,24 +7,103 @@ use osc_lib::OscArg;
 
 /// A static array of all available commands for the mix bus channels.
 pub const XBUS_COMMANDS: &[Command] = &[
-    Command { path: "/bus/01/mix/fader", command_type: CommandType::Float, flags: CommandFlags::GET.union(CommandFlags::SET), nodes: None },
-    Command { path: "/bus/01/mix/on", command_type: CommandType::Enum, flags: CommandFlags::GET.union(CommandFlags::SET), nodes: None },
-    Command { path: "/bus/02/mix/fader", command_type: CommandType::Float, flags: CommandFlags::GET.union(CommandFlags::SET), nodes: None },
-    Command { path: "/bus/02/mix/on", command_type: CommandType::Enum, flags: CommandFlags::GET.union(CommandFlags::SET), nodes: None },
-    Command { path: "/bus/03/mix/fader", command_type: CommandType::Float, flags: CommandFlags::GET.union(CommandFlags::SET), nodes: None },
-    Command { path: "/bus/03/mix/on", command_type: CommandType::Enum, flags: CommandFlags::GET.union(CommandFlags::SET), nodes: None },
-    Command { path: "/bus/04/mix/fader", command_type: CommandType::Float, flags: CommandFlags::GET.union(CommandFlags::SET), nodes: None },
-    Command { path: "/bus/04/mix/on", command_type: CommandType::Enum, flags: CommandFlags::GET.union(CommandFlags::SET), nodes: None },
-    Command { path: "/bus/05/mix/fader", command_type: CommandType::Float, flags: CommandFlags::GET.union(CommandFlags::SET), nodes: None },
-    Command { path: "/bus/05/mix/on", command_type: CommandType::Enum, flags: CommandFlags::GET.union(CommandFlags::SET), nodes: None },
-    Command { path: "/bus/06/mix/fader", command_type: CommandType::Float, flags: CommandFlags::GET.union(CommandFlags::SET), nodes: None },
-    Command { path: "/bus/06/mix/on", command_type: CommandType::Enum, flags: CommandFlags::GET.union(CommandFlags::SET), nodes: None },
-    Command { path: "/bus/07/mix/fader", command_type: CommandType::Float, flags: CommandFlags::GET.union(CommandFlags::SET), nodes: None },
-    Command { path: "/bus/07/mix/on", command_type: CommandType::Enum, flags: CommandFlags::GET.union(CommandFlags::SET), nodes: None },
-    Command { path: "/bus/08/mix/fader", command_type: CommandType::Float, flags: CommandFlags::GET.union(CommandFlags::SET), nodes: None },
-    Command { path: "/bus/08/mix/on", command_type: CommandType::Enum, flags: CommandFlags::GET.union(CommandFlags::SET), nodes: None },
+    Command {
+        path: "/bus/01/mix/fader",
+        command_type: CommandType::Float,
+        flags: CommandFlags::GET.union(CommandFlags::SET),
+        nodes: None,
+    },
+    Command {
+        path: "/bus/01/mix/on",
+        command_type: CommandType::Enum,
+        flags: CommandFlags::GET.union(CommandFlags::SET),
+        nodes: None,
+    },
+    Command {
+        path: "/bus/02/mix/fader",
+        command_type: CommandType::Float,
+        flags: CommandFlags::GET.union(CommandFlags::SET),
+        nodes: None,
+    },
+    Command {
+        path: "/bus/02/mix/on",
+        command_type: CommandType::Enum,
+        flags: CommandFlags::GET.union(CommandFlags::SET),
+        nodes: None,
+    },
+    Command {
+        path: "/bus/03/mix/fader",
+        command_type: CommandType::Float,
+        flags: CommandFlags::GET.union(CommandFlags::SET),
+        nodes: None,
+    },
+    Command {
+        path: "/bus/03/mix/on",
+        command_type: CommandType::Enum,
+        flags: CommandFlags::GET.union(CommandFlags::SET),
+        nodes: None,
+    },
+    Command {
+        path: "/bus/04/mix/fader",
+        command_type: CommandType::Float,
+        flags: CommandFlags::GET.union(CommandFlags::SET),
+        nodes: None,
+    },
+    Command {
+        path: "/bus/04/mix/on",
+        command_type: CommandType::Enum,
+        flags: CommandFlags::GET.union(CommandFlags::SET),
+        nodes: None,
+    },
+    Command {
+        path: "/bus/05/mix/fader",
+        command_type: CommandType::Float,
+        flags: CommandFlags::GET.union(CommandFlags::SET),
+        nodes: None,
+    },
+    Command {
+        path: "/bus/05/mix/on",
+        command_type: CommandType::Enum,
+        flags: CommandFlags::GET.union(CommandFlags::SET),
+        nodes: None,
+    },
+    Command {
+        path: "/bus/06/mix/fader",
+        command_type: CommandType::Float,
+        flags: CommandFlags::GET.union(CommandFlags::SET),
+        nodes: None,
+    },
+    Command {
+        path: "/bus/06/mix/on",
+        command_type: CommandType::Enum,
+        flags: CommandFlags::GET.union(CommandFlags::SET),
+        nodes: None,
+    },
+    Command {
+        path: "/bus/07/mix/fader",
+        command_type: CommandType::Float,
+        flags: CommandFlags::GET.union(CommandFlags::SET),
+        nodes: None,
+    },
+    Command {
+        path: "/bus/07/mix/on",
+        command_type: CommandType::Enum,
+        flags: CommandFlags::GET.union(CommandFlags::SET),
+        nodes: None,
+    },
+    Command {
+        path: "/bus/08/mix/fader",
+        command_type: CommandType::Float,
+        flags: CommandFlags::GET.union(CommandFlags::SET),
+        nodes: None,
+    },
+    Command {
+        path: "/bus/08/mix/on",
+        command_type: CommandType::Enum,
+        flags: CommandFlags::GET.union(CommandFlags::SET),
+        nodes: None,
+    },
 ];
-
 
 // --- Address String Getters ---
 
@@ -58,7 +137,6 @@ pub fn on(channel_num: u8) -> String {
     format!("/bus/{:02}/mix/on", channel_num)
 }
 
-
 // --- OSC Message Setters ---
 
 /// Creates an OSC message to set the name of a bus channel.
@@ -76,7 +154,10 @@ pub fn on(channel_num: u8) -> String {
 /// assert_eq!(args, vec![osc_lib::OscArg::String("Test".to_string())]);
 /// ```
 pub fn set_name(channel_num: u8, name: &str) -> (String, Vec<OscArg>) {
-    (self::name(channel_num), vec![OscArg::String(name.to_string())])
+    (
+        self::name(channel_num),
+        vec![OscArg::String(name.to_string())],
+    )
 }
 
 /// Creates an OSC message to set the color of a bus channel.
@@ -131,7 +212,10 @@ pub fn set_dyn_on(channel_num: u8, on: i32) -> (String, Vec<OscArg>) {
 /// assert_eq!(args, vec![osc_lib::OscArg::Int(2)]);
 /// ```
 pub fn set_eq_band_type(channel_num: u8, band: u8, eq_type: i32) -> (String, Vec<OscArg>) {
-    (self::eq_band_type(channel_num, band), vec![OscArg::Int(eq_type)])
+    (
+        self::eq_band_type(channel_num, band),
+        vec![OscArg::Int(eq_type)],
+    )
 }
 
 /// Creates an OSC message to set the fader level of a bus channel.

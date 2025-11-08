@@ -1,11 +1,10 @@
-
 use clap::Parser;
+use osc_lib::OscMessage;
 use std::io::{self, BufRead};
 use std::str::FromStr;
 use std::thread;
 use std::time::Duration;
 use x32_lib::{create_socket, error::Result};
-use osc_lib::OscMessage;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]

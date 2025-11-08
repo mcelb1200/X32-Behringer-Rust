@@ -3,12 +3,12 @@
 //! `X32DeskSave.c` tool by Patrick-Gilles Maillot.
 
 use clap::Parser;
-use std::path::PathBuf;
-use std::net::UdpSocket;
+use osc_lib::{OscArg, OscMessage};
 use std::fs::File;
 use std::io::{self, BufRead, Write};
+use std::net::UdpSocket;
+use std::path::PathBuf;
 use x32_lib::{create_socket, error::X32Error};
-use osc_lib::{OscMessage, OscArg};
 
 mod nodes;
 
@@ -112,7 +112,10 @@ fn main() -> Result<(), X32Error> {
         writeln!(file, "{}", line)?;
     }
 
-    println!("Successfully saved data to {}", args.destination_file.display());
+    println!(
+        "Successfully saved data to {}",
+        args.destination_file.display()
+    );
 
     Ok(())
 }

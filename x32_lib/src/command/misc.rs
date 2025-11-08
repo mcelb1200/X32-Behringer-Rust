@@ -4,7 +4,6 @@
 //! such as USB playback routing, auxiliary input inserts, and headamp routing.
 use osc_lib::OscArg;
 
-
 // --- Address String Getters ---
 
 /// Returns the OSC address for the USB player path.
@@ -21,7 +20,6 @@ pub fn aux_insert(aux_num: u8) -> String {
 pub fn ha_routing(ha_num: u8) -> String {
     format!("/config/routing/p/{:02}", ha_num)
 }
-
 
 // --- OSC Message Setters ---
 
@@ -77,7 +75,6 @@ pub fn set_aux_insert(aux_num: u8, insert: i32) -> (String, Vec<OscArg>) {
 pub fn set_ha_routing(ha_num: u8, routing: i32) -> (String, Vec<OscArg>) {
     (ha_routing(ha_num), vec![OscArg::Int(routing)])
 }
-
 
 #[cfg(test)]
 mod tests {

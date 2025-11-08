@@ -1,8 +1,8 @@
-use clap::{Parser, ValueEnum};
 use anyhow::Result;
-use x32_lib::{create_socket, verify_fx_type, get_parameter, set_parameter};
+use clap::{Parser, ValueEnum};
 use std::thread;
 use std::time::Duration;
+use x32_lib::{create_socket, get_parameter, set_parameter, verify_fx_type};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about = "A utility to copy GEQ settings between FX slots on an X32 console.", long_about = None)]

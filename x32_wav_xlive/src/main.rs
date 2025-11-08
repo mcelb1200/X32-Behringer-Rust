@@ -13,7 +13,7 @@
 //! and creates a new session directory containing one or more multi-channel, 32-bit WAV files
 //! and a `SE_LOG.BIN` metadata file.
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use byteorder::{LittleEndian, WriteBytesExt};
 use chrono::{Datelike, Timelike, Utc};
 use clap::Parser;
@@ -88,7 +88,13 @@ fn run(args: &Args) -> Result<()> {
             first_duration = duration;
         }
 
-        validate_wav_file(&path, spec, duration, first_spec.as_ref().unwrap(), first_duration)?;
+        validate_wav_file(
+            &path,
+            spec,
+            duration,
+            first_spec.as_ref().unwrap(),
+            first_duration,
+        )?;
         input_files.push(path);
     }
 
@@ -249,7 +255,6 @@ fn write_se_log_bin(
     let zero_buf = vec![0u8; 4 * (256 - take_sizes.len())];
     file.write_all(&zero_buf)?;
 
-
     for marker in &markers {
         file.write_u32::<LittleEndian>((*marker * sample_rate as f32) as u32)?;
     }
@@ -286,10 +291,7 @@ fn validate_wav_file(
         return Err(anyhow!("File {} is not a mono WAV file.", path.display()));
     }
     if spec.bits_per_sample != 24 {
-        return Err(anyhow!(
-            "File {} is not a 24-bit WAV file.",
-            path.display()
-        ));
+        return Err(anyhow!("File {} is not a 24-bit WAV file.", path.display()));
     }
     if spec.sample_format != hound::SampleFormat::Int {
         return Err(anyhow!("File {} is not a PCM WAV file.", path.display()));
@@ -319,7 +321,7 @@ fn validate_wav_file(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use hound::{WavWriter, WavSpec};
+    use hound::{WavSpec, WavWriter};
     use tempfile::tempdir;
 
     fn create_test_wav(dir: &Path, name: &str, spec: WavSpec, duration_ms: u32) {
@@ -376,10 +378,12 @@ mod tests {
         };
         let result = run(&args);
         assert!(result.is_err());
-        assert!(result
-            .unwrap_err()
-            .to_string()
-            .contains("is not a 24-bit WAV file"));
+        assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("is not a 24-bit WAV file")
+        );
     }
 
     #[test]
