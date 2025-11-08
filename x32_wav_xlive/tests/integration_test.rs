@@ -1,12 +1,10 @@
-use assert_cmd::prelude::*;
-use byteorder::{LittleEndian, ReadBytesExt};
-use hound::{WavReader, WavSpec, WavWriter};
-use predicates::prelude::*;
+use tempfile::tempdir;
+use hound::{WavWriter, WavSpec, WavReader};
+use std::path::Path;
 use std::fs::{self, File};
 use std::io::{Cursor, Read};
-use std::path::Path;
-use std::process::Command;
-use tempfile::tempdir;
+use byteorder::{LittleEndian, ReadBytesExt};
+
 
 fn create_test_wav(dir: &Path, name: &str, spec: WavSpec, duration_ms: u32) {
     let path = dir.join(name);
@@ -30,14 +28,21 @@ fn test_cli_e2e() {
     create_test_wav(dir.path(), "ch_1.wav", spec, 100);
     create_test_wav(dir.path(), "ch_2.wav", spec, 100);
 
-    let mut cmd = Command::cargo_bin("x32_wav_xlive").unwrap();
+    let bin = escargot::CargoBuild::new()
+        .bin("x32_wav_xlive")
+        .run()
+        .unwrap();
+    let mut cmd = bin.command();
     cmd.arg(dir.path())
         .arg("TestSession")
         .arg("-m")
-        .arg("0.05")
-        .assert()
-        .success()
-        .stdout(predicate::str::contains("Found 2 WAV files to process."));
+        .arg("0.05");
+
+    let output = cmd.output().unwrap();
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    assert!(stdout.contains("Found 2 WAV files to process."));
+
 
     let session_dir = fs::read_dir(dir.path())
         .unwrap()
@@ -53,10 +58,7 @@ fn test_cli_e2e() {
         .unwrap()
         .filter_map(|entry| {
             let path = entry.unwrap().path();
-            if path
-                .extension()
-                .map_or(false, |ext| ext == "wav" || ext == "WAV")
-            {
+            if path.extension().map_or(false, |ext| ext == "wav" || ext == "WAV") {
                 Some(path)
             } else {
                 None
@@ -78,8 +80,15 @@ fn test_single_take_se_log_bin() {
     };
     create_test_wav(dir.path(), "ch_1.wav", spec, 100);
 
-    let mut cmd = Command::cargo_bin("x32_wav_xlive").unwrap();
-    cmd.arg(dir.path()).assert().success();
+    let bin = escargot::CargoBuild::new()
+        .bin("x32_wav_xlive")
+        .run()
+        .unwrap();
+    let mut cmd = bin.command();
+    cmd.arg(dir.path());
+
+    let output = cmd.output().unwrap();
+    assert!(output.status.success());
 
     let session_dir = fs::read_dir(dir.path())
         .unwrap()

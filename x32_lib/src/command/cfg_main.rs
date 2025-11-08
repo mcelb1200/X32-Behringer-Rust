@@ -193,7 +193,7 @@ pub const X_RTG_IN: &[&str] = &[
 pub const X_RTA_EA: &[&str] = &[
     " AN1-8",
     " AN9-16",
-    " AN17-24",
+    "AN17-24",
     " AN25-32",
     " A1-8",
     " A9-16",

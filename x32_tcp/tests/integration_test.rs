@@ -1,15 +1,14 @@
-use assert_cmd::prelude::*;
 use osc_lib::{OscArg, OscMessage};
 use std::io::{BufRead, BufReader, Write};
 use std::net::{TcpStream, UdpSocket};
-use std::process::Command;
 use std::thread;
 use std::time::Duration;
 
 #[test]
 fn test_server_e2e() -> Result<(), Box<dyn std::error::Error>> {
     // 1. Start the x32_tcp server in a separate process
-    let mut cmd = Command::cargo_bin("x32_tcp")?;
+    let bin = escargot::CargoBuild::new().bin("x32_tcp").run()?;
+    let mut cmd = bin.command();
     let mut server_process = cmd
         .arg("-p")
         .arg("10043")

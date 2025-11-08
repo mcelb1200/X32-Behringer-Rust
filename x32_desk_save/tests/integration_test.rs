@@ -1,6 +1,4 @@
-use assert_cmd::Command;
 use osc_lib::{OscArg, OscMessage};
-use predicates::prelude::*;
 use std::fs::File;
 use std::io::Write;
 use std::net::{SocketAddr, UdpSocket};
@@ -45,18 +43,19 @@ fn setup_mock_x32_server() -> SocketAddr {
 fn test_desk_save_command() {
     let addr = setup_mock_x32_server();
 
-    let mut cmd = Command::cargo_bin("x32_desk_save").unwrap();
+    let bin = escargot::CargoBuild::new()
+        .bin("x32_desk_save")
+        .run()
+        .unwrap();
+    let mut cmd = bin.command();
     cmd.args(&["--ip", &addr.to_string(), "-d", "test_output.txt"]);
 
-    cmd.assert()
-        .success()
-        .stdout(predicate::str::contains(format!(
-            "Successfully connected to X32 at {}",
-            addr
-        )))
-        .stdout(predicate::str::contains(
-            "Successfully saved data to test_output.txt",
-        ));
+    let output = cmd.output().unwrap();
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    assert!(stdout.contains(&format!("Successfully connected to X32 at {}", addr)));
+    assert!(stdout.contains("Successfully saved data to test_output.txt"));
+
 
     // Verify the content of the output file
     let content = std::fs::read_to_string("test_output.txt").unwrap();
@@ -81,7 +80,11 @@ fn test_pattern_file_command() {
     writeln!(file, "/-stat/solosw").unwrap();
     writeln!(file, "/-prefs/remote").unwrap();
 
-    let mut cmd = Command::cargo_bin("x32_desk_save").unwrap();
+    let bin = escargot::CargoBuild::new()
+        .bin("x32_desk_save")
+        .run()
+        .unwrap();
+    let mut cmd = bin.command();
     cmd.args(&[
         "--ip",
         &addr.to_string(),
@@ -90,15 +93,11 @@ fn test_pattern_file_command() {
         "test_output.txt",
     ]);
 
-    cmd.assert()
-        .success()
-        .stdout(predicate::str::contains(format!(
-            "Successfully connected to X32 at {}",
-            addr
-        )))
-        .stdout(predicate::str::contains(
-            "Successfully saved data to test_output.txt",
-        ));
+    let output = cmd.output().unwrap();
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    assert!(stdout.contains(&format!("Successfully connected to X32 at {}", addr)));
+    assert!(stdout.contains("Successfully saved data to test_output.txt"));
 
     // Verify the content of the output file
     let content = std::fs::read_to_string("test_output.txt").unwrap();
