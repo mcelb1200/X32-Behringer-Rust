@@ -693,5 +693,3 @@ int ch, i;
 	}
 	return;
 }
-
-

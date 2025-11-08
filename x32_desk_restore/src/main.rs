@@ -52,7 +52,7 @@ fn send_commands(socket: &UdpSocket, commands: &[String]) -> Result<()> {
                 OscMessage::new(command, vec![])
             }
         };
-        
+
         let bytes = msg.to_bytes()?;
         socket.send(&bytes)?;
 

@@ -30,4 +30,3 @@ unsigned int d[4];
             return 0;
     return 1;
 }
-

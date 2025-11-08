@@ -157,4 +157,3 @@ double X32RpnCalc(char **k, char* t) {
 //
 // End of Expression Calculator code
 //
-

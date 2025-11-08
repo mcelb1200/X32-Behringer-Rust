@@ -295,5 +295,3 @@ socklen_t			Xip_len = sizeof(Xip);	// length of addresses
 	close(Xfd);
 	return 0;
 }
-
-

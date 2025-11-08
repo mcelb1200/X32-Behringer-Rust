@@ -1499,7 +1499,7 @@ char* Xfxtyp4[] = {"HALL", "AMBI", "RPLT", "ROOM", "CHAM", "PLAT", "VREV", "VRM"
 		"DRV", "PIT2", "PIT"};
 
 int Xfxtyp4_max = (sizeof (Xfxtyp4) / sizeof (char*));
-              
+
 char* l_factor[] = {"1/4", "3/8", "1/2", "2/3", "1", "4/3", "3/2", "2", "3"};
 int ll_factor = (sizeof(l_factor) / sizeof (char*));
 
