@@ -1,8 +1,8 @@
 use osc_lib::{OscArg, OscMessage};
+use osc_lib::{OscArg, OscMessage};
 use std::net::{SocketAddr, UdpSocket};
 use std::thread;
 use std::time::Duration;
-use osc_lib::{OscMessage, OscArg};
 
 fn setup_mock_x32_server() -> SocketAddr {
     let socket = UdpSocket::bind("127.0.0.1:0").expect("couldn't bind to address");
