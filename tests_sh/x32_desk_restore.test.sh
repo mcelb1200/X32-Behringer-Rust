@@ -5,8 +5,8 @@
 test_x32_desk_restore() {
     log_message "--- Running x32_desk_restore tests ---"
 
-    local restore_binary="./target/release/x32_desk_restore"
-    local save_binary="./target/release/x32_desk_save"
+    local restore_binary="$BINARY_PATH/x32_desk_restore"
+    local save_binary="$BINARY_PATH/x32_desk_save"
 
     if [ ! -f "$restore_binary" ]; then
         log_message "ERROR: x32_desk_restore not found. Please compile first."

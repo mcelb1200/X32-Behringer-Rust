@@ -37,7 +37,7 @@ with wave.open(path, 'wb') as wf:
 test_x32_wav_xlive() {
     log_message "--- Running x32_wav_xlive tests ---"
 
-    local binary_path="./target/release/x32_wav_xlive"
+    local binary_path="$BINARY_PATH/x32_wav_xlive"
     if [ ! -f "$binary_path" ]; then
         log_message "ERROR: x32_wav_xlive not found. Please compile first."
         return
@@ -90,12 +90,18 @@ test_x32_wav_xlive() {
     fi
     log_message "Multichannel WAV file found: $(basename "$wav_file")"
 
-    # Read the header of the output WAV to verify its properties using 'hexdump'
-    local header=$(hexdump -s 22 -n 2 -e '1/2 "%d"' "$wav_file") # num channels
-    local num_channels=$(echo "$header" | awk '{print $1}')
-
-    header=$(hexdump -s 34 -n 2 -e '1/2 "%d"' "$wav_file") # bits per sample
-    local bits_per_sample=$(echo "$header" | awk '{print $1}')
+    # Read the header of the output WAV to verify its properties using Python
+    local properties=$(python3 -c "
+import wave
+import sys
+try:
+    with wave.open('$wav_file', 'rb') as wf:
+        print(f'{wf.getnchannels()},{wf.getsampwidth() * 8}')
+except Exception as e:
+    sys.exit(1)
+")
+    local num_channels=$(echo "$properties" | cut -d',' -f1)
+    local bits_per_sample=$(echo "$properties" | cut -d',' -f2)
 
     if [[ "$num_channels" -eq 2 && "$bits_per_sample" -eq 32 ]]; then
         log_message "Test 1 PASSED: Output WAV file has the correct properties (2 channels, 32-bit)."

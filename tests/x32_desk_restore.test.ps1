@@ -3,8 +3,8 @@
 function Test-X32DeskRestore {
     Log-Message "--- Running x32_desk_restore tests ---"
 
-    $restoreBinary = ".\target\release\x32_desk_restore.exe"
-    $saveBinary = ".\target\release\x32_desk_save.exe"
+    $restoreBinary = Join-Path $Global:BinaryPath "x32_desk_restore.exe"
+    $saveBinary = Join-Path $Global:BinaryPath "x32_desk_save.exe"
 
     if (-not (Test-Path $restoreBinary)) {
         Log-Message "ERROR: x32_desk_restore.exe not found. Please compile first."

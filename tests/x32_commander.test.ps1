@@ -3,7 +3,7 @@
 function Test-X32Commander {
     Log-Message "--- Running x32_commander tests ---"
 
-    $binaryPath = ".\target\release\x32_commander.exe"
+    $binaryPath = Join-Path $Global:BinaryPath "x32_commander.exe"
     if (-not (Test-Path $binaryPath)) {
         Log-Message "ERROR: x32_commander.exe not found. Please compile first."
         return

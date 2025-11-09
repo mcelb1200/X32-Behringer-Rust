@@ -5,7 +5,7 @@
 test_x32_commander() {
     log_message "--- Running x32_commander tests ---"
 
-    local binary_path="./target/release/x32_commander"
+    local binary_path="$BINARY_PATH/x32_commander"
     if [ ! -f "$binary_path" ]; then
         log_message "ERROR: x32_commander not found. Please compile first."
         return

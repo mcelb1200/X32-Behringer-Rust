@@ -3,7 +3,7 @@
 function Test-X32Tcp {
     Log-Message "--- Running x32_tcp tests ---"
 
-    $binaryPath = ".\target\release\x32_tcp.exe"
+    $binaryPath = Join-Path $Global:BinaryPath "x32_tcp.exe"
     if (-not (Test-Path $binaryPath)) {
         Log-Message "ERROR: x32_tcp.exe not found. Please compile first."
         return

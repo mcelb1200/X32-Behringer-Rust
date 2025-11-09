@@ -5,7 +5,7 @@
 test_x32_geq2_cpy() {
     log_message "--- Running x32_geq2_cpy tests ---"
 
-    local binary_path="./target/release/x32_geq2_cpy"
+    local binary_path="$BINARY_PATH/x32_geq2_cpy"
     if [ ! -f "$binary_path" ]; then
         log_message "ERROR: x32_geq2_cpy not found. Please compile first."
         return

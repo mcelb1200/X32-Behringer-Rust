@@ -3,7 +3,7 @@
 function Test-X32Fade {
     Log-Message "--- Running x32_fade tests ---"
 
-    $binaryPath = ".\target\release\x32_fade.exe"
+    $binaryPath = Join-Path $Global:BinaryPath "x32_fade.exe"
     if (-not (Test-Path $binaryPath)) {
         Log-Message "ERROR: x32_fade.exe not found. Please compile first."
         return

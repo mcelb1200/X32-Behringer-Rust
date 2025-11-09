@@ -3,7 +3,7 @@
 function Test-X32CustomLayer {
     Log-Message "--- Running x32_custom_layer tests ---"
 
-    $binaryPath = ".\target\release\x32_custom_layer.exe"
+    $binaryPath = Join-Path $Global:BinaryPath "x32_custom_layer.exe"
     if (-not (Test-Path $binaryPath)) {
         Log-Message "ERROR: x32_custom_layer.exe not found. Please compile first."
         return

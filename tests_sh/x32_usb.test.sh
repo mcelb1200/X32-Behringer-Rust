@@ -5,7 +5,7 @@
 test_x32_usb() {
     log_message "--- Running x32_usb tests ---"
 
-    local binary_path="./target/release/x32_usb"
+    local binary_path="$BINARY_PATH/x32_usb"
     if [ ! -f "$binary_path" ]; then
         log_message "ERROR: x32_usb not found. Please compile first."
         return

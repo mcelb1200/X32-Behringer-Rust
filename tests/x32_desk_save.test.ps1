@@ -3,7 +3,7 @@
 function Test-X32DeskSave {
     Log-Message "--- Running x32_desk_save tests ---"
 
-    $binaryPath = ".\target\release\x32_desk_save.exe"
+    $binaryPath = Join-Path $Global:BinaryPath "x32_desk_save.exe"
     if (-not (Test-Path $binaryPath)) {
         Log-Message "ERROR: x32_desk_save.exe not found. Please compile first."
         return

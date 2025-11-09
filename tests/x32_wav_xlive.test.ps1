@@ -49,7 +49,7 @@ function New-MonoWavFile {
 function Test-X32WavXlive {
     Log-Message "--- Running x32_wav_xlive tests ---"
 
-    $binaryPath = ".\target\release\x32_wav_xlive.exe"
+    $binaryPath = Join-Path $Global:BinaryPath "x32_wav_xlive.exe"
     if (-not (Test-Path $binaryPath)) {
         Log-Message "ERROR: x32_wav_xlive.exe not found. Please compile first."
         return

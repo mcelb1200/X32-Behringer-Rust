@@ -3,7 +3,7 @@
 function Test-X32CopyFx {
     Log-Message "--- Running x32_copy_fx tests ---"
 
-    $binaryPath = ".\target\release\x32_copy_fx.exe"
+    $binaryPath = Join-Path $Global:BinaryPath "x32_copy_fx.exe"
     if (-not (Test-Path $binaryPath)) {
         Log-Message "ERROR: x32_copy_fx.exe not found. Please compile first."
         return

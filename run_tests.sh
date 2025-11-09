@@ -31,17 +31,28 @@ log_message() {
 
 # --- Compilation ---
 compile_binaries() {
-    log_message "Starting compilation of all binaries..."
+    local force_recompile=${1:-false}
+
+    if [ "$force_recompile" = true ]; then
+        log_message "Starting force recompile of all binaries..."
+    else
+        log_message "Starting smart compile (checking for missing binaries)..."
+    fi
+
     for binary in "${BINARIES[@]}"; do
+        local binary_file_path="$BINARY_PATH/$binary"
+        if [ "$force_recompile" = false ] && [ -f "$binary_file_path" ]; then
+            log_message "Skipping $binary (already exists)."
+            continue
+        fi
+
         log_message "Compiling $binary..."
         cargo build --package "$binary" --release
         if [ $? -ne 0 ]; then
             log_message "ERROR: Compilation of $binary failed."
-            return 1
         fi
     done
-    log_message "Compilation complete."
-    return 0
+    log_message "Compilation process complete."
 }
 
 # --- X32 Connection Detection (Linux) ---
@@ -109,13 +120,70 @@ detect_x32_connection() {
 }
 
 
+BINARY_PATH="./target/release"
+
+# --- Compilation Menu ---
+show_compilation_menu() {
+    while true; do
+        clear
+        echo "Manage Binaries"
+        echo "---------------"
+        echo "Current binary path: $BINARY_PATH"
+        echo "a. Smart Compile (only missing binaries)"
+        echo "b. Force Recompile (all binaries)"
+        echo "c. Set Custom Binary Path"
+        echo "r. Return to Main Menu"
+        read -p "Enter your choice: " choice
+
+        case "$choice" in
+            a)
+                compile_binaries false
+                read -p "Press Enter to continue..."
+                ;;
+            b)
+                compile_binaries true
+                read -p "Press Enter to continue..."
+                ;;
+            c)
+                read -p "Enter new binary path: " new_path
+                if [ -d "$new_path" ]; then
+                    BINARY_PATH="$new_path"
+                    log_message "Binary path set to $new_path"
+                else
+                    echo "Path not found."
+                fi
+                read -p "Press Enter to continue..."
+                ;;
+            r)
+                return
+                ;;
+            *)
+                echo "Invalid selection."
+                read -p "Press Enter to continue..."
+                ;;
+        esac
+    done
+}
+
+
+# --- Binary Check ---
+check_binaries_exist() {
+    if [ ! -d "$BINARY_PATH" ] || ! ls -A "$BINARY_PATH" | grep -q .; then
+        echo -e "\e[33mNo compiled binaries found in '$BINARY_PATH'.\e[0m"
+        echo -e "\e[33mPlease use the 'Manage Binaries' menu to compile them before running tests.\e[0m"
+        return 1
+    fi
+    return 0
+}
+
+
 # --- Main Menu (TUI) ---
 show_main_menu() {
     clear
     echo "X32 Rust Binaries - Test Suite (Linux/Bash)"
     echo "-------------------------------------------"
     echo "Connection Status: $X32_CONNECTION_TYPE $X32_IP_ADDRESS"
-    echo "1. Compile all binaries"
+    echo "1. Manage Binaries"
     echo "2. Detect X32 connection"
     echo "3. Run all tests"
     echo "4. Run specific test..."
@@ -124,12 +192,35 @@ show_main_menu() {
 }
 
 # --- Main Loop ---
+if [ "$1" == "--run-tests-and-exit" ]; then
+    log_message "Running in non-interactive mode..."
+    compile_binaries false
+    if ! check_binaries_exist; then
+        exit 1
+    fi
+    log_message "Running all non-interactive tests..."
+    non_interactive_tests=(
+        "x32_emulator"
+        "x32_desk_save"
+        "x32_tcp"
+        "x32_wav_xlive"
+    )
+    for test_name in "${non_interactive_tests[@]}"; do
+        test_file="tests_sh/${test_name}.test.sh"
+        if [ -f "$test_file" ]; then
+            source "$test_file"
+            "test_${test_name}"
+        fi
+    done
+    log_message "Non-interactive run complete."
+    exit 0
+fi
+
 while true; do
     show_main_menu
     case "$REPLY" in
         1)
-            compile_binaries
-            read -p "Press Enter to continue..."
+            show_compilation_menu
             ;;
         2)
             detect_x32_connection
@@ -137,6 +228,10 @@ while true; do
             ;;
         3)
             log_message "Running all tests..."
+            if ! check_binaries_exist; then
+                read -p "Press Enter to continue..."
+                continue
+            fi
             if [ "$X32_CONNECTION_TYPE" = "None" ]; then
                 detect_x32_connection
             fi
@@ -145,7 +240,7 @@ while true; do
                 if [ -f "$test_file" ]; then
                     source "$test_file"
                     # The function name is derived from the file name
-                    local test_function_name=$(basename "$test_file" .test.sh | tr '-' '_')
+                    test_function_name=$(basename "$test_file" .test.sh | tr '-' '_')
                     "test_$test_function_name"
                 fi
             done
@@ -153,13 +248,17 @@ while true; do
             ;;
         4)
             log_message "Running specific test..."
+            if ! check_binaries_exist; then
+                read -p "Press Enter to continue..."
+                continue
+            fi
             if [ "$X32_CONNECTION_TYPE" = "None" ]; then
                 detect_x32_connection
             fi
 
             echo "Select a test to run:"
-            local i=1
-            local test_files=()
+            i=1
+            test_files=()
             for test_file in tests_sh/*.test.sh; do
                 if [ -f "$test_file" ]; then
                     echo "$i. $(basename "$test_file" .test.sh)"
@@ -169,11 +268,11 @@ while true; do
             done
 
             read -p "Enter your choice: " test_choice
-            local selected_file=${test_files[$((test_choice-1))]}
+            selected_file=${test_files[$((test_choice-1))]}
 
             if [ -n "$selected_file" ]; then
                 source "$selected_file"
-                local test_function_name=$(basename "$selected_file" .test.sh | tr '-' '_')
+                test_function_name=$(basename "$selected_file" .test.sh | tr '-' '_')
                 "test_$test_function_name"
             else
                 echo "Invalid selection."

@@ -5,7 +5,7 @@
 test_x32_copy_fx() {
     log_message "--- Running x32_copy_fx tests ---"
 
-    local binary_path="./target/release/x32_copy_fx"
+    local binary_path="$BINARY_PATH/x32_copy_fx"
     if [ ! -f "$binary_path" ]; then
         log_message "ERROR: x32_copy_fx not found. Please compile first."
         return

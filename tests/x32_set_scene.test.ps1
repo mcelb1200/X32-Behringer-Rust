@@ -3,7 +3,7 @@
 function Test-X32SetScene {
     Log-Message "--- Running x32_set_scene tests ---"
 
-    $binaryPath = ".\target\release\x32_set_scene.exe"
+    $binaryPath = Join-Path $Global:BinaryPath "x32_set_scene.exe"
     if (-not (Test-Path $binaryPath)) {
         Log-Message "ERROR: x32_set_scene.exe not found. Please compile first."
         return

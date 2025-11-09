@@ -5,7 +5,7 @@
 test_x32_emulator() {
     log_message "--- Running x32_emulator tests ---"
 
-    local binary_path="./target/release/x32_emulator"
+    local binary_path="$BINARY_PATH/x32_emulator"
     if [ ! -f "$binary_path" ]; then
         log_message "ERROR: x32_emulator not found. Please compile first."
         return

@@ -3,7 +3,7 @@
 function Test-X32GetSceneName {
     Log-Message "--- Running x32_get_scene_name tests ---"
 
-    $binaryPath = ".\target\release\x32_get_scene_name.exe"
+    $binaryPath = Join-Path $Global:BinaryPath "x32_get_scene_name.exe"
     if (-not (Test-Path $binaryPath)) {
         Log-Message "ERROR: x32_get_scene_name.exe not found. Please compile first."
         return

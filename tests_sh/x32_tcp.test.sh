@@ -5,7 +5,7 @@
 test_x32_tcp() {
     log_message "--- Running x32_tcp tests ---"
 
-    local binary_path="./target/release/x32_tcp"
+    local binary_path="$BINARY_PATH/x32_tcp"
     if [ ! -f "$binary_path" ]; then
         log_message "ERROR: x32_tcp not found. Please compile first."
         return

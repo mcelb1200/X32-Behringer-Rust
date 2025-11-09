@@ -5,7 +5,7 @@
 test_x32_set_scene() {
     log_message "--- Running x32_set_scene tests ---"
 
-    local binary_path="./target/release/x32_set_scene"
+    local binary_path="$BINARY_PATH/x32_set_scene"
     if [ ! -f "$binary_path" ]; then
         log_message "ERROR: x32_set_scene not found. Please compile first."
         return

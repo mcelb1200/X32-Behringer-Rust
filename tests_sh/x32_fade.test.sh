@@ -5,7 +5,7 @@
 test_x32_fade() {
     log_message "--- Running x32_fade tests ---"
 
-    local binary_path="./target/release/x32_fade"
+    local binary_path="$BINARY_PATH/x32_fade"
     if [ ! -f "$binary_path" ]; then
         log_message "ERROR: x32_fade not found. Please compile first."
         return

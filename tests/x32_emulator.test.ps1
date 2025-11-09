@@ -3,7 +3,7 @@
 function Test-X32Emulator {
     Log-Message "--- Running x32_emulator tests ---"
 
-    $binaryPath = ".\target\release\x32_emulator.exe"
+    $binaryPath = Join-Path $Global:BinaryPath "x32_emulator.exe"
     if (-not (Test-Path $binaryPath)) {
         Log-Message "ERROR: x32_emulator.exe not found. Please compile first."
         return

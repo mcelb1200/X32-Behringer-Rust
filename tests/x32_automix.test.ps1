@@ -3,7 +3,7 @@
 function Test-X32Automix {
     Log-Message "--- Running x32_automix tests ---"
 
-    $binaryPath = ".\target\release\x32_automix.exe"
+    $binaryPath = Join-Path $Global:BinaryPath "x32_automix.exe"
     if (-not (Test-Path $binaryPath)) {
         Log-Message "ERROR: x32_automix.exe not found. Please compile first."
         return

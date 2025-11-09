@@ -5,7 +5,7 @@
 test_x32_get_scene_name() {
     log_message "--- Running x32_get_scene_name tests ---"
 
-    local binary_path="./target/release/x32_get_scene_name"
+    local binary_path="$BINARY_PATH/x32_get_scene_name"
     if [ ! -f "$binary_path" ]; then
         log_message "ERROR: x32_get_scene_name not found. Please compile first."
         return

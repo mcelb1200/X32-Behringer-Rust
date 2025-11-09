@@ -5,7 +5,7 @@
 test_x32_custom_layer() {
     log_message "--- Running x32_custom_layer tests ---"
 
-    local binary_path="./target/release/x32_custom_layer"
+    local binary_path="$BINARY_PATH/x32_custom_layer"
     if [ ! -f "$binary_path" ]; then
         log_message "ERROR: x32_custom_layer not found. Please compile first."
         return

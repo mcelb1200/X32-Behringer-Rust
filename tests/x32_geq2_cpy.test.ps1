@@ -3,7 +3,7 @@
 function Test-X32Geq2Cpy {
     Log-Message "--- Running x32_geq2_cpy tests ---"
 
-    $binaryPath = ".\target\release\x32_geq2_cpy.exe"
+    $binaryPath = Join-Path $Global:BinaryPath "x32_geq2_cpy.exe"
     if (-not (Test-Path $binaryPath)) {
         Log-Message "ERROR: x32_geq2_cpy.exe not found. Please compile first."
         return

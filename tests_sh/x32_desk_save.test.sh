@@ -5,7 +5,7 @@
 test_x32_desk_save() {
     log_message "--- Running x32_desk_save tests ---"
 
-    local binary_path="./target/release/x32_desk_save"
+    local binary_path="$BINARY_PATH/x32_desk_save"
     if [ ! -f "$binary_path" ]; then
         log_message "ERROR: x32_desk_save not found. Please compile first."
         return

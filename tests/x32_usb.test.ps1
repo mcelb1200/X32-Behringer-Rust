@@ -3,7 +3,7 @@
 function Test-X32Usb {
     Log-Message "--- Running x32_usb tests ---"
 
-    $binaryPath = ".\target\release\x32_usb.exe"
+    $binaryPath = Join-Path $Global:BinaryPath "x32_usb.exe"
     if (-not (Test-Path $binaryPath)) {
         Log-Message "ERROR: x32_usb.exe not found. Please compile first."
         return
