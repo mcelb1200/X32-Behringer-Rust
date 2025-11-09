@@ -117,10 +117,7 @@ pub fn eq_band_type(channel_num: u8, band: u8) -> String {
 /// assert_eq!(args, vec![OscArg::String("Test".to_string())]);
 /// ```
 pub fn set_name(channel_num: u8, name: &str) -> (String, Vec<OscArg>) {
-    (
-        self::name(channel_num),
-        vec![OscArg::String(name.to_string())],
-    )
+    (self::name(channel_num), vec![OscArg::String(name.to_string())])
 }
 
 /// Creates an OSC message to set the color of a channel.
@@ -311,10 +308,7 @@ pub fn set_insert_sel(channel_num: u8, sel: i32) -> (String, Vec<OscArg>) {
 /// assert_eq!(args, vec![OscArg::Int(2)]);
 /// ```
 pub fn set_eq_band_type(channel_num: u8, band: u8, eq_type: i32) -> (String, Vec<OscArg>) {
-    (
-        self::eq_band_type(channel_num, band),
-        vec![OscArg::Int(eq_type)],
-    )
+    (self::eq_band_type(channel_num, band), vec![OscArg::Int(eq_type)])
 }
 
 /// Programmatically generates a vector of all available OSC commands for a single channel.
@@ -336,24 +330,19 @@ pub fn get_channel_commands(channel_num: u8) -> Vec<Command<'static>> {
     let mut commands = vec![];
     let flags = CommandFlags::GET.union(CommandFlags::SET);
 
-    let mut add =
-        |path: String, command_type: CommandType, nodes: Option<&'static [&'static str]>| {
-            commands.push(Command {
-                path: Box::leak(path.into_boxed_str()),
-                command_type,
-                flags,
-                nodes,
-            });
-        };
+    let mut add = |path: String, command_type: CommandType, nodes: Option<&'static [&'static str]>| {
+        commands.push(Command {
+            path: Box::leak(path.into_boxed_str()),
+            command_type,
+            flags,
+            nodes,
+        });
+    };
 
     // Config
     add(format!("/ch/{}/config/name", ch), CommandType::String, None);
     add(format!("/ch/{}/config/icon", ch), CommandType::Int, None);
-    add(
-        format!("/ch/{}/config/color", ch),
-        CommandType::Enum,
-        Some(XCOLORS),
-    );
+    add(format!("/ch/{}/config/color", ch), CommandType::Enum, Some(XCOLORS));
     add(format!("/ch/{}/config/source", ch), CommandType::Int, None);
 
     // Group
@@ -362,194 +351,78 @@ pub fn get_channel_commands(channel_num: u8) -> Vec<Command<'static>> {
 
     // Preamp
     add(format!("/ch/{}/preamp/trim", ch), CommandType::Float, None);
-    add(
-        format!("/ch/{}/preamp/invert", ch),
-        CommandType::Enum,
-        Some(OFF_ON),
-    );
-    add(
-        format!("/ch/{}/preamp/hpon", ch),
-        CommandType::Enum,
-        Some(OFF_ON),
-    );
-    add(
-        format!("/ch/{}/preamp/hpslope", ch),
-        CommandType::Enum,
-        Some(XHSLOP),
-    );
+    add(format!("/ch/{}/preamp/invert", ch), CommandType::Enum, Some(OFF_ON));
+    add(format!("/ch/{}/preamp/hpon", ch), CommandType::Enum, Some(OFF_ON));
+    add(format!("/ch/{}/preamp/hpslope", ch), CommandType::Enum, Some(XHSLOP));
     add(format!("/ch/{}/preamp/hpf", ch), CommandType::Float, None);
 
     // Delay
-    add(
-        format!("/ch/{}/delay/on", ch),
-        CommandType::Enum,
-        Some(OFF_ON),
-    );
+    add(format!("/ch/{}/delay/on", ch), CommandType::Enum, Some(OFF_ON));
     add(format!("/ch/{}/delay/time", ch), CommandType::Float, None);
 
     // Insert
-    add(
-        format!("/ch/{}/insert/on", ch),
-        CommandType::Enum,
-        Some(OFF_ON),
-    );
-    add(
-        format!("/ch/{}/insert/pos", ch),
-        CommandType::Enum,
-        Some(XDYPPOS),
-    );
-    add(
-        format!("/ch/{}/insert/sel", ch),
-        CommandType::Enum,
-        Some(XISEL),
-    );
+    add(format!("/ch/{}/insert/on", ch), CommandType::Enum, Some(OFF_ON));
+    add(format!("/ch/{}/insert/pos", ch), CommandType::Enum, Some(XDYPPOS));
+    add(format!("/ch/{}/insert/sel", ch), CommandType::Enum, Some(XISEL));
 
     // Gate
-    add(
-        format!("/ch/{}/gate/on", ch),
-        CommandType::Enum,
-        Some(OFF_ON),
-    );
-    add(
-        format!("/ch/{}/gate/mode", ch),
-        CommandType::Enum,
-        Some(XGMODE),
-    );
+    add(format!("/ch/{}/gate/on", ch), CommandType::Enum, Some(OFF_ON));
+    add(format!("/ch/{}/gate/mode", ch), CommandType::Enum, Some(XGMODE));
     add(format!("/ch/{}/gate/thr", ch), CommandType::Float, None);
     add(format!("/ch/{}/gate/range", ch), CommandType::Float, None);
     add(format!("/ch/{}/gate/attack", ch), CommandType::Float, None);
     add(format!("/ch/{}/gate/hold", ch), CommandType::Float, None);
     add(format!("/ch/{}/gate/release", ch), CommandType::Float, None);
     add(format!("/ch/{}/gate/keysrc", ch), CommandType::Int, None);
-    add(
-        format!("/ch/{}/gate/filter/on", ch),
-        CommandType::Enum,
-        Some(OFF_ON),
-    );
-    add(
-        format!("/ch/{}/gate/filter/type", ch),
-        CommandType::Enum,
-        Some(XDYFTYP),
-    );
-    add(
-        format!("/ch/{}/gate/filter/f", ch),
-        CommandType::Float,
-        None,
-    );
+    add(format!("/ch/{}/gate/filter/on", ch), CommandType::Enum, Some(OFF_ON));
+    add(format!("/ch/{}/gate/filter/type", ch), CommandType::Enum, Some(XDYFTYP));
+    add(format!("/ch/{}/gate/filter/f", ch), CommandType::Float, None);
 
     // Dynamics
-    add(
-        format!("/ch/{}/dyn/on", ch),
-        CommandType::Enum,
-        Some(OFF_ON),
-    );
-    add(
-        format!("/ch/{}/dyn/mode", ch),
-        CommandType::Enum,
-        Some(XDYMODE),
-    );
-    add(
-        format!("/ch/{}/dyn/det", ch),
-        CommandType::Enum,
-        Some(XDYDET),
-    );
-    add(
-        format!("/ch/{}/dyn/env", ch),
-        CommandType::Enum,
-        Some(XDYENV),
-    );
+    add(format!("/ch/{}/dyn/on", ch), CommandType::Enum, Some(OFF_ON));
+    add(format!("/ch/{}/dyn/mode", ch), CommandType::Enum, Some(XDYMODE));
+    add(format!("/ch/{}/dyn/det", ch), CommandType::Enum, Some(XDYDET));
+    add(format!("/ch/{}/dyn/env", ch), CommandType::Enum, Some(XDYENV));
     add(format!("/ch/{}/dyn/thr", ch), CommandType::Float, None);
-    add(
-        format!("/ch/{}/dyn/ratio", ch),
-        CommandType::Enum,
-        Some(XDYRAT),
-    );
+    add(format!("/ch/{}/dyn/ratio", ch), CommandType::Enum, Some(XDYRAT));
     add(format!("/ch/{}/dyn/knee", ch), CommandType::Float, None);
     add(format!("/ch/{}/dyn/mgain", ch), CommandType::Float, None);
     add(format!("/ch/{}/dyn/attack", ch), CommandType::Float, None);
     add(format!("/ch/{}/dyn/hold", ch), CommandType::Float, None);
     add(format!("/ch/{}/dyn/release", ch), CommandType::Float, None);
-    add(
-        format!("/ch/{}/dyn/pos", ch),
-        CommandType::Enum,
-        Some(XDYPPOS),
-    );
+    add(format!("/ch/{}/dyn/pos", ch), CommandType::Enum, Some(XDYPPOS));
     add(format!("/ch/{}/dyn/keysrc", ch), CommandType::Int, None);
     add(format!("/ch/{}/dyn/mix", ch), CommandType::Float, None);
-    add(
-        format!("/ch/{}/dyn/auto", ch),
-        CommandType::Enum,
-        Some(OFF_ON),
-    );
-    add(
-        format!("/ch/{}/dyn/filter/on", ch),
-        CommandType::Enum,
-        Some(OFF_ON),
-    );
-    add(
-        format!("/ch/{}/dyn/filter/type", ch),
-        CommandType::Enum,
-        Some(XDYFTYP),
-    );
+    add(format!("/ch/{}/dyn/auto", ch), CommandType::Enum, Some(OFF_ON));
+    add(format!("/ch/{}/dyn/filter/on", ch), CommandType::Enum, Some(OFF_ON));
+    add(format!("/ch/{}/dyn/filter/type", ch), CommandType::Enum, Some(XDYFTYP));
     add(format!("/ch/{}/dyn/filter/f", ch), CommandType::Float, None);
 
     // EQ
     add(format!("/ch/{}/eq/on", ch), CommandType::Enum, Some(OFF_ON));
     for i in 1..=4 {
-        add(
-            format!("/ch/{}/eq/{}/type", ch, i),
-            CommandType::Enum,
-            Some(XEQTY1),
-        );
+        add(format!("/ch/{}/eq/{}/type", ch, i), CommandType::Enum, Some(XEQTY1));
         add(format!("/ch/{}/eq/{}/f", ch, i), CommandType::Float, None);
         add(format!("/ch/{}/eq/{}/g", ch, i), CommandType::Float, None);
         add(format!("/ch/{}/eq/{}/q", ch, i), CommandType::Float, None);
     }
 
     // Mix
-    add(
-        format!("/ch/{}/mix/on", ch),
-        CommandType::Enum,
-        Some(OFF_ON),
-    );
+    add(format!("/ch/{}/mix/on", ch), CommandType::Enum, Some(OFF_ON));
     add(format!("/ch/{}/mix/fader", ch), CommandType::Float, None);
-    add(
-        format!("/ch/{}/mix/st", ch),
-        CommandType::Enum,
-        Some(OFF_ON),
-    );
+    add(format!("/ch/{}/mix/st", ch), CommandType::Enum, Some(OFF_ON));
     add(format!("/ch/{}/mix/pan", ch), CommandType::Float, None);
-    add(
-        format!("/ch/{}/mix/mono", ch),
-        CommandType::Enum,
-        Some(OFF_ON),
-    );
+    add(format!("/ch/{}/mix/mono", ch), CommandType::Enum, Some(OFF_ON));
     add(format!("/ch/{}/mix/mlevel", ch), CommandType::Float, None);
 
     for i in 1..=16 {
         let mix = format!("{:02}", i);
-        add(
-            format!("/ch/{}/mix/{}/on", ch, mix),
-            CommandType::Enum,
-            Some(OFF_ON),
-        );
-        add(
-            format!("/ch/{}/mix/{}/level", ch, mix),
-            CommandType::Float,
-            None,
-        );
+        add(format!("/ch/{}/mix/{}/on", ch, mix), CommandType::Enum, Some(OFF_ON));
+        add(format!("/ch/{}/mix/{}/level", ch, mix), CommandType::Float, None);
 
         if i % 2 != 0 {
-            add(
-                format!("/ch/{}/mix/{}/pan", ch, mix),
-                CommandType::Float,
-                None,
-            );
-            add(
-                format!("/ch/{}/mix/{}/type", ch, mix),
-                CommandType::Enum,
-                Some(XMTYPE),
-            );
+            add(format!("/ch/{}/mix/{}/pan", ch, mix), CommandType::Float, None);
+            add(format!("/ch/{}/mix/{}/type", ch, mix), CommandType::Enum, Some(XMTYPE));
             add(
                 format!("/ch/{}/mix/{}/panFollow", ch, mix),
                 CommandType::Enum,
@@ -564,11 +437,7 @@ pub fn get_channel_commands(channel_num: u8) -> Vec<Command<'static>> {
         CommandType::Enum,
         Some(XAMXGRP),
     );
-    add(
-        format!("/ch/{}/automix/weight", ch),
-        CommandType::Float,
-        None,
-    );
+    add(format!("/ch/{}/automix/weight", ch), CommandType::Float, None);
 
     commands
 }
@@ -601,7 +470,10 @@ mod tests {
 
         let commands_32 = get_channel_commands(32);
         assert_eq!(commands_32[0].path, "/ch/32/config/name");
-        assert_eq!(commands_32.last().unwrap().path, "/ch/32/automix/weight");
+        assert_eq!(
+            commands_32.last().unwrap().path,
+            "/ch/32/automix/weight"
+        );
     }
 
     #[test]

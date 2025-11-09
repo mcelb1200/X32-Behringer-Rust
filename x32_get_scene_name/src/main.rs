@@ -4,9 +4,9 @@
 //! Patrick-gilles Maillot.
 
 use clap::Parser;
-use osc_lib::{OscArg, OscMessage};
 use std::time::{Duration, Instant};
 use x32_lib::{create_socket, error::X32Error};
+use osc_lib::{OscMessage, OscArg};
 
 /// A command line utility to get scene names when a scene change takes place.
 #[derive(Parser, Debug)]
@@ -66,8 +66,7 @@ fn main() -> Result<(), X32Error> {
     }
 
     let xremote_msg = OscMessage::new("/xremote".to_string(), vec![]);
-    let show_control_msg =
-        OscMessage::new("/-prefs/show_control".to_string(), vec![OscArg::Int(1)]);
+    let show_control_msg = OscMessage::new("/-prefs/show_control".to_string(), vec![OscArg::Int(1)]);
 
     let mut last_remote_sent = Instant::now();
 
@@ -82,15 +81,12 @@ fn main() -> Result<(), X32Error> {
             if let Ok(msg) = OscMessage::from_bytes(&buf[..len]) {
                 if msg.path == "/-show/prepos/current" {
                     if let Some(OscArg::Int(scene_index)) = msg.args.get(0) {
-                        let get_name_msg = OscMessage::new(
-                            format!("/-show/showfile/scene/{:03}", scene_index),
-                            vec![],
-                        );
+                        let get_name_msg = OscMessage::new(format!("/-show/showfile/scene/{:03}", scene_index), vec![]);
                         socket.send(&get_name_msg.to_bytes()?)?;
                     }
                 } else if msg.path.starts_with("/-show/showfile/scene") {
                     if let Some(OscArg::String(scene_name)) = msg.args.get(0) {
-                        if let Some(OscArg::Int(scene_index)) = msg.args.get(1) {
+                         if let Some(OscArg::Int(scene_index)) = msg.args.get(1) {
                             println!("{:02} - {}", scene_index, scene_name);
                             if args.onetime != 0 {
                                 break;

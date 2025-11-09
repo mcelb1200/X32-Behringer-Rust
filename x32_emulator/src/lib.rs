@@ -1,14 +1,16 @@
 pub mod server {
     use anyhow::Result;
     use std::net::{SocketAddr, UdpSocket};
-    use std::sync::mpsc::Receiver;
     use x32_core::Mixer;
+    use std::sync::mpsc::Receiver;
 
-    type Seeder = Option<Box<dyn FnOnce(&mut Mixer) + Send>>;
-
-    pub fn run(bind_addr: &str, seeder: Seeder, shutdown: Option<Receiver<()>>) -> Result<()> {
+    pub fn run(
+        bind_addr: &str,
+        seeder: Option<Box<dyn FnOnce(&mut Mixer) + Send>>,
+        shutdown: Option<Receiver<()>>,
+    ) -> Result<()> {
         let addr: SocketAddr = bind_addr.parse()?;
-        let socket = UdpSocket::bind(addr)?;
+        let socket = UdpSocket::bind(&addr)?;
         socket.set_nonblocking(true)?;
         let mut mixer = Mixer::new();
 
@@ -27,15 +29,17 @@ pub mod server {
             }
 
             match socket.recv_from(&mut buf) {
-                Ok((len, remote_addr)) => match mixer.dispatch(&buf[..len]) {
-                    Ok(Some(response)) => {
-                        socket.send_to(&response, remote_addr)?;
+                Ok((len, remote_addr)) => {
+                    match mixer.dispatch(&buf[..len]) {
+                        Ok(Some(response)) => {
+                            socket.send_to(&response, remote_addr)?;
+                        }
+                        Ok(None) => {}
+                        Err(e) => {
+                            eprintln!("Error handling message: {}", e);
+                        }
                     }
-                    Ok(None) => {}
-                    Err(e) => {
-                        eprintln!("Error handling message: {}", e);
-                    }
-                },
+                }
                 Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {
                     // No data received, continue
                 }

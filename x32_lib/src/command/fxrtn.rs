@@ -5,6 +5,7 @@
 //! and sends to mix buses.
 use osc_lib::OscArg;
 
+
 // --- Address String Getters ---
 
 /// Returns the OSC address for an fxrtn channel's name.
@@ -27,6 +28,7 @@ pub fn bus_send_level(channel_num: u8, bus: u8) -> String {
     format!("/fxrtn/{:02}/mix/{:02}/level", channel_num, bus)
 }
 
+
 // --- OSC Message Setters ---
 
 /// Creates an OSC message to set the name of a fxrtn channel.
@@ -44,10 +46,7 @@ pub fn bus_send_level(channel_num: u8, bus: u8) -> String {
 /// assert_eq!(args, vec![osc_lib::OscArg::String("Test".to_string())]);
 /// ```
 pub fn set_name(channel_num: u8, name: &str) -> (String, Vec<OscArg>) {
-    (
-        self::name(channel_num),
-        vec![OscArg::String(name.to_string())],
-    )
+    (self::name(channel_num), vec![OscArg::String(name.to_string())])
 }
 
 /// Creates an OSC message to set the color of a fxrtn channel.
@@ -67,6 +66,7 @@ pub fn set_name(channel_num: u8, name: &str) -> (String, Vec<OscArg>) {
 pub fn set_color(channel_num: u8, color: i32) -> (String, Vec<OscArg>) {
     (self::color(channel_num), vec![OscArg::Int(color)])
 }
+
 
 /// Creates an OSC message to set the fader level of a fxrtn channel.
 ///
@@ -104,6 +104,7 @@ pub fn set_fader(channel_num: u8, level: f32) -> (String, Vec<OscArg>) {
 pub fn set_bus_send_level(channel_num: u8, bus: u8, level: f32) -> (String, Vec<OscArg>) {
     (bus_send_level(channel_num, bus), vec![OscArg::Float(level)])
 }
+
 
 #[cfg(test)]
 mod tests {

@@ -1,7 +1,8 @@
-use std::thread;
-use x32_emulator::server;
+
 use x32_lib::command::fx;
 use x32_lib::create_socket;
+use x32_emulator::server;
+use std::thread;
 
 #[test]
 fn test_xfx_set_array() {

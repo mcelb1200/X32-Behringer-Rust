@@ -22,8 +22,7 @@ fn test_create_socket_ipv6() {
     let server = match UdpSocket::bind("[::1]:0") {
         Ok(socket) => socket,
         Err(e) => {
-            if e.raw_os_error() == Some(97) {
-                // EAFNOSUPPORT on Linux
+            if e.raw_os_error() == Some(97) { // EAFNOSUPPORT on Linux
                 println!("IPv6 not supported, skipping test.");
                 return;
             }

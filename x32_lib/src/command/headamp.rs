@@ -4,6 +4,7 @@
 //! and for switching 48V phantom power on or off.
 use osc_lib::OscArg;
 
+
 // --- Address String Getters ---
 
 /// Returns the OSC address for a headamp channel's gain.
@@ -15,6 +16,7 @@ pub fn gain(channel_num: u8) -> String {
 pub fn phantom(channel_num: u8) -> String {
     format!("/headamp/{:02}/phantom", channel_num)
 }
+
 
 // --- OSC Message Setters ---
 

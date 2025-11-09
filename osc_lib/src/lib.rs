@@ -33,8 +33,8 @@
 
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use std::io::{self, Cursor, Read, Write};
-use std::str::FromStr;
 use std::string::FromUtf8Error;
+use std::str::FromStr;
 
 #[cfg(test)]
 mod tests;
@@ -192,7 +192,7 @@ impl OscMessage {
                 OscArg::Blob(val) => {
                     bytes.write_i32::<BigEndian>(val.len() as i32)?;
                     bytes.write_all(val)?;
-                    while !bytes.len().is_multiple_of(4) {
+                    while bytes.len() % 4 != 0 {
                         bytes.write_u8(0)?;
                     }
                 }
@@ -225,10 +225,7 @@ impl FromStr for OscMessage {
     fn from_str(s: &str) -> Result<Self> {
         let tokens = tokenize(s)?;
         let mut it = tokens.iter();
-        let path = it
-            .next()
-            .ok_or(OscError::ParseError("Empty command string".to_string()))?
-            .to_string();
+        let path = it.next().ok_or(OscError::ParseError("Empty command string".to_string()))?.to_string();
         let mut args = Vec::new();
 
         if let Some(type_tags) = it.next() {
@@ -237,19 +234,14 @@ impl FromStr for OscMessage {
             }
 
             for tag in type_tags[1..].chars() {
-                let val_str = it.next().ok_or(OscError::ParseError(format!(
-                    "Missing value for type tag '{}'",
-                    tag
-                )))?;
+                let val_str = it.next().ok_or(OscError::ParseError(format!("Missing value for type tag '{}'", tag)))?;
                 match tag {
                     'i' => {
-                        let val = i32::from_str(val_str)
-                            .map_err(|e| OscError::ParseError(e.to_string()))?;
+                        let val = i32::from_str(val_str).map_err(|e| OscError::ParseError(e.to_string()))?;
                         args.push(OscArg::Int(val));
                     }
                     'f' => {
-                        let val = f32::from_str(val_str)
-                            .map_err(|e| OscError::ParseError(e.to_string()))?;
+                        let val = f32::from_str(val_str).map_err(|e| OscError::ParseError(e.to_string()))?;
                         args.push(OscArg::Float(val));
                     }
                     's' => {
@@ -259,9 +251,7 @@ impl FromStr for OscMessage {
                 }
             }
             if it.next().is_some() {
-                return Err(OscError::ParseError(
-                    "Extra arguments at end of command string".to_string(),
-                ));
+                return Err(OscError::ParseError("Extra arguments at end of command string".to_string()));
             }
         }
 
@@ -269,7 +259,7 @@ impl FromStr for OscMessage {
     }
 }
 
-impl std::fmt::Display for OscMessage {
+impl ToString for OscMessage {
     /// Converts the `OscMessage` to a string representation.
     ///
     /// # Example
@@ -280,33 +270,34 @@ impl std::fmt::Display for OscMessage {
     /// let msg = OscMessage::new("/ch/01/mix/fader".to_string(), vec![OscArg::Float(0.75)]);
     /// let msg_str = msg.to_string();
     ///
-    /// assert_eq!(msg_str, "/ch/01/mix/fader ,f 0.75");
+    /// assert_eq!(msg_str, "/ch/01/mix/fader,f 0.75");
     /// ```
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.path)?;
+    fn to_string(&self) -> String {
+        let mut s = self.path.clone();
         if !self.args.is_empty() {
-            write!(f, " ,")?;
+            s.push(',');
             for arg in &self.args {
                 match arg {
-                    OscArg::Int(_) => write!(f, "i")?,
-                    OscArg::Float(_) => write!(f, "f")?,
-                    OscArg::String(_) => write!(f, "s")?,
-                    OscArg::Blob(_) => write!(f, "b")?,
+                    OscArg::Int(_) => s.push('i'),
+                    OscArg::Float(_) => s.push('f'),
+                    OscArg::String(_) => s.push('s'),
+                    OscArg::Blob(_) => s.push('b'),
                 }
             }
             for arg in &self.args {
-                write!(f, " ")?;
+                s.push(' ');
                 match arg {
-                    OscArg::Int(val) => write!(f, "{}", val)?,
-                    OscArg::Float(val) => write!(f, "{}", val)?,
-                    OscArg::String(val) => write!(f, "\"{}\"", val)?,
-                    OscArg::Blob(_) => write!(f, "[blob]")?,
+                    OscArg::Int(val) => s.push_str(&val.to_string()),
+                    OscArg::Float(val) => s.push_str(&val.to_string()),
+                    OscArg::String(val) => s.push_str(&format!("\"{}\"", val)),
+                    OscArg::Blob(_) => s.push_str("[blob]"),
                 }
             }
         }
-        Ok(())
+        s
     }
 }
+
 
 /// Tokenizes a string for OSC message parsing, handling quoted strings.
 ///
@@ -366,7 +357,7 @@ fn read_osc_string(cursor: &mut Cursor<&[u8]>) -> Result<String> {
 fn write_osc_string(bytes: &mut Vec<u8>, s: &str) -> Result<()> {
     bytes.write_all(s.as_bytes())?;
     bytes.write_u8(0)?;
-    while !bytes.len().is_multiple_of(4) {
+    while bytes.len() % 4 != 0 {
         bytes.write_u8(0)?;
     }
     Ok(())

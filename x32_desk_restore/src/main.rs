@@ -3,16 +3,13 @@
 //! `X32DeskRestore.c` tool by Patrick-Gilles Maillot.
 
 use clap::Parser;
-use osc_lib::OscMessage;
+use std::path::PathBuf;
+use x32_lib::{create_socket, error::{X32Error, Result}};
+use osc_lib::{OscMessage};
 use std::fs::File;
 use std::io::{self, BufRead};
 use std::net::UdpSocket;
-use std::path::PathBuf;
 use std::str::FromStr;
-use x32_lib::{
-    create_socket,
-    error::{Result, X32Error},
-};
 
 /// A Rust implementation of the X32DeskRestore tool.
 #[derive(Parser, Debug)]
@@ -62,7 +59,7 @@ fn send_commands(socket: &UdpSocket, commands: &[String]) -> Result<()> {
         match socket.recv(&mut buf) {
             Ok(_) => {
                 // We don't care about the response for this tool
-            }
+            },
             Err(e) => {
                 if e.kind() != io::ErrorKind::WouldBlock {
                     return Err(X32Error::Io(e));
@@ -83,7 +80,7 @@ fn main() -> Result<()> {
     let file = File::open(&args.file)?;
     let commands: Vec<String> = io::BufReader::new(file)
         .lines()
-        .filter_map(std::result::Result::ok)
+        .filter_map(io::Result::ok)
         .filter(|line| !line.starts_with('#') && !line.trim().is_empty())
         .collect();
 

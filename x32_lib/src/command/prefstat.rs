@@ -4,6 +4,7 @@
 //! screen, solo status, and other preferences.
 use osc_lib::OscArg;
 
+
 // --- Address String Getters ---
 
 /// Returns the OSC address for the screen name.
@@ -20,6 +21,7 @@ pub fn solo_channel() -> String {
 pub fn solo_on_addr() -> String {
     "/-stat/solosw/on".to_string()
 }
+
 
 // --- OSC Message Setters ---
 

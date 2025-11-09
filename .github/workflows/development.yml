@@ -3,7 +3,7 @@ name: Relaxed CI for development branches
 on:
   push:
     branches-ignore:
-      - 'main'
+      - 'master'
 
 jobs:
   build:

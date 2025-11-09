@@ -258,29 +258,26 @@ impl FxSource {
 }
 
 /// A list of scribble strip color names.
-pub static XCOLORS: [&str; 16] = [
-    "OFF", "RD", "GN", "YE", "BL", "MG", "CY", "WH", "OFFi", "RDi", "GNi", "YEi", "BLi", "MGi",
-    "CYi", "WHi",
-];
+pub static XCOLORS: [&'static str; 16] = [
+    "OFF", "RD", "GN", "YE", "BL", "MG", "CY", "WH",
+    "OFFi", "RDi", "GNi", "YEi", "BLi", "MGi", "CYi", "WHi"];
 
 /// A list of "OFF" and "ON" strings.
-pub static OFF_ON: [&str; 2] = ["OFF", "ON"];
+pub static OFF_ON: [&'static str; 2] = ["OFF", "ON"];
 /// A list of dynamics modes.
-pub static XDYMODE: [&str; 2] = ["COMP", "EXP"];
+pub static XDYMODE: [&'static str; 2] = ["COMP", "EXP"];
 /// A list of dynamics detector types.
-pub static XDYDET: [&str; 2] = ["PEAK", "RMS"];
+pub static XDYDET: [&'static str; 2] = ["PEAK", "RMS"];
 /// A list of dynamics envelope types.
-pub static XDYENV: [&str; 2] = ["LIN", "LOG"];
+pub static XDYENV: [&'static str; 2] = ["LIN", "LOG"];
 /// A list of dynamics processing positions.
-pub static XDYPPOS: [&str; 2] = ["PRE", "POST"];
+pub static XDYPPOS: [&'static str; 2] = ["PRE", "POST"];
 /// A list of dynamics filter types.
-pub static XDYFTYP: [&str; 9] = [
-    "LC6", "LC12", "HC6", "HC12", "1.0", "2.0", "3.0", "5.0", "10.0",
-];
+pub static XDYFTYP: [&'static str; 9] = ["LC6", "LC12", "HC6", "HC12", "1.0", "2.0", "3.0", "5.0", "10.0"];
 /// A list of insert selections.
-pub static XISEL: [&str; 23] = [
-    "OFF", "FX1L", "FX1R", "FX2L", "FX2R", "FX3L", "FX3R", "FX4L", "FX4R", "FX5L", "FX5R", "FX6L",
-    "FX6R", "FX7L", "FX7R", "FX8L", "FX8R", "AUX1", "AUX2", "AUX3", "AUX4", "AUX5", "AUX6",
-];
+pub static XISEL: [&'static str; 23] = [
+    "OFF", "FX1L", "FX1R", "FX2L", "FX2R", "FX3L", "FX3R", "FX4L", "FX4R",
+    "FX5L", "FX5R", "FX6L", "FX6R", "FX7L", "FX7R", "FX8L", "FX8R", "AUX1",
+    "AUX2", "AUX3", "AUX4", "AUX5", "AUX6"];
 /// A list of EQ types.
-pub static XEQTY1: [&str; 6] = ["LCut", "LShv", "PEQ", "VEQ", "HShv", "HCut"];
+pub static XEQTY1: [&'static str; 6] = ["LCut", "LShv", "PEQ", "VEQ", "HShv", "HCut"];

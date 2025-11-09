@@ -4,6 +4,7 @@
 //! for sending to different speaker zones, recording devices, or broadcast feeds.
 use osc_lib::OscArg;
 
+
 // --- Address String Getters ---
 
 /// Returns the OSC address for a matrix channel's name.
@@ -26,6 +27,7 @@ pub fn on(channel_num: u8) -> String {
     format!("/mtx/{:02}/mix/on", channel_num)
 }
 
+
 // --- OSC Message Setters ---
 
 /// Creates an OSC message to set the name of a mtx channel.
@@ -43,10 +45,7 @@ pub fn on(channel_num: u8) -> String {
 /// assert_eq!(args, vec![osc_lib::OscArg::String("Test".to_string())]);
 /// ```
 pub fn set_name(channel_num: u8, name: &str) -> (String, Vec<OscArg>) {
-    (
-        self::name(channel_num),
-        vec![OscArg::String(name.to_string())],
-    )
+    (self::name(channel_num), vec![OscArg::String(name.to_string())])
 }
 
 /// Creates an OSC message to set the color of a mtx channel.
@@ -66,6 +65,7 @@ pub fn set_name(channel_num: u8, name: &str) -> (String, Vec<OscArg>) {
 pub fn set_color(channel_num: u8, color: i32) -> (String, Vec<OscArg>) {
     (self::color(channel_num), vec![OscArg::Int(color)])
 }
+
 
 /// Creates an OSC message to set the fader level of a mtx channel.
 ///
@@ -102,6 +102,7 @@ pub fn set_fader(channel_num: u8, level: f32) -> (String, Vec<OscArg>) {
 pub fn set_on(channel_num: u8, on: i32) -> (String, Vec<OscArg>) {
     (self::on(channel_num), vec![OscArg::Int(on)])
 }
+
 
 #[cfg(test)]
 mod tests {

@@ -4,9 +4,9 @@
 //! from reverbs and delays to EQs and compressors. This module provides the functions
 //! needed to control the type, source, and parameters of these effects.
 use super::{Command, CommandFlags, CommandType};
-use crate::error::Result;
 use lazy_static::lazy_static;
 use osc_lib::{OscArg, OscMessage};
+use crate::error::Result;
 use std::net::UdpSocket;
 
 /// Programmatically generates a vector of all available OSC commands for a single effects processor.
@@ -49,24 +49,17 @@ pub fn set_type(fx_num: u8, fx_type: i32) -> (String, Vec<OscArg>) {
 
 /// Creates an OSC message to set a parameter of an effects processor.
 pub fn set_param(fx_num: u8, param_num: u8, value: f32) -> (String, Vec<OscArg>) {
-    (
-        format!("/fx/{}/par/{:02}", fx_num, param_num),
-        vec![OscArg::Float(value)],
-    )
+    (format!("/fx/{}/par/{:02}", fx_num, param_num), vec![OscArg::Float(value)])
 }
 
 /// Sends an OSC message to set a parameter of an effects processor.
-pub fn set_fx_param(
-    socket: &UdpSocket,
-    fx_num: u8,
-    param_num: u8,
-    value: f32,
-) -> Result<(String, Vec<OscArg>)> {
+pub fn set_fx_param(socket: &UdpSocket, fx_num: u8, param_num: u8, value: f32) -> Result<(String, Vec<OscArg>)> {
     let (address, args) = set_param(fx_num, param_num, value);
     let msg = OscMessage::new(address.clone(), args);
     socket.send(&msg.to_bytes()?)?;
     Ok((address, msg.args))
 }
+
 
 #[cfg(test)]
 mod tests {

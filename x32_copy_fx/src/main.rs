@@ -1,13 +1,13 @@
 mod fx_defaults;
 
 use clap::Parser;
-use osc_lib::{OscArg, OscMessage};
+use std::net::UdpSocket;
+use x32_lib::{create_socket, error::X32Error};
+use osc_lib::{OscMessage, OscArg};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
-use std::net::UdpSocket;
 use std::path::PathBuf;
-use x32_lib::{create_socket, error::X32Error};
 
 /// A utility to copy FX parameters on the Behringer X32/X-Air consoles.
 #[derive(Parser, Debug)]
@@ -62,14 +62,10 @@ fn main() -> Result<(), X32Error> {
     let args = Args::parse();
 
     if args.from < 1 || args.from > 8 {
-        return Err(X32Error::from(
-            "Source FX slot must be between 1 and 8.".to_string(),
-        ));
+        return Err(X32Error::from("Source FX slot must be between 1 and 8.".to_string()));
     }
     if args.to > 8 {
-        return Err(X32Error::from(
-            "Destination FX slot must be between 1 and 8.".to_string(),
-        ));
+        return Err(X32Error::from("Destination FX slot must be between 1 and 8.".to_string()));
     }
 
     let socket = create_socket(&args.ip, 200)?;
@@ -121,8 +117,8 @@ fn reset_fx(socket: &UdpSocket, from: u8, defaults_file: Option<PathBuf>) -> Res
             defaults.get(fx_name).map(|s| s.as_str())
         } else {
             None
-        }
-        .or_else(|| fx_defaults::FX_DEFAULTS.get(fx_name).map(|s| *s));
+        }.or_else(|| fx_defaults::FX_DEFAULTS.get(fx_name).map(|s| *s));
+
 
         if let Some(defaults) = defaults_str {
             let mut args = Vec::new();
@@ -140,10 +136,7 @@ fn reset_fx(socket: &UdpSocket, from: u8, defaults_file: Option<PathBuf>) -> Res
             socket.send(&msg.to_bytes()?)?;
             Ok(())
         } else {
-            Err(X32Error::from(format!(
-                "Defaults not found for FX type: {}",
-                fx_name
-            )))
+            Err(X32Error::from(format!("Defaults not found for FX type: {}", fx_name)))
         }
     } else {
         Err(X32Error::from("Could not determine FX type.".to_string()))
@@ -152,12 +145,14 @@ fn reset_fx(socket: &UdpSocket, from: u8, defaults_file: Option<PathBuf>) -> Res
 
 fn get_fx_name_from_id(id: i32) -> Result<&'static str, X32Error> {
     let fx_names = [
-        "HALL", "AMBI", "RPLT", "ROOM", "CHAM", "PLAT", "VREV", "VRM", "GATE", "RVRS", "DLY",
-        "3TAP", "4TAP", "CRS", "FLNG", "PHAS", "DIMC", "FILT", "ROTA", "PAN", "SUB", "D/RV",
-        "CR/R", "FL/R", "D/CR", "D/FL", "MODD", "GEQ2", "GEQ", "TEQ2", "TEQ", "DES2", "DES", "P1A",
-        "P1A2", "PQ5", "PQ5S", "WAVD", "LIM", "CMB", "CMB2", "FAC", "FAC1M", "FAC2", "LEC", "LEC2",
-        "ULC", "ULC2", "ENH2", "ENH", "EXC2", "EXC", "IMG", "EDI", "SON", "AMP2", "AMP", "DRV2",
-        "DRV", "PIT2", "PIT",
+        "HALL", "AMBI", "RPLT", "ROOM", "CHAM", "PLAT", "VREV", "VRM",
+        "GATE", "RVRS", "DLY", "3TAP", "4TAP", "CRS", "FLNG", "PHAS",
+        "DIMC", "FILT", "ROTA", "PAN", "SUB", "D/RV", "CR/R", "FL/R",
+        "D/CR", "D/FL", "MODD", "GEQ2", "GEQ", "TEQ2", "TEQ", "DES2",
+        "DES", "P1A", "P1A2", "PQ5", "PQ5S", "WAVD", "LIM", "CMB",
+        "CMB2", "FAC", "FAC1M", "FAC2", "LEC", "LEC2", "ULC", "ULC2",
+        "ENH2", "ENH", "EXC2", "EXC", "IMG", "EDI", "SON", "AMP2",
+        "AMP", "DRV2", "DRV", "PIT2", "PIT",
     ];
     if id >= 0 && id < fx_names.len() as i32 {
         Ok(fx_names[id as usize])
@@ -166,13 +161,7 @@ fn get_fx_name_from_id(id: i32) -> Result<&'static str, X32Error> {
     }
 }
 
-fn copy_param(
-    socket: &UdpSocket,
-    from_fx: u8,
-    from_param: u8,
-    to_fx: u8,
-    to_param: u8,
-) -> Result<(), X32Error> {
+fn copy_param(socket: &UdpSocket, from_fx: u8, from_param: u8, to_fx: u8, to_param: u8) -> Result<(), X32Error> {
     let source_addr = format!("/fx/{}/par/{:02}", from_fx, from_param);
     let mut buf = [0; 512];
     let mut msg = OscMessage::new(source_addr, vec![]);
@@ -188,9 +177,7 @@ fn copy_param(
 
 fn copy_fx(socket: &UdpSocket, from: u8, to: u8, master: bool) -> Result<(), X32Error> {
     if to == 0 {
-        return Err(X32Error::from(
-            "Destination FX slot must be provided for copy action.".to_string(),
-        ));
+        return Err(X32Error::from("Destination FX slot must be provided for copy action.".to_string()));
     }
     println!("Copying FX from slot {} to {}.", from, to);
     for i in 1..32 {

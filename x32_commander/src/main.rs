@@ -83,8 +83,7 @@ fn parse_command_file(path: &str) -> io::Result<Vec<Command>> {
 fn run(args: Args) -> Result<(), X32Error> {
     // This application is a partial rewrite of the original X32Commander.c utility.
     // Currently, only OSC commands are supported. MIDI functionality is not yet implemented.
-    let commands = parse_command_file(&args.file)
-        .map_err(|e| X32Error::Custom(format!("Failed to parse command file: {}", e)))?;
+    let commands = parse_command_file(&args.file).map_err(|e| X32Error::Custom(format!("Failed to parse command file: {}", e)))?;
     println!("Successfully parsed {} commands.", commands.len());
 
     println!("Connecting to X32 at {}...", args.ip);
@@ -119,35 +118,22 @@ fn run(args: Args) -> Result<(), X32Error> {
                             if command.incoming_address == incoming_msg.path {
                                 match command.command_type {
                                     CommandType::Osc => {
-                                        println!(
-                                            "Match found for: {}. Triggering: {}",
-                                            incoming_msg.path, command.outgoing_command
-                                        );
+                                        println!("Match found for: {}. Triggering: {}", incoming_msg.path, command.outgoing_command);
                                         match OscMessage::from_str(&command.outgoing_command) {
                                             Ok(outgoing_msg) => {
-                                                let target_socket =
-                                                    out_socket.as_ref().unwrap_or(&x32_socket);
+                                                let target_socket = out_socket.as_ref().unwrap_or(&x32_socket);
                                                 match outgoing_msg.to_bytes() {
                                                     Ok(bytes) => {
                                                         if let Err(e) = target_socket.send(&bytes) {
-                                                            eprintln!(
-                                                                "Failed to send OSC message: {}",
-                                                                e
-                                                            );
+                                                            eprintln!("Failed to send OSC message: {}", e);
                                                         }
                                                     }
-                                                    Err(e) => eprintln!(
-                                                        "Failed to serialize outgoing OSC message: {}",
-                                                        e
-                                                    ),
+                                                    Err(e) => eprintln!("Failed to serialize outgoing OSC message: {}", e),
                                                 }
                                             }
-                                            Err(e) => eprintln!(
-                                                "Failed to parse outgoing command '{}': {}",
-                                                command.outgoing_command, e
-                                            ),
+                                            Err(e) => eprintln!("Failed to parse outgoing command '{}': {}", command.outgoing_command, e),
                                         }
-                                    }
+                                    },
                                     CommandType::Midi => {
                                         println!(
                                             "Match found for: {}. This is a MIDI command, which is not yet supported in this version.",
@@ -159,7 +145,7 @@ fn run(args: Args) -> Result<(), X32Error> {
                         }
                     }
                 }
-            }
+            },
             Err(e) => {
                 if e.kind() != io::ErrorKind::WouldBlock && e.kind() != io::ErrorKind::TimedOut {
                     return Err(X32Error::Io(e));
@@ -175,6 +161,7 @@ fn main() {
         eprintln!("Application error: {}", e);
     }
 }
+
 
 #[cfg(test)]
 mod tests {
@@ -194,14 +181,11 @@ mod tests {
         let (_file, path) = create_test_file(content);
         let commands = parse_command_file(&path).unwrap();
         assert_eq!(commands.len(), 1);
-        assert_eq!(
-            commands[0],
-            Command {
-                command_type: CommandType::Osc,
-                incoming_address: "/ch/01/mix/fader".to_string(),
-                outgoing_command: "/ch/02/mix/fader ,f 0.5".to_string(),
-            }
-        );
+        assert_eq!(commands[0], Command {
+            command_type: CommandType::Osc,
+            incoming_address: "/ch/01/mix/fader".to_string(),
+            outgoing_command: "/ch/02/mix/fader ,f 0.5".to_string(),
+        });
     }
 
     #[test]

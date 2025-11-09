@@ -1,13 +1,13 @@
 //! `x32_tcp` is a command-line utility that acts as a TCP to UDP bridge for the Behringer X32 and Midas M32 digital mixers.
 //! It allows you to send OSC commands to the mixer using a simple text-based TCP protocol.
 
-use anyhow::Result;
 use clap::Parser;
-use osc_lib::OscMessage;
-use std::io::{BufRead, BufReader, Write};
 use std::net::{TcpListener, TcpStream};
 use std::str::FromStr;
 use std::thread;
+use anyhow::Result;
+use std::io::{BufRead, BufReader, Write};
+use osc_lib::OscMessage;
 use x32_lib::create_socket;
 
 /// A TCP to UDP bridge for the Behringer X32 digital mixer.

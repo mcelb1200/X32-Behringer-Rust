@@ -4,6 +4,7 @@
 //! and snippets.
 use osc_lib::OscArg;
 
+
 // --- Address String Getters ---
 
 /// Returns the OSC address for the show name.
@@ -15,6 +16,7 @@ pub fn show_name() -> String {
 pub fn cue_name(cue_num: u8) -> String {
     format!("/-show/cue/{:03}/name", cue_num)
 }
+
 
 // --- OSC Message Setters ---
 

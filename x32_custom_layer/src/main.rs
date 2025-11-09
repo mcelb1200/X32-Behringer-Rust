@@ -1,85 +1,34 @@
 use clap::{Parser, Subcommand};
-use osc_lib::{OscArg, OscMessage};
-use std::fs::File;
-use std::io::{BufRead, BufReader, Write};
 use std::net::UdpSocket;
+use std::fs::File;
+use std::io::{Write, BufReader, BufRead};
 use std::str::FromStr;
-use x32_lib::{
-    create_socket,
-    error::{Result, X32Error},
-};
+use x32_lib::{create_socket, error::{X32Error, Result}};
+use osc_lib::{OscMessage, OscArg};
 
 const SNIP_HEAD: &str = "#2.1# \"CustLayer\" 8191 -1 255 0 1\n";
 
 const SCH_NODES: [&str; 35] = [
-    "/headamp/000",
-    "/ch/01/config",
-    "/ch/01/delay",
-    "/ch/01/eq",
-    "/ch/01/eq/1",
-    "/ch/01/eq/2",
-    "/ch/01/eq/3",
-    "/ch/01/eq/4",
-    "/ch/01/gate",
-    "/ch/01/gate/filter",
-    "/ch/01/dyn",
-    "/ch/01/dyn/filter",
-    "/ch/01/insert",
-    "/ch/01/grp",
-    "/ch/01/mix/fader",
-    "/ch/01/mix/pan",
-    "/ch/01/mix/on",
-    "/ch/01/mix/01",
-    "/ch/01/mix/02",
-    "/ch/01/mix/03",
-    "/ch/01/mix/04",
-    "/ch/01/mix/05",
-    "/ch/01/mix/06",
-    "/ch/01/mix/07",
-    "/ch/01/mix/08",
-    "/ch/01/mix/09",
-    "/ch/01/mix/10",
-    "/ch/01/mix/11",
-    "/ch/01/mix/12",
-    "/ch/01/mix/13",
-    "/ch/01/mix/14",
-    "/ch/01/mix/15",
-    "/ch/01/mix/16",
-    "/ch/01/mix/mono",
-    "/ch/01/mix/mlevel",
+    "/headamp/000", "/ch/01/config", "/ch/01/delay", "/ch/01/eq", "/ch/01/eq/1",
+    "/ch/01/eq/2", "/ch/01/eq/3", "/ch/01/eq/4", "/ch/01/gate", "/ch/01/gate/filter",
+    "/ch/01/dyn", "/ch/01/dyn/filter", "/ch/01/insert", "/ch/01/grp", "/ch/01/mix/fader",
+    "/ch/01/mix/pan", "/ch/01/mix/on", "/ch/01/mix/01", "/ch/01/mix/02", "/ch/01/mix/03",
+    "/ch/01/mix/04", "/ch/01/mix/05", "/ch/01/mix/06", "/ch/01/mix/07", "/ch/01/mix/08",
+    "/ch/01/mix/09", "/ch/01/mix/10", "/ch/01/mix/11", "/ch/01/mix/12", "/ch/01/mix/13",
+    "/ch/01/mix/14", "/ch/01/mix/15", "/ch/01/mix/16", "/ch/01/mix/mono", "/ch/01/mix/mlevel",
 ];
 
 const SAUX_NODES: [&str; 29] = [
-    "/headamp/000",
-    "/auxin/01/config",
-    "/auxin/01/eq",
-    "/auxin/01/eq/1",
-    "/auxin/01/eq/2",
-    "/auxin/01/eq/3",
-    "/auxin/01/eq/4",
-    "/auxin/01/grp",
-    "/auxin/01/mix/fader",
-    "/auxin/01/mix/pan",
-    "/auxin/01/mix/on",
-    "/auxin/01/mix/01",
-    "/auxin/01/mix/02",
-    "/auxin/01/mix/03",
-    "/auxin/01/mix/04",
-    "/auxin/01/mix/05",
-    "/auxin/01/mix/06",
-    "/auxin/01/mix/07",
-    "/auxin/01/mix/08",
-    "/auxin/01/mix/09",
-    "/auxin/01/mix/10",
-    "/auxin/01/mix/11",
-    "/auxin/01/mix/12",
-    "/auxin/01/mix/13",
-    "/auxin/01/mix/14",
-    "/auxin/01/mix/15",
-    "/auxin/01/mix/16",
-    "/auxin/01/mix/mono",
+    "/headamp/000", "/auxin/01/config", "/auxin/01/eq", "/auxin/01/eq/1",
+    "/auxin/01/eq/2", "/auxin/01/eq/3", "/auxin/01/eq/4", "/auxin/01/grp",
+    "/auxin/01/mix/fader", "/auxin/01/mix/pan", "/auxin/01/mix/on", "/auxin/01/mix/01",
+    "/auxin/01/mix/02", "/auxin/01/mix/03", "/auxin/01/mix/04", "/auxin/01/mix/05",
+    "/auxin/01/mix/06", "/auxin/01/mix/07", "/auxin/01/mix/08", "/auxin/01/mix/09",
+    "/auxin/01/mix/10", "/auxin/01/mix/11", "/auxin/01/mix/12", "/auxin/01/mix/13",
+    "/auxin/01/mix/14", "/auxin/01/mix/15", "/auxin/01/mix/16", "/auxin/01/mix/mono",
     "/auxin/01/mix/mlevel",
 ];
+
 
 const CH_INISTR: [&str; 35] = [
     "/headamp/000 +0.0 OFF",
@@ -116,7 +65,7 @@ const CH_INISTR: [&str; 35] = [
     "/ch/01/mix/15 ON -oo +0 POST",
     "/ch/01/mix/16 ON -oo",
     "/ch/01/mix/mono OFF",
-    "/ch/01/mix/mlevel -oo",
+    "/ch/01/mix/mlevel -oo"
 ];
 
 const AUX_INISTR: [&str; 29] = [
@@ -148,7 +97,7 @@ const AUX_INISTR: [&str; 29] = [
     "/auxin/01/mix/15 ON -oo +0 POST",
     "/auxin/01/mix/16 ON -oo",
     "/auxin/01/mix/mono OFF",
-    "/auxin/01/mix/mlevel -oo",
+    "/auxin/01/mix/mlevel -oo"
 ];
 
 #[derive(Parser)]
@@ -218,21 +167,15 @@ fn parse_assignments(assignments_str: &[String]) -> Result<Vec<Assignment>> {
     for a in assignments_str {
         let parts: Vec<&str> = a.split('=').collect();
         if parts.len() != 2 {
-            return Err(X32Error::Custom(format!(
-                "Invalid assignment format: {}",
-                a
-            )));
+            return Err(X32Error::Custom(format!("Invalid assignment format: {}", a)));
         }
-        let dest = parts[0]
-            .parse::<u8>()
-            .map_err(|_| X32Error::Custom(format!("Invalid destination channel: {}", parts[0])))?;
-        let src = parts[1]
-            .parse::<u8>()
-            .map_err(|_| X32Error::Custom(format!("Invalid source channel: {}", parts[1])))?;
+        let dest = parts[0].parse::<u8>().map_err(|_| X32Error::Custom(format!("Invalid destination channel: {}", parts[0])))?;
+        let src = parts[1].parse::<u8>().map_err(|_| X32Error::Custom(format!("Invalid source channel: {}", parts[1])))?;
         assignments.push(Assignment { dest, src });
     }
     Ok(assignments)
 }
+
 
 fn main() {
     let cli = Cli::parse();
@@ -268,8 +211,7 @@ fn handle_set_command(ip: &str, assignments_str: &[String]) -> Result<()> {
             } else {
                 let aux_channel = a.src - 32;
                 for &node in SAUX_NODES.iter() {
-                    let formatted_node =
-                        node.replace("/auxin/01/", &format!("/auxin/{:02}/", aux_channel));
+                    let formatted_node = node.replace("/auxin/01/", &format!("/auxin/{:02}/", aux_channel));
                     strip_data.push(get_node_state(&socket, &formatted_node)?);
                 }
             }
@@ -283,16 +225,10 @@ fn handle_set_command(ip: &str, assignments_str: &[String]) -> Result<()> {
             for line in strip_data {
                 let mut new_line = line.clone();
                 if a.dest <= 32 {
-                    new_line = new_line.replace(
-                        &format!("/ch/{:02}/", a.src),
-                        &format!("/ch/{:02}/", a.dest),
-                    );
+                    new_line = new_line.replace(&format!("/ch/{:02}/", a.src), &format!("/ch/{:02}/", a.dest));
                 } else {
                     let aux_dest = a.dest - 32;
-                    new_line = new_line.replace(
-                        &format!("/auxin/{:02}/", a.src - 32),
-                        &format!("/auxin/{:02}/", aux_dest),
-                    );
+                    new_line = new_line.replace(&format!("/auxin/{:02}/", a.src - 32), &format!("/auxin/{:02}/", aux_dest));
                 }
                 let msg = OscMessage::from_str(&new_line)?;
                 socket.send(&msg.to_bytes()?)?;
@@ -303,6 +239,7 @@ fn handle_set_command(ip: &str, assignments_str: &[String]) -> Result<()> {
     println!("Custom layer set successfully.");
     Ok(())
 }
+
 
 fn handle_save_command(ip: &str, file_path: &str) -> Result<()> {
     let socket = create_socket(ip, 200)?;
@@ -322,8 +259,7 @@ fn handle_save_command(ip: &str, file_path: &str) -> Result<()> {
         } else {
             let aux_channel = i - 32;
             for &node in SAUX_NODES.iter() {
-                let formatted_node =
-                    node.replace("/auxin/01/", &format!("/auxin/{:02}/", aux_channel));
+                let formatted_node = node.replace("/auxin/01/", &format!("/auxin/{:02}/", aux_channel));
                 let line = get_node_state(&socket, &formatted_node)?;
                 file.write_all(line.as_bytes())?;
                 file.write_all(b"\n")?;
@@ -342,9 +278,7 @@ fn format_node_state(args: &[OscArg]) -> Result<String> {
     let mut s = if let OscArg::String(p) = &args[0] {
         p.clone()
     } else {
-        return Err(X32Error::Custom(
-            "Node response path is not a string".to_string(),
-        ));
+        return Err(X32Error::Custom("Node response path is not a string".to_string()));
     };
 
     for arg in &args[1..] {
@@ -365,18 +299,16 @@ fn format_node_state(args: &[OscArg]) -> Result<String> {
     Ok(s)
 }
 
+
 fn get_node_state(socket: &UdpSocket, node: &str) -> Result<String> {
     let msg = OscMessage::new("/node".to_string(), vec![OscArg::String(node.to_string())]);
     socket.send(&msg.to_bytes()?)?;
 
     let mut buf = [0; 512];
-    for _ in 0..10 {
-        // Retry loop
+    for _ in 0..10 { // Retry loop
         match socket.recv(&mut buf) {
             Ok(len) => {
-                if len == 0 {
-                    continue;
-                }
+                if len == 0 { continue; }
                 let response = OscMessage::from_bytes(&buf[..len])?;
                 if response.path == "/node" {
                     if let Some(OscArg::String(response_node)) = response.args.get(0) {
@@ -386,20 +318,14 @@ fn get_node_state(socket: &UdpSocket, node: &str) -> Result<String> {
                     }
                 }
             }
-            Err(ref e)
-                if e.kind() == std::io::ErrorKind::WouldBlock
-                    || e.kind() == std::io::ErrorKind::TimedOut =>
-            {
+            Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock || e.kind() == std::io::ErrorKind::TimedOut => {
                 // This is an expected timeout. Let the loop retry.
             }
             Err(e) => return Err(e.into()), // Other error
         }
     }
 
-    Err(X32Error::Custom(format!(
-        "Timeout waiting for response for node {}",
-        node
-    )))
+    Err(X32Error::Custom(format!("Timeout waiting for response for node {}", node)))
 }
 
 fn handle_restore_command(ip: &str, file_path: &str) -> Result<()> {
@@ -421,6 +347,7 @@ fn handle_restore_command(ip: &str, file_path: &str) -> Result<()> {
     Ok(())
 }
 
+
 fn handle_reset_command(ip: &str, channels_str: &str) -> Result<()> {
     let socket = create_socket(ip, 200)?;
     let channels = parse_channel_range(channels_str)?;
@@ -436,16 +363,12 @@ fn handle_reset_command(ip: &str, channels_str: &str) -> Result<()> {
         } else if channel >= 33 && channel <= 40 {
             let aux_channel = channel - 32;
             for &cmd_str in AUX_INISTR.iter() {
-                let formatted_cmd =
-                    cmd_str.replace("/auxin/01/", &format!("/auxin/{:02}/", aux_channel));
+                let formatted_cmd = cmd_str.replace("/auxin/01/", &format!("/auxin/{:02}/", aux_channel));
                 let msg = OscMessage::from_str(&formatted_cmd)?;
                 socket.send(&msg.to_bytes()?)?;
             }
         } else {
-            return Err(X32Error::Custom(format!(
-                "Invalid channel number: {}",
-                channel
-            )));
+            return Err(X32Error::Custom(format!("Invalid channel number: {}", channel)));
         }
     }
 
@@ -457,29 +380,16 @@ fn parse_channel_range(range_str: &str) -> Result<Vec<u8>> {
     let mut channels = Vec::new();
     for part in range_str.split(',') {
         if let Some(range) = part.split_once('-') {
-            let start = range
-                .0
-                .trim()
-                .parse::<u8>()
-                .map_err(|_| X32Error::Custom("Invalid channel range format".to_string()))?;
-            let end = range
-                .1
-                .trim()
-                .parse::<u8>()
-                .map_err(|_| X32Error::Custom("Invalid channel range format".to_string()))?;
+            let start = range.0.trim().parse::<u8>().map_err(|_| X32Error::Custom("Invalid channel range format".to_string()))?;
+            let end = range.1.trim().parse::<u8>().map_err(|_| X32Error::Custom("Invalid channel range format".to_string()))?;
             if start > end {
-                return Err(X32Error::Custom(
-                    "Invalid channel range: start > end".to_string(),
-                ));
+                return Err(X32Error::Custom("Invalid channel range: start > end".to_string()));
             }
             for i in start..=end {
                 channels.push(i);
             }
         } else {
-            let channel = part
-                .trim()
-                .parse::<u8>()
-                .map_err(|_| X32Error::Custom("Invalid channel format".to_string()))?;
+            let channel = part.trim().parse::<u8>().map_err(|_| X32Error::Custom("Invalid channel format".to_string()))?;
             channels.push(channel);
         }
     }
@@ -487,6 +397,7 @@ fn parse_channel_range(range_str: &str) -> Result<Vec<u8>> {
     channels.dedup();
     Ok(channels)
 }
+
 
 fn handle_list_command(ip: &str) -> Result<()> {
     let socket = create_socket(ip, 200)?;
@@ -506,13 +417,7 @@ fn handle_list_command(ip: &str) -> Result<()> {
         let aux2 = i + 37;
         let src1 = get_source_name(&socket, aux1)?;
         let src2 = get_source_name(&socket, aux2)?;
-        println!(
-            "     {:02}\t\t{}\t\t{:02}\t\t{}",
-            aux1 - 32,
-            src1,
-            aux2 - 32,
-            src2
-        );
+        println!("     {:02}\t\t{}\t\t{:02}\t\t{}", aux1 - 32, src1, aux2 - 32, src2);
     }
 
     Ok(())
@@ -520,33 +425,21 @@ fn handle_list_command(ip: &str) -> Result<()> {
 
 fn get_source_name(socket: &UdpSocket, channel: u8) -> Result<String> {
     let (path, expected_response_prefix) = if channel >= 1 && channel <= 32 {
-        (
-            format!("/ch/{:02}/config/source", channel),
-            format!("/ch/{:02}/config/source", channel),
-        )
+        (format!("/ch/{:02}/config/source", channel), format!("/ch/{:02}/config/source", channel))
     } else if channel >= 33 && channel <= 40 {
-        (
-            format!("/auxin/{:02}/config/source", channel - 32),
-            format!("/auxin/{:02}/config/source", channel - 32),
-        )
+        (format!("/auxin/{:02}/config/source", channel - 32), format!("/auxin/{:02}/config/source", channel - 32))
     } else {
-        return Err(X32Error::Custom(format!(
-            "Invalid channel number: {}",
-            channel
-        )));
+        return Err(X32Error::Custom(format!("Invalid channel number: {}", channel)));
     };
 
     let msg = OscMessage::new(path, vec![]);
     socket.send(&msg.to_bytes()?)?;
 
     let mut buf = [0; 512];
-    for _ in 0..10 {
-        // Retry loop
+    for _ in 0..10 { // Retry loop
         match socket.recv(&mut buf) {
             Ok(len) => {
-                if len == 0 {
-                    continue;
-                }
+                if len == 0 { continue; }
                 let response = OscMessage::from_bytes(&buf[..len])?;
                 if response.path.starts_with(&expected_response_prefix) {
                     if let Some(OscArg::Int(source_id)) = response.args.get(0) {
@@ -554,54 +447,40 @@ fn get_source_name(socket: &UdpSocket, channel: u8) -> Result<String> {
                     }
                 }
             }
-            Err(ref e)
-                if e.kind() == std::io::ErrorKind::WouldBlock
-                    || e.kind() == std::io::ErrorKind::TimedOut =>
-            {
+            Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock || e.kind() == std::io::ErrorKind::TimedOut => {
                 // Expected timeout, retry.
             }
             Err(e) => return Err(e.into()),
         }
     }
 
-    Err(X32Error::Custom(format!(
-        "Timeout waiting for response for channel source {}",
-        channel
-    )))
+    Err(X32Error::Custom(format!("Timeout waiting for response for channel source {}", channel)))
 }
 
 fn map_source_id_to_name(id: i32) -> &'static str {
     match id {
         0..=31 => {
             const IN_NAMES: [&str; 32] = [
-                "In01", "In02", "In03", "In04", "In05", "In06", "In07", "In08", "In09", "In10",
-                "In11", "In12", "In13", "In14", "In15", "In16", "In17", "In18", "In19", "In20",
-                "In21", "In22", "In23", "In24", "In25", "In26", "In27", "In28", "In29", "In30",
-                "In31", "In32",
+                "In01", "In02", "In03", "In04", "In05", "In06", "In07", "In08",
+                "In09", "In10", "In11", "In12", "In13", "In14", "In15", "In16",
+                "In17", "In18", "In19", "In20", "In21", "In22", "In23", "In24",
+                "In25", "In26", "In27", "In28", "In29", "In30", "In31", "In32",
             ];
             IN_NAMES[id as usize]
-        }
+        },
         32..=37 => {
             const AUX_NAMES: [&str; 6] = ["Aux1", "Aux2", "Aux3", "Aux4", "Aux5", "Aux6"];
             AUX_NAMES[(id - 32) as usize]
         }
-        38..=39 => {
-            if id == 38 {
-                "USBL"
-            } else {
-                "USBR"
-            }
-        }
+        38..=39 => if id == 38 { "USBL" } else { "USBR" },
         40..=47 => {
-            const FX_NAMES: [&str; 8] = [
-                "Fx1L", "Fx1R", "Fx2L", "Fx2R", "Fx3L", "Fx3R", "Fx4L", "Fx4R",
-            ];
+            const FX_NAMES: [&str; 8] = ["Fx1L", "Fx1R", "Fx2L", "Fx2R", "Fx3L", "Fx3R", "Fx4L", "Fx4R"];
             FX_NAMES[(id - 40) as usize]
         }
         48..=63 => {
             const BUS_NAMES: [&str; 16] = [
-                "Bs01", "Bs02", "Bs03", "Bs04", "Bs05", "Bs06", "Bs07", "Bs08", "Bs09", "Bs10",
-                "Bs11", "Bs12", "Bs13", "Bs14", "Bs15", "Bs16",
+                "Bs01", "Bs02", "Bs03", "Bs04", "Bs05", "Bs06", "Bs07", "Bs08",
+                "Bs09", "Bs10", "Bs11", "Bs12", "Bs13", "Bs14", "Bs15", "Bs16",
             ];
             BUS_NAMES[(id - 48) as usize]
         }

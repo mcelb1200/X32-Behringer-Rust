@@ -1,20 +1,16 @@
-use osc_lib::{OscArg, OscMessage};
-use std::io::{BufRead, BufReader, Write};
-use std::net::{TcpStream, UdpSocket};
+use std::net::{UdpSocket, TcpStream};
 use std::thread;
 use std::time::Duration;
+use assert_cmd::prelude::*;
+use std::process::Command;
+use std::io::{Write, BufReader, BufRead};
+use osc_lib::{OscMessage, OscArg};
 
 #[test]
 fn test_server_e2e() -> Result<(), Box<dyn std::error::Error>> {
     // 1. Start the x32_tcp server in a separate process
-    let bin = escargot::CargoBuild::new().bin("x32_tcp").run()?;
-    let mut cmd = bin.command();
-    let mut server_process = cmd
-        .arg("-p")
-        .arg("10043")
-        .arg("-i")
-        .arg("127.0.0.1:10025")
-        .spawn()?;
+    let mut cmd = Command::cargo_bin("x32_tcp")?;
+    let mut server_process = cmd.arg("-p").arg("10043").arg("-i").arg("127.0.0.1:10025").spawn()?;
     thread::sleep(Duration::from_secs(1)); // Wait for the server to start
 
     // 2. Run a mock UDP server to act as the X32 mixer
@@ -26,10 +22,7 @@ fn test_server_e2e() -> Result<(), Box<dyn std::error::Error>> {
         let received_msg = OscMessage::from_bytes(&buf[..len]).unwrap();
 
         // Respond to the client
-        let response_msg = OscMessage::new(
-            "/info".to_string(),
-            vec![OscArg::String("X32 ROCKS".to_string())],
-        );
+        let response_msg = OscMessage::new("/info".to_string(), vec![OscArg::String("X32 ROCKS".to_string())]);
         let response_bytes = response_msg.to_bytes().unwrap();
         mock_x32_socket_clone.send_to(&response_bytes, src).unwrap();
 
@@ -47,12 +40,13 @@ fn test_server_e2e() -> Result<(), Box<dyn std::error::Error>> {
     // 5. Assert that the client receives the correctly formatted string
     let mut response = String::new();
     reader.read_line(&mut response)?;
-    assert_eq!(response.trim(), r#"/info ,s "X32 ROCKS""#);
+    assert_eq!(response.trim(), r#"/info,s "X32 ROCKS""#);
 
     // d. Assert that the correct OSC message is received by the mock X32
     let received_msg = mock_server_handle.join().unwrap();
     assert_eq!(received_msg.path, "/info");
     assert!(received_msg.args.is_empty());
+
 
     // Clean up
     server_process.kill()?;
