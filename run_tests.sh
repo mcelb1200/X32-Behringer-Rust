@@ -55,35 +55,37 @@ compile_binaries() {
     log_message "Compilation process complete."
 }
 
-# --- X32 Connection Detection (Linux) ---
+# --- X32 Connection Detection ---
 detect_x32_connection() {
     log_message "Attempting to detect X32 connection..."
 
-    # 1. Check for USB Connection
+    # 1. Check for USB Connection (OS-specific)
     log_message "Checking for USB devices..."
-    if lsusb | grep -q "1397:"; then
-        log_message "Found Behringer USB device. Assuming X32 is connected via USB."
+    local os_type=$(uname)
+    if [[ "$os_type" == "Linux" ]] && lsusb | grep -q "1397:"; then
+        log_message "Found Behringer USB device on Linux. Assuming X32 is connected via USB."
+        X32_CONNECTION_TYPE="USB"
+        X32_IP_ADDRESS=""
+        return
+    elif [[ "$os_type" == "Darwin" ]] && system_profiler SPUSBDataType | grep -q "Vendor ID: 0x1397"; then
+        log_message "Found Behringer USB device on macOS. Assuming X32 is connected via USB."
         X32_CONNECTION_TYPE="USB"
         X32_IP_ADDRESS=""
         return
     fi
 
-    # 2. Check for Network Connection
-    log_message "Checking for network devices... This may take a few minutes."
-    if command -v nmap &> /dev/null; then
-        local subnet=$(ip -o -f inet addr show | awk '/scope global/ {print $4}' | head -n 1)
-        if [ -n "$subnet" ]; then
-            log_message "Scanning subnet $subnet for X32 on port 10023..."
-            local found_ip=$(nmap -p 10023 --open -n "$subnet" | awk '/Nmap scan report for/{ip=$NF} /10023\/open/{print ip}' | head -n 1)
-            if [ -n "$found_ip" ]; then
-                log_message "Found X32 at network address: $found_ip"
-                X32_CONNECTION_TYPE="Network"
-                X32_IP_ADDRESS="$found_ip"
-                return
-            fi
+    # 2. Check for Network Connection (UDP Broadcast)
+    log_message "Checking for network devices via UDP broadcast..."
+    if command -v python3 &> /dev/null; then
+        local found_ip=$(python3 ./find_x32_ip.py)
+        if [ -n "$found_ip" ]; then
+            log_message "Found X32 at network address: $found_ip"
+            X32_CONNECTION_TYPE="Network"
+            X32_IP_ADDRESS="$found_ip"
+            return
         fi
     else
-        log_message "Warning: 'nmap' is not installed. Skipping network scan. Please install it (e.g., 'sudo apt-get install nmap')."
+        log_message "Warning: 'python3' is not installed. Skipping network discovery."
     fi
 
     # 3. Prompt user if auto-detection fails
@@ -180,8 +182,8 @@ check_binaries_exist() {
 # --- Main Menu (TUI) ---
 show_main_menu() {
     clear
-    echo "X32 Rust Binaries - Test Suite (Linux/Bash)"
-    echo "-------------------------------------------"
+    echo "X32 Rust Binaries - Test Suite (Bash)"
+    echo "-------------------------------------"
     echo "Connection Status: $X32_CONNECTION_TYPE $X32_IP_ADDRESS"
     echo "1. Manage Binaries"
     echo "2. Detect X32 connection"

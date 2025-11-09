@@ -130,28 +130,35 @@ function Detect-X32Connection {
         return
     }
 
-    # 2. Check for Network Connection (this can be slow)
-    Log-Message "Checking for network devices... This may take a few minutes."
-    $ipconfig = Get-NetIPConfiguration | Where-Object { $_.IPv4DefaultGateway -ne $null }
-    if ($ipconfig) {
-        $ipAddress = $ipconfig.IPv4Address.IPAddress
-        $subnet = $ipAddress.Split('.')[0..2] -join '.'
-        for ($i = 1; $i -lt 255; $i++) {
-            $targetIP = "$subnet.$i"
-            Write-Host "Scanning $targetIP..." -NoNewline
-            $test = Test-NetConnection -ComputerName $targetIP -Port 10023 -WarningAction SilentlyContinue -InformationLevel Quiet
-            if ($test.TcpTestSucceeded) {
-                Write-Host " Found X32!"
-                Log-Message "Found X32 at network address: $targetIP"
-                $Global:X32Connection = [PSCustomObject]@{
-                    Type = "Network"
-                    IPAddress = $targetIP
-                }
-                return
-            } else {
-                 Write-Host ""
+    # 2. Check for Network Connection (UDP Broadcast)
+    Log-Message "Checking for network devices via UDP broadcast..."
+    try {
+        $udpClient = New-Object System.Net.Sockets.UdpClient
+        $udpClient.EnableBroadcast = $true
+        $udpClient.Client.ReceiveTimeout = 2000 # 2 seconds
+
+        # OSC /info packet: /info\0\0\0,\0\0\0
+        $packet = [byte[]](0x2f, 0x69, 0x6e, 0x66, 0x6f, 0x00, 0x00, 0x00, 0x2c, 0x00, 0x00, 0x00)
+
+        # Send broadcast packet
+        $endpoint = New-Object System.Net.IPEndPoint([System.Net.IPAddress]::Broadcast, 10023)
+        $udpClient.Send($packet, $packet.Length, $endpoint)
+
+        $remoteEP = New-Object System.Net.IPEndPoint([System.Net.IPAddress]::Any, 0)
+        $response = $udpClient.Receive([ref]$remoteEP)
+
+        if ($response.Length -gt 0) {
+            $foundIp = $remoteEP.Address.ToString()
+            Log-Message "Found X32 at network address: $foundIp"
+            $Global:X32Connection = [PSCustomObject]@{
+                Type      = "Network"
+                IPAddress = $foundIp
             }
         }
+    } catch {
+        # Catch timeout exception
+    } finally {
+        if ($udpClient) { $udpClient.Close() }
     }
 
     # 3. Prompt user if auto-detection fails
