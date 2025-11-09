@@ -3,9 +3,10 @@ use std::thread;
 use std::time::Duration;
 use std::fs::File;
 use std::io::Write;
-use assert_cmd::Command;
+use escargot::CargoBuild;
 use predicates::prelude::*;
 use osc_lib::OscMessage;
+use assert_cmd::assert::OutputAssertExt;
 
 fn setup_mock_x32_server() -> String {
     let socket = UdpSocket::bind("127.0.0.1:0").expect("couldn't bind to address");
@@ -45,7 +46,8 @@ fn test_desk_restore_command() {
     writeln!(file, "/-stat/solosw ,i 1").unwrap();
     writeln!(file, "/-prefs/remote ,s \"HUI\"").unwrap();
 
-    let mut cmd = Command::cargo_bin("x32_desk_restore").unwrap();
+    let bin = CargoBuild::new().bin("x32_desk_restore").run().unwrap();
+    let mut cmd = bin.command();
     cmd.args(&["--ip", &server_addr, "test_restore.txt"]);
 
     cmd.assert()

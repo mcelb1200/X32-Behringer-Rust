@@ -1,6 +1,7 @@
-use assert_cmd::Command;
+use escargot::CargoBuild;
 use x32_emulator::server;
 use std::thread::{self, JoinHandle};
+use assert_cmd::assert::OutputAssertExt;
 use std::time::Duration;
 use x32_emulator::Mixer;
 use std::sync::mpsc::{channel, Sender};
@@ -20,7 +21,8 @@ where
 #[test]
 fn test_not_connected() {
     // We don't start a server for this test, to simulate a connection failure.
-    let mut cmd = Command::cargo_bin("x32_usb").unwrap();
+    let bin = CargoBuild::new().bin("x32_usb").run().unwrap();
+    let mut cmd = bin.command();
     cmd.arg("--ip")
         .arg("127.0.0.1:10047")
         .arg("ls")
@@ -41,7 +43,8 @@ fn test_ls_command() {
         ]);
     });
 
-    let mut cmd = Command::cargo_bin("x32_usb").unwrap();
+    let bin = CargoBuild::new().bin("x32_usb").run().unwrap();
+    let mut cmd = bin.command();
     cmd.arg("--ip")
         .arg("127.0.0.1:10048")
         .arg("ls")
@@ -70,7 +73,8 @@ fn test_file_operations() {
         ]);
     });
 
-    let mut cmd = Command::cargo_bin("x32_usb").unwrap();
+    let bin = CargoBuild::new().bin("x32_usb").run().unwrap();
+    let mut cmd = bin.command();
     cmd.arg("--ip")
         .arg("127.0.0.1:10049")
         .arg("cd")
@@ -79,7 +83,7 @@ fn test_file_operations() {
         .success()
         .stdout("Changed directory to [MyScenes]\n");
 
-    let mut cmd = Command::cargo_bin("x32_usb").unwrap();
+    let mut cmd = bin.command();
     cmd.arg("--ip")
         .arg("1.2.3.4")
         .arg("load")
@@ -88,7 +92,7 @@ fn test_file_operations() {
         .failure()
         .stderr(predicates::str::contains("Error:"));
 
-    let mut cmd = Command::cargo_bin("x32_usb").unwrap();
+    let mut cmd = bin.command();
     cmd.arg("--ip")
         .arg("127.0.0.1:10049")
         .arg("play")

@@ -3,9 +3,10 @@ use std::thread;
 use std::time::Duration;
 use std::fs::File;
 use std::io::Write;
-use assert_cmd::Command;
+use escargot::CargoBuild;
 use predicates::prelude::*;
 use osc_lib::{OscMessage, OscArg};
+use assert_cmd::assert::OutputAssertExt;
 
 fn setup_mock_x32_server() -> SocketAddr {
     let socket = UdpSocket::bind("127.0.0.1:0").expect("couldn't bind to address");
@@ -37,7 +38,8 @@ fn setup_mock_x32_server() -> SocketAddr {
 fn test_desk_save_command() {
     let addr = setup_mock_x32_server();
 
-    let mut cmd = Command::cargo_bin("x32_desk_save").unwrap();
+    let bin = CargoBuild::new().bin("x32_desk_save").run().unwrap();
+    let mut cmd = bin.command();
     cmd.args(&["--ip", &addr.to_string(), "-d", "test_output.txt"]);
 
     cmd.assert()
@@ -64,7 +66,8 @@ fn test_pattern_file_command() {
     writeln!(file, "/-stat/solosw").unwrap();
     writeln!(file, "/-prefs/remote").unwrap();
 
-    let mut cmd = Command::cargo_bin("x32_desk_save").unwrap();
+    let bin = CargoBuild::new().bin("x32_desk_save").run().unwrap();
+    let mut cmd = bin.command();
     cmd.args(&["--ip", &addr.to_string(), "-p", "test_pattern.txt", "test_output.txt"]);
 
     cmd.assert()

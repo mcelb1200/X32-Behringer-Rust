@@ -224,6 +224,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "escargot"
+version = "0.5.15"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "11c3aea32bc97b500c9ca6a72b768a26e558264303d101d3409cf6d57a9ed0cf"
+dependencies = [
+ "log",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "fastrand"
 version = "2.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -845,6 +856,7 @@ version = "0.1.0"
 dependencies = [
  "assert_cmd",
  "clap",
+ "escargot",
  "osc_lib",
  "predicates",
  "x32_lib",
@@ -856,6 +868,7 @@ version = "0.1.0"
 dependencies = [
  "assert_cmd",
  "clap",
+ "escargot",
  "osc_lib",
  "predicates",
  "x32_lib",
@@ -909,6 +922,7 @@ version = "0.1.0"
 dependencies = [
  "assert_cmd",
  "clap",
+ "escargot",
  "osc_lib",
  "predicates",
  "x32_lib",
@@ -940,6 +954,7 @@ dependencies = [
  "anyhow",
  "assert_cmd",
  "clap",
+ "escargot",
  "osc_lib",
  "predicates",
  "x32_lib",
@@ -952,6 +967,7 @@ dependencies = [
  "anyhow",
  "assert_cmd",
  "clap",
+ "escargot",
  "osc_lib",
  "predicates",
  "x32_emulator",
@@ -967,6 +983,7 @@ dependencies = [
  "byteorder",
  "chrono",
  "clap",
+ "escargot",
  "hound",
  "predicates",
  "tempfile",

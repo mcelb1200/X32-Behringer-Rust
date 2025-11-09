@@ -11,3 +11,4 @@ x32_lib = { path = "../x32_lib" }
 [dev-dependencies]
 assert_cmd = "2.0"
 predicates = "3.1"
+escargot = "0.5.8"

@@ -1,9 +1,10 @@
 use std::net::{SocketAddr, UdpSocket};
 use std::thread;
 use std::time::Duration;
-use assert_cmd::Command;
+use escargot::CargoBuild;
 use predicates::prelude::*;
 use osc_lib::{OscMessage, OscArg};
+use assert_cmd::assert::OutputAssertExt;
 
 fn setup_mock_x32_server() -> SocketAddr {
     let socket = UdpSocket::bind("127.0.0.1:0").expect("couldn't bind to address");
@@ -45,7 +46,8 @@ fn setup_mock_x32_server() -> SocketAddr {
 fn test_get_scene_name_command() {
     let addr = setup_mock_x32_server();
 
-    let mut cmd = Command::cargo_bin("x32_get_scene_name").unwrap();
+    let bin = CargoBuild::new().bin("x32_get_scene_name").run().unwrap();
+    let mut cmd = bin.command();
     cmd.args(&["--ip", &addr.to_string(), "-o", "1"]);
 
     cmd.assert()

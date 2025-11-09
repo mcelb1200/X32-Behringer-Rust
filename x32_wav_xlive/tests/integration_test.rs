@@ -1,6 +1,6 @@
 use assert_cmd::prelude::*;
+use escargot::CargoBuild;
 use predicates::prelude::*;
-use std::process::Command;
 use tempfile::tempdir;
 use hound::{WavWriter, WavSpec, WavReader};
 use std::path::Path;
@@ -31,7 +31,8 @@ fn test_cli_e2e() {
     create_test_wav(dir.path(), "ch_1.wav", spec, 100);
     create_test_wav(dir.path(), "ch_2.wav", spec, 100);
 
-    let mut cmd = Command::cargo_bin("x32_wav_xlive").unwrap();
+    let bin = CargoBuild::new().bin("x32_wav_xlive").run().unwrap();
+    let mut cmd = bin.command();
     cmd.arg(dir.path())
         .arg("TestSession")
         .arg("-m")
@@ -76,7 +77,8 @@ fn test_single_take_se_log_bin() {
     };
     create_test_wav(dir.path(), "ch_1.wav", spec, 100);
 
-    let mut cmd = Command::cargo_bin("x32_wav_xlive").unwrap();
+    let bin = CargoBuild::new().bin("x32_wav_xlive").run().unwrap();
+    let mut cmd = bin.command();
     cmd.arg(dir.path())
         .assert()
         .success();
