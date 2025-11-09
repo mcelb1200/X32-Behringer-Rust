@@ -311,12 +311,23 @@ fn run(args: Args) -> Result<()> {
 fn main() {
     let args = Args::parse();
     if let Err(e) = run(args) {
-        let root_cause = e.root_cause().to_string();
-        if root_cause.contains("Connection refused") {
-            println!("Not connected to X32.");
-        } else {
-            eprintln!("Error: {}", e);
+        // Check if the error is our custom X32Error wrapping an IO error
+        if let Some(x32_err) = e.downcast_ref::<X32Error>() {
+            if let X32Error::Io(io_err) = x32_err {
+                if io_err.kind() == std::io::ErrorKind::ConnectionRefused {
+                    println!("Not connected to X32.");
+                    std::process::exit(1);
+                }
+            }
+        // Check if the error is a direct IO error
+        } else if let Some(io_err) = e.downcast_ref::<std::io::Error>() {
+            if io_err.kind() == std::io::ErrorKind::ConnectionRefused {
+                println!("Not connected to X32.");
+                std::process::exit(1);
+            }
         }
+
+        eprintln!("Error: {}", e);
         std::process::exit(1);
     }
 }
