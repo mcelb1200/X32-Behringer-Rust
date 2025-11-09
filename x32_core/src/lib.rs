@@ -26,7 +26,7 @@
 //!     let mut mixer = Mixer::new();
 //!
 //!     // Seed the mixer with an initial fader level for channel 1
-//!     let seed_data = vec!["/ch/01/mix/fader,f	0.75"];
+//!     let seed_data = vec!["/ch/01/mix/fader,f    0.75"];
 //!     mixer.seed_from_lines(seed_data);
 //!
 //!     // Create an OSC message to request the fader level of channel 1
@@ -71,7 +71,9 @@ pub static XDYENV: &[&str] = &[" LIN", " LOG"];
 pub static XDYRAT: &[&str] = &[
     " 1.1", " 1.3", " 1.5", " 2.0", " 2.5", " 3.0", " 4.0", " 5.0", " 7.0", " 10", " 20", " 100",
 ];
-pub static XDYFTYP: &[&str] = &[" LC6", " LC12", " HC6", " HC12", " 1.0", " 2.0", " 3.0", " 5.0", " 10.0"];
+pub static XDYFTYP: &[&str] = &[
+    " LC6", " LC12", " HC6", " HC12", " 1.0", " 2.0", " 3.0", " 5.0", " 10.0",
+];
 pub static XDYPPOS: &[&str] = &[" PRE", " POST"];
 pub static XISEL: &[&str] = &[
     " OFF", " FX1L", " FX1R", " FX2L", " FX2R", " FX3L", " FX3R", " FX4L", " FX4R", " FX5L",
@@ -81,11 +83,16 @@ pub static XISEL: &[&str] = &[
 pub static XEQTY1: &[&str] = &[" LCut", " LShv", " PEQ", " VEQ", " HShv", " HCut"];
 // ... and so on for the rest of the static arrays ...
 
-
 /// Represents the internal state of the mixer.
 #[derive(Debug, Clone)]
 pub struct MixerState {
     values: HashMap<String, OscArg>,
+}
+
+impl Default for MixerState {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl MixerState {
@@ -112,6 +119,12 @@ pub struct Mixer {
     state: MixerState,
 }
 
+impl Default for Mixer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Mixer {
     /// Creates a new `Mixer` with a default, empty state.
     pub fn new() -> Self {
@@ -123,7 +136,7 @@ impl Mixer {
     /// Seeds the mixer's state from a vector of OSC command strings.
     ///
     /// This is useful for setting up a specific state for testing. Each string
-    /// should be in the format: `/osc/path,t	value`, where `t` is the OSC type
+    /// should be in the format: `/osc/path,t    value`, where `t` is the OSC type
     /// tag (`i`, `f`, or `s`).
     pub fn seed_from_lines(&mut self, lines: Vec<&str>) {
         for line in lines {
@@ -189,7 +202,7 @@ impl Mixer {
             }
         } else {
             // If the message has arguments, it's a command to set a value.
-            if let Some(arg) = osc_msg.args.get(0) {
+            if let Some(arg) = osc_msg.args.first() {
                 self.state.set(&osc_msg.path, arg.clone());
             }
         }

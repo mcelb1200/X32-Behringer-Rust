@@ -4,7 +4,6 @@
 //! This module provides functions for interacting with these presets.
 use osc_lib::OscArg;
 
-
 // --- Address String Getters ---
 
 /// Returns the OSC address for a channel preset's name.
@@ -21,7 +20,6 @@ pub fn routing_preset_name(preset_num: u8) -> String {
 pub fn fx_preset_name(preset_num: u8) -> String {
     format!("/libs/fx/{:03}/name", preset_num)
 }
-
 
 // --- OSC Message Setters ---
 
@@ -40,7 +38,10 @@ pub fn fx_preset_name(preset_num: u8) -> String {
 /// assert_eq!(args, vec![osc_lib::OscArg::String("Test".to_string())]);
 /// ```
 pub fn set_channel_preset_name(preset_num: u8, name: &str) -> (String, Vec<OscArg>) {
-    (channel_preset_name(preset_num), vec![OscArg::String(name.to_string())])
+    (
+        channel_preset_name(preset_num),
+        vec![OscArg::String(name.to_string())],
+    )
 }
 
 /// Creates an OSC message to set the name of a routing preset.
@@ -58,7 +59,10 @@ pub fn set_channel_preset_name(preset_num: u8, name: &str) -> (String, Vec<OscAr
 /// assert_eq!(args, vec![osc_lib::OscArg::String("Test".to_string())]);
 /// ```
 pub fn set_routing_preset_name(preset_num: u8, name: &str) -> (String, Vec<OscArg>) {
-    (routing_preset_name(preset_num), vec![OscArg::String(name.to_string())])
+    (
+        routing_preset_name(preset_num),
+        vec![OscArg::String(name.to_string())],
+    )
 }
 
 /// Creates an OSC message to set the name of a fx preset.
@@ -76,7 +80,10 @@ pub fn set_routing_preset_name(preset_num: u8, name: &str) -> (String, Vec<OscAr
 /// assert_eq!(args, vec![osc_lib::OscArg::String("Test".to_string())]);
 /// ```
 pub fn set_fx_preset_name(preset_num: u8, name: &str) -> (String, Vec<OscArg>) {
-    (fx_preset_name(preset_num), vec![OscArg::String(name.to_string())])
+    (
+        fx_preset_name(preset_num),
+        vec![OscArg::String(name.to_string())],
+    )
 }
 
 #[cfg(test)]
