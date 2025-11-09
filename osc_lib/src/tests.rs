@@ -43,7 +43,24 @@ fn test_message_to_string() {
         args: vec![OscArg::Float(0.75)],
     };
     let s = message.to_string();
-    assert_eq!(s, "/ch/01/mix/fader,f 0.75");
+    assert_eq!(s, "/ch/01/mix/fader ,f 0.75");
+}
+
+#[test]
+fn test_message_roundtrip_to_string() {
+    let original_message = OscMessage {
+        path: "/test/path".to_string(),
+        args: vec![
+            OscArg::Int(42),
+            OscArg::Float(3.14),
+            OscArg::String("hello world".to_string()),
+        ],
+    };
+
+    let s = original_message.to_string();
+    let roundtrip_message = OscMessage::from_str(&s).unwrap();
+
+    assert_eq!(original_message, roundtrip_message);
 }
 
 #[test]
@@ -56,16 +73,6 @@ fn test_message_from_str_with_quoted_string() {
         OscArg::String(s) => assert_eq!(s, "My Fader"),
         _ => panic!("Incorrect argument type"),
     }
-}
-
-#[test]
-fn test_message_to_string_format() {
-    let message = OscMessage {
-        path: "/ch/01/mix/fader".to_string(),
-        args: vec![OscArg::Float(0.75)],
-    };
-    let s = message.to_string();
-    assert_eq!(s, "/ch/01/mix/fader,f 0.75");
 }
 
 #[test]

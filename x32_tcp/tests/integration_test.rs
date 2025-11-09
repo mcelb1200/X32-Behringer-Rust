@@ -47,7 +47,7 @@ fn test_server_e2e() -> Result<(), Box<dyn std::error::Error>> {
     // 5. Assert that the client receives the correctly formatted string
     let mut response = String::new();
     reader.read_line(&mut response)?;
-    assert_eq!(response.trim(), r#"/info,s "X32 ROCKS""#);
+    assert_eq!(response.trim(), r#"/info ,s "X32 ROCKS""#);
 
     // d. Assert that the correct OSC message is received by the mock X32
     let received_msg = mock_server_handle.join().unwrap();
