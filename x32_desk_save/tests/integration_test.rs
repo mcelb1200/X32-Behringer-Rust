@@ -62,7 +62,7 @@ fn test_desk_save_command() {
     assert!(
         lines
             .iter()
-            .any(|&line| line == "/node,ss \"-stat/solosw\" \"mock_value\"")
+            .any(|&line| line == "/node ,ss \"-stat/solosw\" \"mock_value\"")
     );
 
     // Clean up the output file
@@ -99,18 +99,19 @@ fn test_pattern_file_command() {
     assert!(stdout.contains("Successfully saved data to test_output.txt"));
 
     // Verify the content of the output file
+    assert!(std::path::Path::new("test_output.txt").exists());
     let content = std::fs::read_to_string("test_output.txt").unwrap();
     let lines: Vec<&str> = content.lines().collect();
     assert_eq!(lines.len(), 2);
     assert!(
         lines
             .iter()
-            .any(|&line| line == "/node,ss \"/-stat/solosw\" \"mock_value\"")
+            .any(|&line| line == "/node ,ss \"/-stat/solosw\" \"mock_value\"")
     );
     assert!(
         lines
             .iter()
-            .any(|&line| line == "/node,ss \"/-prefs/remote\" \"mock_value\"")
+            .any(|&line| line == "/node ,ss \"/-prefs/remote\" \"mock_value\"")
     );
 
     // Clean up the files
