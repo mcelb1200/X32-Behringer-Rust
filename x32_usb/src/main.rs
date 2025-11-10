@@ -9,9 +9,25 @@
 use anyhow::{Result, anyhow};
 use clap::{Parser, Subcommand};
 use osc_lib::{OscArg, OscMessage};
+use std::error::Error;
 use std::net::UdpSocket;
 use std::str::FromStr;
-use x32_lib::{create_socket, error::X32Error};
+use x32_lib::create_socket;
+
+#[derive(Debug)]
+struct ConnectionError(anyhow::Error);
+
+impl std::fmt::Display for ConnectionError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl Error for ConnectionError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        self.0.source()
+    }
+}
 
 #[derive(Parser, Debug)]
 #[command(author, version, about = "An X32 shell for remote managing USB files", long_about = None)]
@@ -168,18 +184,7 @@ impl X32Client {
                     Ok(false)
                 }
             }
-            Err(e) => {
-                if let Some(x32_err) = e.downcast_ref::<X32Error>() {
-                    if let X32Error::Io(io_err) = x32_err {
-                        if io_err.kind() == std::io::ErrorKind::WouldBlock
-                            || io_err.kind() == std::io::ErrorKind::TimedOut
-                        {
-                            return Ok(false);
-                        }
-                    }
-                }
-                Err(e)
-            }
+            Err(e) => Err(e),
         }
     }
 
@@ -259,7 +264,7 @@ impl X32Client {
 fn run(args: Args) -> Result<()> {
     let client = X32Client::new(&args.ip)?;
 
-    if !client.is_usb_mounted()? {
+    if !client.is_usb_mounted().map_err(|e| ConnectionError(e))? {
         println!("USB drive is not mounted.");
         return Ok(());
     }
@@ -328,8 +333,7 @@ fn run(args: Args) -> Result<()> {
 fn main() {
     let args = Args::parse();
     if let Err(e) = run(args) {
-        let root_cause = e.root_cause().to_string();
-        if root_cause.contains("Connection refused") {
+        if e.is::<ConnectionError>() {
             println!("Not connected to X32.");
         } else {
             eprintln!("Error: {}", e);
