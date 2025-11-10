@@ -280,12 +280,12 @@ impl std::fmt::Display for OscMessage {
     /// let msg = OscMessage::new("/ch/01/mix/fader".to_string(), vec![OscArg::Float(0.75)]);
     /// let msg_str = msg.to_string();
     ///
-    /// assert_eq!(msg_str, "/ch/01/mix/fader,f 0.75");
+    /// assert_eq!(msg_str, "/ch/01/mix/fader ,f 0.75");
     /// ```
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.path)?;
         if !self.args.is_empty() {
-            write!(f, ",")?;
+            write!(f, " ,")?;
             for arg in &self.args {
                 match arg {
                     OscArg::Int(_) => write!(f, "i")?,
