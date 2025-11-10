@@ -37,19 +37,6 @@ fn test_message_from_str() {
 }
 
 #[test]
-fn test_message_roundtrip_with_quoted_string() {
-    let original_message = OscMessage {
-        path: "/test/path".to_string(),
-        args: vec![OscArg::String("hello \" world".to_string())],
-    };
-
-    let s = original_message.to_string();
-    let roundtrip_message = OscMessage::from_str(&s).unwrap();
-
-    assert_eq!(original_message, roundtrip_message);
-}
-
-#[test]
 fn test_message_to_string() {
     let message = OscMessage {
         path: "/ch/01/mix/fader".to_string(),

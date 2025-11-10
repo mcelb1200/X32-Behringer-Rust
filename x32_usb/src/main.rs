@@ -168,18 +168,7 @@ impl X32Client {
                     Ok(false)
                 }
             }
-            Err(e) => {
-                if let Some(x32_err) = e.downcast_ref::<X32Error>() {
-                    if let X32Error::Io(io_err) = x32_err {
-                        if io_err.kind() == std::io::ErrorKind::WouldBlock
-                            || io_err.kind() == std::io::ErrorKind::TimedOut
-                        {
-                            return Ok(false);
-                        }
-                    }
-                }
-                Err(e)
-            }
+            Err(e) => Err(e),
         }
     }
 
@@ -328,12 +317,17 @@ fn run(args: Args) -> Result<()> {
 fn main() {
     let args = Args::parse();
     if let Err(e) = run(args) {
-        let root_cause = e.root_cause().to_string();
-        if root_cause.contains("Connection refused") {
-            println!("Not connected to X32.");
-        } else {
-            eprintln!("Error: {}", e);
+        let root = e.root_cause();
+        if let Some(io_err) = root.downcast_ref::<std::io::Error>() {
+            if io_err.kind() == std::io::ErrorKind::ConnectionRefused
+                || io_err.kind() == std::io::ErrorKind::TimedOut
+                || io_err.kind() == std::io::ErrorKind::WouldBlock
+            {
+                println!("Not connected to X32.");
+                std::process::exit(1);
+            }
         }
+        eprintln!("Error: {}", e);
         std::process::exit(1);
     }
 }

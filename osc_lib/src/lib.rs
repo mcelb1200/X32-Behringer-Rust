@@ -299,7 +299,7 @@ impl std::fmt::Display for OscMessage {
                 match arg {
                     OscArg::Int(val) => write!(f, "{}", val)?,
                     OscArg::Float(val) => write!(f, "{}", val)?,
-                    OscArg::String(val) => write!(f, "\"{}\"", val.replace("\"", "\\\""))?,
+                    OscArg::String(val) => write!(f, "\"{}\"", val)?,
                     OscArg::Blob(_) => write!(f, "[blob]")?,
                 }
             }
@@ -316,14 +316,8 @@ pub fn tokenize(s: &str) -> Result<Vec<String>> {
     let mut tokens = Vec::new();
     let mut current_token = String::new();
     let mut in_quote = false;
-    let mut it = s.chars();
-    while let Some(c) = it.next() {
+    for c in s.chars() {
         match c {
-            '\\' => {
-                if let Some(next_c) = it.next() {
-                    current_token.push(next_c);
-                }
-            }
             '"' => {
                 if in_quote {
                     // Closing quote
