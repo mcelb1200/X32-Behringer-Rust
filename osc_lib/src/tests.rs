@@ -40,9 +40,7 @@ fn test_message_from_str() {
 fn test_message_roundtrip_with_quoted_string() {
     let original_message = OscMessage {
         path: "/test/path".to_string(),
-        args: vec![
-            OscArg::String("hello \" world".to_string()),
-        ],
+        args: vec![OscArg::String("hello \" world".to_string())],
     };
 
     let s = original_message.to_string();
