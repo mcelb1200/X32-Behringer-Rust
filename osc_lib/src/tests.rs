@@ -37,6 +37,18 @@ fn test_message_from_str() {
 }
 
 #[test]
+fn test_from_str_string_with_escaped_quote() {
+    let s = r#"/cmd ,s "a string with an \"escaped quote\" inside""#;
+    let message = OscMessage::from_str(s).unwrap();
+    assert_eq!(message.path, "/cmd");
+    assert_eq!(message.args.len(), 1);
+    match &message.args[0] {
+        OscArg::String(s) => assert_eq!(s, r#"a string with an "escaped quote" inside"#),
+        _ => panic!("Incorrect argument type"),
+    }
+}
+
+#[test]
 fn test_message_to_string() {
     let message = OscMessage {
         path: "/ch/01/mix/fader".to_string(),
