@@ -69,10 +69,7 @@ fn test_message_from_str_with_blob() {
     assert_eq!(message.path, "/blobtest");
     assert_eq!(message.args.len(), 1);
     match &message.args[0] {
-        OscArg::Blob(b) => assert_eq!(
-            b,
-            &vec![0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef]
-        ),
+        OscArg::Blob(b) => assert_eq!(b, &vec![0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef]),
         _ => panic!("Incorrect argument type"),
     }
 }
