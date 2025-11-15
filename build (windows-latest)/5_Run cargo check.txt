@@ -1,0 +1,32 @@
+﻿2025-11-15T12:27:20.4499085Z ##[debug]Evaluating condition for step: 'Run cargo check'
+2025-11-15T12:27:20.4500049Z ##[debug]Evaluating: success()
+2025-11-15T12:27:20.4500349Z ##[debug]Evaluating success:
+2025-11-15T12:27:20.4500656Z ##[debug]=> true
+2025-11-15T12:27:20.4500941Z ##[debug]Result: true
+2025-11-15T12:27:20.4501352Z ##[debug]Starting: Run cargo check
+2025-11-15T12:27:20.4620413Z ##[debug]Loading inputs
+2025-11-15T12:27:20.4621257Z ##[debug]Loading env
+2025-11-15T12:27:20.4624949Z ##[group]Run cargo check
+2025-11-15T12:27:20.4625147Z [36;1mcargo check[0m
+2025-11-15T12:27:20.5405016Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+2025-11-15T12:27:20.5405517Z env:
+2025-11-15T12:27:20.5405749Z   CARGO_INCREMENTAL: 0
+2025-11-15T12:27:20.5406029Z   CARGO_PROFILE_DEV_DEBUG: 0
+2025-11-15T12:27:20.5406326Z   CARGO_TERM_COLOR: always
+2025-11-15T12:27:20.5406614Z   RUST_BACKTRACE: short
+2025-11-15T12:27:20.5406889Z   RUSTFLAGS: -D warnings
+2025-11-15T12:27:20.5407199Z   CARGO_UNSTABLE_SPARSE_REGISTRY: true
+2025-11-15T12:27:20.5407646Z   CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
+2025-11-15T12:27:20.5408016Z   CACHE_ON_FAILURE: true
+2025-11-15T12:27:20.5408272Z ##[endgroup]
+2025-11-15T12:27:20.5474591Z ##[debug]C:\Program Files\PowerShell\7\pwsh.EXE -command ". 'D:\a\_temp\3d2a18b2-be6b-43b7-912f-85bf6e397335.ps1'"
+2025-11-15T12:27:20.5574771Z ##[error]An error occurred trying to start process 'C:\Program Files\PowerShell\7\pwsh.EXE' with working directory 'D:\a\X32-Behringer-Rust\X32-Behringer-Rust\./rust_rewrite'. The directory name is invalid.
+2025-11-15T12:27:20.5578579Z ##[debug]System.ComponentModel.Win32Exception (267): An error occurred trying to start process 'C:\Program Files\PowerShell\7\pwsh.EXE' with working directory 'D:\a\X32-Behringer-Rust\X32-Behringer-Rust\./rust_rewrite'. The directory name is invalid.
+2025-11-15T12:27:20.5579716Z ##[debug]   at System.Diagnostics.Process.StartWithCreateProcess(ProcessStartInfo startInfo)
+2025-11-15T12:27:20.5581396Z ##[debug]   at GitHub.Runner.Sdk.ProcessInvoker.ExecuteAsync(String workingDirectory, String fileName, String arguments, IDictionary`2 environment, Boolean requireExitCodeZero, Encoding outputEncoding, Boolean killProcessOnCancel, Channel`1 redirectStandardIn, Boolean inheritConsoleHandler, Boolean keepStandardInOpen, Boolean highPriorityProcess, CancellationToken cancellationToken)
+2025-11-15T12:27:20.5583962Z ##[debug]   at GitHub.Runner.Common.ProcessInvokerWrapper.ExecuteAsync(String workingDirectory, String fileName, String arguments, IDictionary`2 environment, Boolean requireExitCodeZero, Encoding outputEncoding, Boolean killProcessOnCancel, Channel`1 redirectStandardIn, Boolean inheritConsoleHandler, Boolean keepStandardInOpen, Boolean highPriorityProcess, CancellationToken cancellationToken)
+2025-11-15T12:27:20.5586737Z ##[debug]   at GitHub.Runner.Worker.Handlers.DefaultStepHost.ExecuteAsync(IExecutionContext context, String workingDirectory, String fileName, String arguments, IDictionary`2 environment, Boolean requireExitCodeZero, Encoding outputEncoding, Boolean killProcessOnCancel, Boolean inheritConsoleHandler, String standardInInput, CancellationToken cancellationToken)
+2025-11-15T12:27:20.5588190Z ##[debug]   at GitHub.Runner.Worker.Handlers.ScriptHandler.RunAsync(ActionRunStage stage)
+2025-11-15T12:27:20.5588622Z ##[debug]   at GitHub.Runner.Worker.ActionRunner.RunAsync()
+2025-11-15T12:27:20.5589133Z ##[debug]   at GitHub.Runner.Worker.StepsRunner.RunStepAsync(IStep step, CancellationToken jobCancellationToken)
+2025-11-15T12:27:20.5591778Z ##[debug]Finishing: Run cargo check

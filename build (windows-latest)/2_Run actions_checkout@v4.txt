@@ -1,0 +1,174 @@
+﻿2025-11-15T12:26:38.2516365Z ##[debug]Evaluating condition for step: 'Run actions/checkout@v4'
+2025-11-15T12:26:38.2546232Z ##[debug]Evaluating: success()
+2025-11-15T12:26:38.2551690Z ##[debug]Evaluating success:
+2025-11-15T12:26:38.2567791Z ##[debug]=> true
+2025-11-15T12:26:38.2574258Z ##[debug]Result: true
+2025-11-15T12:26:38.2597616Z ##[debug]Starting: Run actions/checkout@v4
+2025-11-15T12:26:38.3469288Z ##[debug]Register post job cleanup for action: actions/checkout@v4
+2025-11-15T12:26:38.3569221Z ##[debug]Loading inputs
+2025-11-15T12:26:38.3581127Z ##[debug]Evaluating: github.repository
+2025-11-15T12:26:38.3582717Z ##[debug]Evaluating Index:
+2025-11-15T12:26:38.3585162Z ##[debug]..Evaluating github:
+2025-11-15T12:26:38.3586690Z ##[debug]..=> Object
+2025-11-15T12:26:38.3593006Z ##[debug]..Evaluating String:
+2025-11-15T12:26:38.3594785Z ##[debug]..=> 'repository'
+2025-11-15T12:26:38.3599745Z ##[debug]=> 'mcelb1200/X32-Behringer-Rust'
+2025-11-15T12:26:38.3601894Z ##[debug]Result: 'mcelb1200/X32-Behringer-Rust'
+2025-11-15T12:26:38.3606523Z ##[debug]Evaluating: github.token
+2025-11-15T12:26:38.3607438Z ##[debug]Evaluating Index:
+2025-11-15T12:26:38.3608253Z ##[debug]..Evaluating github:
+2025-11-15T12:26:38.3609078Z ##[debug]..=> Object
+2025-11-15T12:26:38.3609872Z ##[debug]..Evaluating String:
+2025-11-15T12:26:38.3610710Z ##[debug]..=> 'token'
+2025-11-15T12:26:38.3612088Z ##[debug]=> '***'
+2025-11-15T12:26:38.3613067Z ##[debug]Result: '***'
+2025-11-15T12:26:38.3639577Z ##[debug]Loading env
+2025-11-15T12:26:38.3716930Z ##[group]Run actions/checkout@v4
+2025-11-15T12:26:38.3718010Z with:
+2025-11-15T12:26:38.3718778Z   repository: mcelb1200/X32-Behringer-Rust
+2025-11-15T12:26:38.3719918Z   token: ***
+2025-11-15T12:26:38.3720593Z   ssh-strict: true
+2025-11-15T12:26:38.3721277Z   ssh-user: git
+2025-11-15T12:26:38.3722014Z   persist-credentials: true
+2025-11-15T12:26:38.3722791Z   clean: true
+2025-11-15T12:26:38.3723510Z   sparse-checkout-cone-mode: true
+2025-11-15T12:26:38.3724354Z   fetch-depth: 1
+2025-11-15T12:26:38.3725050Z   fetch-tags: false
+2025-11-15T12:26:38.3725752Z   show-progress: true
+2025-11-15T12:26:38.3726463Z   lfs: false
+2025-11-15T12:26:38.3727110Z   submodules: false
+2025-11-15T12:26:38.3727816Z   set-safe-directory: true
+2025-11-15T12:26:38.3728774Z ##[endgroup]
+2025-11-15T12:26:38.5313107Z ##[debug]GITHUB_WORKSPACE = 'D:\a\X32-Behringer-Rust\X32-Behringer-Rust'
+2025-11-15T12:26:38.5318129Z ##[debug]qualified repository = 'mcelb1200/X32-Behringer-Rust'
+2025-11-15T12:26:38.5321890Z ##[debug]ref = 'refs/heads/fix-osc-message-to-string'
+2025-11-15T12:26:38.5336410Z ##[debug]commit = '9efee86f7ca67683ed05cf28b844d5735e2d0cfc'
+2025-11-15T12:26:38.5344639Z ##[debug]clean = true
+2025-11-15T12:26:38.5346672Z ##[debug]filter = undefined
+2025-11-15T12:26:38.5348786Z ##[debug]fetch depth = 1
+2025-11-15T12:26:38.5350911Z ##[debug]fetch tags = false
+2025-11-15T12:26:38.5352998Z ##[debug]show progress = true
+2025-11-15T12:26:38.5355127Z ##[debug]lfs = false
+2025-11-15T12:26:38.5357125Z ##[debug]submodules = false
+2025-11-15T12:26:38.5359311Z ##[debug]recursive submodules = false
+2025-11-15T12:26:38.5362109Z ##[debug]GitHub Host URL =
+2025-11-15T12:26:38.5365341Z ::add-matcher::D:\a\_actions\actions\checkout\v4\dist\problem-matcher.json
+2025-11-15T12:26:38.5464897Z ##[debug]Added matchers: 'checkout-git'. Problem matchers scan action output for known warning or error strings and report these inline.
+2025-11-15T12:26:38.5471766Z Syncing repository: mcelb1200/X32-Behringer-Rust
+2025-11-15T12:26:38.5473984Z ::group::Getting Git version info
+2025-11-15T12:26:38.5475612Z ##[group]Getting Git version info
+2025-11-15T12:26:38.5476830Z Working directory is 'D:\a\X32-Behringer-Rust\X32-Behringer-Rust'
+2025-11-15T12:26:38.6529130Z ##[debug]Getting git version
+2025-11-15T12:26:38.6554425Z [command]"C:\Program Files\Git\bin\git.exe" version
+2025-11-15T12:26:39.0861702Z git version 2.51.2.windows.1
+2025-11-15T12:26:39.0910563Z ##[debug]0
+2025-11-15T12:26:39.0911954Z ##[debug]git version 2.51.2.windows.1
+2025-11-15T12:26:39.0916132Z ##[debug]
+2025-11-15T12:26:39.0918446Z ##[debug]Set git useragent to: git/2.51.2 (github-actions-checkout)
+2025-11-15T12:26:39.0921373Z ::endgroup::
+2025-11-15T12:26:39.0922588Z ##[endgroup]
+2025-11-15T12:26:39.0928788Z ::add-mask::***
+2025-11-15T12:26:39.0941721Z Temporarily overriding HOME='D:\a\_temp\069fa664-d0d7-4ae0-8849-8227ed26fd59' before making global git config changes
+2025-11-15T12:26:39.0944017Z Adding repository directory to the temporary git global config as a safe directory
+2025-11-15T12:26:39.0953709Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\X32-Behringer-Rust\X32-Behringer-Rust
+2025-11-15T12:26:39.1508289Z ##[debug]0
+2025-11-15T12:26:39.1509926Z ##[debug]
+2025-11-15T12:26:39.1517820Z Deleting the contents of 'D:\a\X32-Behringer-Rust\X32-Behringer-Rust'
+2025-11-15T12:26:39.1524396Z ::group::Initializing the repository
+2025-11-15T12:26:39.1525425Z ##[group]Initializing the repository
+2025-11-15T12:26:39.1534789Z [command]"C:\Program Files\Git\bin\git.exe" init D:\a\X32-Behringer-Rust\X32-Behringer-Rust
+2025-11-15T12:26:39.2374172Z Initialized empty Git repository in D:/a/X32-Behringer-Rust/X32-Behringer-Rust/.git/
+2025-11-15T12:26:39.2409689Z ##[debug]0
+2025-11-15T12:26:39.2411625Z ##[debug]Initialized empty Git repository in D:/a/X32-Behringer-Rust/X32-Behringer-Rust/.git/
+2025-11-15T12:26:39.2413060Z ##[debug]
+2025-11-15T12:26:39.2421742Z [command]"C:\Program Files\Git\bin\git.exe" remote add origin https://github.com/mcelb1200/X32-Behringer-Rust
+2025-11-15T12:26:39.3016247Z ##[debug]0
+2025-11-15T12:26:39.3017609Z ##[debug]
+2025-11-15T12:26:39.3018996Z ::endgroup::
+2025-11-15T12:26:39.3019705Z ##[endgroup]
+2025-11-15T12:26:39.3021017Z ::group::Disabling automatic garbage collection
+2025-11-15T12:26:39.3022169Z ##[group]Disabling automatic garbage collection
+2025-11-15T12:26:39.3028237Z [command]"C:\Program Files\Git\bin\git.exe" config --local gc.auto 0
+2025-11-15T12:26:39.3323539Z ##[debug]0
+2025-11-15T12:26:39.3325144Z ##[debug]
+2025-11-15T12:26:39.3326315Z ::endgroup::
+2025-11-15T12:26:39.3327062Z ##[endgroup]
+2025-11-15T12:26:39.3328308Z ::group::Setting up auth
+2025-11-15T12:26:39.3329147Z ##[group]Setting up auth
+2025-11-15T12:26:39.3339017Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+2025-11-15T12:26:39.3626036Z ##[debug]1
+2025-11-15T12:26:39.3627482Z ##[debug]
+2025-11-15T12:26:39.3638744Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+2025-11-15T12:26:40.8843624Z ##[debug]0
+2025-11-15T12:26:40.8844478Z ##[debug]
+2025-11-15T12:26:40.8855599Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2025-11-15T12:26:40.9160702Z ##[debug]1
+2025-11-15T12:26:40.9161929Z ##[debug]
+2025-11-15T12:26:40.9173034Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+2025-11-15T12:26:41.4598432Z ##[debug]0
+2025-11-15T12:26:41.4599789Z ##[debug]
+2025-11-15T12:26:41.4621235Z [command]"C:\Program Files\Git\bin\git.exe" config --local http.https://github.com/.extraheader "AUTHORIZATION: basic ***"
+2025-11-15T12:26:41.4925357Z ##[debug]0
+2025-11-15T12:26:41.4926102Z ##[debug]
+2025-11-15T12:26:41.4940761Z ::endgroup::
+2025-11-15T12:26:41.4941270Z ##[endgroup]
+2025-11-15T12:26:41.4942102Z ::group::Fetching the repository
+2025-11-15T12:26:41.4942601Z ##[group]Fetching the repository
+2025-11-15T12:26:41.4956974Z [command]"C:\Program Files\Git\bin\git.exe" -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +9efee86f7ca67683ed05cf28b844d5735e2d0cfc:refs/remotes/origin/fix-osc-message-to-string
+2025-11-15T12:26:42.5321140Z From https://github.com/mcelb1200/X32-Behringer-Rust
+2025-11-15T12:26:42.5321921Z  * [new ref]         9efee86f7ca67683ed05cf28b844d5735e2d0cfc -> origin/fix-osc-message-to-string
+2025-11-15T12:26:42.5635462Z ##[debug]0
+2025-11-15T12:26:42.5636577Z ##[debug]
+2025-11-15T12:26:42.5637138Z ::endgroup::
+2025-11-15T12:26:42.5637440Z ##[endgroup]
+2025-11-15T12:26:42.5637860Z ::group::Determining the checkout info
+2025-11-15T12:26:42.5638170Z ##[group]Determining the checkout info
+2025-11-15T12:26:42.5640645Z ::endgroup::
+2025-11-15T12:26:42.5640903Z ##[endgroup]
+2025-11-15T12:26:42.5656938Z [command]"C:\Program Files\Git\bin\git.exe" sparse-checkout disable
+2025-11-15T12:26:42.6134750Z ##[debug]0
+2025-11-15T12:26:42.6135372Z ##[debug]
+2025-11-15T12:26:42.6146157Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all extensions.worktreeConfig
+2025-11-15T12:26:42.6445320Z ##[debug]0
+2025-11-15T12:26:42.6446098Z ##[debug]
+2025-11-15T12:26:42.6446956Z ::group::Checking out the ref
+2025-11-15T12:26:42.6447333Z ##[group]Checking out the ref
+2025-11-15T12:26:42.6457238Z [command]"C:\Program Files\Git\bin\git.exe" checkout --progress --force -B fix-osc-message-to-string refs/remotes/origin/fix-osc-message-to-string
+2025-11-15T12:26:42.7692290Z branch 'fix-osc-message-to-string' set up to track 'origin/fix-osc-message-to-string'.
+2025-11-15T12:26:42.7699841Z Switched to a new branch 'fix-osc-message-to-string'
+2025-11-15T12:26:42.7740740Z ##[debug]0
+2025-11-15T12:26:42.7744171Z ##[debug]branch 'fix-osc-message-to-string' set up to track 'origin/fix-osc-message-to-string'.
+2025-11-15T12:26:42.7744675Z ##[debug]
+2025-11-15T12:26:42.7745193Z ::endgroup::
+2025-11-15T12:26:42.7745458Z ##[endgroup]
+2025-11-15T12:26:42.8345082Z ##[debug]0
+2025-11-15T12:26:42.8345772Z ##[debug]commit 9efee86f7ca67683ed05cf28b844d5735e2d0cfc
+2025-11-15T12:26:42.8346373Z ##[debug]Author: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+2025-11-15T12:26:42.8346895Z ##[debug]Date:   Sat Nov 15 12:24:57 2025 +0000
+2025-11-15T12:26:42.8347214Z ##[debug]
+2025-11-15T12:26:42.8347529Z ##[debug]    Fix: Correct `OscMessage::to_string` implementation
+2025-11-15T12:26:42.8347856Z ##[debug]
+2025-11-15T12:26:42.8348196Z ##[debug]    The `to_string` method for `OscMessage` was broken. It used the `write!`
+2025-11-15T12:26:42.8348698Z ##[debug]    macro incorrectly, causing a compilation error. It also failed to
+2025-11-15T12:26:42.8349215Z ##[debug]    include a space between the OSC path and the type tag string, which
+2025-11-15T12:26:42.8349722Z ##[debug]    prevented the `from_str` method from parsing the output correctly.
+2025-11-15T12:26:42.8350094Z ##[debug]
+2025-11-15T12:26:42.8350446Z ##[debug]    This commit fixes the `to_string` implementation by using `format!` to
+2025-11-15T12:26:42.8350937Z ##[debug]    build the string representation of the arguments. It also updates the
+2025-11-15T12:26:42.8351455Z ##[debug]    tests and doctests to reflect the corrected string format.
+2025-11-15T12:26:42.8351794Z ##[debug]
+2025-11-15T12:26:42.8356537Z [command]"C:\Program Files\Git\bin\git.exe" log -1 --format=%H
+2025-11-15T12:26:42.8624909Z 9efee86f7ca67683ed05cf28b844d5735e2d0cfc
+2025-11-15T12:26:42.8659796Z ##[debug]0
+2025-11-15T12:26:42.8660569Z ##[debug]9efee86f7ca67683ed05cf28b844d5735e2d0cfc
+2025-11-15T12:26:42.8661175Z ##[debug]
+2025-11-15T12:26:42.8669194Z ##[debug]Unsetting HOME override
+2025-11-15T12:26:42.8681256Z ::remove-matcher owner=checkout-git::
+2025-11-15T12:26:42.8693142Z ##[debug]Removed matchers: 'checkout-git'
+2025-11-15T12:26:42.8795250Z ##[debug]Node Action run completed with exit code 0
+2025-11-15T12:26:42.8835613Z ##[debug]Save intra-action state isPost = true
+2025-11-15T12:26:42.8837615Z ##[debug]Save intra-action state setSafeDirectory = true
+2025-11-15T12:26:42.8838256Z ##[debug]Save intra-action state repositoryPath = D:\a\X32-Behringer-Rust\X32-Behringer-Rust
+2025-11-15T12:26:42.8842546Z ##[debug]Set output commit = 9efee86f7ca67683ed05cf28b844d5735e2d0cfc
+2025-11-15T12:26:42.8843394Z ##[debug]Set output ref = refs/heads/fix-osc-message-to-string
+2025-11-15T12:26:42.8846605Z ##[debug]Finishing: Run actions/checkout@v4
