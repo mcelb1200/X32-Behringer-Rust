@@ -57,6 +57,7 @@ compile_binaries() {
 
 # --- X32 Connection Detection ---
 detect_x32_connection() {
+    local non_interactive_mode=$1
     log_message "Attempting to detect X32 connection..."
 
     # 1. Check for USB Connection (OS-specific)
@@ -90,6 +91,14 @@ detect_x32_connection() {
 
     # 3. Prompt user if auto-detection fails
     log_message "Could not auto-detect X32 connection."
+
+    if [ "$non_interactive_mode" = "true" ]; then
+        log_message "Non-interactive mode: Skipping user prompt and defaulting to no connection."
+        X32_CONNECTION_TYPE="None"
+        X32_IP_ADDRESS=""
+        return
+    fi
+
     echo "Could not automatically detect the X32."
     echo "Please select the connection method:"
     echo "1. Network"

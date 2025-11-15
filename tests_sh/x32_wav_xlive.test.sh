@@ -2,7 +2,7 @@
 
 # Test module for x32_wav_xlive
 
-# Helper function to generate a minimal, valid, 24-bit mono WAV file using Python.
+# Helper function to generate a minimal, valid, 32-bit mono WAV file using Python.
 # Using Python for this is simpler and more reliable than trying to construct binary data in pure Bash.
 generate_mono_wav_file() {
     local path="$1"
@@ -17,7 +17,7 @@ path = '$path'
 sample_rate = $sample_rate
 duration = $duration_seconds
 num_channels = 1
-bits_per_sample = 24
+bits_per_sample = 32
 num_samples = sample_rate * duration
 block_align = num_channels * (bits_per_sample // 8)
 byte_rate = sample_rate * block_align
@@ -27,8 +27,8 @@ with wave.open(path, 'wb') as wf:
     wf.setsampwidth(bits_per_sample // 8)
     wf.setframerate(sample_rate)
 
-    # Write silent audio data (24-bit samples are 3 bytes)
-    sample = struct.pack('<i', 0)[:3] # Little-endian 24-bit signed integer
+    # Write silent audio data (32-bit samples are 4 bytes)
+    sample = struct.pack('<i', 0) # Little-endian 32-bit signed integer
     for _ in range(num_samples):
         wf.writeframesraw(sample)
 "
@@ -46,6 +46,15 @@ test_x32_wav_xlive() {
     if ! command -v python3 &> /dev/null; then
         log_message "WARNING: 'python3' is not installed. Skipping x32_wav_xlive test."
         return
+    fi
+
+    if ! command -v hexdump &> /dev/null; then
+        log_message "WARNING: 'hexdump' is not installed. Skipping x32_wav_xlive test."
+        return
+    fi
+
+    if ! command -v sox &> /dev/null; then
+        log_message "WARNING: 'sox' is not installed. Some tests may be skipped."
     fi
 
     local test_dir="temp_wav_source"

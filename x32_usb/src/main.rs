@@ -246,7 +246,7 @@ impl X32Client {
 fn run(args: Args) -> Result<()> {
     let client = X32Client::new(&args.ip)?;
 
-    if !client.is_usb_mounted()? {
+    if !client.is_usb_mounted().map_err(|e| ConnectionError(e))? {
         println!("USB drive is not mounted.");
         return Ok(());
     }
