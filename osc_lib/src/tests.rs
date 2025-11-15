@@ -37,6 +37,65 @@ fn test_message_from_str() {
 }
 
 #[test]
+fn test_message_with_blob_roundtrip_to_bytes() {
+    let original_message = OscMessage {
+        path: "/blob".to_string(),
+        args: vec![OscArg::Blob(vec![0x01, 0x02, 0x03, 0x04])],
+    };
+
+    let bytes = original_message.to_bytes().unwrap();
+    let roundtrip_message = OscMessage::from_bytes(&bytes).unwrap();
+
+    assert_eq!(original_message, roundtrip_message);
+}
+
+#[test]
+fn test_message_with_blob_roundtrip_to_string() {
+    let original_message = OscMessage {
+        path: "/blob".to_string(),
+        args: vec![OscArg::Blob(vec![0x01, 0x02, 0x03, 0x04])],
+    };
+
+    let s = original_message.to_string();
+    let roundtrip_message = OscMessage::from_str(&s).unwrap();
+
+    assert_eq!(original_message, roundtrip_message);
+}
+
+#[test]
+fn test_message_from_str_with_blob() {
+    let s = "/blobtest ,b 0123456789abcdef";
+    let message = OscMessage::from_str(s).unwrap();
+    assert_eq!(message.path, "/blobtest");
+    assert_eq!(message.args.len(), 1);
+    match &message.args[0] {
+        OscArg::Blob(b) => assert_eq!(b, &vec![0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef]),
+        _ => panic!("Incorrect argument type"),
+    }
+}
+
+#[test]
+fn test_message_from_str_missing_value() {
+    let s = "/test ,i";
+    let result = OscMessage::from_str(s);
+    assert!(matches!(result, Err(OscError::ParseError(_))));
+}
+
+#[test]
+fn test_message_from_str_unsupported_type() {
+    let s = "/test ,x 123";
+    let result = OscMessage::from_str(s);
+    assert!(matches!(result, Err(OscError::UnsupportedTypeTag('x'))));
+}
+
+#[test]
+fn test_message_from_str_extra_arguments() {
+    let s = "/test ,i 123 456";
+    let result = OscMessage::from_str(s);
+    assert!(matches!(result, Err(OscError::ParseError(_))));
+}
+
+#[test]
 fn test_message_to_string() {
     let message = OscMessage {
         path: "/ch/01/mix/fader".to_string(),
