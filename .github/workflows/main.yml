@@ -30,7 +30,6 @@ jobs:
 
     - name: Run pre-commit checks
       uses: pre-commit/action@v3.0.1
-      working-directory: ./rust_rewrite
 
     - name: Run cargo test
       working-directory: ./rust_rewrite
