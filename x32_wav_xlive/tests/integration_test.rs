@@ -2,8 +2,6 @@ use hound::{WavReader, WavSpec, WavWriter};
 use std::fs::{self, File};
 use std::io::{Cursor, Read};
 use std::path::Path;
-use std::path::Path;
-use tempfile::tempdir;
 use tempfile::tempdir;
 
 fn create_test_wav(dir: &Path, name: &str, spec: WavSpec, duration_ms: u32) {
