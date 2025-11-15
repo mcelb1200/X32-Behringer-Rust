@@ -38,6 +38,20 @@ fn test_message_from_str() {
 }
 
 #[test]
+fn test_message_to_string_with_multiple_args() {
+    let message = OscMessage {
+        path: "/multi".to_string(),
+        args: vec![
+            OscArg::Int(42),
+            OscArg::Float(3.14),
+            OscArg::String("test".to_string()),
+        ],
+    };
+    let s = message.to_string();
+    assert_eq!(s, "/multi ,ifs 42 3.14 \"test\"");
+}
+
+#[test]
 fn test_message_with_blob_roundtrip_to_bytes() {
     let original_message = OscMessage {
         path: "/blob".to_string(),
@@ -103,7 +117,7 @@ fn test_message_to_string() {
         args: vec![OscArg::Float(0.75)],
     };
     let s = message.to_string();
-    assert_eq!(s, "/ch/01/mix/fader,f 0.75");
+    assert_eq!(s, "/ch/01/mix/fader ,f 0.75");
 }
 
 #[test]
@@ -125,7 +139,7 @@ fn test_message_to_string_format() {
         args: vec![OscArg::Float(0.75)],
     };
     let s = message.to_string();
-    assert_eq!(s, "/ch/01/mix/fader,f 0.75");
+    assert_eq!(s, "/ch/01/mix/fader ,f 0.75");
 }
 
 #[test]

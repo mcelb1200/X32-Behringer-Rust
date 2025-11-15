@@ -285,32 +285,34 @@ impl ToString for OscMessage {
     /// let msg = OscMessage::new("/ch/01/mix/fader".to_string(), vec![OscArg::Float(0.75)]);
     /// let msg_str = msg.to_string();
     ///
-    /// assert_eq!(msg_str, "/ch/01/mix/fader,f 0.75");
+    /// assert_eq!(msg_str, "/ch/01/mix/fader ,f 0.75");
     /// ```
     fn to_string(&self) -> String {
         let mut s = self.path.clone();
         if !self.args.is_empty() {
-            s.push(',');
+            let mut type_tags = ",".to_string();
             for arg in &self.args {
                 match arg {
-                    OscArg::Int(_) => s.push('i'),
-                    OscArg::Float(_) => s.push('f'),
-                    OscArg::String(_) => s.push('s'),
-                    OscArg::Blob(_) => s.push('b'),
+                    OscArg::Int(_) => type_tags.push('i'),
+                    OscArg::Float(_) => type_tags.push('f'),
+                    OscArg::String(_) => type_tags.push('s'),
+                    OscArg::Blob(_) => type_tags.push('b'),
                 }
             }
+            s.push(' ');
+            s.push_str(&type_tags);
+
             for arg in &self.args {
                 s.push(' ');
                 match arg {
-                    OscArg::Int(val) => write!(f, "{}", val)?,
-                    OscArg::Float(val) => write!(f, "{}", val)?,
-                    OscArg::String(val) => write!(f, "\"{}\"", val)?,
+                    OscArg::Int(val) => s.push_str(&format!("{}", val)),
+                    OscArg::Float(val) => s.push_str(&format!("{}", val)),
+                    OscArg::String(val) => s.push_str(&format!("\"{}\"", val)),
                     OscArg::Blob(val) => {
                         for byte in val {
-                            write!(f, "{:02x}", byte)?;
+                            s.push_str(&format!("{:02x}", byte));
                         }
-                        Ok(())
-                    }?,
+                    }
                 }
             }
         }
