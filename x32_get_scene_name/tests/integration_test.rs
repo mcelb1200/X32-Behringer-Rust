@@ -1,5 +1,4 @@
 use osc_lib::{OscArg, OscMessage};
-use osc_lib::{OscArg, OscMessage};
 use std::net::{SocketAddr, UdpSocket};
 use std::thread;
 use std::time::Duration;
