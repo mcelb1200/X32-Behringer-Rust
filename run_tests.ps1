@@ -1,6 +1,10 @@
 # Main PowerShell script for testing X32 Rust binaries
 
 # --- Configuration ---
+param (
+    [switch]$RunTestsAndExit
+)
+
 $LogFile = "x32_test_log.txt"
 $Binaries = @(
     "x32_emulator",
@@ -19,6 +23,10 @@ $Binaries = @(
     "x32_usb",
     "x32_wav_xlive"
 )
+$Global:BinaryPath = ".\target\release"
+
+# --- Import Utilities ---
+. ".\tests\utils.ps1"
 
 # --- Logging ---
 function Log-Message {
@@ -54,14 +62,15 @@ function Compile-Binaries {
         cargo build --package $binary --release
         if ($LASTEXITCODE -ne 0) {
             Log-Message "ERROR: Compilation of $binary failed."
+            return $false
         }
     }
     Log-Message "Compilation process complete."
+    return $true
 }
 
 # --- X32 Connection ---
 $Global:X32Connection = $null
-$Global:BinaryPath = ".\target\release"
 
 function Show-CompilationMenu {
     while ($true) {
@@ -216,12 +225,32 @@ Get-ChildItem -Path ".\tests" -Filter "*.test.ps1" | ForEach-Object {
     $TestModules[$moduleName] = $_.FullName
 }
 
+# --- Test Execution ---
+function Run-Tests {
+    param (
+        [string[]]$TestsToRun
+    )
+    $allPassed = $true
+    foreach ($module in $TestModules.GetEnumerator()) {
+        if ($TestsToRun -and ($module.Name -notin $TestsToRun)) {
+            continue
+        }
+        . $module.Value
+        $testFunctionName = "Test-$($module.Name)"
+        $result = Invoke-Expression -Command $testFunctionName
+        if (-not $result.Passed) {
+            $allPassed = $false
+        }
+    }
+    return $allPassed
+}
+
 # --- Main Menu (TUI) ---
 function Show-MainMenu {
     Clear-Host
     Write-Host "X32 Rust Binaries - Test Suite"
     Write-Host "-------------------------------"
-	Write-Host "Connection Status: $($Global:X32Connection.Type) $($Global:X32Connection.IPAddress)"
+    Write-Host "Connection Status: $($Global:X32Connection.Type) $($Global:X32Connection.IPAddress)"
     Write-Host "1. Manage Binaries"
     Write-Host "2. Detect X32 connection"
     Write-Host "3. Run all tests"
@@ -231,64 +260,80 @@ function Show-MainMenu {
     return $selection
 }
 
-# --- Main Loop ---
-while ($true) {
-    $choice = Show-MainMenu
-    switch ($choice) {
-        "1" {
-            Show-CompilationMenu
-        }
-        "2" {
-            Detect-X32Connection
-            Read-Host "Press Enter to continue..."
-        }
-        "3" {
-            Log-Message "Running all tests..."
-            if (-not (Check-BinariesExist)) {
-                Read-Host "Press Enter to continue..."
-                continue
-            }
-            if ($null -eq $Global:X32Connection) { Detect-X32Connection }
-            foreach ($module in $TestModules.GetEnumerator()) {
-                . $module.Value
-                $testFunctionName = "Test-$($module.Name)"
-                Invoke-Expression -Command $testFunctionName
-            }
-            Read-Host "Press Enter to continue..."
-        }
-        "4" {
-            Log-Message "Running specific test..."
-            if (-not (Check-BinariesExist)) {
-                Read-Host "Press Enter to continue..."
-                continue
-            }
-            if ($null -eq $Global:X32Connection) { Detect-X32Connection }
+# --- Main Script Logic ---
+if ($RunTestsAndExit) {
+    # Non-interactive mode for CI/CD
+    Log-Message "Running in non-interactive mode."
+    $Global:X32Connection = @{ Type = "None"; IPAddress = $null }
 
-            $i = 1
-            $testOptions = @{}
-            foreach ($module in $TestModules.GetEnumerator()) {
-                Write-Host "$i. $($module.Name)"
-                $testOptions[$i] = $module
-                $i++
-            }
-            $testChoice = Read-Host "Select a test to run"
-            $selectedTest = $testOptions[$testChoice]
+    if (-not (Compile-Binaries)) {
+        Log-Message "Compilation failed. Exiting."
+        exit 1
+    }
 
-            if ($selectedTest) {
-                . $selectedTest.Value
-                $testFunctionName = "Test-$($selectedTest.Name)"
-                Invoke-Expression -Command $testFunctionName
-            } else {
-                Write-Host "Invalid selection."
+    # Specify which tests to run in CI
+    $ciTests = @("x32_emulator")
+    if (Run-Tests -TestsToRun $ciTests) {
+        Log-Message "All CI tests passed."
+        exit 0
+    } else {
+        Log-Message "One or more CI tests failed."
+        exit 1
+    }
+} else {
+    # Interactive TUI mode
+    while ($true) {
+        $choice = Show-MainMenu
+        switch ($choice) {
+            "1" {
+                Show-CompilationMenu
             }
-            Read-Host "Press Enter to continue..."
-        }
-        "q" {
-            return
-        }
-        default {
-            Write-Host "Invalid selection. Please try again."
-            Read-Host "Press Enter to continue..."
+            "2" {
+                Detect-X32Connection
+                Read-Host "Press Enter to continue..."
+            }
+            "3" {
+                Log-Message "Running all tests..."
+                if (-not (Check-BinariesExist)) {
+                    Read-Host "Press Enter to continue..."
+                    continue
+                }
+                if ($null -eq $Global:X32Connection) { Detect-X32Connection }
+                Run-Tests
+                Read-Host "Press Enter to continue..."
+            }
+            "4" {
+                Log-Message "Running specific test..."
+                if (-not (Check-BinariesExist)) {
+                    Read-Host "Press Enter to continue..."
+                    continue
+                }
+                if ($null -eq $Global:X32Connection) { Detect-X32Connection }
+
+                $i = 1
+                $testOptions = @{}
+                foreach ($module in $TestModules.GetEnumerator()) {
+                    Write-Host "$i. $($module.Name)"
+                    $testOptions[$i] = $module
+                    $i++
+                }
+                $testChoice = Read-Host "Select a test to run"
+                $selectedTest = $testOptions[$testChoice]
+
+                if ($selectedTest) {
+                    Run-Tests -TestsToRun @($selectedTest.Name)
+                } else {
+                    Write-Host "Invalid selection."
+                }
+                Read-Host "Press Enter to continue..."
+            }
+            "q" {
+                return
+            }
+            default {
+                Write-Host "Invalid selection. Please try again."
+                Read-Host "Press Enter to continue..."
+            }
         }
     }
 }

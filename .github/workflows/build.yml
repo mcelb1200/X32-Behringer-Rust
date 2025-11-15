@@ -56,3 +56,7 @@ jobs:
     - name: Run tests
       if: matrix.test == true
       run: cargo test --workspace --release --target ${{ matrix.target }}
+
+    - name: Run PowerShell test suite
+      if: matrix.os == 'windows-latest'
+      run: powershell.exe -File ./run_tests.ps1 --RunTestsAndExit

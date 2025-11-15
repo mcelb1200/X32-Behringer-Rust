@@ -2,26 +2,25 @@
 
 function Test-X32Emulator {
     Log-Message "--- Running x32_emulator tests ---"
-
-    $binaryPath = Join-Path $Global:BinaryPath "x32_emulator.exe"
-    if (-not (Test-Path $binaryPath)) {
-        Log-Message "ERROR: x32_emulator.exe not found. Please compile first."
-        return
-    }
+    $passed = $true
 
     # Test 1: Start and stop the emulator
     Log-Message "Test 1: Starting emulator..."
-    Start-Process -FilePath $binaryPath -NoNewWindow
-    Start-Sleep -Seconds 5 # Give it time to start
-
-    $proc = Get-Process | Where-Object { $_.Name -eq "x32_emulator" }
-    if ($proc) {
-        Log-Message "Emulator process found. Stopping..."
-        Stop-Process -Name "x32_emulator"
-        Log-Message "Test 1 PASSED."
+    $emulatorProcess = Start-ManagedProcess -BinaryName "x32_emulator"
+    if ($null -eq $emulatorProcess) {
+        Log-Message "Test 1 FAILED: Could not start emulator process."
+        $passed = $false
     } else {
-        Log-Message "Test 1 FAILED: Could not find emulator process."
+        Start-Sleep -Seconds 3
+        if ($emulatorProcess.Process.HasExited) {
+            Log-Message "Test 1 FAILED: Emulator process exited prematurely."
+            $passed = $false
+        } else {
+            Log-Message "Emulator process is running. Test 1 PASSED."
+        }
+        Stop-ManagedProcess -ManagedProcess $emulatorProcess
     }
 
     Log-Message "--- Finished x32_emulator tests ---"
+    return @{ Passed = $passed }
 }
