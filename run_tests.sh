@@ -46,15 +46,20 @@ compile_binaries() {
 
 # --- X32 Connection Detection (Linux) ---
 detect_x32_connection() {
+    local non_interactive_mode=$1
     log_message "Attempting to detect X32 connection..."
 
     # 1. Check for USB Connection
     log_message "Checking for USB devices..."
-    if lsusb | grep -q "1397:"; then
-        log_message "Found Behringer USB device. Assuming X32 is connected via USB."
-        X32_CONNECTION_TYPE="USB"
-        X32_IP_ADDRESS=""
-        return
+    if command -v lsusb &> /dev/null; then
+        if lsusb | grep -q "1397:"; then
+            log_message "Found Behringer USB device. Assuming X32 is connected via USB."
+            X32_CONNECTION_TYPE="USB"
+            X32_IP_ADDRESS=""
+            return
+        fi
+    else
+        log_message "Warning: 'lsusb' is not installed. Skipping USB device check."
     fi
 
     # 2. Check for Network Connection
@@ -77,6 +82,14 @@ detect_x32_connection() {
 
     # 3. Prompt user if auto-detection fails
     log_message "Could not auto-detect X32 connection."
+
+    if [ "$non_interactive_mode" = "true" ]; then
+        log_message "Non-interactive mode: Skipping user prompt and defaulting to no connection."
+        X32_CONNECTION_TYPE="None"
+        X32_IP_ADDRESS=""
+        return
+    fi
+
     echo "Could not automatically detect the X32."
     echo "Please select the connection method:"
     echo "1. Network"
@@ -109,6 +122,29 @@ detect_x32_connection() {
 }
 
 
+# --- Non-Interactive Mode ---
+run_all_tests_non_interactive() {
+    log_message "Running in non-interactive mode."
+    detect_x32_connection true
+    log_message "Compiling all binaries..."
+    compile_binaries
+    if [ $? -ne 0 ]; then
+        log_message "ERROR: Compilation failed. Aborting tests."
+        exit 1
+    fi
+
+    log_message "Running all tests..."
+    for test_file in tests_sh/*.test.sh; do
+        if [ -f "$test_file" ]; then
+            source "$test_file"
+            local test_function_name=$(basename "$test_file" .test.sh | tr '-' '_')
+            "test_$test_function_name"
+        fi
+    done
+    log_message "All tests finished."
+    exit 0
+}
+
 # --- Main Menu (TUI) ---
 show_main_menu() {
     clear
@@ -124,6 +160,13 @@ show_main_menu() {
 }
 
 # --- Main Loop ---
+
+# Check for non-interactive flag
+if [ "$1" == "--run-tests-and-exit" ]; then
+    run_all_tests_non_interactive
+fi
+
+
 while true; do
     show_main_menu
     case "$REPLY" in
