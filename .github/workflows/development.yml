@@ -4,6 +4,7 @@ on:
   push:
     branches-ignore:
       - 'master'
+      - 'main'
 
 jobs:
   build:
@@ -32,7 +33,6 @@ jobs:
     - name: Run pre-commit checks (allow failure)
       uses: pre-commit/action@v3.0.1
       continue-on-error: true
-      working-directory: ./rust_rewrite
 
     - name: Run cargo test (allow failure)
       working-directory: ./rust_rewrite
