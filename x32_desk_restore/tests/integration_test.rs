@@ -1,8 +1,5 @@
 use osc_lib::OscMessage;
-use osc_lib::OscMessage;
 use std::fs::File;
-use std::fs::File;
-use std::io::Write;
 use std::io::Write;
 use std::net::UdpSocket;
 use std::thread;
