@@ -255,6 +255,21 @@ impl FromStr for OscMessage {
                     's' => {
                         args.push(OscArg::String(val_str.to_string()));
                     }
+                    'b' => {
+                        if val_str.len() % 2 != 0 {
+                            return Err(OscError::ParseError(format!(
+                                "Invalid hex string length for blob: {}",
+                                val_str
+                            )));
+                        }
+                        let mut blob = Vec::new();
+                        for i in (0..val_str.len()).step_by(2) {
+                            let byte = u8::from_str_radix(&val_str[i..i + 2], 16)
+                                .map_err(|e| OscError::ParseError(e.to_string()))?;
+                            blob.push(byte);
+                        }
+                        args.push(OscArg::Blob(blob));
+                    }
                     _ => return Err(OscError::UnsupportedTypeTag(tag)),
                 }
             }
@@ -300,7 +315,12 @@ impl std::fmt::Display for OscMessage {
                     OscArg::Int(val) => write!(f, "{}", val)?,
                     OscArg::Float(val) => write!(f, "{}", val)?,
                     OscArg::String(val) => write!(f, "\"{}\"", val)?,
-                    OscArg::Blob(_) => write!(f, "[blob]")?,
+                    OscArg::Blob(val) => {
+                        for byte in val {
+                            write!(f, "{:02x}", byte)?;
+                        }
+                        Ok(())
+                    }?,
                 }
             }
         }
