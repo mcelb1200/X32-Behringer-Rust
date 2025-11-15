@@ -1,0 +1,5 @@
+﻿2025-11-15T12:27:20.5607874Z ##[debug]Evaluating condition for step: 'Run pre-commit checks (allow failure)'
+2025-11-15T12:27:20.5609452Z ##[debug]Evaluating: success()
+2025-11-15T12:27:20.5609753Z ##[debug]Evaluating success:
+2025-11-15T12:27:20.5610082Z ##[debug]=> false
+2025-11-15T12:27:20.5610399Z ##[debug]Result: false

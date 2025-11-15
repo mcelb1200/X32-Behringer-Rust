@@ -1,0 +1,58 @@
+﻿2025-11-15T12:27:35.0789039Z ##[debug]Evaluating condition for step: 'Post Run actions/checkout@v4'
+2025-11-15T12:27:35.0790432Z ##[debug]Evaluating: always()
+2025-11-15T12:27:35.0790756Z ##[debug]Evaluating always:
+2025-11-15T12:27:35.0791013Z ##[debug]=> true
+2025-11-15T12:27:35.0791324Z ##[debug]Result: true
+2025-11-15T12:27:35.0792127Z ##[debug]Starting: Post Run actions/checkout@v4
+2025-11-15T12:27:35.0929154Z ##[debug]Loading inputs
+2025-11-15T12:27:35.0929955Z ##[debug]Evaluating: github.repository
+2025-11-15T12:27:35.0930223Z ##[debug]Evaluating Index:
+2025-11-15T12:27:35.0930440Z ##[debug]..Evaluating github:
+2025-11-15T12:27:35.0930671Z ##[debug]..=> Object
+2025-11-15T12:27:35.0930870Z ##[debug]..Evaluating String:
+2025-11-15T12:27:35.0931082Z ##[debug]..=> 'repository'
+2025-11-15T12:27:35.0931382Z ##[debug]=> 'mcelb1200/X32-Behringer-Rust'
+2025-11-15T12:27:35.0931676Z ##[debug]Result: 'mcelb1200/X32-Behringer-Rust'
+2025-11-15T12:27:35.0932961Z ##[debug]Evaluating: github.token
+2025-11-15T12:27:35.0933204Z ##[debug]Evaluating Index:
+2025-11-15T12:27:35.0933450Z ##[debug]..Evaluating github:
+2025-11-15T12:27:35.0933677Z ##[debug]..=> Object
+2025-11-15T12:27:35.0933880Z ##[debug]..Evaluating String:
+2025-11-15T12:27:35.0934088Z ##[debug]..=> 'token'
+2025-11-15T12:27:35.0934537Z ##[debug]=> '***'
+2025-11-15T12:27:35.0934809Z ##[debug]Result: '***'
+2025-11-15T12:27:35.0943292Z ##[debug]Loading env
+2025-11-15T12:27:35.0956462Z Post job cleanup.
+2025-11-15T12:27:35.3210886Z ##[debug]Getting git version
+2025-11-15T12:27:35.3240565Z [command]"C:\Program Files\Git\bin\git.exe" version
+2025-11-15T12:27:35.3519142Z git version 2.51.2.windows.1
+2025-11-15T12:27:35.3572697Z ##[debug]0
+2025-11-15T12:27:35.3573286Z ##[debug]git version 2.51.2.windows.1
+2025-11-15T12:27:35.3573655Z ##[debug]
+2025-11-15T12:27:35.3575511Z ##[debug]Set git useragent to: git/2.51.2 (github-actions-checkout)
+2025-11-15T12:27:35.3579994Z ::add-mask::***
+2025-11-15T12:27:35.3607721Z Temporarily overriding HOME='D:\a\_temp\cf732d43-d2d9-4c81-ad43-beadbaf33671' before making global git config changes
+2025-11-15T12:27:35.3608859Z Adding repository directory to the temporary git global config as a safe directory
+2025-11-15T12:27:35.3621175Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\X32-Behringer-Rust\X32-Behringer-Rust
+2025-11-15T12:27:35.3936004Z ##[debug]0
+2025-11-15T12:27:35.3936378Z ##[debug]
+2025-11-15T12:27:35.3952002Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+2025-11-15T12:27:35.4252799Z ##[debug]1
+2025-11-15T12:27:35.4253154Z ##[debug]
+2025-11-15T12:27:35.4266306Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+2025-11-15T12:27:35.9950291Z ##[debug]0
+2025-11-15T12:27:35.9951678Z ##[debug]
+2025-11-15T12:27:35.9965279Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2025-11-15T12:27:36.0230160Z http.https://github.com/.extraheader
+2025-11-15T12:27:36.0264504Z ##[debug]0
+2025-11-15T12:27:36.0264967Z ##[debug]http.https://github.com/.extraheader
+2025-11-15T12:27:36.0265245Z ##[debug]
+2025-11-15T12:27:36.0283330Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all http.https://github.com/.extraheader
+2025-11-15T12:27:36.0584927Z ##[debug]0
+2025-11-15T12:27:36.0585298Z ##[debug]
+2025-11-15T12:27:36.0596487Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+2025-11-15T12:27:36.5916694Z ##[debug]0
+2025-11-15T12:27:36.5917046Z ##[debug]
+2025-11-15T12:27:36.5919217Z ##[debug]Unsetting HOME override
+2025-11-15T12:27:36.6033608Z ##[debug]Node Action run completed with exit code 0
+2025-11-15T12:27:36.6039672Z ##[debug]Finishing: Post Run actions/checkout@v4

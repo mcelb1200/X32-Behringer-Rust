@@ -1,0 +1,85 @@
+﻿2025-11-15T12:26:36.0261481Z ##[debug]Starting: Set up job
+2025-11-15T12:26:36.0263207Z Current runner version: '2.329.0'
+2025-11-15T12:26:36.0285409Z ##[group]Runner Image Provisioner
+2025-11-15T12:26:36.0286117Z Hosted Compute Agent
+2025-11-15T12:26:36.0286631Z Version: 20251016.436
+2025-11-15T12:26:36.0287175Z Commit: 8ab8ac8bfd662a3739dab9fe09456aba92132568
+2025-11-15T12:26:36.0287767Z Build Date: 2025-10-15T20:44:12Z
+2025-11-15T12:26:36.0288337Z ##[endgroup]
+2025-11-15T12:26:36.0288759Z ##[group]Operating System
+2025-11-15T12:26:36.0289269Z Microsoft Windows Server 2025
+2025-11-15T12:26:36.0289732Z 10.0.26100
+2025-11-15T12:26:36.0290155Z Datacenter
+2025-11-15T12:26:36.0290557Z ##[endgroup]
+2025-11-15T12:26:36.0290945Z ##[group]Runner Image
+2025-11-15T12:26:36.0291427Z Image: windows-2025
+2025-11-15T12:26:36.0291850Z Version: 20251102.77.1
+2025-11-15T12:26:36.0292798Z Included Software: https://github.com/actions/runner-images/blob/win25/20251102.77/images/windows/Windows2025-Readme.md
+2025-11-15T12:26:36.0294690Z Image Release: https://github.com/actions/runner-images/releases/tag/win25%2F20251102.77
+2025-11-15T12:26:36.0295652Z ##[endgroup]
+2025-11-15T12:26:36.0298573Z ##[group]GITHUB_TOKEN Permissions
+2025-11-15T12:26:36.0301091Z Actions: write
+2025-11-15T12:26:36.0301604Z ArtifactMetadata: write
+2025-11-15T12:26:36.0302097Z Attestations: write
+2025-11-15T12:26:36.0302503Z Checks: write
+2025-11-15T12:26:36.0302956Z Contents: write
+2025-11-15T12:26:36.0303393Z Deployments: write
+2025-11-15T12:26:36.0303861Z Discussions: write
+2025-11-15T12:26:36.0304318Z Issues: write
+2025-11-15T12:26:36.0304734Z Metadata: read
+2025-11-15T12:26:36.0305125Z Models: read
+2025-11-15T12:26:36.0305558Z Packages: write
+2025-11-15T12:26:36.0306078Z Pages: write
+2025-11-15T12:26:36.0306521Z PullRequests: write
+2025-11-15T12:26:36.0307012Z RepositoryProjects: write
+2025-11-15T12:26:36.0307557Z SecurityEvents: write
+2025-11-15T12:26:36.0308035Z Statuses: write
+2025-11-15T12:26:36.0308481Z ##[endgroup]
+2025-11-15T12:26:36.0310955Z Secret source: Actions
+2025-11-15T12:26:36.0311727Z ##[debug]Primary repository: mcelb1200/X32-Behringer-Rust
+2025-11-15T12:26:36.0312425Z Prepare workflow directory
+2025-11-15T12:26:36.0396770Z ##[debug]Creating pipeline directory: 'D:\a\X32-Behringer-Rust'
+2025-11-15T12:26:36.0401176Z ##[debug]Creating workspace directory: 'D:\a\X32-Behringer-Rust\X32-Behringer-Rust'
+2025-11-15T12:26:36.0403402Z ##[debug]Update context data
+2025-11-15T12:26:36.0406501Z ##[debug]Evaluating job-level environment variables
+2025-11-15T12:26:36.0672002Z ##[debug]Evaluating job container
+2025-11-15T12:26:36.0676528Z ##[debug]Evaluating job service containers
+2025-11-15T12:26:36.0680807Z ##[debug]Evaluating job defaults
+2025-11-15T12:26:36.0706971Z Prepare all required actions
+2025-11-15T12:26:36.0745624Z Getting action download info
+2025-11-15T12:26:36.3395759Z Download action repository 'actions/checkout@v4' (SHA:08eba0b27e820071cde6df949e0beb9ba4906955)
+2025-11-15T12:26:36.3684619Z ##[debug]Copied action archive 'C:\actionarchivecache\actions_checkout\08eba0b27e820071cde6df949e0beb9ba4906955.zip' to 'D:\a\_actions\_temp_aca4540a-30a9-4f68-ae1d-70f3a4e350c4\21348863-6b68-4f27-ade1-8fa681e03404.zip'
+2025-11-15T12:26:36.4127285Z ##[debug]Unwrap 'actions-checkout-08eba0b' to 'D:\a\_actions\actions\checkout\v4'
+2025-11-15T12:26:36.4699524Z ##[debug]Archive 'D:\a\_actions\_temp_aca4540a-30a9-4f68-ae1d-70f3a4e350c4\21348863-6b68-4f27-ade1-8fa681e03404.zip' has been unzipped into 'D:\a\_actions\actions\checkout\v4'.
+2025-11-15T12:26:36.4838227Z Download action repository 'actions-rust-lang/setup-rust-toolchain@v1' (SHA:1780873c7b576612439a134613cc4cc74ce5538c)
+2025-11-15T12:26:36.8180254Z ##[debug]Download 'https://api.github.com/repos/actions-rust-lang/setup-rust-toolchain/zipball/1780873c7b576612439a134613cc4cc74ce5538c' to 'D:\a\_actions\_temp_1c75b6f7-ba5d-4750-a56f-ac7b550b44bf\a239cffa-aeeb-4a44-bc66-f248c59a9a42.zip'
+2025-11-15T12:26:36.8231850Z ##[debug]Unwrap 'actions-rust-lang-setup-rust-toolchain-1780873' to 'D:\a\_actions\actions-rust-lang\setup-rust-toolchain\v1'
+2025-11-15T12:26:36.8291160Z ##[debug]Archive 'D:\a\_actions\_temp_1c75b6f7-ba5d-4750-a56f-ac7b550b44bf\a239cffa-aeeb-4a44-bc66-f248c59a9a42.zip' has been unzipped into 'D:\a\_actions\actions-rust-lang\setup-rust-toolchain\v1'.
+2025-11-15T12:26:36.8316847Z Download action repository 'pre-commit/action@v3.0.1' (SHA:2c7b3805fd2a0fd8c1884dcaebf91fc102a13ecd)
+2025-11-15T12:26:37.1515676Z ##[debug]Download 'https://api.github.com/repos/pre-commit/action/zipball/2c7b3805fd2a0fd8c1884dcaebf91fc102a13ecd' to 'D:\a\_actions\_temp_c9bc004b-9fe8-4c9a-8513-0f1bb94615af\b359e207-6b7d-44df-9f95-afe24405594a.zip'
+2025-11-15T12:26:37.1540193Z ##[debug]Unwrap 'pre-commit-action-2c7b380' to 'D:\a\_actions\pre-commit\action\v3.0.1'
+2025-11-15T12:26:37.1567261Z ##[debug]Archive 'D:\a\_actions\_temp_c9bc004b-9fe8-4c9a-8513-0f1bb94615af\b359e207-6b7d-44df-9f95-afe24405594a.zip' has been unzipped into 'D:\a\_actions\pre-commit\action\v3.0.1'.
+2025-11-15T12:26:37.1595314Z ##[debug]action.yml for action: 'D:\a\_actions\actions\checkout\v4\action.yml'.
+2025-11-15T12:26:37.2946038Z ##[debug]action.yml for action: 'D:\a\_actions\actions-rust-lang\setup-rust-toolchain\v1\action.yml'.
+2025-11-15T12:26:37.3175115Z Getting action download info
+2025-11-15T12:26:37.4275893Z Download action repository 'Swatinem/rust-cache@f13886b937689c021905a6b90929199931d60db1' (SHA:f13886b937689c021905a6b90929199931d60db1)
+2025-11-15T12:26:37.8078160Z ##[debug]Download 'https://api.github.com/repos/Swatinem/rust-cache/zipball/f13886b937689c021905a6b90929199931d60db1' to 'D:\a\_actions\_temp_dbd55fdf-7549-42e2-87a3-c01b4a3bb40a\9c039426-e49c-49a7-ab27-6c26c30486c6.zip'
+2025-11-15T12:26:37.8596694Z ##[debug]Unwrap 'Swatinem-rust-cache-f13886b' to 'D:\a\_actions\Swatinem\rust-cache\f13886b937689c021905a6b90929199931d60db1'
+2025-11-15T12:26:37.8874886Z ##[debug]Archive 'D:\a\_actions\_temp_dbd55fdf-7549-42e2-87a3-c01b4a3bb40a\9c039426-e49c-49a7-ab27-6c26c30486c6.zip' has been unzipped into 'D:\a\_actions\Swatinem\rust-cache\f13886b937689c021905a6b90929199931d60db1'.
+2025-11-15T12:26:37.8929945Z ##[debug]action.yml for action: 'D:\a\_actions\Swatinem\rust-cache\f13886b937689c021905a6b90929199931d60db1\action.yml'.
+2025-11-15T12:26:37.9389291Z ##[debug]action.yml for action: 'D:\a\_actions\pre-commit\action\v3.0.1\action.yml'.
+2025-11-15T12:26:37.9424714Z Getting action download info
+2025-11-15T12:26:38.0589928Z Download action repository 'actions/cache@v4' (SHA:0057852bfaa89a56745cba8c7296529d2fc39830)
+2025-11-15T12:26:38.0794918Z ##[debug]Copied action archive 'C:\actionarchivecache\actions_cache\0057852bfaa89a56745cba8c7296529d2fc39830.zip' to 'D:\a\_actions\_temp_20900bf4-8c85-40b4-a8ff-934c9968e8f9\60718a96-dbc3-4bfc-bc56-f4b4710b435a.zip'
+2025-11-15T12:26:38.1416417Z ##[debug]Unwrap 'actions-cache-0057852' to 'D:\a\_actions\actions\cache\v4'
+2025-11-15T12:26:38.1925265Z ##[debug]Archive 'D:\a\_actions\_temp_20900bf4-8c85-40b4-a8ff-934c9968e8f9\60718a96-dbc3-4bfc-bc56-f4b4710b435a.zip' has been unzipped into 'D:\a\_actions\actions\cache\v4'.
+2025-11-15T12:26:38.2020421Z ##[debug]action.yml for action: 'D:\a\_actions\actions\cache\v4\action.yml'.
+2025-11-15T12:26:38.2217449Z ##[debug]Set step '__actions_checkout' display name to: 'Run actions/checkout@v4'
+2025-11-15T12:26:38.2221755Z ##[debug]Set step '__actions-rust-lang_setup-rust-toolchain' display name to: 'Install Rust toolchain'
+2025-11-15T12:26:38.2225563Z ##[debug]Set step '__run' display name to: 'Install portmidi on Linux'
+2025-11-15T12:26:38.2228382Z ##[debug]Set step '__run_2' display name to: 'Run cargo check'
+2025-11-15T12:26:38.2231449Z ##[debug]Set step '__pre-commit_action' display name to: 'Run pre-commit checks (allow failure)'
+2025-11-15T12:26:38.2234485Z ##[debug]Set step '__run_3' display name to: 'Run cargo test (allow failure)'
+2025-11-15T12:26:38.2235926Z Complete job name: build (windows-latest)
+2025-11-15T12:26:38.2285085Z ##[debug]Collect running processes for tracking orphan processes.
+2025-11-15T12:26:38.2355746Z ##[debug]Finishing: Set up job

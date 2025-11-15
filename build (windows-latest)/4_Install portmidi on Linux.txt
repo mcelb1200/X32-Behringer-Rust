@@ -1,0 +1,18 @@
+﻿2025-11-15T12:27:20.4480438Z ##[debug]Evaluating condition for step: 'Install portmidi on Linux'
+2025-11-15T12:27:20.4481910Z ##[debug]Evaluating: (success() && (runner.os == 'Linux'))
+2025-11-15T12:27:20.4482339Z ##[debug]Evaluating And:
+2025-11-15T12:27:20.4482603Z ##[debug]..Evaluating success:
+2025-11-15T12:27:20.4483000Z ##[debug]..=> true
+2025-11-15T12:27:20.4483254Z ##[debug]..Evaluating Equal:
+2025-11-15T12:27:20.4483519Z ##[debug]....Evaluating Index:
+2025-11-15T12:27:20.4483786Z ##[debug]......Evaluating runner:
+2025-11-15T12:27:20.4484071Z ##[debug]......=> Object
+2025-11-15T12:27:20.4484332Z ##[debug]......Evaluating String:
+2025-11-15T12:27:20.4484578Z ##[debug]......=> 'os'
+2025-11-15T12:27:20.4484844Z ##[debug]....=> 'Windows'
+2025-11-15T12:27:20.4485099Z ##[debug]....Evaluating String:
+2025-11-15T12:27:20.4485351Z ##[debug]....=> 'Linux'
+2025-11-15T12:27:20.4485587Z ##[debug]..=> false
+2025-11-15T12:27:20.4485803Z ##[debug]=> false
+2025-11-15T12:27:20.4486212Z ##[debug]Expanded: (true && ('Windows' == 'Linux'))
+2025-11-15T12:27:20.4486606Z ##[debug]Result: false

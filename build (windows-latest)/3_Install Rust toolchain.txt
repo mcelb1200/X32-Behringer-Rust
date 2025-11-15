@@ -1,0 +1,1028 @@
+﻿2025-11-15T12:26:42.8864119Z ##[debug]Evaluating condition for step: 'Install Rust toolchain'
+2025-11-15T12:26:42.8867641Z ##[debug]Evaluating: success()
+2025-11-15T12:26:42.8868154Z ##[debug]Evaluating success:
+2025-11-15T12:26:42.8868632Z ##[debug]=> true
+2025-11-15T12:26:42.8869099Z ##[debug]Result: true
+2025-11-15T12:26:42.8869896Z ##[debug]Starting: Install Rust toolchain
+2025-11-15T12:26:42.9193923Z ##[debug]Register post job cleanup for action: actions-rust-lang/setup-rust-toolchain@v1
+2025-11-15T12:26:42.9213220Z ##[debug]Loading inputs
+2025-11-15T12:26:42.9242808Z ##[warning]Unexpected input(s) 'rust-version', valid inputs are ['toolchain', 'target', 'components', 'cache', 'cache-workspaces', 'cache-directories', 'cache-on-failure', 'cache-key', 'cache-shared-key', 'cache-bin', 'cache-provider', 'cache-all-crates', 'cache-workspace-crates', 'matcher', 'rustflags', 'override', 'rust-src-dir']
+2025-11-15T12:26:42.9249383Z ##[debug]Loading env
+2025-11-15T12:26:42.9256313Z ##[group]Run actions-rust-lang/setup-rust-toolchain@v1
+2025-11-15T12:26:42.9256636Z with:
+2025-11-15T12:26:42.9256787Z   rust-version: stable
+2025-11-15T12:26:42.9256960Z   components: clippy
+2025-11-15T12:26:42.9257127Z   cache: true
+2025-11-15T12:26:42.9257281Z   cache-on-failure: true
+2025-11-15T12:26:42.9257449Z   cache-bin: true
+2025-11-15T12:26:42.9257614Z   cache-provider: github
+2025-11-15T12:26:42.9257790Z   cache-all-crates: false
+2025-11-15T12:26:42.9257985Z   cache-workspace-crates: false
+2025-11-15T12:26:42.9258169Z   matcher: true
+2025-11-15T12:26:42.9258343Z   rustflags: -D warnings
+2025-11-15T12:26:42.9258507Z   override: true
+2025-11-15T12:26:42.9258661Z ##[endgroup]
+2025-11-15T12:26:42.9308630Z ##[debug]Evaluating condition for step: 'run'
+2025-11-15T12:26:42.9313872Z ##[debug]Evaluating: (success() && (runner.os == 'macOS'))
+2025-11-15T12:26:42.9314305Z ##[debug]Evaluating And:
+2025-11-15T12:26:42.9316903Z ##[debug]..Evaluating success:
+2025-11-15T12:26:42.9317575Z ##[debug]..=> true
+2025-11-15T12:26:42.9317876Z ##[debug]..Evaluating Equal:
+2025-11-15T12:26:42.9318943Z ##[debug]....Evaluating Index:
+2025-11-15T12:26:42.9319233Z ##[debug]......Evaluating runner:
+2025-11-15T12:26:42.9319512Z ##[debug]......=> Object
+2025-11-15T12:26:42.9319781Z ##[debug]......Evaluating String:
+2025-11-15T12:26:42.9320058Z ##[debug]......=> 'os'
+2025-11-15T12:26:42.9320409Z ##[debug]....=> 'Windows'
+2025-11-15T12:26:42.9320658Z ##[debug]....Evaluating String:
+2025-11-15T12:26:42.9320899Z ##[debug]....=> 'macOS'
+2025-11-15T12:26:42.9324068Z ##[debug]..=> false
+2025-11-15T12:26:42.9324540Z ##[debug]=> false
+2025-11-15T12:26:42.9327653Z ##[debug]Expanded: (true && ('Windows' == 'macOS'))
+2025-11-15T12:26:42.9328047Z ##[debug]Result: false
+2025-11-15T12:26:42.9331782Z ##[debug]Evaluating: inputs.target
+2025-11-15T12:26:42.9332059Z ##[debug]Evaluating Index:
+2025-11-15T12:26:42.9332265Z ##[debug]..Evaluating inputs:
+2025-11-15T12:26:42.9332489Z ##[debug]..=> Object
+2025-11-15T12:26:42.9332684Z ##[debug]..Evaluating String:
+2025-11-15T12:26:42.9332899Z ##[debug]..=> 'target'
+2025-11-15T12:26:42.9333163Z ##[debug]=> ''
+2025-11-15T12:26:42.9333337Z ##[debug]Result: ''
+2025-11-15T12:26:42.9333776Z ##[debug]Evaluating: inputs.components
+2025-11-15T12:26:42.9334011Z ##[debug]Evaluating Index:
+2025-11-15T12:26:42.9334211Z ##[debug]..Evaluating inputs:
+2025-11-15T12:26:42.9334405Z ##[debug]..=> Object
+2025-11-15T12:26:42.9334584Z ##[debug]..Evaluating String:
+2025-11-15T12:26:42.9334783Z ##[debug]..=> 'components'
+2025-11-15T12:26:42.9334985Z ##[debug]=> 'clippy'
+2025-11-15T12:26:42.9335894Z ##[debug]Result: 'clippy'
+2025-11-15T12:26:42.9336340Z ##[debug]Evaluating condition for step: 'run'
+2025-11-15T12:26:42.9337219Z ##[debug]Evaluating: success()
+2025-11-15T12:26:42.9337498Z ##[debug]Evaluating success:
+2025-11-15T12:26:42.9337858Z ##[debug]=> true
+2025-11-15T12:26:42.9338157Z ##[debug]Result: true
+2025-11-15T12:26:42.9345920Z ##[debug]Starting: run
+2025-11-15T12:26:42.9465615Z ##[debug]Loading inputs
+2025-11-15T12:26:42.9472135Z ##[debug]Evaluating: format(': construct rustup command line
+2025-11-15T12:26:42.9472604Z ##[debug]echo "targets=$(for t in ${{targets//,/ }}; do echo -n '' --target'' $t; done)" >> $GITHUB_OUTPUT
+2025-11-15T12:26:42.9473168Z ##[debug]echo "components=$(for c in ${{components//,/ }}; do echo -n '' --component'' $c; done)" >> $GITHUB_OUTPUT
+2025-11-15T12:26:42.9473589Z ##[debug]echo "downgrade={0}" >> $GITHUB_OUTPUT
+2025-11-15T12:26:42.9474011Z ##[debug]', ((contains(inputs.toolchain, 'nightly') && inputs.components && ' --allow-downgrade') || ''))
+2025-11-15T12:26:42.9474845Z ##[debug]Evaluating format:
+2025-11-15T12:26:42.9478613Z ##[debug]..Evaluating String:
+2025-11-15T12:26:42.9478938Z ##[debug]..=> ': construct rustup command line
+2025-11-15T12:26:42.9479333Z ##[debug]echo "targets=$(for t in ${{targets//,/ }}; do echo -n '' --target'' $t; done)" >> $GITHUB_OUTPUT
+2025-11-15T12:26:42.9479857Z ##[debug]echo "components=$(for c in ${{components//,/ }}; do echo -n '' --component'' $c; done)" >> $GITHUB_OUTPUT
+2025-11-15T12:26:42.9480270Z ##[debug]echo "downgrade={0}" >> $GITHUB_OUTPUT
+2025-11-15T12:26:42.9480487Z ##[debug]'
+2025-11-15T12:26:42.9491871Z ##[debug]..Evaluating Or:
+2025-11-15T12:26:42.9493883Z ##[debug]....Evaluating And:
+2025-11-15T12:26:42.9494129Z ##[debug]......Evaluating contains:
+2025-11-15T12:26:42.9497130Z ##[debug]........Evaluating Index:
+2025-11-15T12:26:42.9497394Z ##[debug]..........Evaluating inputs:
+2025-11-15T12:26:42.9497651Z ##[debug]..........=> Object
+2025-11-15T12:26:42.9497897Z ##[debug]..........Evaluating String:
+2025-11-15T12:26:42.9498135Z ##[debug]..........=> 'toolchain'
+2025-11-15T12:26:42.9498376Z ##[debug]........=> ''
+2025-11-15T12:26:42.9498571Z ##[debug]........Evaluating String:
+2025-11-15T12:26:42.9498775Z ##[debug]........=> 'nightly'
+2025-11-15T12:26:42.9499006Z ##[debug]......=> false
+2025-11-15T12:26:42.9499409Z ##[debug]....=> false
+2025-11-15T12:26:42.9500161Z ##[debug]....Evaluating String:
+2025-11-15T12:26:42.9500388Z ##[debug]....=> ''
+2025-11-15T12:26:42.9500580Z ##[debug]..=> ''
+2025-11-15T12:26:42.9501598Z ##[debug]=> ': construct rustup command line
+2025-11-15T12:26:42.9502001Z ##[debug]echo "targets=$(for t in ${targets//,/ }; do echo -n '' --target'' $t; done)" >> $GITHUB_OUTPUT
+2025-11-15T12:26:42.9502527Z ##[debug]echo "components=$(for c in ${components//,/ }; do echo -n '' --component'' $c; done)" >> $GITHUB_OUTPUT
+2025-11-15T12:26:42.9502926Z ##[debug]echo "downgrade=" >> $GITHUB_OUTPUT
+2025-11-15T12:26:42.9503139Z ##[debug]'
+2025-11-15T12:26:42.9503364Z ##[debug]Result: ': construct rustup command line
+2025-11-15T12:26:42.9503737Z ##[debug]echo "targets=$(for t in ${targets//,/ }; do echo -n '' --target'' $t; done)" >> $GITHUB_OUTPUT
+2025-11-15T12:26:42.9504248Z ##[debug]echo "components=$(for c in ${components//,/ }; do echo -n '' --component'' $c; done)" >> $GITHUB_OUTPUT
+2025-11-15T12:26:42.9504651Z ##[debug]echo "downgrade=" >> $GITHUB_OUTPUT
+2025-11-15T12:26:42.9504862Z ##[debug]'
+2025-11-15T12:26:42.9505212Z ##[debug]Loading env
+2025-11-15T12:26:42.9518783Z ##[group]Run : construct rustup command line
+2025-11-15T12:26:42.9519113Z [36;1m: construct rustup command line[0m
+2025-11-15T12:26:42.9519500Z [36;1mecho "targets=$(for t in ${targets//,/ }; do echo -n ' --target' $t; done)" >> $GITHUB_OUTPUT[0m
+2025-11-15T12:26:42.9520452Z [36;1mecho "components=$(for c in ${components//,/ }; do echo -n ' --component' $c; done)" >> $GITHUB_OUTPUT[0m
+2025-11-15T12:26:42.9520870Z [36;1mecho "downgrade=" >> $GITHUB_OUTPUT[0m
+2025-11-15T12:26:42.9538207Z shell: C:\Program Files\Git\bin\bash.EXE --noprofile --norc -e -o pipefail {0}
+2025-11-15T12:26:42.9538562Z env:
+2025-11-15T12:26:42.9538694Z   targets:
+2025-11-15T12:26:42.9538845Z   components: clippy
+2025-11-15T12:26:42.9539010Z ##[endgroup]
+2025-11-15T12:26:42.9576324Z ##[debug]C:\Program Files\Git\bin\bash.EXE --noprofile --norc -e -o pipefail D:\a\_temp\b84d22ea-ce03-434a-8424-6b43bb8157a3.sh
+2025-11-15T12:26:43.1397848Z ##[debug]Set output targets =
+2025-11-15T12:26:43.1399187Z ##[debug]Set output components =  --component clippy
+2025-11-15T12:26:43.1399495Z ##[debug]Set output downgrade =
+2025-11-15T12:26:43.1400312Z ##[debug]Finished: run
+2025-11-15T12:26:43.1408405Z ##[debug]Evaluating: inputs.rustflags
+2025-11-15T12:26:43.1408720Z ##[debug]Evaluating Index:
+2025-11-15T12:26:43.1408938Z ##[debug]..Evaluating inputs:
+2025-11-15T12:26:43.1409225Z ##[debug]..=> Object
+2025-11-15T12:26:43.1409433Z ##[debug]..Evaluating String:
+2025-11-15T12:26:43.1409678Z ##[debug]..=> 'rustflags'
+2025-11-15T12:26:43.1409958Z ##[debug]=> '-D warnings'
+2025-11-15T12:26:43.1410149Z ##[debug]Result: '-D warnings'
+2025-11-15T12:26:43.1410565Z ##[debug]Evaluating condition for step: 'run'
+2025-11-15T12:26:43.1411634Z ##[debug]Evaluating: success()
+2025-11-15T12:26:43.1411936Z ##[debug]Evaluating success:
+2025-11-15T12:26:43.1412254Z ##[debug]=> true
+2025-11-15T12:26:43.1412543Z ##[debug]Result: true
+2025-11-15T12:26:43.1412973Z ##[debug]Starting: run
+2025-11-15T12:26:43.1525462Z ##[debug]Loading inputs
+2025-11-15T12:26:43.1526903Z ##[debug]Loading env
+2025-11-15T12:26:43.1531402Z ##[group]Run if [[ ! -v CARGO_INCREMENTAL ]]; then
+2025-11-15T12:26:43.1531714Z [36;1mif [[ ! -v CARGO_INCREMENTAL ]]; then[0m
+2025-11-15T12:26:43.1531975Z [36;1m  echo "CARGO_INCREMENTAL=0" >> $GITHUB_ENV[0m
+2025-11-15T12:26:43.1532209Z [36;1mfi[0m
+2025-11-15T12:26:43.1532380Z [36;1mif [[ ! -v CARGO_PROFILE_DEV_DEBUG ]]; then[0m
+2025-11-15T12:26:43.1532658Z [36;1m  echo "CARGO_PROFILE_DEV_DEBUG=0" >> $GITHUB_ENV[0m
+2025-11-15T12:26:43.1532910Z [36;1mfi[0m
+2025-11-15T12:26:43.1533067Z [36;1mif [[ ! -v CARGO_TERM_COLOR ]]; then[0m
+2025-11-15T12:26:43.1533327Z [36;1m  echo "CARGO_TERM_COLOR=always" >> $GITHUB_ENV[0m
+2025-11-15T12:26:43.1533554Z [36;1mfi[0m
+2025-11-15T12:26:43.1533714Z [36;1mif [[ ! -v RUST_BACKTRACE ]]; then[0m
+2025-11-15T12:26:43.1533959Z [36;1m  echo "RUST_BACKTRACE=short" >> $GITHUB_ENV[0m
+2025-11-15T12:26:43.1534182Z [36;1mfi[0m
+2025-11-15T12:26:43.1534379Z [36;1mif [[ ( ! -v RUSTFLAGS ) && $NEW_RUSTFLAGS != "" ]]; then[0m
+2025-11-15T12:26:43.1534683Z [36;1m  echo "RUSTFLAGS=$NEW_RUSTFLAGS" >> $GITHUB_ENV[0m
+2025-11-15T12:26:43.1534922Z [36;1mfi[0m
+2025-11-15T12:26:43.1535093Z [36;1m# Enable faster sparse index on nightly[0m
+2025-11-15T12:26:43.1535401Z [36;1m# The value is ignored on stable and causes no problems[0m
+2025-11-15T12:26:43.1535855Z [36;1m# https://internals.rust-lang.org/t/call-for-testing-cargo-sparse-registry/16862[0m
+2025-11-15T12:26:43.1536311Z [36;1mif [[ ! -v CARGO_UNSTABLE_SPARSE_REGISTRY ]]; then[0m
+2025-11-15T12:26:43.1536639Z [36;1m  echo "CARGO_UNSTABLE_SPARSE_REGISTRY=true" >> $GITHUB_ENV[0m
+2025-11-15T12:26:43.1536906Z [36;1mfi[0m
+2025-11-15T12:26:43.1537110Z [36;1mif [[ ! -v CARGO_REGISTRIES_CRATES_IO_PROTOCOL ]]; then[0m
+2025-11-15T12:26:43.1537461Z [36;1m  echo "CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse" >> $GITHUB_ENV[0m
+2025-11-15T12:26:43.1537765Z [36;1mfi[0m
+2025-11-15T12:26:43.1550903Z shell: C:\Program Files\Git\bin\bash.EXE --noprofile --norc -e -o pipefail {0}
+2025-11-15T12:26:43.1551238Z env:
+2025-11-15T12:26:43.1551395Z   NEW_RUSTFLAGS: -D warnings
+2025-11-15T12:26:43.1551583Z ##[endgroup]
+2025-11-15T12:26:43.1567163Z ##[debug]C:\Program Files\Git\bin\bash.EXE --noprofile --norc -e -o pipefail D:\a\_temp\6f59a05d-d13b-46d2-bd50-97504bb20968.sh
+2025-11-15T12:26:43.1947653Z ##[debug]CARGO_INCREMENTAL='0'
+2025-11-15T12:26:43.1948090Z ##[debug]CARGO_PROFILE_DEV_DEBUG='0'
+2025-11-15T12:26:43.1948623Z ##[debug]CARGO_TERM_COLOR='always'
+2025-11-15T12:26:43.1948874Z ##[debug]RUST_BACKTRACE='short'
+2025-11-15T12:26:43.1949094Z ##[debug]RUSTFLAGS='-D warnings'
+2025-11-15T12:26:43.1949346Z ##[debug]CARGO_UNSTABLE_SPARSE_REGISTRY='true'
+2025-11-15T12:26:43.1949655Z ##[debug]CARGO_REGISTRIES_CRATES_IO_PROTOCOL='sparse'
+2025-11-15T12:26:43.1951697Z ##[debug]Finished: run
+2025-11-15T12:26:43.1954217Z ##[debug]Evaluating condition for step: 'run'
+2025-11-15T12:26:43.1956147Z ##[debug]Evaluating: (success() && (inputs.matcher == 'true'))
+2025-11-15T12:26:43.1956566Z ##[debug]Evaluating And:
+2025-11-15T12:26:43.1956839Z ##[debug]..Evaluating success:
+2025-11-15T12:26:43.1957213Z ##[debug]..=> true
+2025-11-15T12:26:43.1957465Z ##[debug]..Evaluating Equal:
+2025-11-15T12:26:43.1957724Z ##[debug]....Evaluating Index:
+2025-11-15T12:26:43.1957993Z ##[debug]......Evaluating inputs:
+2025-11-15T12:26:43.1958266Z ##[debug]......=> Object
+2025-11-15T12:26:43.1958527Z ##[debug]......Evaluating String:
+2025-11-15T12:26:43.1958808Z ##[debug]......=> 'matcher'
+2025-11-15T12:26:43.1959102Z ##[debug]....=> 'true'
+2025-11-15T12:26:43.1959340Z ##[debug]....Evaluating String:
+2025-11-15T12:26:43.1959588Z ##[debug]....=> 'true'
+2025-11-15T12:26:43.1959818Z ##[debug]..=> true
+2025-11-15T12:26:43.1960031Z ##[debug]=> true
+2025-11-15T12:26:43.1960406Z ##[debug]Expanded: (true && ('true' == 'true'))
+2025-11-15T12:26:43.1960757Z ##[debug]Result: true
+2025-11-15T12:26:43.1961268Z ##[debug]Starting: run
+2025-11-15T12:26:43.2078437Z ##[debug]Loading inputs
+2025-11-15T12:26:43.2080061Z ##[debug]Evaluating: format('echo "::add-matcher::{0}/rust.json"', github.action_path)
+2025-11-15T12:26:43.2080484Z ##[debug]Evaluating format:
+2025-11-15T12:26:43.2080707Z ##[debug]..Evaluating String:
+2025-11-15T12:26:43.2080965Z ##[debug]..=> 'echo "::add-matcher::{0}/rust.json"'
+2025-11-15T12:26:43.2081392Z ##[debug]..Evaluating Index:
+2025-11-15T12:26:43.2081603Z ##[debug]....Evaluating github:
+2025-11-15T12:26:43.2082161Z ##[debug]....=> Object
+2025-11-15T12:26:43.2082388Z ##[debug]....Evaluating String:
+2025-11-15T12:26:43.2082742Z ##[debug]....=> 'action_path'
+2025-11-15T12:26:43.2083153Z ##[debug]..=> 'D:\a\_actions\actions-rust-lang\setup-rust-toolchain\v1'
+2025-11-15T12:26:43.2083666Z ##[debug]=> 'echo "::add-matcher::D:\a\_actions\actions-rust-lang\setup-rust-toolchain\v1/rust.json"'
+2025-11-15T12:26:43.2084280Z ##[debug]Result: 'echo "::add-matcher::D:\a\_actions\actions-rust-lang\setup-rust-toolchain\v1/rust.json"'
+2025-11-15T12:26:43.2084873Z ##[debug]Loading env
+2025-11-15T12:26:43.2088990Z ##[group]Run echo "::add-matcher::D:\a\_actions\actions-rust-lang\setup-rust-toolchain\v1/rust.json"
+2025-11-15T12:26:43.2089576Z [36;1mecho "::add-matcher::D:\a\_actions\actions-rust-lang\setup-rust-toolchain\v1/rust.json"[0m
+2025-11-15T12:26:43.2102648Z shell: C:\Program Files\Git\bin\bash.EXE --noprofile --norc -e -o pipefail {0}
+2025-11-15T12:26:43.2103181Z env:
+2025-11-15T12:26:43.2103344Z   CARGO_INCREMENTAL: 0
+2025-11-15T12:26:43.2103523Z   CARGO_PROFILE_DEV_DEBUG: 0
+2025-11-15T12:26:43.2103719Z   CARGO_TERM_COLOR: always
+2025-11-15T12:26:43.2103901Z   RUST_BACKTRACE: short
+2025-11-15T12:26:43.2104071Z   RUSTFLAGS: -D warnings
+2025-11-15T12:26:43.2104270Z   CARGO_UNSTABLE_SPARSE_REGISTRY: true
+2025-11-15T12:26:43.2104511Z   CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
+2025-11-15T12:26:43.2104739Z ##[endgroup]
+2025-11-15T12:26:43.2121048Z ##[debug]C:\Program Files\Git\bin\bash.EXE --noprofile --norc -e -o pipefail D:\a\_temp\ceda7bb4-67e4-4a6a-ae98-28ca170f1cf7.sh
+2025-11-15T12:26:43.2449833Z ::add-matcher::D:\a\_actions\actions-rust-lang\setup-rust-toolchain\v1/rust.json
+2025-11-15T12:26:43.2476026Z ##[debug]Added matchers: 'rustfmt', 'clippy'. Problem matchers scan action output for known warning or error strings and report these inline.
+2025-11-15T12:26:43.2489638Z ##[debug]Finished: run
+2025-11-15T12:26:43.2493194Z ##[debug]Evaluating: runner.os
+2025-11-15T12:26:43.2494441Z ##[debug]Evaluating Index:
+2025-11-15T12:26:43.2494661Z ##[debug]..Evaluating runner:
+2025-11-15T12:26:43.2494930Z ##[debug]..=> Object
+2025-11-15T12:26:43.2495136Z ##[debug]..Evaluating String:
+2025-11-15T12:26:43.2495339Z ##[debug]..=> 'os'
+2025-11-15T12:26:43.2495666Z ##[debug]=> 'Windows'
+2025-11-15T12:26:43.2495854Z ##[debug]Result: 'Windows'
+2025-11-15T12:26:43.2496277Z ##[debug]Evaluating condition for step: 'run'
+2025-11-15T12:26:43.2497285Z ##[debug]Evaluating: success()
+2025-11-15T12:26:43.2497871Z ##[debug]Evaluating success:
+2025-11-15T12:26:43.2498324Z ##[debug]=> true
+2025-11-15T12:26:43.2498667Z ##[debug]Result: true
+2025-11-15T12:26:43.2499375Z ##[debug]Starting: run
+2025-11-15T12:26:43.2611957Z ##[debug]Loading inputs
+2025-11-15T12:26:43.2612928Z ##[debug]Loading env
+2025-11-15T12:26:43.2617192Z ##[group]Run if ! command -v rustup &> /dev/null ; then
+2025-11-15T12:26:43.2617541Z [36;1mif ! command -v rustup &> /dev/null ; then[0m
+2025-11-15T12:26:43.2618099Z [36;1m  curl --proto '=https' --tlsv1.2 --retry 10 --retry-connrefused -fsSL "https://sh.rustup.rs" | sh -s -- --default-toolchain none -y[0m
+2025-11-15T12:26:43.2618615Z [36;1m[0m
+2025-11-15T12:26:43.2618832Z [36;1m  # Resolve the correct CARGO_HOME path depending on OS[0m
+2025-11-15T12:26:43.2619133Z [36;1m  if [[ "$RUNNER_OS" == "Windows" ]]; then[0m
+2025-11-15T12:26:43.2619520Z [36;1m    echo "${CARGO_HOME:-$USERPROFILE/.cargo}/bin" | sed 's|/|\\|g' >> $GITHUB_PATH[0m
+2025-11-15T12:26:43.2619879Z [36;1m  else[0m
+2025-11-15T12:26:43.2620086Z [36;1m    echo "${CARGO_HOME:-$HOME/.cargo}/bin" >> $GITHUB_PATH[0m
+2025-11-15T12:26:43.2620343Z [36;1m  fi[0m
+2025-11-15T12:26:43.2620482Z [36;1mfi[0m
+2025-11-15T12:26:43.2633365Z shell: C:\Program Files\Git\bin\bash.EXE --noprofile --norc -e -o pipefail {0}
+2025-11-15T12:26:43.2633711Z env:
+2025-11-15T12:26:43.2633856Z   CARGO_INCREMENTAL: 0
+2025-11-15T12:26:43.2634044Z   CARGO_PROFILE_DEV_DEBUG: 0
+2025-11-15T12:26:43.2634230Z   CARGO_TERM_COLOR: always
+2025-11-15T12:26:43.2634417Z   RUST_BACKTRACE: short
+2025-11-15T12:26:43.2634586Z   RUSTFLAGS: -D warnings
+2025-11-15T12:26:43.2634782Z   CARGO_UNSTABLE_SPARSE_REGISTRY: true
+2025-11-15T12:26:43.2635022Z   CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
+2025-11-15T12:26:43.2635255Z   RUNNER_OS: Windows
+2025-11-15T12:26:43.2635415Z ##[endgroup]
+2025-11-15T12:26:43.2650570Z ##[debug]C:\Program Files\Git\bin\bash.EXE --noprofile --norc -e -o pipefail D:\a\_temp\5df9cd9e-816d-45a8-b745-bab1f02bf3aa.sh
+2025-11-15T12:26:43.3210813Z ##[debug]Finished: run
+2025-11-15T12:26:43.3214909Z ##[debug]Evaluating: inputs.toolchain
+2025-11-15T12:26:43.3215228Z ##[debug]Evaluating Index:
+2025-11-15T12:26:43.3215678Z ##[debug]..Evaluating inputs:
+2025-11-15T12:26:43.3215987Z ##[debug]..=> Object
+2025-11-15T12:26:43.3216208Z ##[debug]..Evaluating String:
+2025-11-15T12:26:43.3216435Z ##[debug]..=> 'toolchain'
+2025-11-15T12:26:43.3216712Z ##[debug]=> ''
+2025-11-15T12:26:43.3216894Z ##[debug]Result: ''
+2025-11-15T12:26:43.3217393Z ##[debug]Evaluating: inputs.target
+2025-11-15T12:26:43.3217640Z ##[debug]Evaluating Index:
+2025-11-15T12:26:43.3217866Z ##[debug]..Evaluating inputs:
+2025-11-15T12:26:43.3218103Z ##[debug]..=> Object
+2025-11-15T12:26:43.3218313Z ##[debug]..Evaluating String:
+2025-11-15T12:26:43.3218533Z ##[debug]..=> 'target'
+2025-11-15T12:26:43.3218729Z ##[debug]=> ''
+2025-11-15T12:26:43.3218923Z ##[debug]Result: ''
+2025-11-15T12:26:43.3219298Z ##[debug]Evaluating: inputs.components
+2025-11-15T12:26:43.3219633Z ##[debug]Evaluating Index:
+2025-11-15T12:26:43.3219845Z ##[debug]..Evaluating inputs:
+2025-11-15T12:26:43.3220068Z ##[debug]..=> Object
+2025-11-15T12:26:43.3220252Z ##[debug]..Evaluating String:
+2025-11-15T12:26:43.3220468Z ##[debug]..=> 'components'
+2025-11-15T12:26:43.3220683Z ##[debug]=> 'clippy'
+2025-11-15T12:26:43.3220898Z ##[debug]Result: 'clippy'
+2025-11-15T12:26:43.3221264Z ##[debug]Evaluating: inputs.override
+2025-11-15T12:26:43.3221513Z ##[debug]Evaluating Index:
+2025-11-15T12:26:43.3221948Z ##[debug]..Evaluating inputs:
+2025-11-15T12:26:43.3222165Z ##[debug]..=> Object
+2025-11-15T12:26:43.3222356Z ##[debug]..Evaluating String:
+2025-11-15T12:26:43.3222569Z ##[debug]..=> 'override'
+2025-11-15T12:26:43.3222788Z ##[debug]=> 'true'
+2025-11-15T12:26:43.3222978Z ##[debug]Result: 'true'
+2025-11-15T12:26:43.3223357Z ##[debug]Evaluating: inputs.rust-src-dir
+2025-11-15T12:26:43.3223603Z ##[debug]Evaluating Index:
+2025-11-15T12:26:43.3223790Z ##[debug]..Evaluating inputs:
+2025-11-15T12:26:43.3224875Z ##[debug]..=> Object
+2025-11-15T12:26:43.3225062Z ##[debug]..Evaluating String:
+2025-11-15T12:26:43.3225276Z ##[debug]..=> 'rust-src-dir'
+2025-11-15T12:26:43.3225487Z ##[debug]=> ''
+2025-11-15T12:26:43.3225645Z ##[debug]Result: ''
+2025-11-15T12:26:43.3226039Z ##[debug]Evaluating condition for step: 'run'
+2025-11-15T12:26:43.3227033Z ##[debug]Evaluating: success()
+2025-11-15T12:26:43.3227337Z ##[debug]Evaluating success:
+2025-11-15T12:26:43.3227655Z ##[debug]=> true
+2025-11-15T12:26:43.3227952Z ##[debug]Result: true
+2025-11-15T12:26:43.3228379Z ##[debug]Starting: run
+2025-11-15T12:26:43.3369547Z ##[debug]Loading inputs
+2025-11-15T12:26:43.3371619Z ##[debug]Evaluating: format('# Check if value is set
+2025-11-15T12:26:43.3371914Z ##[debug]if [[ -n "$rust_src_dir" ]]
+2025-11-15T12:26:43.3372135Z ##[debug]then
+2025-11-15T12:26:43.3372331Z ##[debug]  # If value is set the directory must exist
+2025-11-15T12:26:43.3372600Z ##[debug]  if [[ -d "$rust_src_dir" ]]
+2025-11-15T12:26:43.3372845Z ##[debug]  then
+2025-11-15T12:26:43.3373009Z ##[debug]    cd "$rust_src_dir"
+2025-11-15T12:26:43.3373206Z ##[debug]  else
+2025-11-15T12:26:43.3373466Z ##[debug]    echo "''rust-src-dir'' does not point to an existing directory" >&2
+2025-11-15T12:26:43.3374303Z ##[debug]    echo "The value of ''rust-src-dir'' is: ${{rust_src_dir}}" >&2
+2025-11-15T12:26:43.3374584Z ##[debug]    exit 1
+2025-11-15T12:26:43.3374737Z ##[debug]  fi
+2025-11-15T12:26:43.3374874Z ##[debug]fi
+2025-11-15T12:26:43.3375139Z ##[debug]if [[ -z "$toolchain" && ( -f "rust-toolchain" || -f "rust-toolchain.toml") ]]
+2025-11-15T12:26:43.3375447Z ##[debug]then
+2025-11-15T12:26:43.3375641Z ##[debug]  # Install the toolchain as specified in the file
+2025-11-15T12:26:43.3375995Z ##[debug]  # rustup show is the old way that implicitly installed a toolchain
+2025-11-15T12:26:43.3376350Z ##[debug]  # rustup toolchain install is the new explicit way
+2025-11-15T12:26:43.3376768Z ##[debug]  # https://github.com/rust-lang/rustup/issues/3635#issuecomment-2343511297
+2025-11-15T12:26:43.3377180Z ##[debug]  rustup show active-toolchain || rustup toolchain install
+2025-11-15T12:26:43.3377480Z ##[debug]  if [[ -n $components ]]; then
+2025-11-15T12:26:43.3377734Z ##[debug]    rustup component add ${{components//,/ }}
+2025-11-15T12:26:43.3377961Z ##[debug]  fi
+2025-11-15T12:26:43.3378120Z ##[debug]  if [[ -n $targets ]]; then
+2025-11-15T12:26:43.3378347Z ##[debug]    rustup target add ${{targets//,/ }}
+2025-11-15T12:26:43.3378564Z ##[debug]  fi
+2025-11-15T12:26:43.3378700Z ##[debug]else
+2025-11-15T12:26:43.3378853Z ##[debug]  if [[ -z "$toolchain" ]]
+2025-11-15T12:26:43.3379041Z ##[debug]  then
+2025-11-15T12:26:43.3379198Z ##[debug]    toolchain=stable
+2025-11-15T12:26:43.3379377Z ##[debug]  fi
+2025-11-15T12:26:43.3379674Z ##[debug]  rustup toolchain install ${{toolchain//,/ }} {0}{1} --profile minimal{2} --no-self-update
+2025-11-15T12:26:43.3380068Z ##[debug]  # Take the last element from the list
+2025-11-15T12:26:43.3380305Z ##[debug]  if [[ "$override" == "true" ]]
+2025-11-15T12:26:43.3380507Z ##[debug]  then
+2025-11-15T12:26:43.3380688Z ##[debug]    rustup override set ${{toolchain//*,/ }}
+2025-11-15T12:26:43.3380923Z ##[debug]  fi
+2025-11-15T12:26:43.3381059Z ##[debug]fi
+2025-11-15T12:26:43.3381397Z ##[debug]', steps.flags.outputs.targets, steps.flags.outputs.components, steps.flags.outputs.downgrade)
+2025-11-15T12:26:43.3381847Z ##[debug]Evaluating format:
+2025-11-15T12:26:43.3382046Z ##[debug]..Evaluating String:
+2025-11-15T12:26:43.3382575Z ##[debug]..=> '# Check if value is set
+2025-11-15T12:26:43.3382800Z ##[debug]if [[ -n "$rust_src_dir" ]]
+2025-11-15T12:26:43.3383056Z ##[debug]then
+2025-11-15T12:26:43.3383231Z ##[debug]  # If value is set the directory must exist
+2025-11-15T12:26:43.3383484Z ##[debug]  if [[ -d "$rust_src_dir" ]]
+2025-11-15T12:26:43.3383691Z ##[debug]  then
+2025-11-15T12:26:43.3383849Z ##[debug]    cd "$rust_src_dir"
+2025-11-15T12:26:43.3384038Z ##[debug]  else
+2025-11-15T12:26:43.3384411Z ##[debug]    echo "''rust-src-dir'' does not point to an existing directory" >&2
+2025-11-15T12:26:43.3384802Z ##[debug]    echo "The value of ''rust-src-dir'' is: ${{rust_src_dir}}" >&2
+2025-11-15T12:26:43.3385085Z ##[debug]    exit 1
+2025-11-15T12:26:43.3385240Z ##[debug]  fi
+2025-11-15T12:26:43.3385382Z ##[debug]fi
+2025-11-15T12:26:43.3385627Z ##[debug]if [[ -z "$toolchain" && ( -f "rust-toolchain" || -f "rust-toolchain.toml") ]]
+2025-11-15T12:26:43.3385935Z ##[debug]then
+2025-11-15T12:26:43.3386129Z ##[debug]  # Install the toolchain as specified in the file
+2025-11-15T12:26:43.3386477Z ##[debug]  # rustup show is the old way that implicitly installed a toolchain
+2025-11-15T12:26:43.3386833Z ##[debug]  # rustup toolchain install is the new explicit way
+2025-11-15T12:26:43.3387208Z ##[debug]  # https://github.com/rust-lang/rustup/issues/3635#issuecomment-2343511297
+2025-11-15T12:26:43.3387619Z ##[debug]  rustup show active-toolchain || rustup toolchain install
+2025-11-15T12:26:43.3387912Z ##[debug]  if [[ -n $components ]]; then
+2025-11-15T12:26:43.3388161Z ##[debug]    rustup component add ${{components//,/ }}
+2025-11-15T12:26:43.3388388Z ##[debug]  fi
+2025-11-15T12:26:43.3388542Z ##[debug]  if [[ -n $targets ]]; then
+2025-11-15T12:26:43.3388776Z ##[debug]    rustup target add ${{targets//,/ }}
+2025-11-15T12:26:43.3388988Z ##[debug]  fi
+2025-11-15T12:26:43.3389122Z ##[debug]else
+2025-11-15T12:26:43.3389263Z ##[debug]  if [[ -z "$toolchain" ]]
+2025-11-15T12:26:43.3389454Z ##[debug]  then
+2025-11-15T12:26:43.3389605Z ##[debug]    toolchain=stable
+2025-11-15T12:26:43.3389778Z ##[debug]  fi
+2025-11-15T12:26:43.3390069Z ##[debug]  rustup toolchain install ${{toolchain//,/ }} {0}{1} --profile minimal{2} --no-self-update
+2025-11-15T12:26:43.3390457Z ##[debug]  # Take the last element from the list
+2025-11-15T12:26:43.3390693Z ##[debug]  if [[ "$override" == "true" ]]
+2025-11-15T12:26:43.3390891Z ##[debug]  then
+2025-11-15T12:26:43.3391073Z ##[debug]    rustup override set ${{toolchain//*,/ }}
+2025-11-15T12:26:43.3391302Z ##[debug]  fi
+2025-11-15T12:26:43.3391434Z ##[debug]fi
+2025-11-15T12:26:43.3391558Z ##[debug]'
+2025-11-15T12:26:43.3391892Z ##[debug]..Evaluating Index:
+2025-11-15T12:26:43.3392134Z ##[debug]....Evaluating Index:
+2025-11-15T12:26:43.3392339Z ##[debug]......Evaluating Index:
+2025-11-15T12:26:43.3392539Z ##[debug]........Evaluating steps:
+2025-11-15T12:26:43.3392788Z ##[debug]........=> Object
+2025-11-15T12:26:43.3392996Z ##[debug]........Evaluating String:
+2025-11-15T12:26:43.3393214Z ##[debug]........=> 'flags'
+2025-11-15T12:26:43.3393438Z ##[debug]......=> Object
+2025-11-15T12:26:43.3393628Z ##[debug]......Evaluating String:
+2025-11-15T12:26:43.3394192Z ##[debug]......=> 'outputs'
+2025-11-15T12:26:43.3394452Z ##[debug]....=> Object
+2025-11-15T12:26:43.3394646Z ##[debug]....Evaluating String:
+2025-11-15T12:26:43.3394844Z ##[debug]....=> 'targets'
+2025-11-15T12:26:43.3395026Z ##[debug]..=> ''
+2025-11-15T12:26:43.3395213Z ##[debug]..Evaluating Index:
+2025-11-15T12:26:43.3395414Z ##[debug]....Evaluating Index:
+2025-11-15T12:26:43.3395617Z ##[debug]......Evaluating Index:
+2025-11-15T12:26:43.3395826Z ##[debug]........Evaluating steps:
+2025-11-15T12:26:43.3396031Z ##[debug]........=> Object
+2025-11-15T12:26:43.3396222Z ##[debug]........Evaluating String:
+2025-11-15T12:26:43.3396428Z ##[debug]........=> 'flags'
+2025-11-15T12:26:43.3396605Z ##[debug]......=> Object
+2025-11-15T12:26:43.3396790Z ##[debug]......Evaluating String:
+2025-11-15T12:26:43.3396988Z ##[debug]......=> 'outputs'
+2025-11-15T12:26:43.3397320Z ##[debug]....=> Object
+2025-11-15T12:26:43.3397498Z ##[debug]....Evaluating String:
+2025-11-15T12:26:43.3397690Z ##[debug]....=> 'components'
+2025-11-15T12:26:43.3397896Z ##[debug]..=> ' --component clippy'
+2025-11-15T12:26:43.3398114Z ##[debug]..Evaluating Index:
+2025-11-15T12:26:43.3398299Z ##[debug]....Evaluating Index:
+2025-11-15T12:26:43.3398490Z ##[debug]......Evaluating Index:
+2025-11-15T12:26:43.3398684Z ##[debug]........Evaluating steps:
+2025-11-15T12:26:43.3398972Z ##[debug]........=> Object
+2025-11-15T12:26:43.3399159Z ##[debug]........Evaluating String:
+2025-11-15T12:26:43.3399349Z ##[debug]........=> 'flags'
+2025-11-15T12:26:43.3399528Z ##[debug]......=> Object
+2025-11-15T12:26:43.3399701Z ##[debug]......Evaluating String:
+2025-11-15T12:26:43.3399892Z ##[debug]......=> 'outputs'
+2025-11-15T12:26:43.3400076Z ##[debug]....=> Object
+2025-11-15T12:26:43.3400244Z ##[debug]....Evaluating String:
+2025-11-15T12:26:43.3400432Z ##[debug]....=> 'downgrade'
+2025-11-15T12:26:43.3400612Z ##[debug]..=> ''
+2025-11-15T12:26:43.3400843Z ##[debug]=> '# Check if value is set
+2025-11-15T12:26:43.3401045Z ##[debug]if [[ -n "$rust_src_dir" ]]
+2025-11-15T12:26:43.3401234Z ##[debug]then
+2025-11-15T12:26:43.3401416Z ##[debug]  # If value is set the directory must exist
+2025-11-15T12:26:43.3401659Z ##[debug]  if [[ -d "$rust_src_dir" ]]
+2025-11-15T12:26:43.3401858Z ##[debug]  then
+2025-11-15T12:26:43.3402006Z ##[debug]    cd "$rust_src_dir"
+2025-11-15T12:26:43.3402187Z ##[debug]  else
+2025-11-15T12:26:43.3402429Z ##[debug]    echo "''rust-src-dir'' does not point to an existing directory" >&2
+2025-11-15T12:26:43.3402812Z ##[debug]    echo "The value of ''rust-src-dir'' is: ${rust_src_dir}" >&2
+2025-11-15T12:26:43.3403082Z ##[debug]    exit 1
+2025-11-15T12:26:43.3403230Z ##[debug]  fi
+2025-11-15T12:26:43.3403371Z ##[debug]fi
+2025-11-15T12:26:43.3403614Z ##[debug]if [[ -z "$toolchain" && ( -f "rust-toolchain" || -f "rust-toolchain.toml") ]]
+2025-11-15T12:26:43.3403924Z ##[debug]then
+2025-11-15T12:26:43.3404110Z ##[debug]  # Install the toolchain as specified in the file
+2025-11-15T12:26:43.3404459Z ##[debug]  # rustup show is the old way that implicitly installed a toolchain
+2025-11-15T12:26:43.3404811Z ##[debug]  # rustup toolchain install is the new explicit way
+2025-11-15T12:26:43.3405203Z ##[debug]  # https://github.com/rust-lang/rustup/issues/3635#issuecomment-2343511297
+2025-11-15T12:26:43.3405607Z ##[debug]  rustup show active-toolchain || rustup toolchain install
+2025-11-15T12:26:43.3405903Z ##[debug]  if [[ -n $components ]]; then
+2025-11-15T12:26:43.3406152Z ##[debug]    rustup component add ${components//,/ }
+2025-11-15T12:26:43.3406377Z ##[debug]  fi
+2025-11-15T12:26:43.3406533Z ##[debug]  if [[ -n $targets ]]; then
+2025-11-15T12:26:43.3406758Z ##[debug]    rustup target add ${targets//,/ }
+2025-11-15T12:26:43.3406978Z ##[debug]  fi
+2025-11-15T12:26:43.3407113Z ##[debug]else
+2025-11-15T12:26:43.3407263Z ##[debug]  if [[ -z "$toolchain" ]]
+2025-11-15T12:26:43.3407458Z ##[debug]  then
+2025-11-15T12:26:43.3407606Z ##[debug]    toolchain=stable
+2025-11-15T12:26:43.3407785Z ##[debug]  fi
+2025-11-15T12:26:43.3408121Z ##[debug]  rustup toolchain install ${toolchain//,/ }  --component clippy --profile minimal --no-self-update
+2025-11-15T12:26:43.3408544Z ##[debug]  # Take the last element from the list
+2025-11-15T12:26:43.3408774Z ##[debug]  if [[ "$override" == "true" ]]
+2025-11-15T12:26:43.3408979Z ##[debug]  then
+2025-11-15T12:26:43.3409163Z ##[debug]    rustup override set ${toolchain//*,/ }
+2025-11-15T12:26:43.3409380Z ##[debug]  fi
+2025-11-15T12:26:43.3409516Z ##[debug]fi
+2025-11-15T12:26:43.3409639Z ##[debug]'
+2025-11-15T12:26:43.3409853Z ##[debug]Result: '# Check if value is set
+2025-11-15T12:26:43.3410066Z ##[debug]if [[ -n "$rust_src_dir" ]]
+2025-11-15T12:26:43.3410257Z ##[debug]then
+2025-11-15T12:26:43.3410434Z ##[debug]  # If value is set the directory must exist
+2025-11-15T12:26:43.3410671Z ##[debug]  if [[ -d "$rust_src_dir" ]]
+2025-11-15T12:26:43.3410974Z ##[debug]  then
+2025-11-15T12:26:43.3411124Z ##[debug]    cd "$rust_src_dir"
+2025-11-15T12:26:43.3411304Z ##[debug]  else
+2025-11-15T12:26:43.3411921Z ##[debug]    echo "''rust-src-dir'' does not point to an existing directory" >&2
+2025-11-15T12:26:43.3412331Z ##[debug]    echo "The value of ''rust-src-dir'' is: ${rust_src_dir}" >&2
+2025-11-15T12:26:43.3412609Z ##[debug]    exit 1
+2025-11-15T12:26:43.3412761Z ##[debug]  fi
+2025-11-15T12:26:43.3413022Z ##[debug]fi
+2025-11-15T12:26:43.3413268Z ##[debug]if [[ -z "$toolchain" && ( -f "rust-toolchain" || -f "rust-toolchain.toml") ]]
+2025-11-15T12:26:43.3413579Z ##[debug]then
+2025-11-15T12:26:43.3413774Z ##[debug]  # Install the toolchain as specified in the file
+2025-11-15T12:26:43.3414126Z ##[debug]  # rustup show is the old way that implicitly installed a toolchain
+2025-11-15T12:26:43.3414478Z ##[debug]  # rustup toolchain install is the new explicit way
+2025-11-15T12:26:43.3414866Z ##[debug]  # https://github.com/rust-lang/rustup/issues/3635#issuecomment-2343511297
+2025-11-15T12:26:43.3415281Z ##[debug]  rustup show active-toolchain || rustup toolchain install
+2025-11-15T12:26:43.3415569Z ##[debug]  if [[ -n $components ]]; then
+2025-11-15T12:26:43.3415816Z ##[debug]    rustup component add ${components//,/ }
+2025-11-15T12:26:43.3416038Z ##[debug]  fi
+2025-11-15T12:26:43.3416193Z ##[debug]  if [[ -n $targets ]]; then
+2025-11-15T12:26:43.3416415Z ##[debug]    rustup target add ${targets//,/ }
+2025-11-15T12:26:43.3416639Z ##[debug]  fi
+2025-11-15T12:26:43.3416778Z ##[debug]else
+2025-11-15T12:26:43.3416926Z ##[debug]  if [[ -z "$toolchain" ]]
+2025-11-15T12:26:43.3417119Z ##[debug]  then
+2025-11-15T12:26:43.3417272Z ##[debug]    toolchain=stable
+2025-11-15T12:26:43.3417452Z ##[debug]  fi
+2025-11-15T12:26:43.3417777Z ##[debug]  rustup toolchain install ${toolchain//,/ }  --component clippy --profile minimal --no-self-update
+2025-11-15T12:26:43.3418201Z ##[debug]  # Take the last element from the list
+2025-11-15T12:26:43.3418437Z ##[debug]  if [[ "$override" == "true" ]]
+2025-11-15T12:26:43.3418640Z ##[debug]  then
+2025-11-15T12:26:43.3418821Z ##[debug]    rustup override set ${toolchain//*,/ }
+2025-11-15T12:26:43.3419048Z ##[debug]  fi
+2025-11-15T12:26:43.3419184Z ##[debug]fi
+2025-11-15T12:26:43.3419311Z ##[debug]'
+2025-11-15T12:26:43.3419659Z ##[debug]Loading env
+2025-11-15T12:26:43.3423401Z ##[group]Run # Check if value is set
+2025-11-15T12:26:43.3423660Z [36;1m# Check if value is set[0m
+2025-11-15T12:26:43.3423876Z [36;1mif [[ -n "$rust_src_dir" ]][0m
+2025-11-15T12:26:43.3424080Z [36;1mthen[0m
+2025-11-15T12:26:43.3424262Z [36;1m  # If value is set the directory must exist[0m
+2025-11-15T12:26:43.3424513Z [36;1m  if [[ -d "$rust_src_dir" ]][0m
+2025-11-15T12:26:43.3424709Z [36;1m  then[0m
+2025-11-15T12:26:43.3424861Z [36;1m    cd "$rust_src_dir"[0m
+2025-11-15T12:26:43.3425073Z [36;1m  else[0m
+2025-11-15T12:26:43.3425323Z [36;1m    echo "'rust-src-dir' does not point to an existing directory" >&2[0m
+2025-11-15T12:26:43.3425714Z [36;1m    echo "The value of 'rust-src-dir' is: ${rust_src_dir}" >&2[0m
+2025-11-15T12:26:43.3425979Z [36;1m    exit 1[0m
+2025-11-15T12:26:43.3426131Z [36;1m  fi[0m
+2025-11-15T12:26:43.3426261Z [36;1mfi[0m
+2025-11-15T12:26:43.3426517Z [36;1mif [[ -z "$toolchain" && ( -f "rust-toolchain" || -f "rust-toolchain.toml") ]][0m
+2025-11-15T12:26:43.3426822Z [36;1mthen[0m
+2025-11-15T12:26:43.3427023Z [36;1m  # Install the toolchain as specified in the file[0m
+2025-11-15T12:26:43.3427375Z [36;1m  # rustup show is the old way that implicitly installed a toolchain[0m
+2025-11-15T12:26:43.3427731Z [36;1m  # rustup toolchain install is the new explicit way[0m
+2025-11-15T12:26:43.3428123Z [36;1m  # https://github.com/rust-lang/rustup/issues/3635#issuecomment-2343511297[0m
+2025-11-15T12:26:43.3428529Z [36;1m  rustup show active-toolchain || rustup toolchain install[0m
+2025-11-15T12:26:43.3428828Z [36;1m  if [[ -n $components ]]; then[0m
+2025-11-15T12:26:43.3429179Z [36;1m    rustup component add ${components//,/ }[0m
+2025-11-15T12:26:43.3429409Z [36;1m  fi[0m
+2025-11-15T12:26:43.3429567Z [36;1m  if [[ -n $targets ]]; then[0m
+2025-11-15T12:26:43.3429787Z [36;1m    rustup target add ${targets//,/ }[0m
+2025-11-15T12:26:43.3430003Z [36;1m  fi[0m
+2025-11-15T12:26:43.3430136Z [36;1melse[0m
+2025-11-15T12:26:43.3430289Z [36;1m  if [[ -z "$toolchain" ]][0m
+2025-11-15T12:26:43.3430473Z [36;1m  then[0m
+2025-11-15T12:26:43.3431364Z [36;1m    toolchain=stable[0m
+2025-11-15T12:26:43.3431552Z [36;1m  fi[0m
+2025-11-15T12:26:43.3432302Z [36;1m  rustup toolchain install ${toolchain//,/ }  --component clippy --profile minimal --no-self-update[0m
+2025-11-15T12:26:43.3432744Z [36;1m  # Take the last element from the list[0m
+2025-11-15T12:26:43.3432997Z [36;1m  if [[ "$override" == "true" ]][0m
+2025-11-15T12:26:43.3433209Z [36;1m  then[0m
+2025-11-15T12:26:43.3433394Z [36;1m    rustup override set ${toolchain//*,/ }[0m
+2025-11-15T12:26:43.3433635Z [36;1m  fi[0m
+2025-11-15T12:26:43.3433769Z [36;1mfi[0m
+2025-11-15T12:26:43.3447244Z shell: C:\Program Files\Git\bin\bash.EXE --noprofile --norc -e -o pipefail {0}
+2025-11-15T12:26:43.3447579Z env:
+2025-11-15T12:26:43.3447729Z   CARGO_INCREMENTAL: 0
+2025-11-15T12:26:43.3447918Z   CARGO_PROFILE_DEV_DEBUG: 0
+2025-11-15T12:26:43.3448112Z   CARGO_TERM_COLOR: always
+2025-11-15T12:26:43.3448304Z   RUST_BACKTRACE: short
+2025-11-15T12:26:43.3448489Z   RUSTFLAGS: -D warnings
+2025-11-15T12:26:43.3448692Z   CARGO_UNSTABLE_SPARSE_REGISTRY: true
+2025-11-15T12:26:43.3448933Z   CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
+2025-11-15T12:26:43.3449156Z   toolchain:
+2025-11-15T12:26:43.3449291Z   targets:
+2025-11-15T12:26:43.3449439Z   components: clippy
+2025-11-15T12:26:43.3449606Z   override: true
+2025-11-15T12:26:43.3449759Z   rust_src_dir:
+2025-11-15T12:26:43.3449908Z ##[endgroup]
+2025-11-15T12:26:43.3465471Z ##[debug]C:\Program Files\Git\bin\bash.EXE --noprofile --norc -e -o pipefail D:\a\_temp\a0e5fed4-0313-4706-a2ce-3245f4b31cdf.sh
+2025-11-15T12:26:55.4609973Z info: syncing channel updates for 'stable-x86_64-pc-windows-msvc'
+2025-11-15T12:26:56.7636709Z info: latest update on 2025-11-10, rust version 1.91.1 (ed61e7d7e 2025-11-07)
+2025-11-15T12:26:56.8841706Z info: downloading component 'clippy'
+2025-11-15T12:26:56.9904439Z info: downloading component 'rustfmt'
+2025-11-15T12:26:57.3054872Z info: downloading component 'rust-std' for 'x86_64-pc-windows-gnu'
+2025-11-15T12:26:57.8299679Z info: downloading component 'rust-std' for 'i686-pc-windows-msvc'
+2025-11-15T12:26:58.2178619Z info: downloading component 'cargo'
+2025-11-15T12:26:58.4086864Z info: downloading component 'rust-std'
+2025-11-15T12:26:58.8921587Z info: downloading component 'rustc'
+2025-11-15T12:27:00.2676912Z info: removing previous version of component 'clippy'
+2025-11-15T12:27:00.3154792Z info: removing previous version of component 'rustfmt'
+2025-11-15T12:27:00.3657832Z info: removing previous version of component 'rust-std' for 'x86_64-pc-windows-gnu'
+2025-11-15T12:27:00.5287835Z info: removing previous version of component 'rust-std' for 'i686-pc-windows-msvc'
+2025-11-15T12:27:00.6580832Z info: removing previous version of component 'cargo'
+2025-11-15T12:27:00.8338195Z info: removing previous version of component 'rust-std'
+2025-11-15T12:27:00.9318284Z info: removing previous version of component 'rustc'
+2025-11-15T12:27:01.0982725Z info: installing component 'clippy'
+2025-11-15T12:27:01.5376593Z info: installing component 'rustfmt'
+2025-11-15T12:27:01.8328835Z info: installing component 'rust-std' for 'x86_64-pc-windows-gnu'
+2025-11-15T12:27:04.1624425Z info: installing component 'rust-std' for 'i686-pc-windows-msvc'
+2025-11-15T12:27:05.6273562Z info: installing component 'cargo'
+2025-11-15T12:27:06.9886855Z info: installing component 'rust-std'
+2025-11-15T12:27:08.5307974Z info: installing component 'rustc'
+2025-11-15T12:27:13.6093547Z
+2025-11-15T12:27:13.6394579Z   stable-x86_64-pc-windows-msvc updated - rustc 1.91.1 (ed61e7d7e 2025-11-07) (from rustc 1.91.0 (f8297e351 2025-10-28))
+2025-11-15T12:27:13.6395354Z
+2025-11-15T12:27:13.6719017Z info: override toolchain for 'D:\a\X32-Behringer-Rust\X32-Behringer-Rust' set to 'stable-x86_64-pc-windows-msvc'
+2025-11-15T12:27:13.6858420Z ##[debug]Finished: run
+2025-11-15T12:27:13.6860912Z ##[debug]Evaluating condition for step: 'run'
+2025-11-15T12:27:13.6863694Z ##[debug]Evaluating: success()
+2025-11-15T12:27:13.6864279Z ##[debug]Evaluating success:
+2025-11-15T12:27:13.6864691Z ##[debug]=> true
+2025-11-15T12:27:13.6865528Z ##[debug]Result: true
+2025-11-15T12:27:13.6866155Z ##[debug]Starting: run
+2025-11-15T12:27:13.6988506Z ##[debug]Loading inputs
+2025-11-15T12:27:13.6990155Z ##[debug]Evaluating: (inputs.rust-src-dir || '.')
+2025-11-15T12:27:13.6990548Z ##[debug]Evaluating Or:
+2025-11-15T12:27:13.6990771Z ##[debug]..Evaluating Index:
+2025-11-15T12:27:13.6991006Z ##[debug]....Evaluating inputs:
+2025-11-15T12:27:13.6991295Z ##[debug]....=> Object
+2025-11-15T12:27:13.6991519Z ##[debug]....Evaluating String:
+2025-11-15T12:27:13.6991785Z ##[debug]....=> 'rust-src-dir'
+2025-11-15T12:27:13.6992081Z ##[debug]..=> ''
+2025-11-15T12:27:13.6992287Z ##[debug]..Evaluating String:
+2025-11-15T12:27:13.6992507Z ##[debug]..=> '.'
+2025-11-15T12:27:13.6992682Z ##[debug]=> '.'
+2025-11-15T12:27:13.6995395Z ##[debug]Expanded: ('' || '.')
+2025-11-15T12:27:13.6995643Z ##[debug]Result: '.'
+2025-11-15T12:27:13.6996059Z ##[debug]Loading env
+2025-11-15T12:27:13.7000070Z ##[group]Run echo "rustc-version=$(rustc --version)" >> $GITHUB_OUTPUT
+2025-11-15T12:27:13.7000531Z [36;1mecho "rustc-version=$(rustc --version)" >> $GITHUB_OUTPUT[0m
+2025-11-15T12:27:13.7000878Z [36;1mrustc --version --verbose[0m
+2025-11-15T12:27:13.7001189Z [36;1mecho "cargo-version=$(cargo --version)" >> $GITHUB_OUTPUT[0m
+2025-11-15T12:27:13.7001523Z [36;1mcargo --version --verbose[0m
+2025-11-15T12:27:13.7001846Z [36;1mecho "rustup-version=$(rustup --version)" >> $GITHUB_OUTPUT[0m
+2025-11-15T12:27:13.7002194Z [36;1mrustup --version[0m
+2025-11-15T12:27:13.7002396Z [36;1m[0m
+2025-11-15T12:27:13.7002787Z [36;1mDATE=$(rustc --version --verbose | sed -ne 's/^commit-date: \(20[0-9][0-9]\)-\([01][0-9]\)-\([0-3][0-9]\)$/\1\2\3/p')[0m
+2025-11-15T12:27:13.7003319Z [36;1mHASH=$(rustc --version --verbose | sed -ne 's/^commit-hash: //p')[0m
+2025-11-15T12:27:13.7003720Z [36;1mecho "cachekey=$(echo $DATE$HASH | head -c12)" >> $GITHUB_OUTPUT[0m
+2025-11-15T12:27:13.7017247Z shell: C:\Program Files\Git\bin\bash.EXE --noprofile --norc -e -o pipefail {0}
+2025-11-15T12:27:13.7017616Z env:
+2025-11-15T12:27:13.7017764Z   CARGO_INCREMENTAL: 0
+2025-11-15T12:27:13.7017961Z   CARGO_PROFILE_DEV_DEBUG: 0
+2025-11-15T12:27:13.7018166Z   CARGO_TERM_COLOR: always
+2025-11-15T12:27:13.7018356Z   RUST_BACKTRACE: short
+2025-11-15T12:27:13.7018532Z   RUSTFLAGS: -D warnings
+2025-11-15T12:27:13.7018738Z   CARGO_UNSTABLE_SPARSE_REGISTRY: true
+2025-11-15T12:27:13.7018980Z   CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
+2025-11-15T12:27:13.7019225Z ##[endgroup]
+2025-11-15T12:27:13.7035193Z ##[debug]C:\Program Files\Git\bin\bash.EXE --noprofile --norc -e -o pipefail D:\a\_temp\6d07f9da-36b9-43b3-97e5-2e0a47b8884d.sh
+2025-11-15T12:27:16.1841100Z rustc 1.91.1 (ed61e7d7e 2025-11-07)
+2025-11-15T12:27:16.1841625Z binary: rustc
+2025-11-15T12:27:16.1842084Z commit-hash: ed61e7d7e242494fb7057f2657300d9e77bb4fcb
+2025-11-15T12:27:16.1842588Z commit-date: 2025-11-07
+2025-11-15T12:27:16.1842923Z host: x86_64-pc-windows-msvc
+2025-11-15T12:27:16.1843351Z release: 1.91.1
+2025-11-15T12:27:16.1845549Z LLVM version: 21.1.2
+2025-11-15T12:27:18.6524477Z cargo 1.91.1 (ea2d97820 2025-10-10)
+2025-11-15T12:27:18.6525028Z release: 1.91.1
+2025-11-15T12:27:18.6525367Z commit-hash: ea2d97820c16195b0ca3fadb4319fe512c199a43
+2025-11-15T12:27:18.6525756Z commit-date: 2025-10-10
+2025-11-15T12:27:18.6526000Z host: x86_64-pc-windows-msvc
+2025-11-15T12:27:18.6526271Z libgit2: 1.9.1 (sys:0.20.2 vendored)
+2025-11-15T12:27:18.6527010Z libcurl: 8.15.0-DEV (sys:0.4.83+curl-8.15.0 vendored ssl:Schannel)
+2025-11-15T12:27:18.6527466Z os: Windows 10.0.26100 (Windows 11 ServerDatacenter) [64-bit]
+2025-11-15T12:27:18.6907016Z info: This is the version for the rustup toolchain manager, not the rustc compiler.
+2025-11-15T12:27:18.7704404Z info: The currently active `rustc` version is `rustc 1.91.1 (ed61e7d7e 2025-11-07)`
+2025-11-15T12:27:18.8175190Z info: This is the version for the rustup toolchain manager, not the rustc compiler.
+2025-11-15T12:27:18.8176437Z rustup 1.28.2 (e4f3ad6f8 2025-04-28)
+2025-11-15T12:27:18.8830480Z info: The currently active `rustc` version is `rustc 1.91.1 (ed61e7d7e 2025-11-07)`
+2025-11-15T12:27:19.2027588Z ##[debug]Set output rustc-version = rustc 1.91.1 (ed61e7d7e 2025-11-07)
+2025-11-15T12:27:19.2028111Z ##[debug]Set output cargo-version = cargo 1.91.1 (ea2d97820 2025-10-10)
+2025-11-15T12:27:19.2028572Z ##[debug]Set output rustup-version = rustup 1.28.2 (e4f3ad6f8 2025-04-28)
+2025-11-15T12:27:19.2029008Z ##[debug]Set output cachekey = 20251107ed61
+2025-11-15T12:27:19.2029646Z ##[debug]Finished: run
+2025-11-15T12:27:19.2032304Z ##[debug]Evaluating condition for step: 'run'
+2025-11-15T12:27:19.2033639Z ##[debug]Evaluating: success()
+2025-11-15T12:27:19.2033997Z ##[debug]Evaluating success:
+2025-11-15T12:27:19.2034389Z ##[debug]=> true
+2025-11-15T12:27:19.2034778Z ##[debug]Result: true
+2025-11-15T12:27:19.2035292Z ##[debug]Starting: run
+2025-11-15T12:27:19.2156907Z ##[debug]Loading inputs
+2025-11-15T12:27:19.2159754Z ##[debug]Evaluating: format('# Not all versions support setting CARGO_REGISTRIES_CRATES_IO_PROTOCOL
+2025-11-15T12:27:19.2160739Z ##[debug]# On versions 1.66, 1.67, and 1.68.0-nightly the value "sparse" is still unstable.
+2025-11-15T12:27:19.2161580Z ##[debug]# https://github.com/dtolnay/rust-toolchain/pull/69#discussion_r1107268108
+2025-11-15T12:27:19.2162483Z ##[debug]# If we detect an incompatible value, set it to "git" which is always supported.
+2025-11-15T12:27:19.2163355Z ##[debug]if [[ "{0}" =~ ^rustc\ (1\.6[67]\.|1\.68\.0-nightly) && "${{CARGO_REGISTRIES_CRATES_IO_PROTOCOL}}" == "sparse" ]]; then
+2025-11-15T12:27:19.2163809Z ##[debug]  echo "Downgrade cargo registry protocol to git"
+2025-11-15T12:27:19.2164167Z ##[debug]  echo "CARGO_REGISTRIES_CRATES_IO_PROTOCOL=git" >> $GITHUB_ENV
+2025-11-15T12:27:19.2164457Z ##[debug]fi
+2025-11-15T12:27:19.2164648Z ##[debug]', steps.versions.outputs.rustc-version)
+2025-11-15T12:27:19.2164950Z ##[debug]Evaluating format:
+2025-11-15T12:27:19.2165176Z ##[debug]..Evaluating String:
+2025-11-15T12:27:19.2165783Z ##[debug]..=> '# Not all versions support setting CARGO_REGISTRIES_CRATES_IO_PROTOCOL
+2025-11-15T12:27:19.2166235Z ##[debug]# On versions 1.66, 1.67, and 1.68.0-nightly the value "sparse" is still unstable.
+2025-11-15T12:27:19.2166712Z ##[debug]# https://github.com/dtolnay/rust-toolchain/pull/69#discussion_r1107268108
+2025-11-15T12:27:19.2167205Z ##[debug]# If we detect an incompatible value, set it to "git" which is always supported.
+2025-11-15T12:27:19.2167738Z ##[debug]if [[ "{0}" =~ ^rustc\ (1\.6[67]\.|1\.68\.0-nightly) && "${{CARGO_REGISTRIES_CRATES_IO_PROTOCOL}}" == "sparse" ]]; then
+2025-11-15T12:27:19.2168168Z ##[debug]  echo "Downgrade cargo registry protocol to git"
+2025-11-15T12:27:19.2168507Z ##[debug]  echo "CARGO_REGISTRIES_CRATES_IO_PROTOCOL=git" >> $GITHUB_ENV
+2025-11-15T12:27:19.2169148Z ##[debug]fi
+2025-11-15T12:27:19.2169285Z ##[debug]'
+2025-11-15T12:27:19.2169596Z ##[debug]..Evaluating Index:
+2025-11-15T12:27:19.2169813Z ##[debug]....Evaluating Index:
+2025-11-15T12:27:19.2170013Z ##[debug]......Evaluating Index:
+2025-11-15T12:27:19.2170227Z ##[debug]........Evaluating steps:
+2025-11-15T12:27:19.2170459Z ##[debug]........=> Object
+2025-11-15T12:27:19.2170677Z ##[debug]........Evaluating String:
+2025-11-15T12:27:19.2171049Z ##[debug]........=> 'versions'
+2025-11-15T12:27:19.2171277Z ##[debug]......=> Object
+2025-11-15T12:27:19.2171491Z ##[debug]......Evaluating String:
+2025-11-15T12:27:19.2172619Z ##[debug]......=> 'outputs'
+2025-11-15T12:27:19.2172844Z ##[debug]....=> Object
+2025-11-15T12:27:19.2173037Z ##[debug]....Evaluating String:
+2025-11-15T12:27:19.2173431Z ##[debug]....=> 'rustc-version'
+2025-11-15T12:27:19.2173708Z ##[debug]..=> 'rustc 1.91.1 (ed61e7d7e 2025-11-07)'
+2025-11-15T12:27:19.2174162Z ##[debug]=> '# Not all versions support setting CARGO_REGISTRIES_CRATES_IO_PROTOCOL
+2025-11-15T12:27:19.2174601Z ##[debug]# On versions 1.66, 1.67, and 1.68.0-nightly the value "sparse" is still unstable.
+2025-11-15T12:27:19.2175264Z ##[debug]# https://github.com/dtolnay/rust-toolchain/pull/69#discussion_r1107268108
+2025-11-15T12:27:19.2175737Z ##[debug]# If we detect an incompatible value, set it to "git" which is always supported.
+2025-11-15T12:27:19.2176323Z ##[debug]if [[ "rustc 1.91.1 (ed61e7d7e 2025-11-07)" =~ ^rustc\ (1\.6[67]\.|1\.68\.0-nightly) && "${CARGO_REGISTRIES_CRATES_IO_PROTOCOL}" == "sparse" ]]; then
+2025-11-15T12:27:19.2176827Z ##[debug]  echo "Downgrade cargo registry protocol to git"
+2025-11-15T12:27:19.2177186Z ##[debug]  echo "CARGO_REGISTRIES_CRATES_IO_PROTOCOL=git" >> $GITHUB_ENV
+2025-11-15T12:27:19.2177477Z ##[debug]fi
+2025-11-15T12:27:19.2177607Z ##[debug]'
+2025-11-15T12:27:19.2177929Z ##[debug]Result: '# Not all versions support setting CARGO_REGISTRIES_CRATES_IO_PROTOCOL
+2025-11-15T12:27:19.2178385Z ##[debug]# On versions 1.66, 1.67, and 1.68.0-nightly the value "sparse" is still unstable.
+2025-11-15T12:27:19.2178850Z ##[debug]# https://github.com/dtolnay/rust-toolchain/pull/69#discussion_r1107268108
+2025-11-15T12:27:19.2179332Z ##[debug]# If we detect an incompatible value, set it to "git" which is always supported.
+2025-11-15T12:27:19.2179916Z ##[debug]if [[ "rustc 1.91.1 (ed61e7d7e 2025-11-07)" =~ ^rustc\ (1\.6[67]\.|1\.68\.0-nightly) && "${CARGO_REGISTRIES_CRATES_IO_PROTOCOL}" == "sparse" ]]; then
+2025-11-15T12:27:19.2180418Z ##[debug]  echo "Downgrade cargo registry protocol to git"
+2025-11-15T12:27:19.2180755Z ##[debug]  echo "CARGO_REGISTRIES_CRATES_IO_PROTOCOL=git" >> $GITHUB_ENV
+2025-11-15T12:27:19.2181048Z ##[debug]fi
+2025-11-15T12:27:19.2181179Z ##[debug]'
+2025-11-15T12:27:19.2181542Z ##[debug]Loading env
+2025-11-15T12:27:19.2186314Z ##[group]Run # Not all versions support setting CARGO_REGISTRIES_CRATES_IO_PROTOCOL
+2025-11-15T12:27:19.2186829Z [36;1m# Not all versions support setting CARGO_REGISTRIES_CRATES_IO_PROTOCOL[0m
+2025-11-15T12:27:19.2187277Z [36;1m# On versions 1.66, 1.67, and 1.68.0-nightly the value "sparse" is still unstable.[0m
+2025-11-15T12:27:19.2187750Z [36;1m# https://github.com/dtolnay/rust-toolchain/pull/69#discussion_r1107268108[0m
+2025-11-15T12:27:19.2188232Z [36;1m# If we detect an incompatible value, set it to "git" which is always supported.[0m
+2025-11-15T12:27:19.2189170Z [36;1mif [[ "rustc 1.91.1 (ed61e7d7e 2025-11-07)" =~ ^rustc\ (1\.6[67]\.|1\.68\.0-nightly) && "${CARGO_REGISTRIES_CRATES_IO_PROTOCOL}" == "sparse" ]]; then[0m
+2025-11-15T12:27:19.2189709Z [36;1m  echo "Downgrade cargo registry protocol to git"[0m
+2025-11-15T12:27:19.2190073Z [36;1m  echo "CARGO_REGISTRIES_CRATES_IO_PROTOCOL=git" >> $GITHUB_ENV[0m
+2025-11-15T12:27:19.2190365Z [36;1mfi[0m
+2025-11-15T12:27:19.2203457Z shell: C:\Program Files\Git\bin\bash.EXE --noprofile --norc -e -o pipefail {0}
+2025-11-15T12:27:19.2203808Z env:
+2025-11-15T12:27:19.2203957Z   CARGO_INCREMENTAL: 0
+2025-11-15T12:27:19.2204143Z   CARGO_PROFILE_DEV_DEBUG: 0
+2025-11-15T12:27:19.2204340Z   CARGO_TERM_COLOR: always
+2025-11-15T12:27:19.2204536Z   RUST_BACKTRACE: short
+2025-11-15T12:27:19.2204712Z   RUSTFLAGS: -D warnings
+2025-11-15T12:27:19.2204912Z   CARGO_UNSTABLE_SPARSE_REGISTRY: true
+2025-11-15T12:27:19.2205155Z   CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
+2025-11-15T12:27:19.2205388Z ##[endgroup]
+2025-11-15T12:27:19.2220578Z ##[debug]C:\Program Files\Git\bin\bash.EXE --noprofile --norc -e -o pipefail D:\a\_temp\a542fa86-08ff-4079-afe3-4de4269c1699.sh
+2025-11-15T12:27:19.2627600Z ##[debug]Finished: run
+2025-11-15T12:27:19.2630591Z ##[debug]Evaluating condition for step: 'run'
+2025-11-15T12:27:19.2632429Z ##[debug]Evaluating: (success() && (inputs.cache == 'true'))
+2025-11-15T12:27:19.2632989Z ##[debug]Evaluating And:
+2025-11-15T12:27:19.2633284Z ##[debug]..Evaluating success:
+2025-11-15T12:27:19.2633687Z ##[debug]..=> true
+2025-11-15T12:27:19.2633978Z ##[debug]..Evaluating Equal:
+2025-11-15T12:27:19.2634269Z ##[debug]....Evaluating Index:
+2025-11-15T12:27:19.2634564Z ##[debug]......Evaluating inputs:
+2025-11-15T12:27:19.2635073Z ##[debug]......=> Object
+2025-11-15T12:27:19.2635368Z ##[debug]......Evaluating String:
+2025-11-15T12:27:19.2635661Z ##[debug]......=> 'cache'
+2025-11-15T12:27:19.2636032Z ##[debug]....=> 'true'
+2025-11-15T12:27:19.2636298Z ##[debug]....Evaluating String:
+2025-11-15T12:27:19.2636747Z ##[debug]....=> 'true'
+2025-11-15T12:27:19.2637001Z ##[debug]..=> true
+2025-11-15T12:27:19.2637245Z ##[debug]=> true
+2025-11-15T12:27:19.2637637Z ##[debug]Expanded: (true && ('true' == 'true'))
+2025-11-15T12:27:19.2638002Z ##[debug]Result: true
+2025-11-15T12:27:19.2638518Z ##[debug]Starting: run
+2025-11-15T12:27:19.2763440Z ##[debug]Register post job cleanup for action: Swatinem/rust-cache@f13886b937689c021905a6b90929199931d60db1
+2025-11-15T12:27:19.2851860Z ##[debug]Loading inputs
+2025-11-15T12:27:19.2853721Z ##[debug]Evaluating: (inputs.cache-workspaces || inputs.rust-src-dir)
+2025-11-15T12:27:19.2854126Z ##[debug]Evaluating Or:
+2025-11-15T12:27:19.2854372Z ##[debug]..Evaluating Index:
+2025-11-15T12:27:19.2854614Z ##[debug]....Evaluating inputs:
+2025-11-15T12:27:19.2854893Z ##[debug]....=> Object
+2025-11-15T12:27:19.2855126Z ##[debug]....Evaluating String:
+2025-11-15T12:27:19.2855363Z ##[debug]....=> 'cache-workspaces'
+2025-11-15T12:27:19.2855666Z ##[debug]..=> ''
+2025-11-15T12:27:19.2855870Z ##[debug]..Evaluating Index:
+2025-11-15T12:27:19.2856083Z ##[debug]....Evaluating inputs:
+2025-11-15T12:27:19.2856339Z ##[debug]....=> Object
+2025-11-15T12:27:19.2856561Z ##[debug]....Evaluating String:
+2025-11-15T12:27:19.2856789Z ##[debug]....=> 'rust-src-dir'
+2025-11-15T12:27:19.2857003Z ##[debug]..=> ''
+2025-11-15T12:27:19.2857219Z ##[debug]=> ''
+2025-11-15T12:27:19.2857459Z ##[debug]Expanded: ('' || '')
+2025-11-15T12:27:19.2857667Z ##[debug]Result: ''
+2025-11-15T12:27:19.2858131Z ##[debug]Evaluating: inputs.cache-directories
+2025-11-15T12:27:19.2858396Z ##[debug]Evaluating Index:
+2025-11-15T12:27:19.2858606Z ##[debug]..Evaluating inputs:
+2025-11-15T12:27:19.2858812Z ##[debug]..=> Object
+2025-11-15T12:27:19.2859017Z ##[debug]..Evaluating String:
+2025-11-15T12:27:19.2859233Z ##[debug]..=> 'cache-directories'
+2025-11-15T12:27:19.2859484Z ##[debug]=> ''
+2025-11-15T12:27:19.2859650Z ##[debug]Result: ''
+2025-11-15T12:27:19.2859989Z ##[debug]Evaluating: inputs.cache-on-failure
+2025-11-15T12:27:19.2860242Z ##[debug]Evaluating Index:
+2025-11-15T12:27:19.2860438Z ##[debug]..Evaluating inputs:
+2025-11-15T12:27:19.2860663Z ##[debug]..=> Object
+2025-11-15T12:27:19.2860844Z ##[debug]..Evaluating String:
+2025-11-15T12:27:19.2861055Z ##[debug]..=> 'cache-on-failure'
+2025-11-15T12:27:19.2861281Z ##[debug]=> 'true'
+2025-11-15T12:27:19.2861446Z ##[debug]Result: 'true'
+2025-11-15T12:27:19.2861802Z ##[debug]Evaluating: inputs.cache-bin
+2025-11-15T12:27:19.2862030Z ##[debug]Evaluating Index:
+2025-11-15T12:27:19.2862227Z ##[debug]..Evaluating inputs:
+2025-11-15T12:27:19.2862425Z ##[debug]..=> Object
+2025-11-15T12:27:19.2862606Z ##[debug]..Evaluating String:
+2025-11-15T12:27:19.2862806Z ##[debug]..=> 'cache-bin'
+2025-11-15T12:27:19.2862998Z ##[debug]=> 'true'
+2025-11-15T12:27:19.2863169Z ##[debug]Result: 'true'
+2025-11-15T12:27:19.2863523Z ##[debug]Evaluating: inputs.cache-provider
+2025-11-15T12:27:19.2863782Z ##[debug]Evaluating Index:
+2025-11-15T12:27:19.2863974Z ##[debug]..Evaluating inputs:
+2025-11-15T12:27:19.2864180Z ##[debug]..=> Object
+2025-11-15T12:27:19.2864359Z ##[debug]..Evaluating String:
+2025-11-15T12:27:19.2864572Z ##[debug]..=> 'cache-provider'
+2025-11-15T12:27:19.2864792Z ##[debug]=> 'github'
+2025-11-15T12:27:19.2865201Z ##[debug]Result: 'github'
+2025-11-15T12:27:19.2866088Z ##[debug]Evaluating: inputs.cache-all-crates
+2025-11-15T12:27:19.2866360Z ##[debug]Evaluating Index:
+2025-11-15T12:27:19.2866583Z ##[debug]..Evaluating inputs:
+2025-11-15T12:27:19.2866805Z ##[debug]..=> Object
+2025-11-15T12:27:19.2867008Z ##[debug]..Evaluating String:
+2025-11-15T12:27:19.2867224Z ##[debug]..=> 'cache-all-crates'
+2025-11-15T12:27:19.2867458Z ##[debug]=> 'false'
+2025-11-15T12:27:19.2867915Z ##[debug]Result: 'false'
+2025-11-15T12:27:19.2868333Z ##[debug]Evaluating: inputs.cache-workspace-crates
+2025-11-15T12:27:19.2868610Z ##[debug]Evaluating Index:
+2025-11-15T12:27:19.2868795Z ##[debug]..Evaluating inputs:
+2025-11-15T12:27:19.2868992Z ##[debug]..=> Object
+2025-11-15T12:27:19.2869173Z ##[debug]..Evaluating String:
+2025-11-15T12:27:19.2869375Z ##[debug]..=> 'cache-workspace-crates'
+2025-11-15T12:27:19.2869606Z ##[debug]=> 'false'
+2025-11-15T12:27:19.2869769Z ##[debug]Result: 'false'
+2025-11-15T12:27:19.2870077Z ##[debug]Evaluating: inputs.cache-key
+2025-11-15T12:27:19.2870310Z ##[debug]Evaluating Index:
+2025-11-15T12:27:19.2870508Z ##[debug]..Evaluating inputs:
+2025-11-15T12:27:19.2870708Z ##[debug]..=> Object
+2025-11-15T12:27:19.2870873Z ##[debug]..Evaluating String:
+2025-11-15T12:27:19.2871065Z ##[debug]..=> 'cache-key'
+2025-11-15T12:27:19.2871241Z ##[debug]=> ''
+2025-11-15T12:27:19.2871422Z ##[debug]Result: ''
+2025-11-15T12:27:19.2871749Z ##[debug]Evaluating: inputs.cache-shared-key
+2025-11-15T12:27:19.2872004Z ##[debug]Evaluating Index:
+2025-11-15T12:27:19.2872196Z ##[debug]..Evaluating inputs:
+2025-11-15T12:27:19.2872389Z ##[debug]..=> Object
+2025-11-15T12:27:19.2872562Z ##[debug]..Evaluating String:
+2025-11-15T12:27:19.2872759Z ##[debug]..=> 'cache-shared-key'
+2025-11-15T12:27:19.2872976Z ##[debug]=> ''
+2025-11-15T12:27:19.2873128Z ##[debug]Result: ''
+2025-11-15T12:27:19.2875648Z ##[debug]Loading env
+2025-11-15T12:27:19.2880037Z ##[group]Run Swatinem/rust-cache@f13886b937689c021905a6b90929199931d60db1
+2025-11-15T12:27:19.2880351Z with:
+2025-11-15T12:27:19.2880498Z   cache-on-failure: true
+2025-11-15T12:27:19.2880672Z   cache-bin: true
+2025-11-15T12:27:19.2880827Z   cache-provider: github
+2025-11-15T12:27:19.2881009Z   cache-all-crates: false
+2025-11-15T12:27:19.2881196Z   cache-workspace-crates: false
+2025-11-15T12:27:19.2881390Z   prefix-key: v0-rust
+2025-11-15T12:27:19.2881545Z   cache-targets: true
+2025-11-15T12:27:19.2881705Z   save-if: true
+2025-11-15T12:27:19.2881856Z   lookup-only: false
+2025-11-15T12:27:19.2882011Z env:
+2025-11-15T12:27:19.2882143Z   CARGO_INCREMENTAL: 0
+2025-11-15T12:27:19.2882312Z   CARGO_PROFILE_DEV_DEBUG: 0
+2025-11-15T12:27:19.2882500Z   CARGO_TERM_COLOR: always
+2025-11-15T12:27:19.2882672Z   RUST_BACKTRACE: short
+2025-11-15T12:27:19.2882844Z   RUSTFLAGS: -D warnings
+2025-11-15T12:27:19.2883024Z   CARGO_UNSTABLE_SPARSE_REGISTRY: true
+2025-11-15T12:27:19.2883266Z   CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
+2025-11-15T12:27:19.2883483Z ##[endgroup]
+2025-11-15T12:27:19.8412910Z ##[debug]followSymbolicLinks 'false'
+2025-11-15T12:27:19.8454681Z ##[debug]followSymbolicLinks 'false'
+2025-11-15T12:27:19.8455475Z ##[debug]implicitDescendants 'true'
+2025-11-15T12:27:19.8456223Z ##[debug]matchDirectories 'true'
+2025-11-15T12:27:19.8456755Z ##[debug]omitBrokenSymbolicLinks 'true'
+2025-11-15T12:27:19.8457291Z ##[debug]excludeHiddenFiles 'false'
+2025-11-15T12:27:19.8462237Z ##[debug]Search path 'D:\a\X32-Behringer-Rust\X32-Behringer-Rust\.cargo\config.toml'
+2025-11-15T12:27:19.8468188Z ##[debug]Search path 'D:\a\X32-Behringer-Rust\X32-Behringer-Rust\rust-toolchain'
+2025-11-15T12:27:19.8470146Z ##[debug]Search path 'D:\a\X32-Behringer-Rust\X32-Behringer-Rust\rust-toolchain.toml'
+2025-11-15T12:27:19.8475801Z ##[debug]followSymbolicLinks 'false'
+2025-11-15T12:27:19.8480488Z ##[debug]followSymbolicLinks 'false'
+2025-11-15T12:27:19.8481427Z ##[debug]implicitDescendants 'true'
+2025-11-15T12:27:19.8482095Z ##[debug]matchDirectories 'true'
+2025-11-15T12:27:19.8483179Z ##[debug]omitBrokenSymbolicLinks 'true'
+2025-11-15T12:27:19.8483891Z ##[debug]excludeHiddenFiles 'false'
+2025-11-15T12:27:19.8490293Z ##[debug]Search path 'D:\a\X32-Behringer-Rust\X32-Behringer-Rust'
+2025-11-15T12:27:19.9131285Z ##[debug]collecting metadata for "D:\a\X32-Behringer-Rust\X32-Behringer-Rust"
+2025-11-15T12:27:20.1080692Z ##[debug]workspace "D:\a\X32-Behringer-Rust\X32-Behringer-Rust" has 18 packages
+2025-11-15T12:27:20.1254137Z ::group::Cache Configuration
+2025-11-15T12:27:20.1254979Z ##[group]Cache Configuration
+2025-11-15T12:27:20.1255721Z Cache Provider:
+2025-11-15T12:27:20.1256219Z     github
+2025-11-15T12:27:20.1256617Z Workspaces:
+2025-11-15T12:27:20.1257139Z     D:\a\X32-Behringer-Rust\X32-Behringer-Rust
+2025-11-15T12:27:20.1257686Z Cache Paths:
+2025-11-15T12:27:20.1258124Z     C:\Users\runneradmin\.cargo\bin
+2025-11-15T12:27:20.1258821Z     C:\Users\runneradmin\.cargo\.crates.toml
+2025-11-15T12:27:20.1259450Z     C:\Users\runneradmin\.cargo\.crates2.json
+2025-11-15T12:27:20.1260096Z     C:\Users\runneradmin\.cargo\registry
+2025-11-15T12:27:20.1260671Z     C:\Users\runneradmin\.cargo\git
+2025-11-15T12:27:20.1261268Z     D:\a\X32-Behringer-Rust\X32-Behringer-Rust\target
+2025-11-15T12:27:20.1261787Z Restore Key:
+2025-11-15T12:27:20.1262072Z     v0-rust-build-Windows_NT-x64-6a2e14c7
+2025-11-15T12:27:20.1262739Z Cache Key:
+2025-11-15T12:27:20.1263039Z     v0-rust-build-Windows_NT-x64-6a2e14c7-2173c32c
+2025-11-15T12:27:20.1263447Z .. Prefix:
+2025-11-15T12:27:20.1263725Z   - v0-rust-build-Windows_NT-x64
+2025-11-15T12:27:20.1264099Z .. Environment considered:
+2025-11-15T12:27:20.1264659Z   - Rust Version: 1.91.1 x86_64-pc-windows-msvc (ed61e7d7e242494fb7057f2657300d9e77bb4fcb)
+2025-11-15T12:27:20.1265274Z   - CARGO_INCREMENTAL
+2025-11-15T12:27:20.1265570Z   - CARGO_PROFILE_DEV_DEBUG
+2025-11-15T12:27:20.1265934Z   - CARGO_REGISTRIES_CRATES_IO_PROTOCOL
+2025-11-15T12:27:20.1266314Z   - CARGO_TERM_COLOR
+2025-11-15T12:27:20.1266603Z   - CARGO_UNSTABLE_SPARSE_REGISTRY
+2025-11-15T12:27:20.1266940Z   - RUST_BACKTRACE
+2025-11-15T12:27:20.1267169Z   - RUSTFLAGS
+2025-11-15T12:27:20.1267419Z .. Lockfiles considered:
+2025-11-15T12:27:20.1268604Z   - D:\a\X32-Behringer-Rust\X32-Behringer-Rust\Cargo.lock
+2025-11-15T12:27:20.1269455Z   - D:\a\X32-Behringer-Rust\X32-Behringer-Rust\osc_lib\Cargo.toml
+2025-11-15T12:27:20.1270109Z   - D:\a\X32-Behringer-Rust\X32-Behringer-Rust\x32_automix\Cargo.toml
+2025-11-15T12:27:20.1270776Z   - D:\a\X32-Behringer-Rust\X32-Behringer-Rust\x32_commander\Cargo.toml
+2025-11-15T12:27:20.1271473Z   - D:\a\X32-Behringer-Rust\X32-Behringer-Rust\x32_copy_fx\Cargo.toml
+2025-11-15T12:27:20.1272105Z   - D:\a\X32-Behringer-Rust\X32-Behringer-Rust\x32_core\Cargo.toml
+2025-11-15T12:27:20.1272756Z   - D:\a\X32-Behringer-Rust\X32-Behringer-Rust\x32_custom_layer\Cargo.toml
+2025-11-15T12:27:20.1273454Z   - D:\a\X32-Behringer-Rust\X32-Behringer-Rust\x32_desk_restore\Cargo.toml
+2025-11-15T12:27:20.1274144Z   - D:\a\X32-Behringer-Rust\X32-Behringer-Rust\x32_desk_save\Cargo.toml
+2025-11-15T12:27:20.1274824Z   - D:\a\X32-Behringer-Rust\X32-Behringer-Rust\x32_emulator\Cargo.toml
+2025-11-15T12:27:20.1275461Z   - D:\a\X32-Behringer-Rust\X32-Behringer-Rust\x32_fade\Cargo.toml
+2025-11-15T12:27:20.1276094Z   - D:\a\X32-Behringer-Rust\X32-Behringer-Rust\x32_geq2_cpy\Cargo.toml
+2025-11-15T12:27:20.1276783Z   - D:\a\X32-Behringer-Rust\X32-Behringer-Rust\x32_get_scene_name\Cargo.toml
+2025-11-15T12:27:20.1277476Z   - D:\a\X32-Behringer-Rust\X32-Behringer-Rust\x32_get_scene\Cargo.toml
+2025-11-15T12:27:20.1278115Z   - D:\a\X32-Behringer-Rust\X32-Behringer-Rust\x32_lib\Cargo.toml
+2025-11-15T12:27:20.1278747Z   - D:\a\X32-Behringer-Rust\X32-Behringer-Rust\x32_set_scene\Cargo.toml
+2025-11-15T12:27:20.1279382Z   - D:\a\X32-Behringer-Rust\X32-Behringer-Rust\x32_tcp\Cargo.toml
+2025-11-15T12:27:20.1279975Z   - D:\a\X32-Behringer-Rust\X32-Behringer-Rust\x32_usb\Cargo.toml
+2025-11-15T12:27:20.1280568Z   - D:\a\X32-Behringer-Rust\X32-Behringer-Rust\x32_wav_xlive\Cargo.toml
+2025-11-15T12:27:20.1281620Z ::endgroup::
+2025-11-15T12:27:20.1281863Z ##[endgroup]
+2025-11-15T12:27:20.1282003Z
+2025-11-15T12:27:20.1282112Z ... Restoring cache ...
+2025-11-15T12:27:20.1282619Z ##[debug]Cache service version: v2
+2025-11-15T12:27:20.1283155Z ##[debug]Resolved Keys:
+2025-11-15T12:27:20.1283975Z ##[debug]["v0-rust-build-Windows_NT-x64-6a2e14c7-2173c32c","v0-rust-build-Windows_NT-x64-6a2e14c7"]
+2025-11-15T12:27:20.1284899Z ##[debug]Checking zstd --quiet --version
+2025-11-15T12:27:20.2724126Z ##[debug]1.5.7
+2025-11-15T12:27:20.2731114Z ##[debug]zstd version: 1.5.7
+2025-11-15T12:27:20.2743399Z ##[debug][Request] GetCacheEntryDownloadURL https://results-receiver.actions.githubusercontent.com/twirp/github.actions.results.api.v1.CacheService/GetCacheEntryDownloadURL
+2025-11-15T12:27:20.4250585Z ##[debug][Response] - 200
+2025-11-15T12:27:20.4253626Z ##[debug]Headers: {
+2025-11-15T12:27:20.4253904Z ##[debug]  "content-length": "54",
+2025-11-15T12:27:20.4254285Z ##[debug]  "content-type": "application/json",
+2025-11-15T12:27:20.4254784Z ##[debug]  "date": "Sat, 15 Nov 2025 12:27:20 GMT",
+2025-11-15T12:27:20.4255342Z ##[debug]  "x-github-backend": "Kubernetes",
+2025-11-15T12:27:20.4255905Z ##[debug]  "x-github-request-id": "A400:1E08A8:C58C35:118F7EA:691871A8"
+2025-11-15T12:27:20.4256365Z ##[debug]}
+2025-11-15T12:27:20.4256777Z ##[debug]Body: {
+2025-11-15T12:27:20.4257007Z ##[debug]  "ok": false,
+2025-11-15T12:27:20.4257287Z ##[debug]  "signed_download_url": "",
+2025-11-15T12:27:20.4257631Z ##[debug]  "matched_key": ""
+2025-11-15T12:27:20.4257904Z ##[debug]}
+2025-11-15T12:27:20.4263962Z ##[debug]Cache not found for version 10479c8652ff7b621ca9b0e6e49e13664b82d2e133fb4f846e8afbc818501b5a of keys: v0-rust-build-Windows_NT-x64-6a2e14c7-2173c32c, v0-rust-build-Windows_NT-x64-6a2e14c7
+2025-11-15T12:27:20.4265203Z No cache found.
+2025-11-15T12:27:20.4384832Z ##[debug]Node Action run completed with exit code 0
+2025-11-15T12:27:20.4387465Z ##[debug]CACHE_ON_FAILURE='true'
+2025-11-15T12:27:20.4387844Z ##[debug]CARGO_INCREMENTAL='0'
+2025-11-15T12:27:20.4400911Z ##[debug]Save intra-action state RUST_CACHE_CONFIG = {"cachePaths":["C:\\Users\\runneradmin\\.cargo\\bin","C:\\Users\\runneradmin\\.cargo\\.crates.toml","C:\\Users\\runneradmin\\.cargo\\.crates2.json","C:\\Users\\runneradmin\\.cargo\\registry","C:\\Users\\runneradmin\\.cargo\\git","D:\\a\\X32-Behringer-Rust\\X32-Behringer-Rust\\target"],"cacheKey":"v0-rust-build-Windows_NT-x64-6a2e14c7-2173c32c","restoreKey":"v0-rust-build-Windows_NT-x64-6a2e14c7","cacheBin":true,"workspaces":[{"root":"D:\\a\\X32-Behringer-Rust\\X32-Behringer-Rust","target":"D:\\a\\X32-Behringer-Rust\\X32-Behringer-Rust\\target"}],"cargoBins":[],"keyPrefix":"v0-rust-build-Windows_NT-x64","keyRust":"1.91.1 x86_64-pc-windows-msvc (ed61e7d7e242494fb7057f2657300d9e77bb4fcb)","keyEnvs":["CARGO_INCREMENTAL","CARGO_PROFILE_DEV_DEBUG","CARGO_REGISTRIES_CRATES_IO_PROTOCOL","CARGO_TERM_COLOR","CARGO_UNSTABLE_SPARSE_REGISTRY","RUST_BACKTRACE","RUSTFLAGS"],"keyFiles":["D:\\a\\X32-Behringer-Rust\\X32-Behringer-Rust\\Cargo.lock","D:\\a\\X32-Behringer-Rust\\X32-Behringer-Rust\\osc_lib\\Cargo.toml","D:\\a\\X32-Behringer-Rust\\X32-Behringer-Rust\\x32_automix\\Cargo.toml","D:\\a\\X32-Behringer-Rust\\X32-Behringer-Rust\\x32_commander\\Cargo.toml","D:\\a\\X32-Behringer-Rust\\X32-Behringer-Rust\\x32_copy_fx\\Cargo.toml","D:\\a\\X32-Behringer-Rust\\X32-Behringer-Rust\\x32_core\\Cargo.toml","D:\\a\\X32-Behringer-Rust\\X32-Behringer-Rust\\x32_custom_layer\\Cargo.toml","D:\\a\\X32-Behringer-Rust\\X32-Behringer-Rust\\x32_desk_restore\\Cargo.toml","D:\\a\\X32-Behringer-Rust\\X32-Behringer-Rust\\x32_desk_save\\Cargo.toml","D:\\a\\X32-Behringer-Rust\\X32-Behringer-Rust\\x32_emulator\\Cargo.toml","D:\\a\\X32-Behringer-Rust\\X32-Behringer-Rust\\x32_fade\\Cargo.toml","D:\\a\\X32-Behringer-Rust\\X32-Behringer-Rust\\x32_geq2_cpy\\Cargo.toml","D:\\a\\X32-Behringer-Rust\\X32-Behringer-Rust\\x32_get_scene_name\\Cargo.toml","D:\\a\\X32-Behringer-Rust\\X32-Behringer-Rust\\x32_get_scene\\Cargo.toml","D:\\a\\X32-Behringer-Rust\\X32-Behringer-Rust\\x32_lib\\Cargo.toml","D:\\a\\X32-Behringer-Rust\\X32-Behringer-Rust\\x32_set_scene\\Cargo.toml","D:\\a\\X32-Behringer-Rust\\X32-Behringer-Rust\\x32_tcp\\Cargo.toml","D:\\a\\X32-Behringer-Rust\\X32-Behringer-Rust\\x32_usb\\Cargo.toml","D:\\a\\X32-Behringer-Rust\\X32-Behringer-Rust\\x32_wav_xlive\\Cargo.toml"]}
+2025-11-15T12:27:20.4409206Z ##[debug]Set output cache-hit = false
+2025-11-15T12:27:20.4409736Z ##[debug]Finished: run
+2025-11-15T12:27:20.4431819Z ##[debug]Evaluating: steps.versions.outputs.rustc-version
+2025-11-15T12:27:20.4432168Z ##[debug]Evaluating Index:
+2025-11-15T12:27:20.4432391Z ##[debug]..Evaluating Index:
+2025-11-15T12:27:20.4432594Z ##[debug]....Evaluating Index:
+2025-11-15T12:27:20.4432818Z ##[debug]......Evaluating steps:
+2025-11-15T12:27:20.4433080Z ##[debug]......=> Object
+2025-11-15T12:27:20.4433300Z ##[debug]......Evaluating String:
+2025-11-15T12:27:20.4433520Z ##[debug]......=> 'versions'
+2025-11-15T12:27:20.4433859Z ##[debug]....=> Object
+2025-11-15T12:27:20.4434053Z ##[debug]....Evaluating String:
+2025-11-15T12:27:20.4434256Z ##[debug]....=> 'outputs'
+2025-11-15T12:27:20.4434438Z ##[debug]..=> Object
+2025-11-15T12:27:20.4434624Z ##[debug]..Evaluating String:
+2025-11-15T12:27:20.4435096Z ##[debug]..=> 'rustc-version'
+2025-11-15T12:27:20.4435348Z ##[debug]=> 'rustc 1.91.1 (ed61e7d7e 2025-11-07)'
+2025-11-15T12:27:20.4435667Z ##[debug]Result: 'rustc 1.91.1 (ed61e7d7e 2025-11-07)'
+2025-11-15T12:27:20.4436397Z ##[debug]Evaluating: steps.versions.outputs.cargo-version
+2025-11-15T12:27:20.4436681Z ##[debug]Evaluating Index:
+2025-11-15T12:27:20.4436878Z ##[debug]..Evaluating Index:
+2025-11-15T12:27:20.4437074Z ##[debug]....Evaluating Index:
+2025-11-15T12:27:20.4437282Z ##[debug]......Evaluating steps:
+2025-11-15T12:27:20.4437493Z ##[debug]......=> Object
+2025-11-15T12:27:20.4437682Z ##[debug]......Evaluating String:
+2025-11-15T12:27:20.4437891Z ##[debug]......=> 'versions'
+2025-11-15T12:27:20.4438097Z ##[debug]....=> Object
+2025-11-15T12:27:20.4438276Z ##[debug]....Evaluating String:
+2025-11-15T12:27:20.4438471Z ##[debug]....=> 'outputs'
+2025-11-15T12:27:20.4438642Z ##[debug]..=> Object
+2025-11-15T12:27:20.4438821Z ##[debug]..Evaluating String:
+2025-11-15T12:27:20.4439411Z ##[debug]..=> 'cargo-version'
+2025-11-15T12:27:20.4439660Z ##[debug]=> 'cargo 1.91.1 (ea2d97820 2025-10-10)'
+2025-11-15T12:27:20.4439950Z ##[debug]Result: 'cargo 1.91.1 (ea2d97820 2025-10-10)'
+2025-11-15T12:27:20.4440560Z ##[debug]Evaluating: steps.versions.outputs.rustup-version
+2025-11-15T12:27:20.4440848Z ##[debug]Evaluating Index:
+2025-11-15T12:27:20.4441041Z ##[debug]..Evaluating Index:
+2025-11-15T12:27:20.4441225Z ##[debug]....Evaluating Index:
+2025-11-15T12:27:20.4441420Z ##[debug]......Evaluating steps:
+2025-11-15T12:27:20.4441625Z ##[debug]......=> Object
+2025-11-15T12:27:20.4441805Z ##[debug]......Evaluating String:
+2025-11-15T12:27:20.4442004Z ##[debug]......=> 'versions'
+2025-11-15T12:27:20.4442193Z ##[debug]....=> Object
+2025-11-15T12:27:20.4442367Z ##[debug]....Evaluating String:
+2025-11-15T12:27:20.4442563Z ##[debug]....=> 'outputs'
+2025-11-15T12:27:20.4442733Z ##[debug]..=> Object
+2025-11-15T12:27:20.4442905Z ##[debug]..Evaluating String:
+2025-11-15T12:27:20.4443102Z ##[debug]..=> 'rustup-version'
+2025-11-15T12:27:20.4443325Z ##[debug]=> 'rustup 1.28.2 (e4f3ad6f8 2025-04-28)'
+2025-11-15T12:27:20.4443608Z ##[debug]Result: 'rustup 1.28.2 (e4f3ad6f8 2025-04-28)'
+2025-11-15T12:27:20.4444092Z ##[debug]Evaluating: steps.versions.outputs.cachekey
+2025-11-15T12:27:20.4444356Z ##[debug]Evaluating Index:
+2025-11-15T12:27:20.4444561Z ##[debug]..Evaluating Index:
+2025-11-15T12:27:20.4444762Z ##[debug]....Evaluating Index:
+2025-11-15T12:27:20.4444955Z ##[debug]......Evaluating steps:
+2025-11-15T12:27:20.4445158Z ##[debug]......=> Object
+2025-11-15T12:27:20.4445340Z ##[debug]......Evaluating String:
+2025-11-15T12:27:20.4445540Z ##[debug]......=> 'versions'
+2025-11-15T12:27:20.4445730Z ##[debug]....=> Object
+2025-11-15T12:27:20.4446114Z ##[debug]....Evaluating String:
+2025-11-15T12:27:20.4446315Z ##[debug]....=> 'outputs'
+2025-11-15T12:27:20.4446497Z ##[debug]..=> Object
+2025-11-15T12:27:20.4446680Z ##[debug]..Evaluating String:
+2025-11-15T12:27:20.4446877Z ##[debug]..=> 'cachekey'
+2025-11-15T12:27:20.4447058Z ##[debug]=> '20251107ed61'
+2025-11-15T12:27:20.4447248Z ##[debug]Result: '20251107ed61'
+2025-11-15T12:27:20.4455681Z ##[debug]Finishing: Install Rust toolchain

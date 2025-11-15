@@ -27,7 +27,6 @@ jobs:
       run: sudo apt-get update && sudo apt-get install -y libportmidi-dev
 
     - name: Run cargo check
-      working-directory: ./rust_rewrite
       run: cargo check
 
     - name: Run pre-commit checks (allow failure)
@@ -35,6 +34,5 @@ jobs:
       continue-on-error: true
 
     - name: Run cargo test (allow failure)
-      working-directory: ./rust_rewrite
       continue-on-error: true
       run: cargo test --workspace

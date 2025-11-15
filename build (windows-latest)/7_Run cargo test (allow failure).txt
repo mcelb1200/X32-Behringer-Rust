@@ -1,0 +1,5 @@
+﻿2025-11-15T12:27:20.5620408Z ##[debug]Evaluating condition for step: 'Run cargo test (allow failure)'
+2025-11-15T12:27:20.5621411Z ##[debug]Evaluating: success()
+2025-11-15T12:27:20.5621704Z ##[debug]Evaluating success:
+2025-11-15T12:27:20.5621985Z ##[debug]=> false
+2025-11-15T12:27:20.5622270Z ##[debug]Result: false
