@@ -97,8 +97,8 @@ fn test_file_operations() {
 
     let output = cmd.output().unwrap();
     assert!(!output.status.success());
-    let stderr = String::from_utf8(output.stderr).unwrap();
-    assert!(stderr.contains("Error:"));
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    assert!(stdout.contains("Not connected to X32."));
 
     let mut cmd = bin.command();
     cmd.arg("--ip").arg("127.0.0.1:10049").arg("play").arg("4");
