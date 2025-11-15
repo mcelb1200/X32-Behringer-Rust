@@ -336,8 +336,18 @@ pub fn tokenize(s: &str) -> Result<Vec<String>> {
     let mut tokens = Vec::new();
     let mut current_token = String::new();
     let mut in_quote = false;
+    let mut escaped = false;
     for c in s.chars() {
+        if escaped {
+            current_token.push(c);
+            escaped = false;
+            continue;
+        }
+
         match c {
+            '\\' => {
+                escaped = true;
+            }
             '"' => {
                 if in_quote {
                     // Closing quote
@@ -356,6 +366,11 @@ pub fn tokenize(s: &str) -> Result<Vec<String>> {
                 current_token.push(c);
             }
         }
+    }
+    if in_quote {
+        return Err(OscError::ParseError(
+            "Unmatched quote in command string".to_string(),
+        ));
     }
     if !current_token.is_empty() {
         tokens.push(current_token);
