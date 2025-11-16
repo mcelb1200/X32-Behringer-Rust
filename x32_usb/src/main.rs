@@ -333,11 +333,17 @@ fn run(args: Args) -> Result<()> {
 fn main() {
     let args = Args::parse();
     if let Err(e) = run(args) {
-        if e.is::<ConnectionError>() {
-            println!("Not connected to X32.");
-        } else {
-            eprintln!("Error: {}", e);
+        let root = e.root_cause();
+        if let Some(io_err) = root.downcast_ref::<std::io::Error>() {
+            if io_err.kind() == std::io::ErrorKind::ConnectionRefused
+                || io_err.kind() == std::io::ErrorKind::TimedOut
+                || io_err.kind() == std::io::ErrorKind::WouldBlock
+            {
+                println!("Not connected to X32.");
+                std::process::exit(1);
+            }
         }
+        eprintln!("Error: {}", e);
         std::process::exit(1);
     }
 }
