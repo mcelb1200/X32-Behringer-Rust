@@ -37,6 +37,18 @@ fn test_message_from_str() {
 }
 
 #[test]
+fn test_message_from_str_with_quoted_string_no_space() {
+    let s = "/ch/01/config/name ,s\"MyFader\"";
+    let message = OscMessage::from_str(s).unwrap();
+    assert_eq!(message.path, "/ch/01/config/name");
+    assert_eq!(message.args.len(), 1);
+    match &message.args[0] {
+        OscArg::String(s) => assert_eq!(s, "MyFader"),
+        _ => panic!("Incorrect argument type"),
+    }
+}
+
+#[test]
 fn test_message_with_blob_roundtrip_to_bytes() {
     let original_message = OscMessage {
         path: "/blob".to_string(),

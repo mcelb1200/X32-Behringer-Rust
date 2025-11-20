@@ -948,6 +948,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "x32_tap"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "osc_lib",
+ "x32_lib",
+]
+
+[[package]]
 name = "x32_tcp"
 version = "0.1.0"
 dependencies = [
