@@ -939,6 +939,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "x32_set_preset"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "osc_lib",
+ "x32_lib",
+]
+
+[[package]]
 name = "x32_set_scene"
 version = "0.1.0"
 dependencies = [
