@@ -1,5 +1,5 @@
-use std::sync::{Arc, Mutex};
 use crate::config::Config;
+use std::sync::{Arc, Mutex};
 
 #[derive(Debug, Clone)]
 pub struct ChannelState {
