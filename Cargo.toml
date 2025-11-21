@@ -21,4 +21,6 @@ members = [
     "x32_wav_xlive",
     "x32_tap",
     "x32_set_preset",
+    "x32_reaper",
+    "x32_replay",
 ]
