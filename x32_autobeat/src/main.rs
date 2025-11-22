@@ -1,6 +1,6 @@
 use crate::audio::AudioEngine;
-use crate::detection::{BeatDetector, EnergyDetector, OscLevelDetector};
-use crate::effects::{EffectHandler, get_handler};
+use crate::detection::{BeatDetector, EnergyDetector, OscLevelDetector, SpectralFluxDetector};
+use crate::effects::{get_handler, EffectHandler};
 use crate::network::{NetworkEvent, NetworkManager};
 use crate::ui::{AppState, Tui, UIEvent};
 use anyhow::Result;
@@ -54,6 +54,21 @@ enum Commands {
     ListDevices,
 }
 
+#[derive(Debug, PartialEq)]
+enum Algorithm {
+    Energy,
+    Spectral,
+}
+
+impl std::fmt::Display for Algorithm {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Algorithm::Energy => write!(f, "Energy"),
+            Algorithm::Spectral => write!(f, "Spectral"),
+        }
+    }
+}
+
 fn main() -> Result<()> {
     let cli = Cli::parse();
 
@@ -104,6 +119,7 @@ fn main() -> Result<()> {
 
     // Initialize Detectors
     let mut energy_detector = EnergyDetector::new(1.5, audio_sample_rate);
+    let mut spectral_detector = SpectralFluxDetector::new(audio_sample_rate, 1024);
     let mut osc_detector = OscLevelDetector::new();
 
     // Initialize UI
@@ -121,6 +137,8 @@ fn main() -> Result<()> {
     let mut last_level = 0.0;
     let mut last_audio_packet = Instant::now();
 
+    let mut selected_algorithm = Algorithm::Energy;
+
     loop {
         // 1. Process Audio Data (Primary)
         let mut audio_received_this_frame = false;
@@ -129,7 +147,11 @@ fn main() -> Result<()> {
             last_audio_packet = Instant::now();
 
             if !is_panic {
-                energy_detector.process(&chunk, audio_sample_rate);
+                match selected_algorithm {
+                    Algorithm::Energy => energy_detector.process(&chunk, audio_sample_rate),
+                    Algorithm::Spectral => spectral_detector.process(&chunk, audio_sample_rate),
+                }
+
                 if !chunk.is_empty() {
                     let sum_sq: f32 = chunk.iter().map(|s| s * s).sum();
                     let rms = (sum_sq / chunk.len() as f32).sqrt();
@@ -179,7 +201,10 @@ fn main() -> Result<()> {
 
         // 3. Determine Active BPM
         let active_bpm = if !use_fallback {
-            energy_detector.current_bpm()
+            match selected_algorithm {
+                Algorithm::Energy => energy_detector.current_bpm(),
+                Algorithm::Spectral => spectral_detector.current_bpm(),
+            }
         } else {
             osc_detector.current_bpm()
         };
@@ -207,6 +232,7 @@ fn main() -> Result<()> {
                 } else {
                     "Audio OK".to_string()
                 },
+                algorithm: selected_algorithm.to_string(),
             };
 
             tui.draw(&state)?;
@@ -223,7 +249,12 @@ fn main() -> Result<()> {
                     UIEvent::Reset => {
                         is_panic = false;
                     }
-                    _ => {}
+                    UIEvent::SwitchAlgorithm => {
+                        selected_algorithm = match selected_algorithm {
+                            Algorithm::Energy => Algorithm::Spectral,
+                            Algorithm::Spectral => Algorithm::Energy,
+                        };
+                    }
                 }
             }
 
