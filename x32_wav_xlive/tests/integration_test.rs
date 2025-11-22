@@ -1,4 +1,3 @@
-use byteorder::{LittleEndian, ReadBytesExt};
 use hound::{WavReader, WavSpec, WavWriter};
 use std::fs::{self, File};
 use std::io::{Cursor, Read};
