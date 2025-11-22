@@ -1,4 +1,4 @@
-use anyhow::{Context, Result};
+use anyhow::Result;
 use crossbeam_channel::Sender;
 
 #[cfg(feature = "audio")]

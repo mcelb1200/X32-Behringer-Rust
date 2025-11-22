@@ -1,10 +1,10 @@
-use anyhow::{Context, Result};
+use anyhow::Result;
 use crossbeam_channel::Sender;
 use osc_lib::OscMessage;
 use std::net::UdpSocket;
 use std::sync::{
-    Arc,
     atomic::{AtomicBool, Ordering},
+    Arc,
 };
 use std::thread;
 use std::time::Duration;
@@ -146,7 +146,7 @@ impl NetworkManager {
         enc_path: &str,
     ) {
         if msg.path == "/meters/1" {
-            if let Some(osc_lib::OscArg::Blob(data)) = msg.args.get(0) {
+            if let Some(osc_lib::OscArg::Blob(data)) = msg.args.first() {
                 let start = channel_idx * 4;
                 let end = start + 4;
                 if data.len() >= end {
@@ -159,7 +159,7 @@ impl NetworkManager {
                 }
             }
         } else if msg.path.starts_with("/fx/") && msg.path.ends_with("/type") {
-            if let Some(osc_lib::OscArg::String(s)) = msg.args.get(0) {
+            if let Some(osc_lib::OscArg::String(s)) = msg.args.first() {
                 let _ = sender.send(NetworkEvent::EffectLoaded(s.clone()));
             }
         }
@@ -168,7 +168,7 @@ impl NetworkManager {
         else if msg.path.contains(panic_path) {
             // Check if button is PRESSED (val 1)
             // X32 sends val 1 on press, 0 on release. We only want to trigger on press.
-            if let Some(arg) = msg.args.get(0) {
+            if let Some(arg) = msg.args.first() {
                 let pressed = match arg {
                     osc_lib::OscArg::Int(i) => *i == 1,
                     osc_lib::OscArg::Float(f) => *f > 0.5,

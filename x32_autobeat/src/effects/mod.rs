@@ -1,6 +1,5 @@
 use crate::network::NetworkManager;
 use anyhow::Result;
-use osc_lib::OscMessage;
 
 /// Trait for Effect Handlers
 pub trait EffectHandler {

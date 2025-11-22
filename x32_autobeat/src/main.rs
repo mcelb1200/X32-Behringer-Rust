@@ -1,9 +1,9 @@
 use crate::audio::AudioEngine;
 use crate::detection::{BeatDetector, EnergyDetector, OscLevelDetector};
-use crate::effects::{EffectHandler, get_handler};
+use crate::effects::{get_handler, EffectHandler};
 use crate::network::{NetworkEvent, NetworkManager};
 use crate::ui::{AppState, Tui, UIEvent};
-use anyhow::{Context, Result};
+use anyhow::Result;
 use clap::{Parser, Subcommand};
 use crossbeam_channel::unbounded;
 use std::sync::Arc;
