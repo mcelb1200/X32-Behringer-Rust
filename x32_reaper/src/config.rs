@@ -145,14 +145,14 @@ impl Config {
         // if (Xchbank_on) { ... if (!Xtransport_on) { fscanf(res_file, "%d %d\n", &XMbankup, &XMbankdn); } }
 
         if ch_bank_on && !transport_on {
-             // Try to read one more line
-             if let Some(Ok(line)) = lines.next() {
-                 let parts: Vec<&str> = line.split_whitespace().collect();
-                 if parts.len() >= 2 {
-                     bank_up = parts[0].parse::<i32>()?;
-                     bank_dn = parts[1].parse::<i32>()?;
-                 }
-             }
+            // Try to read one more line
+            if let Some(Ok(line)) = lines.next() {
+                let parts: Vec<&str> = line.split_whitespace().collect();
+                if parts.len() >= 2 {
+                    bank_up = parts[0].parse::<i32>()?;
+                    bank_dn = parts[1].parse::<i32>()?;
+                }
+            }
         }
 
         Ok(Config {
