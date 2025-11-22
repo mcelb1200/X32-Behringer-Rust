@@ -1,15 +1,18 @@
 use anyhow::{Context, Result};
+use crossbeam_channel::Sender;
 use osc_lib::OscMessage;
 use std::net::UdpSocket;
-use std::sync::{Arc, atomic::{AtomicBool, Ordering}};
+use std::sync::{
+    Arc,
+    atomic::{AtomicBool, Ordering},
+};
 use std::thread;
 use std::time::Duration;
-use crossbeam_channel::Sender;
 
 pub enum NetworkEvent {
     MeterLevel(f32), // Normalized 0.0-1.0
     PanicTriggered,
-    EncoderTurned(i32), // Delta or Value
+    EncoderTurned(i32),   // Delta or Value
     EffectLoaded(String), // Effect name
 }
 
@@ -34,7 +37,6 @@ impl NetworkManager {
         panic_btn_path: &str,
         preset_enc_path: &str,
     ) -> Result<Self> {
-
         let socket = x32_lib::create_socket("0.0.0.0", 0)?;
         socket.set_read_timeout(Some(Duration::from_millis(100)))?;
         let socket = Arc::new(socket);
@@ -91,36 +93,39 @@ impl NetworkManager {
 
                 // 1. Maintain Subscription
                 if last_xremote.elapsed() > Duration::from_secs(9) {
-                     let renew = OscMessage { path: "/xremote".to_string(), args: vec![] };
-                     if let Ok(bytes) = renew.to_bytes() {
-                         let _ = socket.send_to(&bytes, format!("{}:10023", ip));
-                     }
-                     last_xremote = std::time::Instant::now();
+                    let renew = OscMessage {
+                        path: "/xremote".to_string(),
+                        args: vec![],
+                    };
+                    if let Ok(bytes) = renew.to_bytes() {
+                        let _ = socket.send_to(&bytes, format!("{}:10023", ip));
+                    }
+                    last_xremote = std::time::Instant::now();
                 }
 
                 // 2. Poll Meters
                 if last_meter_poll.elapsed() > Duration::from_millis(50) {
-                     let meter_req = OscMessage {
-                         path: "/meters".to_string(),
-                         args: vec![osc_lib::OscArg::String("/meters/1".to_string())]
-                     };
-                     if let Ok(bytes) = meter_req.to_bytes() {
-                         let _ = socket.send_to(&bytes, format!("{}:10023", ip));
-                     }
-                     last_meter_poll = std::time::Instant::now();
+                    let meter_req = OscMessage {
+                        path: "/meters".to_string(),
+                        args: vec![osc_lib::OscArg::String("/meters/1".to_string())],
+                    };
+                    if let Ok(bytes) = meter_req.to_bytes() {
+                        let _ = socket.send_to(&bytes, format!("{}:10023", ip));
+                    }
+                    last_meter_poll = std::time::Instant::now();
                 }
 
                 // 3. Poll FX Type
                 if last_fx_poll.elapsed() > Duration::from_secs(1) {
-                     let fx_path = format!("/fx/{}/type", target_slot);
-                     let fx_req = OscMessage {
-                         path: fx_path,
-                         args: vec![],
-                     };
-                     if let Ok(bytes) = fx_req.to_bytes() {
-                         let _ = socket.send_to(&bytes, format!("{}:10023", ip));
-                     }
-                     last_fx_poll = std::time::Instant::now();
+                    let fx_path = format!("/fx/{}/type", target_slot);
+                    let fx_req = OscMessage {
+                        path: fx_path,
+                        args: vec![],
+                    };
+                    if let Ok(bytes) = fx_req.to_bytes() {
+                        let _ = socket.send_to(&bytes, format!("{}:10023", ip));
+                    }
+                    last_fx_poll = std::time::Instant::now();
                 }
 
                 // 4. Read Responses
@@ -133,22 +138,27 @@ impl NetworkManager {
         });
     }
 
-    fn handle_message(msg: OscMessage, sender: &Sender<NetworkEvent>, channel_idx: usize, panic_path: &str, enc_path: &str) {
+    fn handle_message(
+        msg: OscMessage,
+        sender: &Sender<NetworkEvent>,
+        channel_idx: usize,
+        panic_path: &str,
+        enc_path: &str,
+    ) {
         if msg.path == "/meters/1" {
-             if let Some(osc_lib::OscArg::Blob(data)) = msg.args.get(0) {
-                 let start = channel_idx * 4;
-                 let end = start + 4;
-                 if data.len() >= end {
-                     let mut bytes = [0u8; 4];
-                     if let Some(slice) = data.get(start..end) {
-                         bytes.copy_from_slice(slice);
-                         let level = f32::from_le_bytes(bytes);
-                         let _ = sender.send(NetworkEvent::MeterLevel(level));
-                     }
-                 }
-             }
-        }
-        else if msg.path.starts_with("/fx/") && msg.path.ends_with("/type") {
+            if let Some(osc_lib::OscArg::Blob(data)) = msg.args.get(0) {
+                let start = channel_idx * 4;
+                let end = start + 4;
+                if data.len() >= end {
+                    let mut bytes = [0u8; 4];
+                    if let Some(slice) = data.get(start..end) {
+                        bytes.copy_from_slice(slice);
+                        let level = f32::from_le_bytes(bytes);
+                        let _ = sender.send(NetworkEvent::MeterLevel(level));
+                    }
+                }
+            }
+        } else if msg.path.starts_with("/fx/") && msg.path.ends_with("/type") {
             if let Some(osc_lib::OscArg::String(s)) = msg.args.get(0) {
                 let _ = sender.send(NetworkEvent::EffectLoaded(s.clone()));
             }
@@ -159,17 +169,16 @@ impl NetworkManager {
             // Check if button is PRESSED (val 1)
             // X32 sends val 1 on press, 0 on release. We only want to trigger on press.
             if let Some(arg) = msg.args.get(0) {
-                 let pressed = match arg {
-                     osc_lib::OscArg::Int(i) => *i == 1,
-                     osc_lib::OscArg::Float(f) => *f > 0.5,
-                     _ => false,
-                 };
-                 if pressed {
-                     let _ = sender.send(NetworkEvent::PanicTriggered);
-                 }
+                let pressed = match arg {
+                    osc_lib::OscArg::Int(i) => *i == 1,
+                    osc_lib::OscArg::Float(f) => *f > 0.5,
+                    _ => false,
+                };
+                if pressed {
+                    let _ = sender.send(NetworkEvent::PanicTriggered);
+                }
             }
-        }
-        else if msg.path.contains(enc_path) {
+        } else if msg.path.contains(enc_path) {
             // Encoder turn usually sends delta or new value.
             // For absolute encoders (LED ring), it sends new value.
             // Just trigger a change event.

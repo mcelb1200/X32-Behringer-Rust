@@ -66,18 +66,19 @@ impl BeatDetector for EnergyDetector {
                 self.last_beat_time = self.total_samples_processed;
 
                 if interval > 0 && interval < (sample_rate * 2) as u64 {
-                     self.beat_intervals.push_back(interval);
-                     if self.beat_intervals.len() > 8 {
-                         self.beat_intervals.pop_front();
-                     }
+                    self.beat_intervals.push_back(interval);
+                    if self.beat_intervals.len() > 8 {
+                        self.beat_intervals.pop_front();
+                    }
 
-                     let avg_interval: u64 = self.beat_intervals.iter().sum::<u64>() / self.beat_intervals.len() as u64;
-                     let bpm = 60.0 * sample_rate as f32 / avg_interval as f32;
+                    let avg_interval: u64 =
+                        self.beat_intervals.iter().sum::<u64>() / self.beat_intervals.len() as u64;
+                    let bpm = 60.0 * sample_rate as f32 / avg_interval as f32;
 
-                     self.last_bpm = Some(match self.last_bpm {
-                         Some(old) => old * 0.3 + bpm * 0.7,
-                         None => bpm,
-                     });
+                    self.last_bpm = Some(match self.last_bpm {
+                        Some(old) => old * 0.3 + bpm * 0.7,
+                        None => bpm,
+                    });
                 }
             }
         }

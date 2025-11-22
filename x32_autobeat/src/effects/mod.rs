@@ -1,13 +1,19 @@
+use crate::network::NetworkManager;
 use anyhow::Result;
 use osc_lib::OscMessage;
-use crate::network::NetworkManager;
 
 /// Trait for Effect Handlers
 pub trait EffectHandler {
     /// Update the effect parameters based on the current BPM.
     /// `bpm`: Detected Beats Per Minute.
     /// `subdivision`: The musical subdivision (e.g., 1.0 for quarter, 0.5 for eighth).
-    fn update(&self, network: &NetworkManager, slot: usize, bpm: f32, subdivision: f32) -> Result<()>;
+    fn update(
+        &self,
+        network: &NetworkManager,
+        slot: usize,
+        bpm: f32,
+        subdivision: f32,
+    ) -> Result<()>;
 
     /// Set effect to a "Safe" conservative state (Panic).
     fn panic(&self, network: &NetworkManager, slot: usize) -> Result<()>;
@@ -17,7 +23,13 @@ pub trait EffectHandler {
 pub struct DelayChorusHandler;
 
 impl EffectHandler for DelayChorusHandler {
-    fn update(&self, network: &NetworkManager, slot: usize, bpm: f32, subdivision: f32) -> Result<()> {
+    fn update(
+        &self,
+        network: &NetworkManager,
+        slot: usize,
+        bpm: f32,
+        subdivision: f32,
+    ) -> Result<()> {
         // Formula: Time (ms) = (60000 / BPM) * Subdivision
         // X32 Delay Time is often in ms directly? Or 0.0-1.0?
         // Most X32 delays use ms directly in the OSC float argument, OR a mapped 0-1 value.
@@ -59,7 +71,13 @@ impl EffectHandler for DelayChorusHandler {
 pub struct ThreeTapDelayHandler;
 
 impl EffectHandler for ThreeTapDelayHandler {
-    fn update(&self, network: &NetworkManager, slot: usize, bpm: f32, subdivision: f32) -> Result<()> {
+    fn update(
+        &self,
+        network: &NetworkManager,
+        slot: usize,
+        bpm: f32,
+        subdivision: f32,
+    ) -> Result<()> {
         // 3-Tap has 3 time parameters.
         // We can set them to 1x, 2x, 3x subdivision or a rhythmic pattern.
         // Let's do Quarter, Dotted Eighth, Half.

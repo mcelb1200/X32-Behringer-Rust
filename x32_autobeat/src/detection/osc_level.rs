@@ -39,28 +39,30 @@ impl BeatDetector for OscLevelDetector {
         let threshold_jump = 0.15; // Requires tuning based on real X32 behavior
 
         if level > self.last_level + threshold_jump && level > 0.2 {
-             // Debounce (e.g., 250ms = 240 BPM max)
-             if timestamp_ms > self.last_beat_time_ms + 250 {
+            // Debounce (e.g., 250ms = 240 BPM max)
+            if timestamp_ms > self.last_beat_time_ms + 250 {
                 self.beat_detected = true;
 
                 let interval = timestamp_ms - self.last_beat_time_ms;
                 self.last_beat_time_ms = timestamp_ms;
 
-                if interval > 0 && interval < 2000 { // 30 BPM min
+                if interval > 0 && interval < 2000 {
+                    // 30 BPM min
                     self.beat_intervals_ms.push_back(interval);
                     if self.beat_intervals_ms.len() > 5 {
                         self.beat_intervals_ms.pop_front();
                     }
 
-                    let avg_interval = self.beat_intervals_ms.iter().sum::<u64>() / self.beat_intervals_ms.len() as u64;
-                     let bpm = 60_000.0 / avg_interval as f32;
+                    let avg_interval = self.beat_intervals_ms.iter().sum::<u64>()
+                        / self.beat_intervals_ms.len() as u64;
+                    let bpm = 60_000.0 / avg_interval as f32;
 
-                     self.last_bpm = Some(match self.last_bpm {
-                         Some(old) => old * 0.5 + bpm * 0.5,
-                         None => bpm,
-                     });
+                    self.last_bpm = Some(match self.last_bpm {
+                        Some(old) => old * 0.5 + bpm * 0.5,
+                        None => bpm,
+                    });
                 }
-             }
+            }
         }
 
         self.last_level = level;

@@ -1,18 +1,18 @@
+use anyhow::Result;
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
     execute,
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
 use ratatui::{
+    Terminal,
     backend::CrosstermBackend,
     layout::{Constraint, Direction, Layout},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Gauge, Paragraph},
-    Terminal,
 };
 use std::{io, time::Duration};
-use anyhow::Result;
 
 pub struct AppState {
     pub current_bpm: Option<f32>,
@@ -70,7 +70,11 @@ impl Tui {
                 "Detecting..."
             };
 
-            let bpm_color = if state.is_panic { Color::Red } else { Color::Green };
+            let bpm_color = if state.is_panic {
+                Color::Red
+            } else {
+                Color::Green
+            };
             let bpm_para = Paragraph::new(bpm_text)
                 .style(Style::default().fg(bpm_color).add_modifier(Modifier::BOLD))
                 .block(Block::default().borders(Borders::ALL).title("Tempo"))
@@ -85,10 +89,22 @@ impl Tui {
             f.render_widget(gauge, chunks[2]);
 
             // Info / Status
-            let mode_str = if state.is_fallback { "Fallback (OSC)" } else { "Primary (Audio)" };
+            let mode_str = if state.is_fallback {
+                "Fallback (OSC)"
+            } else {
+                "Primary (Audio)"
+            };
             let info_text = vec![
                 Line::from(vec![
-                    Span::raw("Mode: "), Span::styled(mode_str, Style::default().fg(if state.is_fallback { Color::Yellow } else { Color::Blue }))
+                    Span::raw("Mode: "),
+                    Span::styled(
+                        mode_str,
+                        Style::default().fg(if state.is_fallback {
+                            Color::Yellow
+                        } else {
+                            Color::Blue
+                        }),
+                    ),
                 ]),
                 Line::from(format!("Effect: {}", state.active_effect)),
                 Line::from(format!("Subdiv: {}", state.subdivision)),
@@ -97,7 +113,6 @@ impl Tui {
             let info = Paragraph::new(info_text)
                 .block(Block::default().borders(Borders::ALL).title("Status"));
             f.render_widget(info, chunks[3]);
-
         })?;
         Ok(())
     }

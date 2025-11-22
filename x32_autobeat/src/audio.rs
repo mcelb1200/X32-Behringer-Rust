@@ -56,7 +56,11 @@ impl AudioEngine {
             // println!("Starting audio on device: {}", device.name()?); // Don't print to stdout in TUI app
 
             if target_channel > channels || target_channel == 0 {
-                anyhow::bail!("Target channel {} is out of range (1-{})", target_channel, channels);
+                anyhow::bail!(
+                    "Target channel {} is out of range (1-{})",
+                    target_channel,
+                    channels
+                );
             }
 
             let err_fn = |err| eprintln!("an error occurred on stream: {}", err);

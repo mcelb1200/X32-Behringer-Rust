@@ -1,18 +1,18 @@
-use anyhow::{Result, Context};
-use clap::{Parser, Subcommand};
-use std::sync::Arc;
-use std::time::{Duration, Instant};
-use crossbeam_channel::{unbounded};
 use crate::audio::AudioEngine;
 use crate::detection::{BeatDetector, EnergyDetector, OscLevelDetector};
-use crate::network::{NetworkManager, NetworkEvent};
-use crate::effects::{get_handler, EffectHandler};
-use crate::ui::{Tui, AppState, UIEvent};
+use crate::effects::{EffectHandler, get_handler};
+use crate::network::{NetworkEvent, NetworkManager};
+use crate::ui::{AppState, Tui, UIEvent};
+use anyhow::{Context, Result};
+use clap::{Parser, Subcommand};
+use crossbeam_channel::unbounded;
+use std::sync::Arc;
+use std::time::{Duration, Instant};
 
 mod audio;
 mod detection;
-mod network;
 mod effects;
+mod network;
 mod ui;
 
 #[derive(Parser)]
@@ -78,9 +78,12 @@ fn main() -> Result<()> {
         Ok((_, rate)) => {
             audio_sample_rate = *rate;
             true
-        },
+        }
         Err(e) => {
-            eprintln!("Info: Audio init failed ({}). Starting in fallback mode.", e);
+            eprintln!(
+                "Info: Audio init failed ({}). Starting in fallback mode.",
+                e
+            );
             std::thread::sleep(Duration::from_secs(1));
             false
         }
@@ -93,7 +96,7 @@ fn main() -> Result<()> {
         channel_idx,
         net_sender,
         &cli.panic_btn,
-        &cli.preset_enc
+        &cli.preset_enc,
     )?);
 
     network.connect()?;
@@ -122,45 +125,49 @@ fn main() -> Result<()> {
         // 1. Process Audio Data (Primary)
         let mut audio_received_this_frame = false;
         while let Ok(chunk) = audio_receiver.try_recv() {
-             audio_received_this_frame = true;
-             last_audio_packet = Instant::now();
+            audio_received_this_frame = true;
+            last_audio_packet = Instant::now();
 
-             if !is_panic {
-                 energy_detector.process(&chunk, audio_sample_rate);
-                 if !chunk.is_empty() {
-                     let sum_sq: f32 = chunk.iter().map(|s| s * s).sum();
-                     let rms = (sum_sq / chunk.len() as f32).sqrt();
-                     last_level = rms * 5.0;
-                 }
-             }
+            if !is_panic {
+                energy_detector.process(&chunk, audio_sample_rate);
+                if !chunk.is_empty() {
+                    let sum_sq: f32 = chunk.iter().map(|s| s * s).sum();
+                    let rms = (sum_sq / chunk.len() as f32).sqrt();
+                    last_level = rms * 5.0;
+                }
+            }
         }
 
         // Dynamic Failover Logic
-        let use_fallback = !audio_started || (last_audio_packet.elapsed() > Duration::from_millis(200));
+        let use_fallback =
+            !audio_started || (last_audio_packet.elapsed() > Duration::from_millis(200));
 
         // 2. Process Network Events (Fallback / Controls)
         while let Ok(event) = net_receiver.try_recv() {
             match event {
                 NetworkEvent::MeterLevel(lvl) => {
                     if use_fallback {
-                         if !is_panic {
-                             let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_millis() as u64;
-                             osc_detector.process_level(lvl, now);
-                         }
-                         last_level = lvl;
+                        if !is_panic {
+                            let now = std::time::SystemTime::now()
+                                .duration_since(std::time::UNIX_EPOCH)
+                                .unwrap()
+                                .as_millis() as u64;
+                            osc_detector.process_level(lvl, now);
+                        }
+                        last_level = lvl;
                     }
-                },
+                }
                 NetworkEvent::PanicTriggered => {
                     is_panic = true;
                     if let Some(h) = &current_handler {
                         let _ = h.panic(&network, cli.slot);
                     }
                     let _ = network.set_scribble_text(cli.channel, "PANIC!");
-                },
+                }
                 NetworkEvent::EncoderTurned(_val) => {
                     subdiv_idx = (subdiv_idx + 1) % subdivisions.len();
                     subdivision = subdivisions[subdiv_idx];
-                },
+                }
                 NetworkEvent::EffectLoaded(name) => {
                     if name != active_effect {
                         active_effect = name.clone();
@@ -179,11 +186,11 @@ fn main() -> Result<()> {
 
         // 4. Update Effect
         if !is_panic {
-             if let Some(bpm) = active_bpm {
-                 if let Some(h) = &current_handler {
-                     let _ = h.update(&network, cli.slot, bpm, subdivision);
-                 }
-             }
+            if let Some(bpm) = active_bpm {
+                if let Some(h) = &current_handler {
+                    let _ = h.update(&network, cli.slot, bpm, subdivision);
+                }
+            }
         }
 
         // 5. UI Update & Input
@@ -195,7 +202,11 @@ fn main() -> Result<()> {
                 subdivision: format!("{:.3}", subdivision),
                 is_fallback: use_fallback,
                 is_panic,
-                message: if use_fallback { "Fallback (OSC)".to_string() } else { "Audio OK".to_string() },
+                message: if use_fallback {
+                    "Fallback (OSC)".to_string()
+                } else {
+                    "Audio OK".to_string()
+                },
             };
 
             tui.draw(&state)?;
@@ -207,11 +218,11 @@ fn main() -> Result<()> {
                         if let Some(h) = &current_handler {
                             let _ = h.panic(&network, cli.slot);
                         }
-                    },
+                    }
                     UIEvent::Quit => break,
                     UIEvent::Reset => {
                         is_panic = false;
-                    },
+                    }
                     _ => {}
                 }
             }
