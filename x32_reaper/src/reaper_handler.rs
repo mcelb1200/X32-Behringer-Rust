@@ -1,6 +1,7 @@
 use crate::state::SharedState;
 use anyhow::Result;
 use osc_lib::{OscArg, OscMessage};
+use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::net::UdpSocket;
 
@@ -54,7 +55,35 @@ async fn process_single_message(
     // Example: /track/1/volume -> /ch/01/mix/fader
 
     // We need to lock state to read mappings
-    // (Mappings are currently read inside map_track_to_x32)
+    let (
+        track_min,
+        track_max,
+        aux_min,
+        aux_max,
+        fxr_min,
+        fxr_max,
+        bus_min,
+        bus_max,
+        dca_min,
+        dca_max,
+        track_send_offset,
+    ) = {
+        let s = state.lock().unwrap();
+        (
+            s.config.map.track_min,
+            s.config.map.track_max,
+            s.config.map.aux_min,
+            s.config.map.aux_max,
+            s.config.map.fxr_min,
+            s.config.map.fxr_max,
+            s.config.map.bus_min,
+            s.config.map.bus_max,
+            s.config.map.dca_min,
+            s.config.map.dca_max,
+            s.config.map.track_send_offset,
+        )
+    };
+    // Also channel bank stuff
 
     // Simplification for this turn: Implement basic volume/pan/mute mapping
     // Full implementation requires painstaking translation of every C line.
