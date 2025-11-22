@@ -1,5 +1,5 @@
-use crate::config::Config;
 use std::sync::{Arc, Mutex};
+use crate::config::Config;
 
 #[derive(Debug, Clone)]
 #[allow(dead_code)]

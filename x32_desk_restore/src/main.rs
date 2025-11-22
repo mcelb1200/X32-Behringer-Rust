@@ -83,7 +83,7 @@ fn main() -> Result<()> {
     let file = File::open(&args.file)?;
     let commands: Vec<String> = io::BufReader::new(file)
         .lines()
-        .filter_map(std::result::Result::ok)
+        .map_while(std::result::Result::ok)
         .filter(|line| !line.starts_with('#') && !line.trim().is_empty())
         .collect();
 

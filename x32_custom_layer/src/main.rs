@@ -427,13 +427,13 @@ fn handle_reset_command(ip: &str, channels_str: &str) -> Result<()> {
 
     for channel in channels {
         println!("Resetting channel {}...", channel);
-        if channel >= 1 && channel <= 32 {
+        if (1..=32).contains(&channel) {
             for &cmd_str in CH_INISTR.iter() {
                 let formatted_cmd = cmd_str.replace("/ch/01/", &format!("/ch/{:02}/", channel));
                 let msg = OscMessage::from_str(&formatted_cmd)?;
                 socket.send(&msg.to_bytes()?)?;
             }
-        } else if channel >= 33 && channel <= 40 {
+        } else if (33..=40).contains(&channel) {
             let aux_channel = channel - 32;
             for &cmd_str in AUX_INISTR.iter() {
                 let formatted_cmd =
