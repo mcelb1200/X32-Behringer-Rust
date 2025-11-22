@@ -1,7 +1,8 @@
-use crate::config::Config;
 use std::sync::{Arc, Mutex};
+use crate::config::Config;
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct ChannelState {
     pub fader: f32,
     pub pan: f32,
@@ -32,6 +33,7 @@ impl Default for ChannelState {
     }
 }
 
+#[allow(dead_code)]
 pub struct AppState {
     pub config: Config,
     pub bank_tracks: Vec<ChannelState>, // Dynamically sized based on track range
@@ -49,7 +51,7 @@ impl AppState {
         // Logic from C: alloc memory for blocks of 32
         // ((Xtrk_max - Xtrk_min + 1 + bkchsz - 1) / bkchsz) * bkchsz
         let bank_size = config.bank.bank_size as usize;
-        let alloc_size = ((track_count + bank_size - 1) / bank_size) * bank_size;
+        let alloc_size = track_count.div_ceil(bank_size) * bank_size;
 
         Self {
             bank_tracks: vec![ChannelState::default(); alloc_size],

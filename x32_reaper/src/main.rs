@@ -5,9 +5,9 @@ use tokio::net::UdpSocket;
 use tokio::time::{self, Duration};
 
 mod config;
-mod reaper_handler;
 mod state;
 mod x32_handler;
+mod reaper_handler;
 
 use config::{Config, load_config};
 use state::AppState;
@@ -26,10 +26,7 @@ async fn main() -> Result<()> {
 
     // Load config or use default
     let config = load_config(&args.config).unwrap_or_else(|_| {
-        eprintln!(
-            "Could not load config file '{}', using defaults.",
-            args.config
-        );
+        eprintln!("Could not load config file '{}', using defaults.", args.config);
         Config::default()
     });
 
@@ -38,28 +35,18 @@ async fn main() -> Result<()> {
 
     // X32 Socket: Bind to dynamic, connect to X32
     // Actually, standard practice for X32 client: bind 0.0.0.0:0 (or specific if needed), send to X32:10023
-    let x32_socket = UdpSocket::bind("0.0.0.0:0")
-        .await
-        .context("Failed to bind X32 socket")?;
-    x32_socket
-        .connect(&x32_ip)
-        .await
-        .context("Failed to connect to X32")?;
+    let x32_socket = UdpSocket::bind("0.0.0.0:0").await.context("Failed to bind X32 socket")?;
+    x32_socket.connect(&x32_ip).await.context("Failed to connect to X32")?;
     let x32_socket = Arc::new(x32_socket);
 
     // Reaper Socket: Bind to recv port
     let reaper_bind_addr = format!("0.0.0.0:{}", config.reaper_recv_port);
-    let reaper_socket = UdpSocket::bind(&reaper_bind_addr)
-        .await
-        .context("Failed to bind Reaper socket")?;
+    let reaper_socket = UdpSocket::bind(&reaper_bind_addr).await.context("Failed to bind Reaper socket")?;
     let reaper_socket = Arc::new(reaper_socket);
 
     println!("X32 Reaper Bridge started.");
     println!("X32: {}", x32_ip);
-    println!(
-        "Reaper: Listening on {}, Sending to {}",
-        reaper_bind_addr, reaper_dest
-    );
+    println!("Reaper: Listening on {}, Sending to {}", reaper_bind_addr, reaper_dest);
 
     let state = Arc::new(Mutex::new(AppState::new(config.clone())));
 

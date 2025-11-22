@@ -1,6 +1,6 @@
-use anyhow::{Context, Result, anyhow};
+use anyhow::{anyhow, Context, Result};
 use clap::Parser;
-use osc_lib::{OscArg, OscMessage};
+use osc_lib::{OscMessage, OscArg};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
@@ -63,9 +63,7 @@ fn main() -> Result<()> {
     };
 
     if preset_type == PresetType::Unknown {
-        return Err(anyhow!(
-            "Unknown file extension. Expected .chn, .efx, or .rou"
-        ));
+        return Err(anyhow!("Unknown file extension. Expected .chn, .efx, or .rou"));
     }
 
     // Validate target for Channel/Effect presets
@@ -74,9 +72,7 @@ fn main() -> Result<()> {
     } else if preset_type == PresetType::Routing {
         String::new() // Routing presets don't need a target prefix usually
     } else {
-        return Err(anyhow!(
-            "--target is required for Channel and Effect presets."
-        ));
+        return Err(anyhow!("--target is required for Channel and Effect presets."));
     };
 
     // Connect to X32
@@ -102,15 +98,13 @@ fn main() -> Result<()> {
     for line in reader.lines() {
         let line = line?;
         let line = line.trim();
-        if line.is_empty() {
-            continue;
-        }
+        if line.is_empty() { continue; }
 
         // Header check
         if line.starts_with('#') {
             if line.contains("#2.7#") || line.contains("#2.1#") || line.contains("#2.0#") {
-                // Accepted versions (relaxed check compared to C)
-                continue;
+                 // Accepted versions (relaxed check compared to C)
+                 continue;
             }
             // Some files have comments or other headers
             continue;
@@ -124,9 +118,7 @@ fn main() -> Result<()> {
 
         // Apply Safes
         if should_skip(cmd_addr, &args) {
-            if args.verbose {
-                println!("Skipping (safe): {}", line);
-            }
+            if args.verbose { println!("Skipping (safe): {}", line); }
             continue;
         }
 
@@ -139,8 +131,8 @@ fn main() -> Result<()> {
         };
 
         if full_address.is_empty() {
-            // Mapping returned empty, meaning this command is not applicable to target
-            continue;
+             // Mapping returned empty, meaning this command is not applicable to target
+             continue;
         }
 
         // Parse Arguments
@@ -148,7 +140,7 @@ fn main() -> Result<()> {
 
         let msg = OscMessage::new(full_address, osc_args);
         if args.verbose {
-            println!("Sending: {}", msg.to_string());
+            println!("Sending: {}", msg);
         }
         socket.send(&msg.to_bytes()?)?;
     }
@@ -180,27 +172,19 @@ fn parse_target(target: &str, ptype: &PresetType) -> Result<String> {
                 let id: u32 = suffix.parse()?;
                 return Ok(format!("/mtx/{:02}", id));
             }
-            if t == "main_st" || t == "st" {
-                return Ok("/main/st".to_string());
-            }
-            if t == "main_m" || t == "m" {
-                return Ok("/main/m".to_string());
-            }
+            if t == "main_st" || t == "st" { return Ok("/main/st".to_string()); }
+            if t == "main_m" || t == "m" { return Ok("/main/m".to_string()); }
             if let Some(suffix) = t.strip_prefix("fxrtn") {
-                let id: u32 = suffix.parse()?;
-                return Ok(format!("/fxrtn/{:02}", id));
+                 let id: u32 = suffix.parse()?;
+                 return Ok(format!("/fxrtn/{:02}", id));
             }
-            Err(anyhow!(
-                "Invalid target for Channel preset. Use chXX, auxXX, busXX, mtxXX, fxrtnXX, st, or m."
-            ))
-        }
+             Err(anyhow!("Invalid target for Channel preset. Use chXX, auxXX, busXX, mtxXX, fxrtnXX, st, or m."))
+        },
         PresetType::Effect => {
-            if let Some(suffix) = t.strip_prefix("fx") {
+             if let Some(suffix) = t.strip_prefix("fx") {
                 // fx1 -> /fx/1
                 let id: u32 = suffix.parse()?;
-                if id < 1 || id > 8 {
-                    return Err(anyhow!("FX slot must be 1-8"));
-                }
+                if !(1..=8).contains(&id) { return Err(anyhow!("FX slot must be 1-8")); }
                 return Ok(format!("/fx/{}", id));
             }
             Err(anyhow!("Invalid target for Effect preset. Use fx1..fx8."))
@@ -214,12 +198,11 @@ fn map_channel_address(prefix: &str, addr: &str) -> String {
         // If target is a channel (ch01..ch32), map to global headamp (HA 1-32).
         // This follows the C code logic assuming 1:1 mapping.
         if prefix.starts_with("/ch/") {
-            let ch_str = &prefix[4..6]; // "01"
-            let parts: Vec<&str> = addr.split('/').collect();
-            if parts.len() >= 4 {
-                // "", "headamp", "000", "gain"
-                return format!("/headamp/{}/{}", ch_str, parts[3]);
-            }
+             let ch_str = &prefix[4..6]; // "01"
+             let parts: Vec<&str> = addr.split('/').collect();
+             if parts.len() >= 4 { // "", "headamp", "000", "gain"
+                 return format!("/headamp/{}/{}", ch_str, parts[3]);
+             }
         }
         return String::new(); // Skip headamp for non-physical channels or if parsing fails
     }
@@ -232,24 +215,12 @@ fn map_effect_address(prefix: &str, addr: &str) -> String {
 }
 
 fn should_skip(addr: &str, args: &Args) -> bool {
-    if args.safe_config && addr.starts_with("/config") {
-        return true;
-    }
-    if args.safe_headamp && (addr.starts_with("/headamp") || addr.starts_with("/preamp")) {
-        return true;
-    }
-    if args.safe_gate && addr.starts_with("/gate") {
-        return true;
-    }
-    if args.safe_dyn && addr.starts_with("/dyn") {
-        return true;
-    }
-    if args.safe_eq && addr.starts_with("/eq") {
-        return true;
-    }
-    if args.safe_send && addr.starts_with("/mix") {
-        return true;
-    }
+    if args.safe_config && addr.starts_with("/config") { return true; }
+    if args.safe_headamp && (addr.starts_with("/headamp") || addr.starts_with("/preamp")) { return true; }
+    if args.safe_gate && addr.starts_with("/gate") { return true; }
+    if args.safe_dyn && addr.starts_with("/dyn") { return true; }
+    if args.safe_eq && addr.starts_with("/eq") { return true; }
+    if args.safe_send && addr.starts_with("/mix") { return true; }
     false
 }
 
