@@ -3,6 +3,7 @@ use std::fs::{self, File};
 use std::io::{Cursor, Read};
 use std::path::Path;
 use tempfile::tempdir;
+use byteorder::{LittleEndian, ReadBytesExt};
 
 fn create_test_wav(dir: &Path, name: &str, spec: WavSpec, duration_ms: u32) {
     let path = dir.join(name);

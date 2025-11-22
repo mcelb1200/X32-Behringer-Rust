@@ -1,3 +1,8 @@
+//! `x32_get_lib` is a command-line tool for retrieving library presets from a Behringer X32/M32 mixer.
+//!
+//! It can fetch Channel, Effects, or Routing presets and save them to local files.
+//! This tool allows you to backup your library presets or transfer them between consoles.
+
 use anyhow::{Context, Result, anyhow};
 use clap::{Parser, ValueEnum};
 use osc_lib::{OscArg, OscMessage};
@@ -7,31 +12,42 @@ use std::path::PathBuf;
 use std::time::Duration;
 use x32_lib::create_socket;
 
+/// Command-line arguments for the `x32_get_lib` tool.
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
+    /// IP address of the X32 console.
     #[arg(short, long, default_value = "192.168.0.64")]
     ip: String,
 
+    /// Output directory for saved files.
     #[arg(short, long, default_value = ".")]
     output_dir: PathBuf,
 
+    /// Type of library data to retrieve.
     #[arg(long, value_enum, default_value_t = LibType::All)]
     type_: LibType,
 
+    /// Enable verbose output.
     #[arg(short, long)]
     verbose: bool,
 }
 
+/// Enumeration of library types supported by the X32.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, ValueEnum)]
 enum LibType {
+    /// Channel presets.
     Channel,
+    /// Effects presets.
     Effects,
+    /// Routing presets.
     Routing,
+    /// All types.
     All,
 }
 
 impl LibType {
+    /// Returns the OSC path segment corresponding to the library type.
     fn as_str(&self) -> &'static str {
         match self {
             LibType::Channel => "ch",
@@ -40,6 +56,7 @@ impl LibType {
             LibType::All => "all",
         }
     }
+    /// Returns the file extension for the library type.
     fn extension(&self) -> &'static str {
         match self {
             LibType::Channel => "chn",
@@ -50,6 +67,7 @@ impl LibType {
     }
 }
 
+/// The main entry point for the application.
 fn main() -> Result<()> {
     let args = Args::parse();
     let socket = create_socket(&args.ip, 500)?;
@@ -84,6 +102,15 @@ fn main() -> Result<()> {
     Ok(())
 }
 
+/// Processes a single library slot, retrieving its data and saving it to a file.
+///
+/// # Arguments
+///
+/// * `socket` - The UDP socket connected to the mixer.
+/// * `t` - The type of library preset.
+/// * `id` - The preset ID (1-100).
+/// * `out_dir` - The directory to save the file to.
+/// * `verbose` - Whether to print verbose output.
 fn process_lib_slot(
     socket: &std::net::UdpSocket,
     t: LibType,

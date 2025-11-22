@@ -61,6 +61,14 @@ fn main() -> Result<()> {
 ///
 /// This function finds and validates the input WAV files, creates the session directory
 /// and metadata file, and then merges the audio data into one or more multi-channel WAV files.
+///
+/// # Arguments
+///
+/// * `args` - The parsed command-line arguments.
+///
+/// # Returns
+///
+/// A `Result` indicating success or failure.
 fn run(args: &Args) -> Result<()> {
     let mut input_files = Vec::new();
     let mut first_spec = None;
@@ -153,6 +161,18 @@ fn run(args: &Args) -> Result<()> {
 ///
 /// The output files are split into "takes" to keep their size below the ~4GB limit
 /// of the FAT32 file system used by the X-Live! card.
+///
+/// # Arguments
+///
+/// * `session_path` - The directory to write the output files to.
+/// * `input_files` - A slice of paths to the input mono WAV files.
+/// * `spec` - The WAV specification of the input files.
+/// * `take_sizes` - A slice of sizes (in samples) for each output take file.
+/// * `args` - The parsed command-line arguments.
+///
+/// # Returns
+///
+/// A `Result` indicating success or failure.
 fn write_wav_takes(
     session_path: &Path,
     input_files: &[PathBuf],
@@ -197,6 +217,10 @@ fn write_wav_takes(
 }
 
 /// Creates a timestamp for the session directory name, matching the format used by the X32.
+///
+/// # Returns
+///
+/// A `Result` containing the 32-bit timestamp.
 fn create_session_timestamp() -> Result<u32> {
     let now = Utc::now();
     let session_timestamp = (((now.year() - 1980) as u32) << 25)
@@ -212,6 +236,20 @@ fn create_session_timestamp() -> Result<u32> {
 ///
 /// This file contains information about the session, including the number of channels,
 /// sample rate, markers, and take sizes.
+///
+/// # Arguments
+///
+/// * `session_path` - The directory to write the file to.
+/// * `session_timestamp` - The timestamp for the session.
+/// * `num_channels` - The number of channels in the session.
+/// * `sample_rate` - The sample rate of the audio.
+/// * `duration_samples` - The total duration of the session in samples.
+/// * `take_sizes` - A slice of sizes for each take file.
+/// * `args` - The parsed command-line arguments.
+///
+/// # Returns
+///
+/// A `Result` indicating success or failure.
 fn write_se_log_bin(
     session_path: &Path,
     session_timestamp: u32,
@@ -280,6 +318,18 @@ fn write_se_log_bin(
 ///
 /// The file must be a mono, 24-bit PCM WAV file with a sample rate of 44100 or 48000 Hz.
 /// It must also have the same sample rate and duration as the first file in the sequence.
+///
+/// # Arguments
+///
+/// * `path` - The path to the WAV file.
+/// * `spec` - The WAV specification of the file.
+/// * `duration` - The duration of the file in samples.
+/// * `first_spec` - The specification of the first file (for comparison).
+/// * `first_duration` - The duration of the first file (for comparison).
+///
+/// # Returns
+///
+/// A `Result` indicating validity or an error.
 fn validate_wav_file(
     path: &Path,
     spec: WavSpec,

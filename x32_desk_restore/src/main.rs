@@ -29,6 +29,10 @@ struct Args {
 
 /// Sends a list of OSC commands to the X32.
 ///
+/// This function iterates over a slice of command strings, parses each one into
+/// an `OscMessage`, and sends it to the mixer. It waits for a response after each
+/// command to ensure reliable delivery, though the response content is discarded.
+///
 /// # Arguments
 ///
 /// * `socket` - A `UdpSocket` connected to the X32 console.

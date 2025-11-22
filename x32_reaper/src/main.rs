@@ -1,3 +1,10 @@
+//! `x32_reaper` is a bridge application that connects a Behringer X32/M32 digital mixer
+//! to the Reaper Digital Audio Workstation (DAW) via OSC.
+//!
+//! It enables bidirectional control and synchronization between the two systems, allowing
+//! the X32 to act as a control surface for Reaper, and Reaper to automate the X32's parameters.
+//! Features include fader/pan sync, mute sync, transport control, and bank switching.
+
 use anyhow::{Context, Result};
 use clap::Parser;
 use osc_lib::{OscArg, OscMessage};
@@ -13,6 +20,7 @@ mod state;
 use config::Config;
 use state::{AppState, ChannelState};
 
+/// Command-line arguments for `x32_reaper`.
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
@@ -44,6 +52,7 @@ const X32FX: i32 = 0x0080;
 const X32MPAN: i32 = 0x0100;
 const X32MFADER: i32 = 0x0200;
 
+/// The main entry point for the application.
 #[tokio::main]
 async fn main() -> Result<()> {
     let args = Args::parse();
@@ -117,6 +126,7 @@ async fn main() -> Result<()> {
     }
 }
 
+/// Sends an OSC message to the X32, optionally with a delay.
 async fn send_to_x(sock: &UdpSocket, addr: SocketAddr, msg: &OscMessage, delay: u64) -> Result<()> {
     let bytes = msg
         .to_bytes()
@@ -128,6 +138,7 @@ async fn send_to_x(sock: &UdpSocket, addr: SocketAddr, msg: &OscMessage, delay: 
     Ok(())
 }
 
+/// Sends an OSC message to Reaper.
 async fn send_to_r(sock: &UdpSocket, addr: SocketAddr, msg: &OscMessage) -> Result<()> {
     let bytes = msg
         .to_bytes()
@@ -136,6 +147,7 @@ async fn send_to_r(sock: &UdpSocket, addr: SocketAddr, msg: &OscMessage) -> Resu
     Ok(())
 }
 
+/// Establishes connection with the X32 console.
 async fn connect_x32(sock: &UdpSocket, addr: SocketAddr) -> Result<()> {
     sock.send_to(b"/info", addr).await?;
     let mut buf = [0u8; 1024];
@@ -156,6 +168,7 @@ async fn connect_x32(sock: &UdpSocket, addr: SocketAddr) -> Result<()> {
     Ok(())
 }
 
+/// Initializes user controls and updates bank settings.
 async fn init_user_ctrl(
     sock: &UdpSocket,
     addr: SocketAddr,
@@ -252,6 +265,7 @@ async fn init_user_ctrl(
     Ok(())
 }
 
+/// Updates the X32 channel strips to match the current bank's tracks from Reaper.
 async fn update_bk_ch(
     sock: &UdpSocket,
     addr: SocketAddr,

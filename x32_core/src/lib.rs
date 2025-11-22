@@ -55,31 +55,46 @@ use osc_lib::{OscArg, OscMessage};
 // The following static arrays define the string representations for various
 // enumerated parameters on the X32 console.
 
+/// String representations for boolean "OFF" and "ON" states.
 pub static OFF_ON: &[&str] = &[" OFF", " ON"];
+/// String representations for automix group assignments.
 pub static XAMXGRP: &[&str] = &[" OFF", " X", " Y"];
+/// String representations for scribble strip colors.
 pub static XCOLORS: &[&str] = &[
     " OFF", " RD", " GN", " YE", " BL", " MG", " CY", " WH", " OFFi", " RDi", " GNi", " YEi",
     " BLi", " MGi", " CYi", " WHi",
 ];
+/// String representations for monitor mix modes (LR+Mono vs LCR).
 pub static XMNMODE: &[&str] = &[" LR+M", " LCR"];
+/// String representations for channel solo modes (PFL vs AFL).
 pub static XCHMODE: &[&str] = &[" PFL", " AFL"];
+/// String representations for high-pass filter slopes.
 pub static XHSLP: &[&str] = &[" 12", " 18", " 24"];
+/// String representations for gate modes.
 pub static XGMODE: &[&str] = &[" EXP2", " EXP3", " EXP", " GATE", " DUCK"];
+/// String representations for dynamics modes (compressor/expander).
 pub static XDYMODE: &[&str] = &[" COMP", " EXP"];
+/// String representations for dynamics detector types (Peak/RMS).
 pub static XDYDET: &[&str] = &[" PEAK", " RMS"];
+/// String representations for dynamics envelope types (Linear/Logarithmic).
 pub static XDYENV: &[&str] = &[" LIN", " LOG"];
+/// String representations for dynamics ratio settings.
 pub static XDYRAT: &[&str] = &[
     " 1.1", " 1.3", " 1.5", " 2.0", " 2.5", " 3.0", " 4.0", " 5.0", " 7.0", " 10", " 20", " 100",
 ];
+/// String representations for dynamics filter types.
 pub static XDYFTYP: &[&str] = &[
     " LC6", " LC12", " HC6", " HC12", " 1.0", " 2.0", " 3.0", " 5.0", " 10.0",
 ];
+/// String representations for dynamics processing position (pre/post).
 pub static XDYPPOS: &[&str] = &[" PRE", " POST"];
+/// String representations for insert selections.
 pub static XISEL: &[&str] = &[
     " OFF", " FX1L", " FX1R", " FX2L", " FX2R", " FX3L", " FX3R", " FX4L", " FX4R", " FX5L",
     " FX5R", " FX6L", " FX6R", " FX7L", " FX7R", " FX8L", " FX8R", " AUX1", " AUX2", " AUX3",
     " AUX4", " AUX5", " AUX6",
 ];
+/// String representations for EQ types.
 pub static XEQTY1: &[&str] = &[" LCut", " LShv", " PEQ", " VEQ", " HShv", " HCut"];
 // ... and so on for the rest of the static arrays ...
 
@@ -97,6 +112,10 @@ impl Default for MixerState {
 
 impl MixerState {
     /// Creates a new, empty `MixerState`.
+    ///
+    /// # Returns
+    ///
+    /// A new `MixerState` instance.
     pub fn new() -> Self {
         Self {
             values: HashMap::new(),
@@ -104,11 +123,24 @@ impl MixerState {
     }
 
     /// Sets a value in the mixer's state.
+    ///
+    /// # Arguments
+    ///
+    /// * `path` - The OSC address path of the parameter.
+    /// * `arg` - The new value for the parameter.
     pub fn set(&mut self, path: &str, arg: OscArg) {
         self.values.insert(path.to_string(), arg);
     }
 
     /// Gets a value from the mixer's state.
+    ///
+    /// # Arguments
+    ///
+    /// * `path` - The OSC address path of the parameter.
+    ///
+    /// # Returns
+    ///
+    /// An `Option` containing a reference to the value if it exists.
     pub fn get(&self, path: &str) -> Option<&OscArg> {
         self.values.get(path)
     }
@@ -127,6 +159,10 @@ impl Default for Mixer {
 
 impl Mixer {
     /// Creates a new `Mixer` with a default, empty state.
+    ///
+    /// # Returns
+    ///
+    /// A new `Mixer` instance.
     pub fn new() -> Self {
         Self {
             state: MixerState::new(),
@@ -138,6 +174,10 @@ impl Mixer {
     /// This is useful for setting up a specific state for testing. Each string
     /// should be in the format: `/osc/path,t    value`, where `t` is the OSC type
     /// tag (`i`, `f`, or `s`).
+    ///
+    /// # Arguments
+    ///
+    /// * `lines` - A vector of strings containing OSC commands.
     pub fn seed_from_lines(&mut self, lines: Vec<&str>) {
         for line in lines {
             let parts: Vec<&str> = line.splitn(2, ',').collect();
