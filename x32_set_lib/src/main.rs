@@ -1,4 +1,4 @@
-use anyhow::{Context, Result, anyhow};
+use anyhow::Result;
 use clap::Parser;
 use osc_lib::{OscArg, OscMessage};
 use std::fs::File;
@@ -46,15 +46,13 @@ fn main() -> Result<()> {
         for line in reader.lines() {
             let line = line?;
             let line = line.trim();
-            if line.is_empty() {
-                continue;
-            }
+            if line.is_empty() { continue; }
 
             if line.starts_with('#') {
                 // Parse header for name: #2.1# "Name" ...
                 if let Some(start) = line.find('"') {
-                    if let Some(end) = line[start + 1..].find('"') {
-                        name = line[start + 1..start + 1 + end].to_string();
+                    if let Some(end) = line[start+1..].find('"') {
+                        name = line[start+1..start+1+end].to_string();
                     }
                 }
                 continue;
@@ -65,9 +63,7 @@ fn main() -> Result<()> {
             // C code output: "config ..." -> mapped to "/ch/01/config ..."
 
             let parts: Vec<&str> = line.split_whitespace().collect();
-            if parts.is_empty() {
-                continue;
-            }
+            if parts.is_empty() { continue; }
 
             let addr_suffix = parts[0];
             // If addr starts with /, treat as absolute (Routing), else prepend prefix
@@ -98,19 +94,10 @@ fn main() -> Result<()> {
         // /save ,sisi "libchan" index "Name" 0
         // Note: C code uses ,sisi.
         let save_args = if lib_type == "librout" {
-            // Routing: /save ,sis "librout" index "Name"
-            vec![
-                OscArg::String(lib_type.to_string()),
-                OscArg::Int(index - 1),
-                OscArg::String(name),
-            ]
+             // Routing: /save ,sis "librout" index "Name"
+             vec![OscArg::String(lib_type.to_string()), OscArg::Int(index - 1), OscArg::String(name)]
         } else {
-            vec![
-                OscArg::String(lib_type.to_string()),
-                OscArg::Int(index - 1),
-                OscArg::String(name),
-                OscArg::Int(0),
-            ]
+             vec![OscArg::String(lib_type.to_string()), OscArg::Int(index - 1), OscArg::String(name), OscArg::Int(0)]
         };
 
         let msg = OscMessage::new("/save".to_string(), save_args);

@@ -1,4 +1,4 @@
-use anyhow::{Context, Result, anyhow};
+use anyhow::{anyhow, Context, Result};
 use clap::Parser;
 use osc_lib::{OscArg, OscMessage};
 use std::io::{self, Write};
@@ -16,6 +16,7 @@ struct Args {
     /// The FX slot number (1-4) containing the delay effect.
     #[arg(short, long, default_value_t = 1)]
     slot: u8,
+
     // Future: Auto mode arguments
     // #[arg(short, long)]
     // auto: bool,
@@ -51,10 +52,7 @@ fn main() -> Result<()> {
     // List of known delay FX types from C source
     let valid_delays = [10, 11, 12, 21, 24, 25, 26];
     if !valid_delays.contains(&fx_type) {
-        eprintln!(
-            "Warning: FX slot {} does not appear to contain a standard delay effect (Type ID: {}).",
-            args.slot, fx_type
-        );
+        eprintln!("Warning: FX slot {} does not appear to contain a standard delay effect (Type ID: {}).", args.slot, fx_type);
         eprintln!("Proceeding anyway, but commands may not work as expected.");
     } else {
         println!("Found valid delay effect (Type ID: {}).", fx_type);

@@ -19,5 +19,10 @@ members = [
     "x32_tcp",
     "x32_usb",
     "x32_wav_xlive",
-    "x32_tap", "x32_autobeat",
+    "x32_tap",
+    "x32_set_preset",
+    "x32_reaper",
+    "x32_replay",
+    "x32_get_lib",
+    "x32_set_lib",
 ]

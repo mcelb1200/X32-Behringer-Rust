@@ -1,9 +1,9 @@
-use anyhow::{Context, Result, anyhow};
+use anyhow::Result;
 use clap::{Parser, ValueEnum};
 use osc_lib::{OscArg, OscMessage};
 use std::fs::File;
 use std::io::Write;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::time::Duration;
 use x32_lib::create_socket;
 
@@ -84,13 +84,7 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn process_lib_slot(
-    socket: &std::net::UdpSocket,
-    t: LibType,
-    id: i32,
-    out_dir: &PathBuf,
-    verbose: bool,
-) -> Result<()> {
+fn process_lib_slot(socket: &std::net::UdpSocket, t: LibType, id: i32, out_dir: &Path, _verbose: bool) -> Result<()> {
     let type_str = t.as_str();
 
     // Get Node info (name)
@@ -135,17 +129,8 @@ fn process_lib_slot(
     };
 
     let load_args = match t {
-        LibType::Channel => vec![
-            OscArg::String(load_target.to_string()),
-            OscArg::Int(id - 1),
-            OscArg::Int(0),
-            OscArg::Int(63),
-        ],
-        LibType::Effects => vec![
-            OscArg::String(load_target.to_string()),
-            OscArg::Int(id - 1),
-            OscArg::Int(0),
-        ],
+        LibType::Channel => vec![OscArg::String(load_target.to_string()), OscArg::Int(id - 1), OscArg::Int(0), OscArg::Int(63)],
+        LibType::Effects => vec![OscArg::String(load_target.to_string()), OscArg::Int(id - 1), OscArg::Int(0)],
         LibType::Routing => vec![OscArg::String(load_target.to_string()), OscArg::Int(id - 1)],
         _ => vec![],
     };
@@ -155,7 +140,7 @@ fn process_lib_slot(
 
     // Wait for load (receive /load confirmation)
     socket.set_read_timeout(Some(Duration::from_millis(200)))?;
-    if let Ok(len) = socket.recv(&mut buf) {
+    if socket.recv(&mut buf).is_ok() {
         // Assume success for now
     }
 
@@ -167,16 +152,16 @@ fn process_lib_slot(
 
     let params = match t {
         LibType::Channel => vec![
-            "/ch/01/config",
-            "/ch/01/preamp",
-            "/ch/01/gate",
-            "/ch/01/dyn",
-            "/ch/01/eq",
-            "/ch/01/mix", // Add more details if needed, or recursive /node traversal
+            "/ch/01/config", "/ch/01/preamp", "/ch/01/gate", "/ch/01/dyn", "/ch/01/eq", "/ch/01/mix"
+            // Add more details if needed, or recursive /node traversal
         ],
-        LibType::Effects => vec!["/fx/1/type", "/fx/1/source", "/fx/1/par"],
-        LibType::Routing => vec!["/config/routing", "/outputs"],
-        _ => vec![],
+        LibType::Effects => vec![
+            "/fx/1/type", "/fx/1/source", "/fx/1/par"
+        ],
+        LibType::Routing => vec![
+            "/config/routing", "/outputs"
+        ],
+        LibType::All => vec![],
     };
 
     for p in params {
@@ -212,7 +197,7 @@ fn process_lib_slot(
                     OscArg::Int(i) => write!(file, " {}", i)?,
                     OscArg::Float(f) => write!(file, " {:.4}", f)?,
                     OscArg::String(s) => write!(file, " \"{}\"", s)?,
-                    _ => {}
+                    _ => {},
                 }
             }
             writeln!(file)?;

@@ -123,7 +123,7 @@ fn test_message_roundtrip_to_string() {
         path: "/test/path".to_string(),
         args: vec![
             OscArg::Int(42),
-            OscArg::Float(3.14159),
+            OscArg::Float(3.14),
             OscArg::String("hello world".to_string()),
         ],
     };
