@@ -68,6 +68,7 @@ struct Config {
     steps: Option<u32>,
 }
 
+/// The main entry point for the application.
 fn main() -> Result<()> {
     let args = Args::parse();
     let mut config = Config::default();

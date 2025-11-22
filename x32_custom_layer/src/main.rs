@@ -1,3 +1,12 @@
+//! `x32_custom_layer` is a command-line tool for creating and managing custom channel layers on X32/M32 mixers.
+//!
+//! It provides functionality to:
+//! - **Set**: Assign any source channel (1-32 or Aux 1-8) to any destination channel strip.
+//! - **Save**: Save the current custom layer configuration to a file.
+//! - **Restore**: Restore a previously saved custom layer.
+//! - **Reset**: Reset specific channels to their default "1:1" mapping (e.g., channel 1 source is input 1).
+//! - **List**: Display the current source assignments for all channels.
+
 use clap::{Parser, Subcommand};
 use osc_lib::{OscArg, OscMessage};
 use std::fs::File;
@@ -9,8 +18,10 @@ use x32_lib::{
     error::{Result, X32Error},
 };
 
+/// Header for the custom layer snippet file.
 const SNIP_HEAD: &str = "#2.1# \"CustLayer\" 8191 -1 255 0 1\n";
 
+/// OSC nodes to query for a standard channel (1-32).
 const SCH_NODES: [&str; 35] = [
     "/headamp/000",
     "/ch/01/config",
@@ -49,6 +60,7 @@ const SCH_NODES: [&str; 35] = [
     "/ch/01/mix/mlevel",
 ];
 
+/// OSC nodes to query for an Aux input channel.
 const SAUX_NODES: [&str; 29] = [
     "/headamp/000",
     "/auxin/01/config",
@@ -81,6 +93,7 @@ const SAUX_NODES: [&str; 29] = [
     "/auxin/01/mix/mlevel",
 ];
 
+/// Default initialization strings for a standard channel.
 const CH_INISTR: [&str; 35] = [
     "/headamp/000 +0.0 OFF",
     "/ch/01/config \"\" 1 YE 1",
@@ -119,6 +132,7 @@ const CH_INISTR: [&str; 35] = [
     "/ch/01/mix/mlevel -oo",
 ];
 
+/// Default initialization strings for an Aux input channel.
 const AUX_INISTR: [&str; 29] = [
     "/headamp/000 +0.0 OFF",
     "/auxin/01/config \"\" 55 GN 33",
@@ -151,6 +165,7 @@ const AUX_INISTR: [&str; 29] = [
     "/auxin/01/mix/mlevel -oo",
 ];
 
+/// Command-line arguments for the `x32_custom_layer` tool.
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
 struct Cli {
@@ -158,6 +173,7 @@ struct Cli {
     command: Commands,
 }
 
+/// Subcommands for the tool.
 #[derive(Subcommand)]
 enum Commands {
     /// Sets a custom layer on the X32 mixer
@@ -208,11 +224,23 @@ enum Commands {
     },
 }
 
+/// Represents a single channel assignment mapping.
 struct Assignment {
+    /// The destination channel number.
     dest: u8,
+    /// The source channel number.
     src: u8,
 }
 
+/// Parses a list of assignment strings into `Assignment` structs.
+///
+/// # Arguments
+///
+/// * `assignments_str` - A slice of strings in "DEST=SRC" format.
+///
+/// # Returns
+///
+/// A `Result` containing a vector of `Assignment` structs.
 fn parse_assignments(assignments_str: &[String]) -> Result<Vec<Assignment>> {
     let mut assignments = Vec::new();
     for a in assignments_str {
@@ -234,6 +262,7 @@ fn parse_assignments(assignments_str: &[String]) -> Result<Vec<Assignment>> {
     Ok(assignments)
 }
 
+/// The main entry point.
 fn main() {
     let cli = Cli::parse();
 
@@ -251,6 +280,7 @@ fn main() {
     }
 }
 
+/// Handles the 'set' command to apply a custom layer.
 fn handle_set_command(ip: &str, assignments_str: &[String]) -> Result<()> {
     let socket = create_socket(ip, 200)?;
     let assignments = parse_assignments(assignments_str)?;
@@ -304,6 +334,7 @@ fn handle_set_command(ip: &str, assignments_str: &[String]) -> Result<()> {
     Ok(())
 }
 
+/// Handles the 'save' command to save the current configuration to a file.
 fn handle_save_command(ip: &str, file_path: &str) -> Result<()> {
     let socket = create_socket(ip, 200)?;
     let mut file = File::create(file_path)?;
@@ -335,6 +366,7 @@ fn handle_save_command(ip: &str, file_path: &str) -> Result<()> {
     Ok(())
 }
 
+/// Formats an OSC message's arguments into a string representation.
 fn format_node_state(args: &[OscArg]) -> Result<String> {
     if args.is_empty() {
         return Err(X32Error::Custom("Empty node response".to_string()));
@@ -365,6 +397,7 @@ fn format_node_state(args: &[OscArg]) -> Result<String> {
     Ok(s)
 }
 
+/// Queries the mixer for the state of a specific OSC node.
 fn get_node_state(socket: &UdpSocket, node: &str) -> Result<String> {
     let msg = OscMessage::new("/node".to_string(), vec![OscArg::String(node.to_string())]);
     socket.send(&msg.to_bytes()?)?;
@@ -402,6 +435,7 @@ fn get_node_state(socket: &UdpSocket, node: &str) -> Result<String> {
     )))
 }
 
+/// Handles the 'restore' command to load configuration from a file.
 fn handle_restore_command(ip: &str, file_path: &str) -> Result<()> {
     let socket = create_socket(ip, 200)?;
     let file = File::open(file_path)?;
@@ -421,6 +455,7 @@ fn handle_restore_command(ip: &str, file_path: &str) -> Result<()> {
     Ok(())
 }
 
+/// Handles the 'reset' command to reset channels to defaults.
 fn handle_reset_command(ip: &str, channels_str: &str) -> Result<()> {
     let socket = create_socket(ip, 200)?;
     let channels = parse_channel_range(channels_str)?;
@@ -453,6 +488,7 @@ fn handle_reset_command(ip: &str, channels_str: &str) -> Result<()> {
     Ok(())
 }
 
+/// Parses a channel range string (e.g., "1,3-5") into a vector of integers.
 fn parse_channel_range(range_str: &str) -> Result<Vec<u8>> {
     let mut channels = Vec::new();
     for part in range_str.split(',') {
@@ -488,6 +524,7 @@ fn parse_channel_range(range_str: &str) -> Result<Vec<u8>> {
     Ok(channels)
 }
 
+/// Handles the 'list' command to display current assignments.
 fn handle_list_command(ip: &str) -> Result<()> {
     let socket = create_socket(ip, 200)?;
     println!("  Channel\tSource\t\tChannel\t\tSource");
@@ -518,6 +555,7 @@ fn handle_list_command(ip: &str) -> Result<()> {
     Ok(())
 }
 
+/// Gets the human-readable name of the source assigned to a channel.
 fn get_source_name(socket: &UdpSocket, channel: u8) -> Result<String> {
     let (path, expected_response_prefix) = if (1..=32).contains(&channel) {
         (
@@ -570,6 +608,7 @@ fn get_source_name(socket: &UdpSocket, channel: u8) -> Result<String> {
     )))
 }
 
+/// Maps the internal integer source ID to a string name.
 fn map_source_id_to_name(id: i32) -> &'static str {
     match id {
         0..=31 => {

@@ -1,3 +1,13 @@
+//! `x32_commander` is a bridge application that listens for specific OSC commands from
+//! an X32 mixer and triggers other OSC commands in response.
+//!
+//! It reads a configuration file (default: `X32Commander.txt`) which maps incoming
+//! OSC paths to outgoing OSC commands. This allows for complex automation and logic
+//! that is not natively supported by the mixer, such as controlling one channel based
+//! on the state of another, or creating macro-like functionality.
+//!
+//! Currently, only OSC-to-OSC mapping is fully implemented.
+
 use clap::Parser;
 use std::fs::File;
 use std::io::{self, BufRead};
@@ -25,19 +35,42 @@ struct Args {
     output: Option<String>,
 }
 
+/// Represents the type of command to trigger.
 #[derive(Debug, Clone, PartialEq)]
 enum CommandType {
+    /// An Open Sound Control (OSC) command.
     Osc,
+    /// A MIDI command.
     Midi,
 }
 
+/// Represents a parsed command mapping from the configuration file.
 #[derive(Debug, Clone, PartialEq)]
 struct Command {
+    /// The type of the outgoing command (OSC or MIDI).
     command_type: CommandType,
+    /// The OSC path to listen for on the input.
     incoming_address: String,
+    /// The command string to execute when the trigger is received.
     outgoing_command: String,
 }
 
+/// Parses the command configuration file.
+///
+/// The file format expects each line to be a mapping in the form:
+/// `TYPE~~~INCOMING_ADDRESS|OUTGOING_COMMAND`
+///
+/// - `TYPE`: 'O' for OSC, 'M' for MIDI.
+/// - `INCOMING_ADDRESS`: The OSC path to match (e.g., `/ch/01/mix/fader`).
+/// - `OUTGOING_COMMAND`: The command string to send.
+///
+/// # Arguments
+///
+/// * `path` - The file path to the configuration file.
+///
+/// # Returns
+///
+/// A `Result` containing a vector of parsed `Command` structs or an I/O error.
 fn parse_command_file(path: &str) -> io::Result<Vec<Command>> {
     let file = File::open(path)?;
     let reader = io::BufReader::new(file);
@@ -80,6 +113,15 @@ fn parse_command_file(path: &str) -> io::Result<Vec<Command>> {
     Ok(commands)
 }
 
+/// Runs the main application logic.
+///
+/// # Arguments
+///
+/// * `args` - The parsed command-line arguments.
+///
+/// # Returns
+///
+/// A `Result` indicating success or failure.
 fn run(args: Args) -> Result<(), X32Error> {
     // This application is a partial rewrite of the original X32Commander.c utility.
     // Currently, only OSC commands are supported. MIDI functionality is not yet implemented.
@@ -169,6 +211,7 @@ fn run(args: Args) -> Result<(), X32Error> {
     }
 }
 
+/// The main entry point.
 fn main() {
     let args = Args::parse();
     if let Err(e) = run(args) {

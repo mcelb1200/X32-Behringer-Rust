@@ -18,6 +18,7 @@ pub struct Config {
     pub ch_bank_on: bool,
     pub marker_btn_on: bool,
     pub bank_c_color: i32,
+    #[allow(dead_code)]
     pub eq_ctrl_on: bool,
     pub master_on: bool,
     pub trk_min: i32,
@@ -42,7 +43,7 @@ pub struct Config {
 impl Config {
     pub fn load<P: AsRef<Path>>(path: P) -> Result<Self> {
         let file = File::open(path).context("Failed to open config file")?;
-        let mut reader = BufReader::new(file);
+        let reader = BufReader::new(file);
         let mut lines = reader.lines();
 
         // helper to get next line and parse
@@ -135,15 +136,6 @@ impl Config {
         let bank_size = parts_last[4].parse::<i32>()?;
 
         // If transport_on is OFF, check if there are extra bank buttons in the file?
-        // The C code does:
-        // fscanf(..., &XMbankup, &XMbankdn, &XMkerbtn, &Xchbkof, &bkchsz);
-        // if (!Xtransport_on) { fscanf(..., &XMbankup, &XMbankdn); }
-
-        // It seems if transport_on is FALSE, there might be an EXTRA line with bank up/down?
-        // Wait, let's check C code again.
-        // fscanf(res_file, "%d %d %d %d %d\n", &XMbankup, &XMbankdn, &XMkerbtn, &Xchbkof, &bkchsz);
-        // if (Xchbank_on) { ... if (!Xtransport_on) { fscanf(res_file, "%d %d\n", &XMbankup, &XMbankdn); } }
-
         if ch_bank_on && !transport_on {
             // Try to read one more line
             if let Some(Ok(line)) = lines.next() {

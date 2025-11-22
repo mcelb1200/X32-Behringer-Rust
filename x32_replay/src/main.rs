@@ -1,45 +1,69 @@
-use anyhow::{Context, Result, anyhow};
+//! `x32_replay` is a command-line utility for recording and replaying OSC traffic to/from an X32 mixer.
+//!
+//! It can:
+//! - **Record**: Capture all incoming OSC messages from the mixer to a binary file, preserving timing.
+//! - **Play**: Replay a recorded file back to the mixer, respecting the original timing intervals.
+//!
+//! This is useful for diagnosing issues, creating regression tests, or automating repetitive tasks.
+
+use anyhow::Result;
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt}; // C code uses system endianness (usually Little on x86)
 use clap::Parser;
-use std::fs::{File, OpenOptions};
+use std::fs::File;
 use std::io::{BufReader, BufWriter, Read, Write};
 use std::sync::{Arc, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::net::UdpSocket;
 use tokio::time::{self, Duration, Instant};
 
+/// Command-line arguments for `x32_replay`.
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
+    /// IP address of the X32 console.
     #[arg(short, long, default_value = "192.168.0.64")]
     ip: String,
+    /// File to record to or play from.
     #[arg(short, long, default_value = "X32ReplayFile.bin")]
     file: String,
+    /// Enable verbose output.
     #[arg(short, long)]
     verbose: bool,
 }
 
+/// Represents the current operating mode of the application.
 #[derive(Debug, PartialEq, Clone, Copy)]
 enum Mode {
+    /// Waiting for user input.
     Idle,
+    /// Recording incoming OSC messages to file.
     Recording,
+    /// Replaying messages from file to mixer.
     Playing,
+    /// Playback paused.
     Paused,
 }
 
+/// Shared application state.
 struct AppState {
     mode: Mode,
+    #[allow(dead_code)]
     file_path: String,
     start_time: Option<Instant>,
     last_play_time: Option<Duration>, // Relative time in file
 }
 
+/// The main entry point for the application.
 #[tokio::main]
 async fn main() -> Result<()> {
     let args = Args::parse();
     let socket = UdpSocket::bind("0.0.0.0:0").await?;
     socket.connect(format!("{}:10023", args.ip)).await?;
     let socket = Arc::new(socket);
+
+    if args.verbose {
+        println!("Verbose mode enabled.");
+    }
 
     println!("X32Replay connected to {}.", args.ip);
     println!("Commands: record, play, stop, pause, exit");
@@ -96,6 +120,11 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
+/// The core logic loop handling recording and playback.
+///
+/// This function runs in a background task and switches behavior based on the `AppState`.
+/// - **Recording**: Captures packets from UDP, timestamps them, and writes to file.
+/// - **Playing**: Reads packets from file, sleeps for the correct duration, and sends to UDP.
 async fn run_logic(state: Arc<Mutex<AppState>>, socket: Arc<UdpSocket>, default_file: String) {
     let mut buf = [0u8; 2048];
     let mut last_xremote = Instant::now();

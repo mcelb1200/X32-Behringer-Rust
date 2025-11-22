@@ -1,3 +1,12 @@
+//! `x32_copy_fx` is a command-line utility for managing effects (FX) settings on Behringer X32/M32 mixers.
+//!
+//! It allows you to:
+//! - Reset an FX slot to its default parameters.
+//! - Copy settings from one FX slot to another.
+//! - Copy settings between the 'A' and 'B' sides of a dual-channel effect within the same slot.
+//!
+//! It supports reading custom default values from a file, allowing for personalized initial states.
+
 mod fx_defaults;
 
 use clap::Parser;
@@ -34,6 +43,7 @@ struct Args {
     action: Action,
 }
 
+/// Subcommands for the `x32_copy_fx` tool.
 #[derive(clap::Subcommand, Debug)]
 enum Action {
     /// Reset the source FX slot to its default values
@@ -58,6 +68,7 @@ enum Action {
     },
 }
 
+/// The main entry point.
 fn main() -> Result<(), X32Error> {
     let args = Args::parse();
 
@@ -82,6 +93,19 @@ fn main() -> Result<(), X32Error> {
     }
 }
 
+/// Loads user-defined FX defaults from a file.
+///
+/// The file format is expected to be pairs of lines:
+/// 1. FX Name (e.g., "HALL")
+/// 2. Space-separated list of parameter values.
+///
+/// # Arguments
+///
+/// * `path` - Path to the defaults file.
+///
+/// # Returns
+///
+/// A `Result` containing a HashMap of FX names to parameter strings.
 fn load_user_defaults(path: PathBuf) -> Result<HashMap<String, String>, X32Error> {
     let file = File::open(path)?;
     let reader = BufReader::new(file);
@@ -97,6 +121,17 @@ fn load_user_defaults(path: PathBuf) -> Result<HashMap<String, String>, X32Error
     Ok(user_defaults)
 }
 
+/// Resets an FX slot to its default values.
+///
+/// It first queries the mixer to determine the type of effect currently loaded in the
+/// slot. Then it looks up the default parameters for that effect (either from the
+/// built-in defaults or a user-provided file) and sends them to the mixer.
+///
+/// # Arguments
+///
+/// * `socket` - The UDP socket connected to the mixer.
+/// * `from` - The FX slot to reset.
+/// * `defaults_file` - An optional path to a user defaults file.
 fn reset_fx(socket: &UdpSocket, from: u8, defaults_file: Option<PathBuf>) -> Result<(), X32Error> {
     println!("Resetting FX slot {}.", from);
 
@@ -150,6 +185,7 @@ fn reset_fx(socket: &UdpSocket, from: u8, defaults_file: Option<PathBuf>) -> Res
     }
 }
 
+/// Maps an internal FX type ID to its string name.
 fn get_fx_name_from_id(id: i32) -> Result<&'static str, X32Error> {
     let fx_names = [
         "HALL", "AMBI", "RPLT", "ROOM", "CHAM", "PLAT", "VREV", "VRM", "GATE", "RVRS", "DLY",
@@ -166,6 +202,7 @@ fn get_fx_name_from_id(id: i32) -> Result<&'static str, X32Error> {
     }
 }
 
+/// Copies a single parameter from one address to another.
 fn copy_param(
     socket: &UdpSocket,
     from_fx: u8,
@@ -186,6 +223,7 @@ fn copy_param(
     Ok(())
 }
 
+/// Copies all parameters from one FX slot to another.
 fn copy_fx(socket: &UdpSocket, from: u8, to: u8, master: bool) -> Result<(), X32Error> {
     if to == 0 {
         return Err(X32Error::from(
@@ -204,6 +242,7 @@ fn copy_fx(socket: &UdpSocket, from: u8, to: u8, master: bool) -> Result<(), X32
     Ok(())
 }
 
+/// Copies parameters from side A to side B within the same FX slot.
 fn copy_a_to_b(socket: &UdpSocket, from: u8, master: bool) -> Result<(), X32Error> {
     println!("Copying from side A to side B of FX slot {}.", from);
     for i in 1..32 {
@@ -215,6 +254,7 @@ fn copy_a_to_b(socket: &UdpSocket, from: u8, master: bool) -> Result<(), X32Erro
     Ok(())
 }
 
+/// Copies parameters from side B to side A within the same FX slot.
 fn copy_b_to_a(socket: &UdpSocket, from: u8, master: bool) -> Result<(), X32Error> {
     println!("Copying from side B to side A of FX slot {}.", from);
     for i in 33..64 {
