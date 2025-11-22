@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Context, Result, anyhow};
 use clap::Parser;
 use osc_lib::{OscArg, OscMessage};
 use std::fs::File;

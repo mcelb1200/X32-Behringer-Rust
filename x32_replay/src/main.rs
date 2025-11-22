@@ -1,7 +1,7 @@
-use anyhow::Result;
+use anyhow::{Context, Result, anyhow};
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt}; // C code uses system endianness (usually Little on x86)
 use clap::Parser;
-use std::fs::File;
+use std::fs::{File, OpenOptions};
 use std::io::{BufReader, BufWriter, Read, Write};
 use std::sync::{Arc, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -29,7 +29,7 @@ enum Mode {
 
 struct AppState {
     mode: Mode,
-    _file_path: String,
+    file_path: String,
     start_time: Option<Instant>,
     last_play_time: Option<Duration>, // Relative time in file
 }
@@ -46,7 +46,7 @@ async fn main() -> Result<()> {
 
     let state = Arc::new(Mutex::new(AppState {
         mode: Mode::Idle,
-        _file_path: args.file.clone(),
+        file_path: args.file.clone(),
         start_time: None,
         last_play_time: None,
     }));
@@ -103,7 +103,7 @@ async fn run_logic(state: Arc<Mutex<AppState>>, socket: Arc<UdpSocket>, default_
     let mut file_reader: Option<BufReader<File>> = None;
 
     // Subscribe
-    let _ = socket.send(b"/info\0\0\0,").await; // Simple manual packet or use osc_lib
+    let _ = socket.send(b"/info\0\0\0,"); // Simple manual packet or use osc_lib
 
     loop {
         let mode = { state.lock().unwrap().mode };
@@ -123,7 +123,7 @@ async fn run_logic(state: Arc<Mutex<AppState>>, socket: Arc<UdpSocket>, default_
 
                 // Send /xremote keepalive
                 if last_xremote.elapsed() > Duration::from_secs(9) {
-                    let _ = socket.send(b"/xremote\0\0\0\0,").await; // Padding needed? osc_lib better.
+                    let _ = socket.send(b"/xremote\0\0\0\0,"); // Padding needed? osc_lib better.
                     last_xremote = Instant::now();
                 }
 

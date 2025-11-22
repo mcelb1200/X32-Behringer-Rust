@@ -1,9 +1,9 @@
-use anyhow::Result;
+use anyhow::{Context, Result, anyhow};
 use clap::{Parser, ValueEnum};
 use osc_lib::{OscArg, OscMessage};
 use std::fs::File;
 use std::io::Write;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::time::Duration;
 use x32_lib::create_socket;
 
@@ -88,8 +88,8 @@ fn process_lib_slot(
     socket: &std::net::UdpSocket,
     t: LibType,
     id: i32,
-    out_dir: &Path,
-    _verbose: bool,
+    out_dir: &PathBuf,
+    verbose: bool,
 ) -> Result<()> {
     let type_str = t.as_str();
 
@@ -155,7 +155,7 @@ fn process_lib_slot(
 
     // Wait for load (receive /load confirmation)
     socket.set_read_timeout(Some(Duration::from_millis(200)))?;
-    if socket.recv(&mut buf).is_ok() {
+    if let Ok(len) = socket.recv(&mut buf) {
         // Assume success for now
     }
 
