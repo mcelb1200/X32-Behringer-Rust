@@ -131,16 +131,16 @@ impl BeatDetector for SpectralFluxDetector {
             if flux > c * local_average && flux > 0.0001 {
                 // Min threshold to avoid noise
                 let min_interval = (self.sample_rate as f32 * 0.2) as u64; // 200ms debounce (limit to ~300 BPM)
-                                                                           // We need to estimate the time of this frame.
-                                                                           // We are processing frames delayed.
-                                                                           // The end of this frame is at current total processed - remaining buffer?
-                                                                           // Or we can just use the current time as 'now'.
-                                                                           // Since we process inside the loop, let's just approximate 'now' as the time corresponding to the *end* of this frame.
-                                                                           // But self.total_samples_processed is the end of *newly added* samples.
-                                                                           // The frame corresponds to the start of the buffer.
-                                                                           // Let's track the "current frame time".
-                                                                           // Actually, for simplicity, if we detect a beat in this chunk, we mark it.
-                                                                           // The exact timing might be slightly off if we process multiple frames at once, but usually chunks are small.
+                // We need to estimate the time of this frame.
+                // We are processing frames delayed.
+                // The end of this frame is at current total processed - remaining buffer?
+                // Or we can just use the current time as 'now'.
+                // Since we process inside the loop, let's just approximate 'now' as the time corresponding to the *end* of this frame.
+                // But self.total_samples_processed is the end of *newly added* samples.
+                // The frame corresponds to the start of the buffer.
+                // Let's track the "current frame time".
+                // Actually, for simplicity, if we detect a beat in this chunk, we mark it.
+                // The exact timing might be slightly off if we process multiple frames at once, but usually chunks are small.
 
                 // Better time tracking:
                 // We consumed samples up to current total.
