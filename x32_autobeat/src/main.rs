@@ -1,6 +1,6 @@
 use crate::audio::AudioEngine;
 use crate::detection::{BeatDetector, EnergyDetector, OscLevelDetector};
-use crate::effects::{get_handler, EffectHandler};
+use crate::effects::{EffectHandler, get_handler};
 use crate::network::{NetworkEvent, NetworkManager};
 use crate::ui::{AppState, Tui, UIEvent};
 use anyhow::Result;
