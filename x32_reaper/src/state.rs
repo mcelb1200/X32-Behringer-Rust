@@ -10,7 +10,9 @@ pub struct ChannelState {
     pub scribble: String, // 16 chars max
     pub color: i32,
     pub icon: i32,
+    #[allow(dead_code)]
     pub eq: [f32; 16],
+    #[allow(dead_code)]
     pub eq_on: i32,
 }
 
@@ -38,6 +40,7 @@ pub struct AppState {
     pub ch_bank_offset: i32,
     pub loop_toggle: i32,
     pub play: bool,
+    #[allow(dead_code)]
     pub play_1: bool,
 }
 

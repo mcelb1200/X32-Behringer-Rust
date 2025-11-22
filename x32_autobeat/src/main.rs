@@ -237,6 +237,7 @@ fn main() -> Result<()> {
                     UIEvent::Reset => {
                         is_panic = false;
                     }
+                    // Removed unreachable patterns or explicit ignore
                     _ => {}
                 }
             }

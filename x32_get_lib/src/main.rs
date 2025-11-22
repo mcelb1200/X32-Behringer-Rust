@@ -116,7 +116,7 @@ fn process_lib_slot(
     t: LibType,
     id: i32,
     out_dir: &PathBuf,
-    verbose: bool,
+    _verbose: bool,
 ) -> Result<()> {
     let type_str = t.as_str();
 
@@ -182,7 +182,7 @@ fn process_lib_slot(
 
     // Wait for load (receive /load confirmation)
     socket.set_read_timeout(Some(Duration::from_millis(200)))?;
-    if let Ok(len) = socket.recv(&mut buf) {
+    if let Ok(_len) = socket.recv(&mut buf) {
         // Assume success for now
     }
 

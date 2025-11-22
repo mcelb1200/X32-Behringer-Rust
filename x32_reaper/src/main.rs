@@ -18,7 +18,7 @@ mod config;
 mod state;
 
 use config::Config;
-use state::{AppState, ChannelState};
+use state::AppState;
 
 /// Command-line arguments for `x32_reaper`.
 #[derive(Parser, Debug)]
@@ -35,8 +35,10 @@ const TRACKFADER: i32 = 0x0002;
 const TRACKNAME: i32 = 0x0004;
 const TRACKMUTE: i32 = 0x0008;
 const TRACKSELECT: i32 = 0x0010;
+#[allow(dead_code)]
 const TRACKSEND: i32 = 0x0020;
 const TRACKSOLO: i32 = 0x0040;
+#[allow(dead_code)]
 const TRACKFX: i32 = 0x0080;
 const MASTERPAN: i32 = 0x0100;
 const MASTERVOLUME: i32 = 0x0200;
@@ -48,6 +50,7 @@ const X32MUTE: i32 = 0x0008;
 const X32SELECT: i32 = 0x0010;
 const X32SEND: i32 = 0x0020;
 const X32SOLO: i32 = 0x0040;
+#[allow(dead_code)]
 const X32FX: i32 = 0x0080;
 const X32MPAN: i32 = 0x0100;
 const X32MFADER: i32 = 0x0200;

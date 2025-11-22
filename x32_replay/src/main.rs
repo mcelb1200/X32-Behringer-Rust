@@ -6,10 +6,10 @@
 //!
 //! This is useful for diagnosing issues, creating regression tests, or automating repetitive tasks.
 
-use anyhow::{Context, Result, anyhow};
+use anyhow::Result;
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt}; // C code uses system endianness (usually Little on x86)
 use clap::Parser;
-use std::fs::{File, OpenOptions};
+use std::fs::File;
 use std::io::{BufReader, BufWriter, Read, Write};
 use std::sync::{Arc, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -47,6 +47,7 @@ enum Mode {
 /// Shared application state.
 struct AppState {
     mode: Mode,
+    #[allow(dead_code)]
     file_path: String,
     start_time: Option<Instant>,
     last_play_time: Option<Duration>, // Relative time in file
@@ -59,6 +60,10 @@ async fn main() -> Result<()> {
     let socket = UdpSocket::bind("0.0.0.0:0").await?;
     socket.connect(format!("{}:10023", args.ip)).await?;
     let socket = Arc::new(socket);
+
+    if args.verbose {
+        println!("Verbose mode enabled.");
+    }
 
     println!("X32Replay connected to {}.", args.ip);
     println!("Commands: record, play, stop, pause, exit");
