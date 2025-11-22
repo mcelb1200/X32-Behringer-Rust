@@ -1,8 +1,10 @@
 pub mod energy;
 pub mod osc_level;
+pub mod spectral;
 
 pub use energy::EnergyDetector;
 pub use osc_level::OscLevelDetector;
+pub use spectral::SpectralFluxDetector;
 
 /// Trait for beat detection algorithms.
 ///
