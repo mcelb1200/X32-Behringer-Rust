@@ -349,7 +349,13 @@ pub fn tokenize(s: &str) -> Result<Vec<String>> {
                 escaped = true;
             }
             '"' => {
-                if in_quote {
+                if !in_quote {
+                    // Opening quote
+                    if !current_token.is_empty() {
+                        tokens.push(current_token);
+                        current_token = String::new();
+                    }
+                } else {
                     // Closing quote
                     tokens.push(current_token);
                     current_token = String::new();
