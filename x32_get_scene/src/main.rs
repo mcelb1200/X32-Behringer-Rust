@@ -60,8 +60,8 @@ fn main() -> Result<()> {
             let response = OscMessage::from_bytes(&buf[..len])?;
 
             let mut output = response.path.clone();
-            if let Some(OscArg::String(s)) = response.args.get(0) {
-                output.push_str(" ");
+            if let Some(OscArg::String(s)) = response.args.first() {
+                output.push(' ');
                 output.push_str(s);
             }
             println!("{}", output);

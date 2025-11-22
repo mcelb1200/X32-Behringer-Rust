@@ -114,7 +114,7 @@ fn reset_fx(socket: &UdpSocket, from: u8, defaults_file: Option<PathBuf>) -> Res
     let (len, _) = socket.recv_from(&mut buf)?;
     let received_msg = OscMessage::from_bytes(&buf[..len])?;
 
-    if let Some(OscArg::Int(fx_type_id)) = received_msg.args.get(0) {
+    if let Some(OscArg::Int(fx_type_id)) = received_msg.args.first() {
         let fx_name = get_fx_name_from_id(*fx_type_id)?;
 
         let defaults_str = if let Some(ref defaults) = user_defaults {
@@ -122,7 +122,7 @@ fn reset_fx(socket: &UdpSocket, from: u8, defaults_file: Option<PathBuf>) -> Res
         } else {
             None
         }
-        .or_else(|| fx_defaults::FX_DEFAULTS.get(fx_name).map(|s| *s));
+        .or_else(|| fx_defaults::FX_DEFAULTS.get(fx_name).copied());
 
         if let Some(defaults) = defaults_str {
             let mut args = Vec::new();

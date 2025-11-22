@@ -89,13 +89,7 @@ fn main() -> Result<()> {
             let delta_ms = delta.as_millis() as f32;
 
             // Calculate parameter value (0.0 - 1.0 represents 0ms - 3000ms)
-            let mut f_val = delta_ms / 3000.0;
-            if f_val < 0.0 {
-                f_val = 0.0;
-            }
-            if f_val > 1.0 {
-                f_val = 1.0;
-            }
+            let f_val = (delta_ms / 3000.0).clamp(0.0, 1.0);
 
             let tempo_ms = (f_val * 3000.0) as i32;
             println!("Tempo: {}ms", tempo_ms);

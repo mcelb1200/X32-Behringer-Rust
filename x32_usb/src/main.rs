@@ -119,7 +119,7 @@ impl FromStr for FileType {
             return Ok(FileType::Directory);
         }
 
-        let extension = s.split('.').last().unwrap_or("");
+        let extension = s.split('.').next_back().unwrap_or("");
         match extension.to_lowercase().as_str() {
             "wav" => Ok(FileType::Wav),
             "shw" => Ok(FileType::Show),
@@ -178,7 +178,7 @@ impl X32Client {
         self.send(&msg)?;
         match self.receive() {
             Ok(response) => {
-                if let Some(OscArg::Int(val)) = response.args.get(0) {
+                if let Some(OscArg::Int(val)) = response.args.first() {
                     Ok(*val == 1)
                 } else {
                     Ok(false)
@@ -194,7 +194,7 @@ impl X32Client {
         self.send(&msg)?;
         let response = self.receive()?;
 
-        let num_files = if let Some(OscArg::Int(val)) = response.args.get(0) {
+        let num_files = if let Some(OscArg::Int(val)) = response.args.first() {
             *val
         } else {
             return Err(anyhow!("Failed to get number of files from X32."));
@@ -206,7 +206,7 @@ impl X32Client {
             let msg = OscMessage::new(path, vec![]);
             self.send(&msg)?;
             let response = self.receive()?;
-            if let Some(OscArg::String(name)) = response.args.get(0) {
+            if let Some(OscArg::String(name)) = response.args.first() {
                 let file_type = FileType::from_str(name)?;
                 files.push(FileEntry {
                     index: i,
@@ -264,7 +264,7 @@ impl X32Client {
 fn run(args: Args) -> Result<()> {
     let client = X32Client::new(&args.ip)?;
 
-    if !client.is_usb_mounted().map_err(|e| ConnectionError(e))? {
+    if !client.is_usb_mounted().map_err(ConnectionError)? {
         println!("USB drive is not mounted.");
         return Ok(());
     }

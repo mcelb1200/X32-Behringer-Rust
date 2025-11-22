@@ -68,11 +68,9 @@ fn main() -> Result<()> {
     }
 
     // If we're copying to another slot, verify the destination slot as well.
-    if args.direction == Direction::CopyTo {
-        if !verify_fx_type(&socket, args.to, "EQ")? {
-            println!("--!!-- No GEQ2/TEQ2 effect at FX slot #{}", args.to);
-            return Ok(());
-        }
+    if args.direction == Direction::CopyTo && !verify_fx_type(&socket, args.to, "EQ")? {
+        println!("--!!-- No GEQ2/TEQ2 effect at FX slot #{}", args.to);
+        return Ok(());
     }
 
     if args.verbose {
