@@ -1,12 +1,12 @@
-use anyhow::{Context, Result, anyhow};
-use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt}; // C code uses system endianness (usually Little on x86)
+use anyhow::{anyhow, Context, Result};
 use clap::Parser;
 use std::fs::{File, OpenOptions};
-use std::io::{BufReader, BufWriter, Read, Write};
+use std::io::{Read, Write, BufReader, BufWriter};
 use std::sync::{Arc, Mutex};
-use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::net::UdpSocket;
 use tokio::time::{self, Duration, Instant};
+use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt}; // C code uses system endianness (usually Little on x86)
+use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -65,9 +65,7 @@ async fn main() -> Result<()> {
     let mut line = String::new();
     loop {
         line.clear();
-        if stdin.read_line(&mut line).is_err() {
-            break;
-        }
+        if stdin.read_line(&mut line).is_err() { break; }
         let cmd = line.trim();
 
         let mut s = state.lock().unwrap();
@@ -114,10 +112,7 @@ async fn run_logic(state: Arc<Mutex<AppState>>, socket: Arc<UdpSocket>, default_
                 if file_writer.is_none() {
                     match File::create(&default_file) {
                         Ok(f) => file_writer = Some(BufWriter::new(f)),
-                        Err(e) => {
-                            eprintln!("Failed to create file: {}", e);
-                            continue;
-                        }
+                        Err(e) => { eprintln!("Failed to create file: {}", e); continue; }
                     }
                 }
 
@@ -128,9 +123,7 @@ async fn run_logic(state: Arc<Mutex<AppState>>, socket: Arc<UdpSocket>, default_
                 }
 
                 // Recv with timeout
-                if let Ok(Ok(len)) =
-                    time::timeout(Duration::from_millis(100), socket.recv(&mut buf)).await
-                {
+                if let Ok(Ok(len)) = time::timeout(Duration::from_millis(100), socket.recv(&mut buf)).await {
                     // Write timestamp + len + data
                     if let Some(w) = &mut file_writer {
                         let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
@@ -145,16 +138,13 @@ async fn run_logic(state: Arc<Mutex<AppState>>, socket: Arc<UdpSocket>, default_
             Mode::Playing => {
                 // Ensure reader open
                 if file_reader.is_none() {
-                    match File::open(&default_file) {
+                     match File::open(&default_file) {
                         Ok(f) => {
                             file_reader = Some(BufReader::new(f));
                             let mut s = state.lock().unwrap();
                             s.start_time = None; // Reset timing
                         }
-                        Err(e) => {
-                            eprintln!("Failed to open file: {}", e);
-                            continue;
-                        }
+                        Err(e) => { eprintln!("Failed to open file: {}", e); continue; }
                     }
                 }
 
@@ -168,8 +158,7 @@ async fn run_logic(state: Arc<Mutex<AppState>>, socket: Arc<UdpSocket>, default_
                                 let mut data = vec![0u8; len as usize];
                                 if r.read_exact(&mut data).is_ok() {
                                     // Timing Logic
-                                    let packet_time = Duration::from_secs(sec)
-                                        + Duration::from_micros(usec as u64);
+                                    let packet_time = Duration::from_secs(sec) + Duration::from_micros(usec as u64);
 
                                     let sleep_dur = {
                                         let mut s = state.lock().unwrap();
@@ -179,9 +168,7 @@ async fn run_logic(state: Arc<Mutex<AppState>>, socket: Arc<UdpSocket>, default_
                                             s.last_play_time = Some(packet_time);
                                         }
 
-                                        if let (Some(start), Some(first_packet_time)) =
-                                            (s.start_time, s.last_play_time)
-                                        {
+                                        if let (Some(start), Some(first_packet_time)) = (s.start_time, s.last_play_time) {
                                             if packet_time > first_packet_time {
                                                 let delta = packet_time - first_packet_time;
                                                 let target_time = start + delta;
