@@ -13,7 +13,7 @@ pub enum NetworkEvent {
     MeterLevel(f32), // Normalized 0.0-1.0
     PanicTriggered,
     EncoderTurned(i32),   // Delta or Value
-    EffectLoaded(String), // Effect name
+    EffectLoaded(usize, String), // Slot, Effect name
 }
 
 pub struct NetworkManager {
@@ -70,7 +70,7 @@ impl NetworkManager {
         Ok(())
     }
 
-    pub fn start_polling(&self, target_slot: usize) {
+    pub fn start_polling(&self, _target_slot: usize) {
         let socket = self.socket.clone();
         let sender = self.event_sender.clone();
         let ip = self.ip.clone();
@@ -115,15 +115,19 @@ impl NetworkManager {
                     last_meter_poll = std::time::Instant::now();
                 }
 
-                // 3. Poll FX Type
-                if last_fx_poll.elapsed() > Duration::from_secs(1) {
-                    let fx_path = format!("/fx/{}/type", target_slot);
-                    let fx_req = OscMessage {
-                        path: fx_path,
-                        args: vec![],
-                    };
-                    if let Ok(bytes) = fx_req.to_bytes() {
-                        let _ = socket.send_to(&bytes, format!("{}:10023", ip));
+                // 3. Poll FX Type (All 8 Slots)
+                if last_fx_poll.elapsed() > Duration::from_secs(2) {
+                    for slot in 1..=8 {
+                        let fx_path = format!("/fx/{}/type", slot);
+                        let fx_req = OscMessage {
+                            path: fx_path,
+                            args: vec![],
+                        };
+                        if let Ok(bytes) = fx_req.to_bytes() {
+                            let _ = socket.send_to(&bytes, format!("{}:10023", ip));
+                            // Stagger requests slightly
+                            thread::sleep(Duration::from_millis(10));
+                        }
                     }
                     last_fx_poll = std::time::Instant::now();
                 }
@@ -159,15 +163,20 @@ impl NetworkManager {
                 }
             }
         } else if msg.path.starts_with("/fx/") && msg.path.ends_with("/type") {
-            if let Some(osc_lib::OscArg::String(s)) = msg.args.first() {
-                let _ = sender.send(NetworkEvent::EffectLoaded(s.clone()));
+            // Path is /fx/n/type
+            let chars: Vec<char> = msg.path.chars().collect();
+            if chars.len() >= 5 {
+                if let Some(digit) = chars[4].to_digit(10) {
+                    let slot = digit as usize;
+                    if let Some(osc_lib::OscArg::String(s)) = msg.args.first() {
+                        let _ = sender.send(NetworkEvent::EffectLoaded(slot, s.clone()));
+                    }
+                }
             }
         }
         // Check User Controls against configured paths
-        // We allow substring match for flexibility (e.g. "/config/userctrl/A/btn/5" or just "A/btn/5")
         else if msg.path.contains(panic_path) {
             // Check if button is PRESSED (val 1)
-            // X32 sends val 1 on press, 0 on release. We only want to trigger on press.
             if let Some(arg) = msg.args.first() {
                 let pressed = match arg {
                     osc_lib::OscArg::Int(i) => *i == 1,
@@ -179,9 +188,14 @@ impl NetworkManager {
                 }
             }
         } else if msg.path.contains(enc_path) {
-            // Encoder turn usually sends delta or new value.
-            // For absolute encoders (LED ring), it sends new value.
-            // Just trigger a change event.
+            // Encoder turn
+            // We can try to infer direction from value if it's relative,
+            // but for now we just signal 'Next' behavior (+1).
+            // Improving this would require knowing if the encoder sends absolute or relative values.
+            // X32 Encoders usually send absolute values 0.0-1.0 unless configured otherwise?
+            // If it's an assignable encoder, it tracks value.
+            // But typically we want to use it as a scroll wheel here.
+            // Just trigger an event.
             let _ = sender.send(NetworkEvent::EncoderTurned(1));
         }
     }
@@ -190,6 +204,16 @@ impl NetworkManager {
         let path = format!("/ch/{:02}/config/name", channel_num);
         let msg = OscMessage {
             path,
+            args: vec![osc_lib::OscArg::String(text.to_string())],
+        };
+        self.send(&msg)
+    }
+
+    /// Set text on a specific Scribble Strip (e.g. Bus 1, DCA 1, etc.)
+    /// `target`: e.g., "/bus/01/config/name"
+    pub fn set_scribble_target(&self, target_path: &str, text: &str) -> Result<()> {
+        let msg = OscMessage {
+            path: target_path.to_string(),
             args: vec![osc_lib::OscArg::String(text.to_string())],
         };
         self.send(&msg)

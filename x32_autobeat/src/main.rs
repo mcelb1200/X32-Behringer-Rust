@@ -1,6 +1,6 @@
 use crate::audio::AudioEngine;
 use crate::detection::{BeatDetector, EnergyDetector, OscLevelDetector, SpectralFluxDetector};
-use crate::effects::{EffectHandler, get_handler};
+use crate::effects::{EffectConfig, EffectHandler, get_handler};
 use crate::network::{NetworkEvent, NetworkManager};
 use crate::ui::{AppState, Tui, UIEvent};
 use anyhow::Result;
@@ -12,6 +12,7 @@ use std::time::{Duration, Instant};
 mod audio;
 mod detection;
 mod effects;
+mod musical_theory;
 mod network;
 mod ui;
 
@@ -33,7 +34,7 @@ struct Cli {
     #[arg(long, default_value_t = 1)]
     channel: usize,
 
-    /// Target Effect Slot (1-8)
+    /// Target Effect Slot (1-8). Used as default selected slot.
     #[arg(long, default_value_t = 1)]
     slot: usize,
 
@@ -115,7 +116,7 @@ fn main() -> Result<()> {
     )?);
 
     network.connect()?;
-    network.start_polling(cli.slot);
+    network.start_polling(0); // Start polling everything
 
     // Initialize Detectors
     let mut energy_detector = EnergyDetector::new(1.5, audio_sample_rate);
@@ -127,17 +128,26 @@ fn main() -> Result<()> {
 
     // State
     let mut is_panic = false;
-    let mut subdivision = 1.0;
-    let subdivisions = [1.0, 0.75, 0.5, 0.375, 0.25];
-    let mut subdiv_idx = 0;
-    let mut active_effect = "Detecting...".to_string(); // Initial state
-    let mut current_handler: Option<Box<dyn EffectHandler + Send + Sync>> = None; // Wait for detection
+    let mut selected_slot = if cli.slot > 0 { cli.slot - 1 } else { 0 };
+    if selected_slot > 7 { selected_slot = 0; }
+
+    // Per-slot state
+    // Effect Configs
+    let mut effect_configs: [EffectConfig; 8] = Default::default();
+    // Loaded effect handlers
+    let mut effect_handlers: [Option<Box<dyn EffectHandler + Send + Sync>>; 8] = Default::default();
+    // Names of active effects
+    let mut active_effects: [String; 8] = Default::default();
 
     let mut last_ui_update = Instant::now();
     let mut last_level = 0.0;
     let mut last_audio_packet = Instant::now();
 
     let mut selected_algorithm = Algorithm::Energy;
+
+    // Available options for UI cycling
+    let subdivisions = ["1/4", "1/8", "1/8d", "1/8t", "1/1", "1/2", "1/16"];
+    let styles = ["Standard", "Tight", "Natural", "Big", "Huge"];
 
     loop {
         // 1. Process Audio Data (Primary)
@@ -181,19 +191,36 @@ fn main() -> Result<()> {
                 }
                 NetworkEvent::PanicTriggered => {
                     is_panic = true;
-                    if let Some(h) = &current_handler {
-                        let _ = h.panic(&network, cli.slot);
+                    // Trigger panic on all slots
+                    for (i, handler_opt) in effect_handlers.iter().enumerate() {
+                        if let Some(h) = handler_opt {
+                            let _ = h.panic(&network, i + 1);
+                        }
                     }
                     let _ = network.set_scribble_text(cli.channel, "PANIC!");
                 }
-                NetworkEvent::EncoderTurned(_val) => {
-                    subdiv_idx = (subdiv_idx + 1) % subdivisions.len();
-                    subdivision = subdivisions[subdiv_idx];
+                NetworkEvent::EncoderTurned(val) => {
+                    // Map Encoder to Subdivision Change for Selected Slot?
+                    // Or handle in UI logic? The prompt said "update user assigned encoders".
+                    // If this event comes from the assigned encoder, let's use it to scroll slots?
+                    // Or scroll subdivisions. Let's do Subdivision for now as it's most musical.
+
+                    let cfg = &mut effect_configs[selected_slot];
+                    let current_idx = subdivisions.iter().position(|&s| s == cfg.subdivision).unwrap_or(0);
+                    let new_idx = if val > 0 {
+                        (current_idx + 1) % subdivisions.len()
+                    } else {
+                        if current_idx == 0 { subdivisions.len() - 1 } else { current_idx - 1 }
+                    };
+                    cfg.subdivision = subdivisions[new_idx].to_string();
                 }
-                NetworkEvent::EffectLoaded(name) => {
-                    if name != active_effect {
-                        active_effect = name.clone();
-                        current_handler = get_handler(&name);
+                NetworkEvent::EffectLoaded(slot, name) => {
+                    if slot >= 1 && slot <= 8 {
+                        let idx = slot - 1;
+                        if active_effects[idx] != name {
+                            active_effects[idx] = name.clone();
+                            effect_handlers[idx] = get_handler(&name);
+                        }
                     }
                 }
             }
@@ -209,11 +236,16 @@ fn main() -> Result<()> {
             osc_detector.current_bpm()
         };
 
-        // 4. Update Effect
+        // 4. Update Effects (All Slots)
         if !is_panic {
             if let Some(bpm) = active_bpm {
-                if let Some(h) = &current_handler {
-                    let _ = h.update(&network, cli.slot, bpm, subdivision);
+                for (i, handler_opt) in effect_handlers.iter().enumerate() {
+                    if let Some(h) = handler_opt {
+                        let cfg = &effect_configs[i];
+                        if cfg.enabled {
+                            let _ = h.update(&network, i + 1, bpm, cfg);
+                        }
+                    }
                 }
             }
         }
@@ -223,8 +255,9 @@ fn main() -> Result<()> {
             let state = AppState {
                 current_bpm: active_bpm,
                 input_level: last_level,
-                active_effect: active_effect.clone(),
-                subdivision: format!("{:.3}", subdivision),
+                active_effects: active_effects.clone(),
+                effect_configs: effect_configs.clone(),
+                selected_slot,
                 is_fallback: use_fallback,
                 is_panic,
                 message: if use_fallback {
@@ -241,8 +274,10 @@ fn main() -> Result<()> {
                 match event {
                     UIEvent::Panic => {
                         is_panic = true;
-                        if let Some(h) = &current_handler {
-                            let _ = h.panic(&network, cli.slot);
+                        for (i, handler_opt) in effect_handlers.iter().enumerate() {
+                            if let Some(h) = handler_opt {
+                                let _ = h.panic(&network, i + 1);
+                            }
                         }
                     }
                     UIEvent::Quit => break,
@@ -255,7 +290,49 @@ fn main() -> Result<()> {
                             Algorithm::Spectral => Algorithm::Energy,
                         };
                     }
+                    UIEvent::NextSlot => {
+                        selected_slot = (selected_slot + 1) % 8;
+                    }
+                    UIEvent::PrevSlot => {
+                        if selected_slot == 0 { selected_slot = 7; } else { selected_slot -= 1; }
+                    }
+                    UIEvent::NextSubdiv => {
+                        let cfg = &mut effect_configs[selected_slot];
+                        let current_idx = subdivisions.iter().position(|&s| s == cfg.subdivision).unwrap_or(0);
+                        let new_idx = (current_idx + 1) % subdivisions.len();
+                        cfg.subdivision = subdivisions[new_idx].to_string();
+                    }
+                    UIEvent::PrevSubdiv => {
+                        let cfg = &mut effect_configs[selected_slot];
+                        let current_idx = subdivisions.iter().position(|&s| s == cfg.subdivision).unwrap_or(0);
+                        let new_idx = if current_idx == 0 { subdivisions.len() - 1 } else { current_idx - 1 };
+                        cfg.subdivision = subdivisions[new_idx].to_string();
+                    }
+                    UIEvent::NextStyle => {
+                        let cfg = &mut effect_configs[selected_slot];
+                        let current_idx = styles.iter().position(|&s| s == cfg.style).unwrap_or(0);
+                        let new_idx = (current_idx + 1) % styles.len();
+                        cfg.style = styles[new_idx].to_string();
+                    }
+                    UIEvent::PrevStyle => {
+                        let cfg = &mut effect_configs[selected_slot];
+                        let current_idx = styles.iter().position(|&s| s == cfg.style).unwrap_or(0);
+                        let new_idx = if current_idx == 0 { styles.len() - 1 } else { current_idx - 1 };
+                        cfg.style = styles[new_idx].to_string();
+                    }
                 }
+
+                // Send feedback to Scribble Strip (Slot + Setting)
+                // Assuming user assigned a button/enc that has a scribble strip.
+                // Or we can just broadcast to a known location?
+                // Let's use the channel strip passed in CLI for general feedback.
+                // Or even better, update the scribble strip of the EFFECT Return?
+                // FX 1 Return is often Aux 9/10 or similar.
+                // This is complex to guess.
+                // We will update the CLI Channel strip.
+                let cfg = &effect_configs[selected_slot];
+                let text = format!("FX{}:{}", selected_slot + 1, cfg.subdivision);
+                let _ = network.set_scribble_text(cli.channel, &text);
             }
 
             last_ui_update = Instant::now();
