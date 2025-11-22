@@ -17,8 +17,8 @@ impl MusicCalculator {
 
         // Apply modifier
         match modifier {
-            'd' => ms *= 1.5,          // Dotted
-            't' => ms *= 2.0 / 3.0,    // Triplet
+            'd' => ms *= 1.5,       // Dotted
+            't' => ms *= 2.0 / 3.0, // Triplet
             _ => {}
         }
 
@@ -44,7 +44,7 @@ impl MusicCalculator {
         let last_char = clean_sub.chars().last().unwrap_or(' ');
 
         let (frac_str, modifier) = if last_char == 'd' || last_char == 't' {
-            (&clean_sub[..clean_sub.len()-1], last_char)
+            (&clean_sub[..clean_sub.len() - 1], last_char)
         } else {
             (clean_sub, ' ')
         };
@@ -59,11 +59,11 @@ impl MusicCalculator {
             // 1/1 = 4.0
             (num / den) * 4.0
         } else if parts.len() == 1 {
-             // Handle "1", "2" (bars)
-             let val: f32 = parts[0].parse().unwrap_or(1.0);
-             val * 4.0 // Assuming input is in Bars if no fraction? Or Whole notes?
-             // Standard convention: "1/4" is a quarter. "1" is a whole note.
-             // If input is "1", that is a whole note = 4 beats.
+            // Handle "1", "2" (bars)
+            let val: f32 = parts[0].parse().unwrap_or(1.0);
+            val * 4.0 // Assuming input is in Bars if no fraction? Or Whole notes?
+        // Standard convention: "1/4" is a quarter. "1" is a whole note.
+        // If input is "1", that is a whole note = 4 beats.
         } else {
             1.0
         };

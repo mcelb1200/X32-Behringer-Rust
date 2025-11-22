@@ -48,12 +48,12 @@ impl Tui {
                 .margin(1)
                 .constraints(
                     [
-                        Constraint::Length(3),  // Title
-                        Constraint::Length(3),  // Slots Tabs
-                        Constraint::Min(5),     // Active Slot Details
-                        Constraint::Length(3),  // BPM
-                        Constraint::Length(3),  // Input Gauge
-                        Constraint::Length(3),  // Status
+                        Constraint::Length(3), // Title
+                        Constraint::Length(3), // Slots Tabs
+                        Constraint::Min(5),    // Active Slot Details
+                        Constraint::Length(3), // BPM
+                        Constraint::Length(3), // Input Gauge
+                        Constraint::Length(3), // Status
                     ]
                     .as_ref(),
                 )
@@ -61,7 +61,11 @@ impl Tui {
 
             // 1. Title
             let header = Paragraph::new("X32 AutoBeat - Multi-FX Control")
-                .style(Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD))
+                .style(
+                    Style::default()
+                        .fg(Color::Yellow)
+                        .add_modifier(Modifier::BOLD),
+                )
                 .block(Block::default().borders(Borders::ALL));
             f.render_widget(header, chunks[0]);
 
@@ -72,7 +76,9 @@ impl Tui {
                 .enumerate()
                 .map(|(i, name)| {
                     let style = if i == state.selected_slot {
-                        Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)
+                        Style::default()
+                            .fg(Color::Cyan)
+                            .add_modifier(Modifier::BOLD)
                     } else {
                         Style::default().fg(Color::White)
                     };
@@ -82,7 +88,11 @@ impl Tui {
                 .collect();
 
             let tabs = Tabs::new(titles)
-                .block(Block::default().borders(Borders::ALL).title("Effect Slots (Use Left/Right to Select)"))
+                .block(
+                    Block::default()
+                        .borders(Borders::ALL)
+                        .title("Effect Slots (Use Left/Right to Select)"),
+                )
                 .select(state.selected_slot)
                 .highlight_style(Style::default().fg(Color::Cyan));
             f.render_widget(tabs, chunks[1]);
@@ -92,7 +102,10 @@ impl Tui {
             let detail_text = vec![
                 Line::from(vec![
                     Span::raw("Current Effect: "),
-                    Span::styled(&state.active_effects[state.selected_slot], Style::default().fg(Color::Green)),
+                    Span::styled(
+                        &state.active_effects[state.selected_slot],
+                        Style::default().fg(Color::Green),
+                    ),
                 ]),
                 Line::from(""),
                 Line::from(vec![
@@ -107,12 +120,19 @@ impl Tui {
                     Span::raw("Status:                "),
                     Span::styled(
                         if cfg.enabled { "SYNCED" } else { "BYPASS" },
-                        Style::default().fg(if cfg.enabled { Color::Green } else { Color::Red })
+                        Style::default().fg(if cfg.enabled {
+                            Color::Green
+                        } else {
+                            Color::Red
+                        }),
                     ),
                 ]),
             ];
-            let details = Paragraph::new(detail_text)
-                .block(Block::default().borders(Borders::ALL).title("Slot Configuration"));
+            let details = Paragraph::new(detail_text).block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .title("Slot Configuration"),
+            );
             f.render_widget(details, chunks[2]);
 
             // 4. BPM Display
@@ -125,7 +145,11 @@ impl Tui {
             } else {
                 "Detecting..."
             };
-            let bpm_color = if state.is_panic { Color::Red } else { Color::Green };
+            let bpm_color = if state.is_panic {
+                Color::Red
+            } else {
+                Color::Green
+            };
             let bpm_para = Paragraph::new(bpm_text)
                 .style(Style::default().fg(bpm_color).add_modifier(Modifier::BOLD))
                 .block(Block::default().borders(Borders::ALL).title("Global Tempo"));
@@ -141,13 +165,15 @@ impl Tui {
             // 6. Status Bar
             let status_text = format!(
                 "Mode: {} | Msg: {} | Controls: Arrow Keys, PgUp/Dn, 'a'lgo, 'r'eset, 'q'uit",
-                if state.is_fallback { "OSC Fallback" } else { "Audio" },
+                if state.is_fallback {
+                    "OSC Fallback"
+                } else {
+                    "Audio"
+                },
                 state.message
             );
-            let status = Paragraph::new(status_text)
-                .block(Block::default().borders(Borders::ALL));
+            let status = Paragraph::new(status_text).block(Block::default().borders(Borders::ALL));
             f.render_widget(status, chunks[5]);
-
         })?;
         Ok(())
     }

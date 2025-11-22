@@ -2,12 +2,12 @@ use crate::network::NetworkManager;
 use anyhow::Result;
 
 pub mod delay;
-pub mod reverb;
 pub mod modulation;
+pub mod reverb;
 
 use delay::{GenericDelayHandler, TapDelayHandler};
-use reverb::{ReverbHandler, ReverbType};
 use modulation::ModulationHandler;
+use reverb::{ReverbHandler, ReverbType};
 
 #[derive(Clone, Debug)]
 pub struct EffectConfig {
@@ -55,7 +55,7 @@ pub fn get_handler(fx_type: &str) -> Option<Box<dyn EffectHandler + Send + Sync>
         "ROOM" => Some(Box::new(ReverbHandler::new(ReverbType::Room))),
         "CHAM" => Some(Box::new(ReverbHandler::new(ReverbType::Chamber))),
         "VREV" => Some(Box::new(ReverbHandler::new(ReverbType::Vintage))),
-        "VRM"  => Some(Box::new(ReverbHandler::new(ReverbType::VintageRoom))),
+        "VRM" => Some(Box::new(ReverbHandler::new(ReverbType::VintageRoom))),
 
         // Modulation
         "CRS" | "CHORUS" => Some(Box::new(ModulationHandler)),

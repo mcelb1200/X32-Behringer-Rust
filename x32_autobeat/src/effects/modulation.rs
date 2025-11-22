@@ -1,6 +1,6 @@
-use super::{EffectHandler, EffectConfig};
-use crate::network::NetworkManager;
+use super::{EffectConfig, EffectHandler};
 use crate::musical_theory::MusicCalculator;
+use crate::network::NetworkManager;
 use anyhow::Result;
 
 /// Handler for Modulation Effects (Chorus, Flanger, Phaser).

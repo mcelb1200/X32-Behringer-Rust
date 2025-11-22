@@ -129,7 +129,9 @@ fn main() -> Result<()> {
     // State
     let mut is_panic = false;
     let mut selected_slot = if cli.slot > 0 { cli.slot - 1 } else { 0 };
-    if selected_slot > 7 { selected_slot = 0; }
+    if selected_slot > 7 {
+        selected_slot = 0;
+    }
 
     // Per-slot state
     // Effect Configs
@@ -206,11 +208,18 @@ fn main() -> Result<()> {
                     // Or scroll subdivisions. Let's do Subdivision for now as it's most musical.
 
                     let cfg = &mut effect_configs[selected_slot];
-                    let current_idx = subdivisions.iter().position(|&s| s == cfg.subdivision).unwrap_or(0);
+                    let current_idx = subdivisions
+                        .iter()
+                        .position(|&s| s == cfg.subdivision)
+                        .unwrap_or(0);
                     let new_idx = if val > 0 {
                         (current_idx + 1) % subdivisions.len()
                     } else {
-                        if current_idx == 0 { subdivisions.len() - 1 } else { current_idx - 1 }
+                        if current_idx == 0 {
+                            subdivisions.len() - 1
+                        } else {
+                            current_idx - 1
+                        }
                     };
                     cfg.subdivision = subdivisions[new_idx].to_string();
                 }
@@ -294,18 +303,32 @@ fn main() -> Result<()> {
                         selected_slot = (selected_slot + 1) % 8;
                     }
                     UIEvent::PrevSlot => {
-                        if selected_slot == 0 { selected_slot = 7; } else { selected_slot -= 1; }
+                        if selected_slot == 0 {
+                            selected_slot = 7;
+                        } else {
+                            selected_slot -= 1;
+                        }
                     }
                     UIEvent::NextSubdiv => {
                         let cfg = &mut effect_configs[selected_slot];
-                        let current_idx = subdivisions.iter().position(|&s| s == cfg.subdivision).unwrap_or(0);
+                        let current_idx = subdivisions
+                            .iter()
+                            .position(|&s| s == cfg.subdivision)
+                            .unwrap_or(0);
                         let new_idx = (current_idx + 1) % subdivisions.len();
                         cfg.subdivision = subdivisions[new_idx].to_string();
                     }
                     UIEvent::PrevSubdiv => {
                         let cfg = &mut effect_configs[selected_slot];
-                        let current_idx = subdivisions.iter().position(|&s| s == cfg.subdivision).unwrap_or(0);
-                        let new_idx = if current_idx == 0 { subdivisions.len() - 1 } else { current_idx - 1 };
+                        let current_idx = subdivisions
+                            .iter()
+                            .position(|&s| s == cfg.subdivision)
+                            .unwrap_or(0);
+                        let new_idx = if current_idx == 0 {
+                            subdivisions.len() - 1
+                        } else {
+                            current_idx - 1
+                        };
                         cfg.subdivision = subdivisions[new_idx].to_string();
                     }
                     UIEvent::NextStyle => {
@@ -317,7 +340,11 @@ fn main() -> Result<()> {
                     UIEvent::PrevStyle => {
                         let cfg = &mut effect_configs[selected_slot];
                         let current_idx = styles.iter().position(|&s| s == cfg.style).unwrap_or(0);
-                        let new_idx = if current_idx == 0 { styles.len() - 1 } else { current_idx - 1 };
+                        let new_idx = if current_idx == 0 {
+                            styles.len() - 1
+                        } else {
+                            current_idx - 1
+                        };
                         cfg.style = styles[new_idx].to_string();
                     }
                 }

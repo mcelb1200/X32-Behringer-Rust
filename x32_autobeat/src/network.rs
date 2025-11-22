@@ -12,7 +12,7 @@ use std::time::Duration;
 pub enum NetworkEvent {
     MeterLevel(f32), // Normalized 0.0-1.0
     PanicTriggered,
-    EncoderTurned(i32),   // Delta or Value
+    EncoderTurned(i32),          // Delta or Value
     EffectLoaded(usize, String), // Slot, Effect name
 }
 

@@ -1,6 +1,6 @@
-use super::{EffectHandler, EffectConfig};
-use crate::network::NetworkManager;
+use super::{EffectConfig, EffectHandler};
 use crate::musical_theory::MusicCalculator;
+use crate::network::NetworkManager;
 use anyhow::Result;
 
 /// Handler for standard "Stereo Delay" or "Delay" (DLY).
@@ -30,7 +30,7 @@ impl EffectHandler for GenericDelayHandler {
     fn panic(&self, network: &NetworkManager, slot: usize) -> Result<()> {
         // Kill feedback (Param 6 typically) and set neutral time
         network.set_effect_param(slot, 2, 0.166)?; // ~500ms
-        network.set_effect_param(slot, 6, 0.0)?;    // Feedback 0%
+        network.set_effect_param(slot, 6, 0.0)?; // Feedback 0%
         Ok(())
     }
 }

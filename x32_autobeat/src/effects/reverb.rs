@@ -1,17 +1,17 @@
-use super::{EffectHandler, EffectConfig};
-use crate::network::NetworkManager;
+use super::{EffectConfig, EffectHandler};
 use crate::musical_theory::MusicCalculator;
+use crate::network::NetworkManager;
 use anyhow::Result;
 
 #[derive(Clone, Copy)]
 pub enum ReverbType {
-    Hall,       // 0.2 - 5.0s
-    Ambience,   // 0.2 - 7.3s
-    Plate,      // 0.5 - 10.0s
-    Room,       // 0.3 - 29.0s
-    Chamber,    // 0.3 - 29.0s
-    Vintage,    // 0.4 - 4.5s (VREV)
-    VintageRoom // 0.1 - 20.0s (VRM)
+    Hall,        // 0.2 - 5.0s
+    Ambience,    // 0.2 - 7.3s
+    Plate,       // 0.5 - 10.0s
+    Room,        // 0.3 - 29.0s
+    Chamber,     // 0.3 - 29.0s
+    Vintage,     // 0.4 - 4.5s (VREV)
+    VintageRoom, // 0.1 - 20.0s (VRM)
 }
 
 impl ReverbType {
@@ -45,7 +45,7 @@ impl ReverbHandler {
             "Natural" => ("1/64", "1/2"),
             "Big" => ("1/32", "1/1"),
             "Huge" => ("1/16", "2/1"), // 2 Bars
-            _ => ("1/64", "1/2"), // Default to Natural
+            _ => ("1/64", "1/2"),      // Default to Natural
         }
     }
 }
