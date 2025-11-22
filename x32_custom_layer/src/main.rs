@@ -379,7 +379,7 @@ fn get_node_state(socket: &UdpSocket, node: &str) -> Result<String> {
                 }
                 let response = OscMessage::from_bytes(&buf[..len])?;
                 if response.path == "/node" {
-                    if let Some(OscArg::String(response_node)) = response.args.get(0) {
+                    if let Some(OscArg::String(response_node)) = response.args.first() {
                         if response_node == node {
                             return format_node_state(&response.args);
                         }
@@ -519,12 +519,12 @@ fn handle_list_command(ip: &str) -> Result<()> {
 }
 
 fn get_source_name(socket: &UdpSocket, channel: u8) -> Result<String> {
-    let (path, expected_response_prefix) = if channel >= 1 && channel <= 32 {
+    let (path, expected_response_prefix) = if (1..=32).contains(&channel) {
         (
             format!("/ch/{:02}/config/source", channel),
             format!("/ch/{:02}/config/source", channel),
         )
-    } else if channel >= 33 && channel <= 40 {
+    } else if (33..=40).contains(&channel) {
         (
             format!("/auxin/{:02}/config/source", channel - 32),
             format!("/auxin/{:02}/config/source", channel - 32),
@@ -549,7 +549,7 @@ fn get_source_name(socket: &UdpSocket, channel: u8) -> Result<String> {
                 }
                 let response = OscMessage::from_bytes(&buf[..len])?;
                 if response.path.starts_with(&expected_response_prefix) {
-                    if let Some(OscArg::Int(source_id)) = response.args.get(0) {
+                    if let Some(OscArg::Int(source_id)) = response.args.first() {
                         return Ok(map_source_id_to_name(*source_id).to_string());
                     }
                 }
