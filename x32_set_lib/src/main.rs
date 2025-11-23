@@ -3,8 +3,14 @@
 //! It reads preset files (Channel, Effects, or Routing) from disk and uploads them to
 //! the mixer's library slots. It automatically detects the preset type based on the file
 //! extension (.chn, .efx, .rou).
+//!
+//! # Credits
+//!
+//! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
+//! *   **Additional concepts by:** [User]
+//! *   **Rust implementation by:** [User]
 
-use anyhow::{Context, Result, anyhow};
+use anyhow::{anyhow, Context, Result};
 use clap::Parser;
 use osc_lib::{OscArg, OscMessage};
 use std::fs::File;

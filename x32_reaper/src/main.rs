@@ -4,6 +4,12 @@
 //! It enables bidirectional control and synchronization between the two systems, allowing
 //! the X32 to act as a control surface for Reaper, and Reaper to automate the X32's parameters.
 //! Features include fader/pan sync, mute sync, transport control, and bank switching.
+//!
+//! # Credits
+//!
+//! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
+//! *   **Additional concepts by:** [User]
+//! *   **Rust implementation by:** [User]
 
 use anyhow::{Context, Result};
 use clap::Parser;
@@ -570,7 +576,7 @@ async fn process_x32_message(
             }
         } else if msg.path.contains("on") {
             xr_mask = X32SELECT; // Using SELECT mask for master select action
-            // Unselect all first
+                                 // Unselect all first
             if (xr_mask & config.xr_send_mask) != 0 {
                 send_to_r(
                     r_sock,
@@ -1082,12 +1088,12 @@ async fn process_single_reaper_message(
                     xx_mask = TRACKMUTE;
                     if let Some(OscArg::Float(f)) = msg.args.first() {
                         let x_val = if *f > 0.0 { 0 } else { 1 }; // Reaper 1=mute, X32 0=on (unmute) ??
-                        // C code: if (endian.ii == 1) endian.ff = 0.0 else endian.ff = 1.0; (for X32->Reaper)
-                        // For Reaper->X32 (line 1157):
-                        // if (endian.ff > 0.0) Xb_ls = Xfprint(..., 'i', &zero); else ... 'i', &one.
-                        // So if Reaper > 0 (Muted), X32 = 0 (Off/Muted? No, X32 'on' is Unmute).
-                        // X32 /mix/on: 1 = ON (audio passes), 0 = OFF (muted).
-                        // So Reaper Mute (1) -> X32 On (0).
+                                                                  // C code: if (endian.ii == 1) endian.ff = 0.0 else endian.ff = 1.0; (for X32->Reaper)
+                                                                  // For Reaper->X32 (line 1157):
+                                                                  // if (endian.ff > 0.0) Xb_ls = Xfprint(..., 'i', &zero); else ... 'i', &one.
+                                                                  // So if Reaper > 0 (Muted), X32 = 0 (Off/Muted? No, X32 'on' is Unmute).
+                                                                  // X32 /mix/on: 1 = ON (audio passes), 0 = OFF (muted).
+                                                                  // So Reaper Mute (1) -> X32 On (0).
 
                         if tnum >= config.trk_min && tnum <= config.trk_max {
                             if config.ch_bank_on {

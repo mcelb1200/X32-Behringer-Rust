@@ -6,6 +6,12 @@
 //! - Copy settings from side A to side B (or vice versa) within the same FX slot.
 //! - Reset the EQ curves to flat.
 //! - Copy the entire EQ configuration from one FX slot to another.
+//!
+//! # Credits
+//!
+//! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
+//! *   **Additional concepts by:** [User]
+//! *   **Rust implementation by:** [User]
 
 use anyhow::Result;
 use clap::{Parser, ValueEnum};

@@ -3,6 +3,12 @@
 //! It reads a list of OSC addresses from standard input (one per line), queries the mixer
 //! for their current values using the `/node` command, and prints the results to standard
 //! output in a format suitable for saving as a scene file.
+//!
+//! # Credits
+//!
+//! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
+//! *   **Additional concepts by:** [User]
+//! *   **Rust implementation by:** [User]
 
 use clap::Parser;
 use osc_lib::{OscArg, OscMessage};

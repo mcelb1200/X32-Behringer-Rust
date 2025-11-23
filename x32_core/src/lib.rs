@@ -16,6 +16,12 @@
 //!   mixer's state from a predefined set of OSC commands, making it easy to set up
 //!   specific scenarios for testing.
 //!
+//! # Credits
+//!
+//! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
+//! *   **Additional concepts by:** [User]
+//! *   **Rust implementation by:** [User]
+//!
 //! # Example: Creating and Interacting with a Mixer Emulator
 //!
 //! ```

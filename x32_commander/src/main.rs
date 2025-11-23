@@ -7,6 +7,12 @@
 //! on the state of another, or creating macro-like functionality.
 //!
 //! Currently, only OSC-to-OSC mapping is fully implemented.
+//!
+//! # Credits
+//!
+//! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
+//! *   **Additional concepts by:** [User]
+//! *   **Rust implementation by:** [User]
 
 use clap::Parser;
 use std::fs::File;

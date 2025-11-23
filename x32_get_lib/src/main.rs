@@ -2,8 +2,14 @@
 //!
 //! It can fetch Channel, Effects, or Routing presets and save them to local files.
 //! This tool allows you to backup your library presets or transfer them between consoles.
+//!
+//! # Credits
+//!
+//! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
+//! *   **Additional concepts by:** [User]
+//! *   **Rust implementation by:** [User]
 
-use anyhow::{Context, Result, anyhow};
+use anyhow::{anyhow, Context, Result};
 use clap::{Parser, ValueEnum};
 use osc_lib::{OscArg, OscMessage};
 use std::fs::File;

@@ -1,4 +1,10 @@
 # Test module for x32_desk_restore
+#
+# Credits
+#
+# *   Original concept and work on the C library: Patrick-Gilles Maillot
+# *   Additional concepts by: [User]
+# *   Rust implementation by: [User]
 
 function Test-X32DeskRestore {
     Log-Message "--- Running x32_desk_restore tests ---"

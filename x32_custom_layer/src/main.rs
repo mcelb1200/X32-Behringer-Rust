@@ -6,6 +6,12 @@
 //! - **Restore**: Restore a previously saved custom layer.
 //! - **Reset**: Reset specific channels to their default "1:1" mapping (e.g., channel 1 source is input 1).
 //! - **List**: Display the current source assignments for all channels.
+//!
+//! # Credits
+//!
+//! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
+//! *   **Additional concepts by:** [User]
+//! *   **Rust implementation by:** [User]
 
 use clap::{Parser, Subcommand};
 use osc_lib::{OscArg, OscMessage};

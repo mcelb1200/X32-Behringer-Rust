@@ -4,6 +4,12 @@
 //! faders (or mix sends) to maintain a balanced mix. It also includes a Number of
 //! Open Mics (NOM) attenuation feature to prevent feedback and background noise buildup
 //! when multiple microphones are open.
+//!
+//! # Credits
+//!
+//! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
+//! *   **Additional concepts by:** [User]
+//! *   **Rust implementation by:** [User]
 
 use clap::Parser;
 use osc_lib::{OscArg, OscMessage};

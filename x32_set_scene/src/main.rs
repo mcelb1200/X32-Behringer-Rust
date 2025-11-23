@@ -2,6 +2,12 @@
 //!
 //! It reads OSC commands from standard input (one per line) and sends them to the mixer.
 //! This is typically used to restore a scene or apply a batch of settings.
+//!
+//! # Credits
+//!
+//! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
+//! *   **Additional concepts by:** [User]
+//! *   **Rust implementation by:** [User]
 
 use clap::Parser;
 use osc_lib::OscMessage;
