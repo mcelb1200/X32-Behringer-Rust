@@ -14,7 +14,7 @@ use clap::{Parser, ValueEnum};
 use osc_lib::{OscArg, OscMessage};
 use std::fs::File;
 use std::io::Write;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::time::Duration;
 use x32_lib::create_socket;
 
@@ -121,7 +121,7 @@ fn process_lib_slot(
     socket: &std::net::UdpSocket,
     t: LibType,
     id: i32,
-    out_dir: &PathBuf,
+    out_dir: &Path,
     _verbose: bool,
 ) -> Result<()> {
     let type_str = t.as_str();

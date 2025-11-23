@@ -31,10 +31,7 @@ mod tests {
 
         mixer.seed_from_lines(lines);
 
-        assert_eq!(
-            mixer.state.get("/ch/01/mix/fader"),
-            Some(&OscArg::Float(0.75))
-        );
+        assert_eq!(mixer.state.get("/ch/01/mix/fader"), Some(&OscArg::Float(0.75)));
         assert_eq!(
             mixer.state.get("/ch/01/config/name"),
             Some(&OscArg::String("MyChannel".to_string()))
@@ -80,7 +77,9 @@ mod tests {
     #[test]
     fn test_mixer_dispatch_get_value() {
         let mut mixer = Mixer::new();
-        mixer.state.set("/ch/01/mix/fader", OscArg::Float(0.8));
+        mixer
+            .state
+            .set("/ch/01/mix/fader", OscArg::Float(0.8));
 
         let msg = OscMessage {
             path: "/ch/01/mix/fader".to_string(),

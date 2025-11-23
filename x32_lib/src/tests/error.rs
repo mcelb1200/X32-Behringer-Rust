@@ -3,7 +3,6 @@ mod tests {
     use crate::error::*;
     use osc_lib::OscError;
     use std::io;
-    use std::net::AddrParseError;
 
     #[test]
     fn test_error_from_io() {
