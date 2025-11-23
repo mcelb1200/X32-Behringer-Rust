@@ -16,6 +16,7 @@ This project is a complete rewrite of the X32 command-line tools in Rust, focusi
 This project is a fork and rewrite of the original X32 libraries.
 
 *   **Original concept and work on the C library:** Patrick-Gilles Maillot ([https://sites.google.com/site/patrickmaillot/x32](https://sites.google.com/site/patrickmaillot/x32))
+*   **Original C code for scene tools:** Ken Mitchell (XAir version)
 *   **Additional concepts by:** [User]
 *   **Rust implementation by:** [User]
 
