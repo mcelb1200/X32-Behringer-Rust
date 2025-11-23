@@ -56,6 +56,9 @@ use std::error::Error;
 
 use osc_lib::{OscArg, OscMessage};
 
+#[cfg(test)]
+mod tests;
+
 // --- Static Data for Mixer Parameters ---
 
 // The following static arrays define the string representations for various

@@ -240,8 +240,8 @@ impl FxSource {
             FxSource::MixBus(bus) => *bus,
             FxSource::Bus(bus) => *bus + 16,
             FxSource::Mtx(mtx) => *mtx + 32,
-            FxSource::Main(main) => *main + 40,
-            FxSource::Group(grp) => *grp + 48,
+            FxSource::Main(main) => *main + 38,
+            FxSource::Group(grp) => *grp + 40,
         }
     }
     pub fn from_id(id: u8) -> Option<Self> {
@@ -250,8 +250,8 @@ impl FxSource {
             1..=16 => Some(FxSource::MixBus(id)),
             17..=32 => Some(FxSource::Bus(id - 16)),
             33..=38 => Some(FxSource::Mtx(id - 32)),
-            39..=40 => Some(FxSource::Main(id - 40)),
-            41..=48 => Some(FxSource::Group(id - 48)),
+            39..=40 => Some(FxSource::Main(id - 38)),
+            41..=48 => Some(FxSource::Group(id - 40)),
             _ => None,
         }
     }
