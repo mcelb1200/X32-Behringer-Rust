@@ -1,4 +1,10 @@
 # Test module for x32_copy_fx
+#
+# Credits
+#
+# *   Original concept and work on the C library: Patrick-Gilles Maillot
+# *   Additional concepts by: [User]
+# *   Rust implementation by: [User]
 
 function Test-X32CopyFx {
     Log-Message "--- Running x32_copy_fx tests ---"

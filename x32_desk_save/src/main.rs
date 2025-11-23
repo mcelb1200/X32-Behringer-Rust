@@ -1,6 +1,12 @@
 //! `x32_desk_save` is a command-line utility for saving preferences, scenes, and routing data
 //! from a Behringer X32 digital mixer to a file. It is a Rust implementation of the original
 //! `X32DeskSave.c` tool by Patrick-Gilles Maillot.
+//!
+//! # Credits
+//!
+//! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
+//! *   **Additional concepts by:** [User]
+//! *   **Rust implementation by:** [User]
 
 use clap::Parser;
 use osc_lib::{OscArg, OscMessage};

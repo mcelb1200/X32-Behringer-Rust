@@ -5,6 +5,12 @@
 //! loading scenes and presets, and controlling WAV file playback.
 //!
 //! This utility is a Rust rewrite of the original C program `X32USB.c` by Patrick-Gilles Maillot.
+//!
+//! # Credits
+//!
+//! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
+//! *   **Additional concepts by:** [User]
+//! *   **Rust implementation by:** [User]
 
 use anyhow::{Result, anyhow};
 use clap::{Parser, Subcommand};

@@ -1,4 +1,10 @@
 # Test module for x32_emulator
+#
+# Credits
+#
+# *   Original concept and work on the C library: Patrick-Gilles Maillot
+# *   Additional concepts by: [User]
+# *   Rust implementation by: [User]
 
 function Test-X32Emulator {
     Log-Message "--- Running x32_emulator tests ---"

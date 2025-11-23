@@ -4,6 +4,12 @@
 //! It enables bidirectional control and synchronization between the two systems, allowing
 //! the X32 to act as a control surface for Reaper, and Reaper to automate the X32's parameters.
 //! Features include fader/pan sync, mute sync, transport control, and bank switching.
+//!
+//! # Credits
+//!
+//! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
+//! *   **Additional concepts by:** [User]
+//! *   **Rust implementation by:** [User]
 
 use anyhow::{Context, Result};
 use clap::Parser;
@@ -32,11 +38,13 @@ struct Args {
 // Flags
 const TRACKPAN: i32 = 0x0001;
 const TRACKFADER: i32 = 0x0002;
+#[allow(dead_code)]
 const TRACKNAME: i32 = 0x0004;
 const TRACKMUTE: i32 = 0x0008;
 const TRACKSELECT: i32 = 0x0010;
 #[allow(dead_code)]
 const TRACKSEND: i32 = 0x0020;
+#[allow(dead_code)]
 const TRACKSOLO: i32 = 0x0040;
 #[allow(dead_code)]
 const TRACKFX: i32 = 0x0080;

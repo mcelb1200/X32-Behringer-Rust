@@ -1,4 +1,10 @@
 # Test module for x32_tcp
+#
+# Credits
+#
+# *   Original concept and work on the C library: Patrick-Gilles Maillot
+# *   Additional concepts by: [User]
+# *   Rust implementation by: [User]
 
 function Test-X32Tcp {
     Log-Message "--- Running x32_tcp tests ---"

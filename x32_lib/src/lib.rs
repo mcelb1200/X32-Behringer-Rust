@@ -48,6 +48,12 @@
 //!   handling.
 //! - [`common`]: Provides common utilities and helper functions used throughout the library.
 //!
+//! # Credits
+//!
+//! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
+//! *   **Additional concepts by:** [User]
+//! *   **Rust implementation by:** [User]
+//!
 #[cfg(test)]
 mod tests;
 

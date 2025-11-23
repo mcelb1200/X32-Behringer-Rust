@@ -1,6 +1,12 @@
 #!/bin/bash
 
 # Test module for x32_automix
+#
+# Credits
+#
+# *   Original concept and work on the C library: Patrick-Gilles Maillot
+# *   Additional concepts by: [User]
+# *   Rust implementation by: [User]
 
 test_x32_automix() {
     log_message "--- Running x32_automix tests ---"

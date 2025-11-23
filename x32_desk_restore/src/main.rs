@@ -1,6 +1,12 @@
 //! `x32_desk_restore` is a command-line utility for restoring preferences, scenes, and routing data
 //! to a Behringer X32 digital mixer from a file. It is a Rust implementation of the original
 //! `X32DeskRestore.c` tool by Patrick-Gilles Maillot.
+//!
+//! # Credits
+//!
+//! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
+//! *   **Additional concepts by:** [User]
+//! *   **Rust implementation by:** [User]
 
 use clap::Parser;
 use osc_lib::OscMessage;

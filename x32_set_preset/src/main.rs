@@ -5,6 +5,12 @@
 //! preset's parameters directly to a channel strip, effects slot, or the global routing table.
 //! It supports safe-loading features to exclude specific parameter groups (like Headamp gain or Config)
 //! from being overwritten.
+//!
+//! # Credits
+//!
+//! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
+//! *   **Additional concepts by:** [User]
+//! *   **Rust implementation by:** [User]
 
 use anyhow::{Context, Result, anyhow};
 use clap::Parser;

@@ -3,6 +3,12 @@
 //!
 //! It is a Rust rewrite of the original C program `X32Wav_Xlive.c` by Patrick-Gilles Maillot.
 //!
+//! # Credits
+//!
+//! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
+//! *   **Additional concepts by:** [User]
+//! *   **Rust implementation by:** [User]
+//!
 //! ## Usage
 //!
 //! ```sh

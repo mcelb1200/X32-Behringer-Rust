@@ -4,6 +4,12 @@
 //! along with methods for serializing and deserializing them to and from byte streams
 //! and string representations.
 //!
+//! # Credits
+//!
+//! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
+//! *   **Additional concepts by:** [User]
+//! *   **Rust implementation by:** [User]
+//!
 //! # Examples
 //!
 //! ## Creating and serializing an OSC message

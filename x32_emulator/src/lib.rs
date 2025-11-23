@@ -1,5 +1,11 @@
 //! This library module provides the server implementation for the X32 emulator.
 //! It is exposed as a library to allow integration tests to run the emulator in-process.
+//!
+//! # Credits
+//!
+//! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
+//! *   **Additional concepts by:** [User]
+//! *   **Rust implementation by:** [User]
 
 pub mod server {
     use anyhow::Result;
