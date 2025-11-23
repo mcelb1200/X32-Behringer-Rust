@@ -6,6 +6,7 @@
 //! # Credits
 //!
 //! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
+//! *   **Original C code for XAir version:** Ken Mitchell
 //! *   **Additional concepts by:** [User]
 //! *   **Rust implementation by:** [User]
 
