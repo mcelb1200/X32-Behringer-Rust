@@ -203,4 +203,12 @@ impl NetworkManager {
         };
         self.send(&msg)
     }
+
+    pub fn send_osc_float(&self, path: &str, value: f32) -> Result<()> {
+        let msg = OscMessage {
+            path: path.to_string(),
+            args: vec![osc_lib::OscArg::Float(value)],
+        };
+        self.send(&msg)
+    }
 }

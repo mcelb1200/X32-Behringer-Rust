@@ -1,4 +1,5 @@
 use crate::audio::AudioEngine;
+use crate::compressor::CompressorHandler;
 use crate::detection::{BeatDetector, EnergyDetector, OscLevelDetector, SpectralFluxDetector};
 use crate::effects::{EffectHandler, get_handler};
 use crate::network::{NetworkEvent, NetworkManager};
@@ -10,9 +11,11 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 mod audio;
+mod compressor;
 mod detection;
 mod effects;
 mod network;
+mod scaling;
 mod ui;
 
 #[derive(Parser)]
@@ -38,14 +41,20 @@ struct Cli {
     slot: usize,
 
     /// OSC Path segment for Panic Button (substring match)
-    /// Example: "A/btn/5" matches "/config/userctrl/A/btn/5"
     #[arg(long, default_value = "A/btn/5")]
     panic_btn: String,
 
     /// OSC Path segment for Preset Encoder (substring match)
-    /// Example: "A/enc/5" matches "/config/userctrl/A/enc/5"
     #[arg(long, default_value = "A/enc/5")]
     preset_enc: String,
+
+    /// Target Channels for Compressor Sync (e.g., "1,2,3" or "1-4")
+    #[arg(long)]
+    target_channels: Option<String>,
+
+    /// Compressor Release Subdivision (default: 1.0 = Quarter Note)
+    #[arg(long, default_value_t = 1.0)]
+    compressor_subdivision: f32,
 }
 
 #[derive(Subcommand)]
@@ -67,6 +76,28 @@ impl std::fmt::Display for Algorithm {
             Algorithm::Spectral => write!(f, "Spectral"),
         }
     }
+}
+
+fn parse_channels(s: &str) -> Vec<usize> {
+    let mut channels = Vec::new();
+    for part in s.split(',') {
+        let part = part.trim();
+        if part.contains('-') {
+            let ranges: Vec<&str> = part.split('-').collect();
+            if ranges.len() == 2 {
+                if let (Ok(start), Ok(end)) =
+                    (ranges[0].parse::<usize>(), ranges[1].parse::<usize>())
+                {
+                    for i in start..=end {
+                        channels.push(i);
+                    }
+                }
+            }
+        } else if let Ok(n) = part.parse::<usize>() {
+            channels.push(n);
+        }
+    }
+    channels
 }
 
 fn main() -> Result<()> {
@@ -121,6 +152,15 @@ fn main() -> Result<()> {
     let mut energy_detector = EnergyDetector::new(1.5, audio_sample_rate);
     let mut spectral_detector = SpectralFluxDetector::new(audio_sample_rate, 1024);
     let mut osc_detector = OscLevelDetector::new();
+
+    // Initialize Compressor Handler
+    let comp_channels = if let Some(s) = &cli.target_channels {
+        parse_channels(s)
+    } else {
+        Vec::new()
+    };
+    let mut comp_handler = CompressorHandler::new(comp_channels);
+    comp_handler.release_subdivision = cli.compressor_subdivision;
 
     // Initialize UI
     let mut tui = Tui::new()?;
@@ -209,12 +249,14 @@ fn main() -> Result<()> {
             osc_detector.current_bpm()
         };
 
-        // 4. Update Effect
+        // 4. Update Effect & Compressors
         if !is_panic {
             if let Some(bpm) = active_bpm {
                 if let Some(h) = &current_handler {
                     let _ = h.update(&network, cli.slot, bpm, subdivision);
                 }
+                // Update Compressors
+                let _ = comp_handler.update(&network, bpm);
             }
         }
 
@@ -269,3 +311,6 @@ fn main() -> Result<()> {
     tui.cleanup()?;
     Ok(())
 }
+
+#[cfg(test)]
+mod tests_scaling;
