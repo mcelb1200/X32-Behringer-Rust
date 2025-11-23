@@ -22,6 +22,7 @@ pub struct AppState {
     pub is_fallback: bool,
     pub is_panic: bool,
     pub message: String,
+    pub algorithm: String,
 }
 
 pub struct Tui {
@@ -55,7 +56,9 @@ impl Tui {
                 .split(f.size());
 
             // Header
-            let header = Block::default().title("X32 AutoBeat").borders(Borders::ALL);
+            let header = Block::default()
+                .title("X32 AutoBeat (Press 'a' to switch algorithm)")
+                .borders(Borders::ALL);
             f.render_widget(header, chunks[0]);
 
             // BPM Display
@@ -77,7 +80,11 @@ impl Tui {
             };
             let bpm_para = Paragraph::new(bpm_text)
                 .style(Style::default().fg(bpm_color).add_modifier(Modifier::BOLD))
-                .block(Block::default().borders(Borders::ALL).title("Tempo"))
+                .block(
+                    Block::default()
+                        .borders(Borders::ALL)
+                        .title(format!("Tempo ({})", state.algorithm)),
+                )
                 .alignment(ratatui::layout::Alignment::Center);
             f.render_widget(bpm_para, chunks[1]);
 
@@ -108,6 +115,7 @@ impl Tui {
                 ]),
                 Line::from(format!("Effect: {}", state.active_effect)),
                 Line::from(format!("Subdiv: {}", state.subdivision)),
+                Line::from(format!("Algorithm: {}", state.algorithm)),
                 Line::from(format!("Msg: {}", state.message)),
             ];
             let info = Paragraph::new(info_text)
@@ -124,6 +132,7 @@ impl Tui {
                     KeyCode::Esc => return Ok(Some(UIEvent::Panic)),
                     KeyCode::Char('q') => return Ok(Some(UIEvent::Quit)),
                     KeyCode::Char('r') => return Ok(Some(UIEvent::Reset)),
+                    KeyCode::Char('a') => return Ok(Some(UIEvent::SwitchAlgorithm)),
                     _ => {}
                 }
             }
@@ -147,4 +156,5 @@ pub enum UIEvent {
     Panic,
     Quit,
     Reset,
+    SwitchAlgorithm,
 }

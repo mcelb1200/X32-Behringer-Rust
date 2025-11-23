@@ -12,7 +12,8 @@
 //! *   **Rust implementation by:** [User]
 
 use crate::audio::AudioEngine;
-use crate::detection::{BeatDetector, EnergyDetector, OscLevelDetector};
+use crate::compressor::CompressorHandler;
+use crate::detection::{BeatDetector, EnergyDetector, OscLevelDetector, SpectralFluxDetector};
 use crate::effects::{EffectHandler, get_handler};
 use crate::network::{NetworkEvent, NetworkManager};
 use crate::ui::{AppState, Tui, UIEvent};
@@ -23,9 +24,11 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 mod audio;
+mod compressor;
 mod detection;
 mod effects;
 mod network;
+mod scaling;
 mod ui;
 
 /// Command-line arguments for the `x32_autobeat` tool.
@@ -51,15 +54,21 @@ struct Cli {
     #[arg(long, default_value_t = 1)]
     slot: usize,
 
-    /// OSC Path segment for Panic Button (substring match).
-    /// Example: "A/btn/5" matches "/config/userctrl/A/btn/5"
+    /// OSC Path segment for Panic Button (substring match)
     #[arg(long, default_value = "A/btn/5")]
     panic_btn: String,
 
-    /// OSC Path segment for Preset Encoder (substring match).
-    /// Example: "A/enc/5" matches "/config/userctrl/A/enc/5"
+    /// OSC Path segment for Preset Encoder (substring match)
     #[arg(long, default_value = "A/enc/5")]
     preset_enc: String,
+
+    /// Target Channels for Compressor Sync (e.g., "1,2,3" or "1-4")
+    #[arg(long)]
+    target_channels: Option<String>,
+
+    /// Compressor Release Subdivision (default: 1.0 = Quarter Note)
+    #[arg(long, default_value_t = 1.0)]
+    compressor_subdivision: f32,
 }
 
 /// Subcommands for the tool.
@@ -69,11 +78,43 @@ enum Commands {
     ListDevices,
 }
 
-/// The main entry point for the application.
-///
-/// This function initializes the audio engine, network connection, and user interface.
-/// It then enters a main loop that processes audio data, network events, and user input
-/// to perform beat detection and update the mixer's effects.
+#[derive(Debug, PartialEq)]
+enum Algorithm {
+    Energy,
+    Spectral,
+}
+
+impl std::fmt::Display for Algorithm {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Algorithm::Energy => write!(f, "Energy"),
+            Algorithm::Spectral => write!(f, "Spectral"),
+        }
+    }
+}
+
+fn parse_channels(s: &str) -> Vec<usize> {
+    let mut channels = Vec::new();
+    for part in s.split(',') {
+        let part = part.trim();
+        if part.contains('-') {
+            let ranges: Vec<&str> = part.split('-').collect();
+            if ranges.len() == 2 {
+                if let (Ok(start), Ok(end)) =
+                    (ranges[0].parse::<usize>(), ranges[1].parse::<usize>())
+                {
+                    for i in start..=end {
+                        channels.push(i);
+                    }
+                }
+            }
+        } else if let Ok(n) = part.parse::<usize>() {
+            channels.push(n);
+        }
+    }
+    channels
+}
+
 fn main() -> Result<()> {
     let cli = Cli::parse();
 
@@ -124,7 +165,17 @@ fn main() -> Result<()> {
 
     // Initialize Detectors
     let mut energy_detector = EnergyDetector::new(1.5, audio_sample_rate);
+    let mut spectral_detector = SpectralFluxDetector::new(audio_sample_rate, 1024);
     let mut osc_detector = OscLevelDetector::new();
+
+    // Initialize Compressor Handler
+    let comp_channels = if let Some(s) = &cli.target_channels {
+        parse_channels(s)
+    } else {
+        Vec::new()
+    };
+    let mut comp_handler = CompressorHandler::new(comp_channels);
+    comp_handler.release_subdivision = cli.compressor_subdivision;
 
     // Initialize UI
     let mut tui = Tui::new()?;
@@ -141,6 +192,8 @@ fn main() -> Result<()> {
     let mut last_level = 0.0;
     let mut last_audio_packet = Instant::now();
 
+    let mut selected_algorithm = Algorithm::Energy;
+
     loop {
         // 1. Process Audio Data (Primary)
         let mut audio_received_this_frame = false;
@@ -149,7 +202,11 @@ fn main() -> Result<()> {
             last_audio_packet = Instant::now();
 
             if !is_panic {
-                energy_detector.process(&chunk, audio_sample_rate);
+                match selected_algorithm {
+                    Algorithm::Energy => energy_detector.process(&chunk, audio_sample_rate),
+                    Algorithm::Spectral => spectral_detector.process(&chunk, audio_sample_rate),
+                }
+
                 if !chunk.is_empty() {
                     let sum_sq: f32 = chunk.iter().map(|s| s * s).sum();
                     let rms = (sum_sq / chunk.len() as f32).sqrt();
@@ -199,17 +256,22 @@ fn main() -> Result<()> {
 
         // 3. Determine Active BPM
         let active_bpm = if !use_fallback {
-            energy_detector.current_bpm()
+            match selected_algorithm {
+                Algorithm::Energy => energy_detector.current_bpm(),
+                Algorithm::Spectral => spectral_detector.current_bpm(),
+            }
         } else {
             osc_detector.current_bpm()
         };
 
-        // 4. Update Effect
+        // 4. Update Effect & Compressors
         if !is_panic {
             if let Some(bpm) = active_bpm {
                 if let Some(h) = &current_handler {
                     let _ = h.update(&network, cli.slot, bpm, subdivision);
                 }
+                // Update Compressors
+                let _ = comp_handler.update(&network, bpm);
             }
         }
 
@@ -227,6 +289,7 @@ fn main() -> Result<()> {
                 } else {
                     "Audio OK".to_string()
                 },
+                algorithm: selected_algorithm.to_string(),
             };
 
             tui.draw(&state)?;
@@ -243,6 +306,12 @@ fn main() -> Result<()> {
                     UIEvent::Reset => {
                         is_panic = false;
                     }
+                    UIEvent::SwitchAlgorithm => {
+                        selected_algorithm = match selected_algorithm {
+                            Algorithm::Energy => Algorithm::Spectral,
+                            Algorithm::Spectral => Algorithm::Energy,
+                        };
+                    }
                 }
             }
 
@@ -257,3 +326,6 @@ fn main() -> Result<()> {
     tui.cleanup()?;
     Ok(())
 }
+
+#[cfg(test)]
+mod tests_scaling;
