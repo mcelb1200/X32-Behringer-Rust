@@ -1,9 +1,9 @@
 use crate::audio::AudioEngine;
+use crate::compressor::CompressorHandler;
 use crate::detection::{BeatDetector, EnergyDetector, OscLevelDetector, SpectralFluxDetector};
 use crate::effects::{EffectHandler, get_handler};
 use crate::network::{NetworkEvent, NetworkManager};
 use crate::ui::{AppState, Tui, UIEvent};
-use crate::compressor::CompressorHandler;
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use crossbeam_channel::unbounded;
@@ -11,12 +11,12 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 mod audio;
+mod compressor;
 mod detection;
 mod effects;
 mod network;
-mod ui;
 mod scaling;
-mod compressor;
+mod ui;
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -85,7 +85,9 @@ fn parse_channels(s: &str) -> Vec<usize> {
         if part.contains('-') {
             let ranges: Vec<&str> = part.split('-').collect();
             if ranges.len() == 2 {
-                if let (Ok(start), Ok(end)) = (ranges[0].parse::<usize>(), ranges[1].parse::<usize>()) {
+                if let (Ok(start), Ok(end)) =
+                    (ranges[0].parse::<usize>(), ranges[1].parse::<usize>())
+                {
                     for i in start..=end {
                         channels.push(i);
                     }

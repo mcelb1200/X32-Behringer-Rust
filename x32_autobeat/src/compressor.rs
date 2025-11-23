@@ -14,7 +14,7 @@ impl CompressorHandler {
     pub fn new(channels: Vec<usize>) -> Self {
         Self {
             target_channels: channels,
-            hold_subdivision: 0.25,    // Default: 1/16th note approx
+            hold_subdivision: 0.25,   // Default: 1/16th note approx
             release_subdivision: 1.0, // Default: 1/4 note
             last_hold_val: None,
             last_release_val: None,
@@ -37,8 +37,12 @@ impl CompressorHandler {
         let hold_val = log2float(hold_ms, 0.02, 11.512925);
         let release_val = log2float(release_ms, 20.0, 4.605170);
 
-        let hold_changed = self.last_hold_val.map_or(true, |v| (v - hold_val).abs() > 0.001);
-        let release_changed = self.last_release_val.map_or(true, |v| (v - release_val).abs() > 0.001);
+        let hold_changed = self
+            .last_hold_val
+            .map_or(true, |v| (v - hold_val).abs() > 0.001);
+        let release_changed = self
+            .last_release_val
+            .map_or(true, |v| (v - release_val).abs() > 0.001);
 
         if !hold_changed && !release_changed {
             return Ok(());

@@ -1,7 +1,6 @@
-
 use crate::scaling::{afine2float, log2float, ratio2float};
-use std::collections::HashMap;
 use lazy_static::lazy_static;
+use std::collections::HashMap;
 
 #[derive(Debug, Clone, Copy)]
 pub enum ScalingType {

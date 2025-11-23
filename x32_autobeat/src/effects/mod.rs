@@ -1,6 +1,6 @@
+use crate::effects::fx_data::{BaseUnit, FX_DATA};
 use crate::network::NetworkManager;
 use anyhow::Result;
-use crate::effects::fx_data::{FX_DATA, BaseUnit};
 
 pub mod fx_data;
 
@@ -43,7 +43,7 @@ impl EffectHandler for GenericFxHandler {
                         // ms = (60000 / BPM) * subdiv
                         let ms = (60000.0 / bpm) * subdivision;
                         ms
-                    },
+                    }
                     BaseUnit::Hertz => {
                         // Hz = 1.0 / ((60.0/bpm) * subdivision) = bpm / (60.0 * subdivision)
                         let hz = bpm / (60.0 * subdivision);

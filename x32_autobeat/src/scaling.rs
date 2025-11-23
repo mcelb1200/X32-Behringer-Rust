@@ -1,11 +1,12 @@
-
 /// Converts a linear value to a float [0.0, 1.0] using logarithmic scaling.
 /// Based on C macro `log2float`.
 ///
 /// Formula: `y = ln(x / min) / range_log`
 /// where `range_log = ln(max / min)`
 pub fn log2float(val: f32, min: f32, range_log: f32) -> f32 {
-    if val <= 0.0 { return 0.0; }
+    if val <= 0.0 {
+        return 0.0;
+    }
     let res = (val / min).ln() / range_log;
     res.clamp(0.0, 1.0)
 }
