@@ -1,3 +1,17 @@
+//! `x32_set_preset` is a command-line tool for loading preset files (.chn, .efx, .rou)
+//! directly onto a specific target slot on a Behringer X32/M32 mixer.
+//!
+//! Unlike `x32_set_lib`, which uploads to the mixer's library, this tool applies the
+//! preset's parameters directly to a channel strip, effects slot, or the global routing table.
+//! It supports safe-loading features to exclude specific parameter groups (like Headamp gain or Config)
+//! from being overwritten.
+//!
+//! # Credits
+//!
+//! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
+//! *   **Additional concepts by:** [User]
+//! *   **Rust implementation by:** [User]
+
 use anyhow::{Context, Result, anyhow};
 use clap::Parser;
 use osc_lib::{OscArg, OscMessage};
@@ -6,6 +20,7 @@ use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
 use x32_lib::create_socket;
 
+/// Command-line arguments for `x32_set_preset`.
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
@@ -21,35 +36,48 @@ struct Args {
     target: Option<String>,
 
     // Safety Flags
+    /// Skip loading Headamp/Preamp settings.
     #[arg(long)]
     safe_headamp: bool,
+    /// Skip loading Config settings (Color, Icon, Name, Source).
     #[arg(long)]
     safe_config: bool,
+    /// Skip loading Gate settings.
     #[arg(long)]
     safe_gate: bool,
+    /// Skip loading Dynamics settings.
     #[arg(long)]
     safe_dyn: bool,
+    /// Skip loading EQ settings.
     #[arg(long)]
     safe_eq: bool,
+    /// Skip loading Mix/Send settings (Fader, Pan, Mute, Sends).
     #[arg(long)]
     safe_send: bool,
 
-    /// Mute Master faders before loading.
+    /// Mute Master faders before loading to prevent audio bursts.
     #[arg(long)]
     master_safe: bool,
 
+    /// Enable verbose output.
     #[arg(short, long)]
     verbose: bool,
 }
 
+/// Types of presets supported by the tool.
 #[derive(Debug, PartialEq)]
 enum PresetType {
+    /// Channel preset (.chn).
     Channel,
+    /// Effects preset (.efx).
     Effect,
+    /// Routing preset (.rou).
     Routing,
+    /// Unknown file type.
     Unknown,
 }
 
+/// The main entry point for the application.
 fn main() -> Result<()> {
     let args = Args::parse();
 
@@ -148,7 +176,7 @@ fn main() -> Result<()> {
 
         let msg = OscMessage::new(full_address, osc_args);
         if args.verbose {
-            println!("Sending: {}", msg);
+            println!("Sending: {}", msg.to_string());
         }
         socket.send(&msg.to_bytes()?)?;
     }
@@ -157,6 +185,7 @@ fn main() -> Result<()> {
     Ok(())
 }
 
+/// Parses the target string into an OSC address prefix.
 fn parse_target(target: &str, ptype: &PresetType) -> Result<String> {
     let t = target.to_lowercase();
 
@@ -198,7 +227,7 @@ fn parse_target(target: &str, ptype: &PresetType) -> Result<String> {
             if let Some(suffix) = t.strip_prefix("fx") {
                 // fx1 -> /fx/1
                 let id: u32 = suffix.parse()?;
-                if !(1..=8).contains(&id) {
+                if id < 1 || id > 8 {
                     return Err(anyhow!("FX slot must be 1-8"));
                 }
                 return Ok(format!("/fx/{}", id));
@@ -209,6 +238,7 @@ fn parse_target(target: &str, ptype: &PresetType) -> Result<String> {
     }
 }
 
+/// Maps a channel preset command to the target OSC address.
 fn map_channel_address(prefix: &str, addr: &str) -> String {
     if addr.starts_with("/headamp") {
         // If target is a channel (ch01..ch32), map to global headamp (HA 1-32).
@@ -227,10 +257,12 @@ fn map_channel_address(prefix: &str, addr: &str) -> String {
     format!("{}{}", prefix, addr)
 }
 
+/// Maps an effect preset command to the target OSC address.
 fn map_effect_address(prefix: &str, addr: &str) -> String {
     format!("{}{}", prefix, addr)
 }
 
+/// Checks if a command should be skipped based on safety flags.
 fn should_skip(addr: &str, args: &Args) -> bool {
     if args.safe_config && addr.starts_with("/config") {
         return true;
@@ -253,6 +285,7 @@ fn should_skip(addr: &str, args: &Args) -> bool {
     false
 }
 
+/// Parses a string of arguments into `OscArg` values.
 fn parse_args(s: &str) -> Vec<OscArg> {
     let mut args = Vec::new();
     let mut current_arg = String::new();
@@ -279,6 +312,7 @@ fn parse_args(s: &str) -> Vec<OscArg> {
     args
 }
 
+/// Parses a single argument string into an `OscArg`.
 fn parse_single_arg(s: &str) -> OscArg {
     if let Ok(i) = s.parse::<i32>() {
         OscArg::Int(i)

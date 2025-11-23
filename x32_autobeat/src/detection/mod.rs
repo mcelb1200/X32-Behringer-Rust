@@ -27,5 +27,6 @@ pub trait BeatDetector {
     fn current_bpm(&self) -> Option<f32>;
 
     /// Check if a beat onset was detected in the last processed chunk.
+    #[allow(dead_code)]
     fn is_beat(&self) -> bool;
 }

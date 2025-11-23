@@ -5,6 +5,12 @@
 //! loading scenes and presets, and controlling WAV file playback.
 //!
 //! This utility is a Rust rewrite of the original C program `X32USB.c` by Patrick-Gilles Maillot.
+//!
+//! # Credits
+//!
+//! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
+//! *   **Additional concepts by:** [User]
+//! *   **Rust implementation by:** [User]
 
 use anyhow::{Result, anyhow};
 use clap::{Parser, Subcommand};
@@ -14,6 +20,7 @@ use std::net::UdpSocket;
 use std::str::FromStr;
 use x32_lib::create_socket;
 
+/// A custom error type for connection-related issues.
 #[derive(Debug)]
 struct ConnectionError(anyhow::Error);
 
@@ -119,7 +126,7 @@ impl FromStr for FileType {
             return Ok(FileType::Directory);
         }
 
-        let extension = s.split('.').last().unwrap_or("");
+        let extension = s.split('.').next_back().unwrap_or("");
         match extension.to_lowercase().as_str() {
             "wav" => Ok(FileType::Wav),
             "shw" => Ok(FileType::Show),
@@ -152,12 +159,28 @@ struct X32Client {
 
 impl X32Client {
     /// Creates a new `X32Client` and connects to the console.
+    ///
+    /// # Arguments
+    ///
+    /// * `ip_address` - The IP address of the console.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` containing the new client or an error.
     fn new(ip_address: &str) -> Result<Self> {
         let socket = create_socket(ip_address, 500)?;
         Ok(Self { socket })
     }
 
     /// Sends an OSC message to the console.
+    ///
+    /// # Arguments
+    ///
+    /// * `message` - The OSC message to send.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` indicating success or failure.
     fn send(&self, message: &OscMessage) -> Result<()> {
         let bytes = message.to_bytes()?;
         self.socket.send(&bytes)?;
@@ -165,6 +188,10 @@ impl X32Client {
     }
 
     /// Receives an OSC message from the console.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` containing the received OSC message or an error.
     fn receive(&self) -> Result<OscMessage> {
         let mut buf = [0; 512];
         let len = self.socket.recv(&mut buf)?;
@@ -173,12 +200,16 @@ impl X32Client {
     }
 
     /// Checks if a USB drive is mounted on the console.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` containing `true` if a drive is mounted, `false` otherwise.
     fn is_usb_mounted(&self) -> Result<bool> {
         let msg = OscMessage::new("/-stat/usbmounted".to_string(), vec![]);
         self.send(&msg)?;
         match self.receive() {
             Ok(response) => {
-                if let Some(OscArg::Int(val)) = response.args.get(0) {
+                if let Some(OscArg::Int(val)) = response.args.first() {
                     Ok(*val == 1)
                 } else {
                     Ok(false)
@@ -189,12 +220,16 @@ impl X32Client {
     }
 
     /// Gets a list of files and directories in the current directory on the USB drive.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` containing a vector of `FileEntry` structs.
     fn get_file_list(&self) -> Result<Vec<FileEntry>> {
         let msg = OscMessage::new("/-usb/dir/maxpos".to_string(), vec![]);
         self.send(&msg)?;
         let response = self.receive()?;
 
-        let num_files = if let Some(OscArg::Int(val)) = response.args.get(0) {
+        let num_files = if let Some(OscArg::Int(val)) = response.args.first() {
             *val
         } else {
             return Err(anyhow!("Failed to get number of files from X32."));
@@ -206,7 +241,7 @@ impl X32Client {
             let msg = OscMessage::new(path, vec![]);
             self.send(&msg)?;
             let response = self.receive()?;
-            if let Some(OscArg::String(name)) = response.args.get(0) {
+            if let Some(OscArg::String(name)) = response.args.first() {
                 let file_type = FileType::from_str(name)?;
                 files.push(FileEntry {
                     index: i,
@@ -219,6 +254,10 @@ impl X32Client {
     }
 
     /// Selects a file or directory on the USB drive.
+    ///
+    /// # Arguments
+    ///
+    /// * `file_index` - The index of the file to select.
     fn select_file(&self, file_index: i32) -> Result<()> {
         let msg = OscMessage::new(
             "/-action/recselect".to_string(),
@@ -228,6 +267,14 @@ impl X32Client {
     }
 
     /// Finds a file or directory by its index or name.
+    ///
+    /// # Arguments
+    ///
+    /// * `target` - The index or name of the file to search for.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` containing the `FileEntry` if found.
     fn find_file(&self, target: &str) -> Result<FileEntry> {
         let files = self.get_file_list()?;
         files
@@ -248,6 +295,10 @@ impl X32Client {
     }
 
     /// Sets the playback state of the tape deck.
+    ///
+    /// # Arguments
+    ///
+    /// * `state` - The desired state (0=Stop, 1=Pause, 2=Play).
     fn set_tape_state(&self, state: i32) -> Result<()> {
         let msg = OscMessage::new("/-stat/tape/state".to_string(), vec![OscArg::Int(state)]);
         self.send(&msg)
@@ -264,7 +315,7 @@ impl X32Client {
 fn run(args: Args) -> Result<()> {
     let client = X32Client::new(&args.ip)?;
 
-    if !client.is_usb_mounted().map_err(|e| ConnectionError(e))? {
+    if !client.is_usb_mounted().map_err(ConnectionError)? {
         println!("USB drive is not mounted.");
         return Ok(());
     }

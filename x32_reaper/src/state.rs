@@ -1,19 +1,19 @@
 use crate::config::Config;
-use std::sync::{Arc, Mutex};
 
 #[derive(Debug, Clone)]
-#[allow(dead_code)]
 pub struct ChannelState {
     pub fader: f32,
     pub pan: f32,
-    pub mute: bool,
-    pub solo: bool,
-    pub scribble_name: String,
-    pub scribble_color: i32,
-    pub scribble_icon: i32,
-    pub mixbus_sends: [f32; 16],
+    pub mixbus: [f32; 16],
+    pub mute: f32,
+    pub solo: f32,
+    pub scribble: String, // 16 chars max
+    pub color: i32,
+    pub icon: i32,
+    #[allow(dead_code)]
     pub eq: [f32; 16],
-    pub eq_on: bool,
+    #[allow(dead_code)]
+    pub eq_on: i32,
 }
 
 impl Default for ChannelState {
@@ -21,49 +21,55 @@ impl Default for ChannelState {
         Self {
             fader: 0.0,
             pan: 0.5,
-            mute: false,
-            solo: false,
-            scribble_name: String::new(),
-            scribble_color: 0,
-            scribble_icon: 1,
-            mixbus_sends: [0.0; 16],
+            mixbus: [0.0; 16],
+            mute: 0.0,
+            solo: 0.0,
+            scribble: String::new(),
+            color: 0,
+            icon: 1,
             eq: [0.0; 16],
-            eq_on: false,
+            eq_on: 0,
         }
     }
 }
 
-#[allow(dead_code)]
 pub struct AppState {
-    pub config: Config,
-    pub bank_tracks: Vec<ChannelState>, // Dynamically sized based on track range
+    pub bank_tracks: Vec<ChannelState>,
     pub x_selected: i32,
     pub r_selected: i32,
-    pub bank_offset: i32, // Xchbkof
+    pub ch_bank_offset: i32,
     pub loop_toggle: i32,
-    pub play_state: bool,
-    pub play_state_change: bool, // play_1
+    pub play: bool,
+    #[allow(dead_code)]
+    pub play_1: bool,
 }
 
 impl AppState {
-    pub fn new(config: Config) -> Self {
-        let track_count = (config.map.track_max - config.map.track_min + 1) as usize;
-        // Logic from C: alloc memory for blocks of 32
-        // ((Xtrk_max - Xtrk_min + 1 + bkchsz - 1) / bkchsz) * bkchsz
-        let bank_size = config.bank.bank_size as usize;
-        let alloc_size = track_count.div_ceil(bank_size) * bank_size;
+    pub fn new(config: &Config) -> Self {
+        let mut bank_tracks = Vec::new();
+        if config.ch_bank_on {
+            let count = if config.trk_max >= config.trk_min {
+                let range = config.trk_max - config.trk_min + 1;
+                // Round up to multiple of bank_size
+                let bk_sz = config.bank_size;
+                ((range + bk_sz - 1) / bk_sz) * bk_sz
+            } else {
+                0
+            };
+
+            for _ in 0..count {
+                bank_tracks.push(ChannelState::default());
+            }
+        }
 
         Self {
-            bank_tracks: vec![ChannelState::default(); alloc_size],
+            bank_tracks,
             x_selected: 1,
             r_selected: 1,
-            bank_offset: config.bank.initial_bank_offset,
+            ch_bank_offset: config.ch_bank_offset,
             loop_toggle: 0,
-            play_state: false,
-            play_state_change: false,
-            config,
+            play: false,
+            play_1: false,
         }
     }
 }
-
-pub type SharedState = Arc<Mutex<AppState>>;

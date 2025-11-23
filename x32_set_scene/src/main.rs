@@ -1,3 +1,14 @@
+//! `x32_set_scene` is a command-line tool for sending a sequence of OSC commands to a Behringer X32 mixer.
+//!
+//! It reads OSC commands from standard input (one per line) and sends them to the mixer.
+//! This is typically used to restore a scene or apply a batch of settings.
+//!
+//! # Credits
+//!
+//! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
+//! *   **Additional concepts by:** [User]
+//! *   **Rust implementation by:** [User]
+
 use clap::Parser;
 use osc_lib::OscMessage;
 use std::io::{self, BufRead};
@@ -6,6 +17,7 @@ use std::thread;
 use std::time::Duration;
 use x32_lib::{create_socket, error::Result};
 
+/// Command-line arguments for `x32_set_scene`.
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
@@ -18,6 +30,7 @@ struct Args {
     delay: u64,
 }
 
+/// The main entry point for the application.
 fn main() -> Result<()> {
     let args = Args::parse();
     let socket = create_socket(&args.ip, 100)?;

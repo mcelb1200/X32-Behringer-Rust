@@ -1,3 +1,15 @@
+//! `x32_set_lib` is a command-line tool for sending library presets to a Behringer X32/M32 mixer.
+//!
+//! It reads preset files (Channel, Effects, or Routing) from disk and uploads them to
+//! the mixer's library slots. It automatically detects the preset type based on the file
+//! extension (.chn, .efx, .rou).
+//!
+//! # Credits
+//!
+//! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
+//! *   **Additional concepts by:** [User]
+//! *   **Rust implementation by:** [User]
+
 use anyhow::Result;
 use clap::Parser;
 use osc_lib::{OscArg, OscMessage};
@@ -7,18 +19,23 @@ use std::path::PathBuf;
 use std::time::Duration;
 use x32_lib::create_socket;
 
+/// Command-line arguments for `x32_set_lib`.
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
+    /// IP address of the X32 console.
     #[arg(short, long, default_value = "192.168.0.64")]
     ip: String,
 
+    /// The starting library slot index (1-100).
     #[arg(short, long, default_value_t = 1)]
     start_index: i32,
 
+    /// List of preset files to upload.
     files: Vec<PathBuf>,
 }
 
+/// The main entry point for the application.
 fn main() -> Result<()> {
     let args = Args::parse();
     let socket = create_socket(&args.ip, 500)?;

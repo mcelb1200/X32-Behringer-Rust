@@ -4,6 +4,12 @@
 //! along with methods for serializing and deserializing them to and from byte streams
 //! and string representations.
 //!
+//! # Credits
+//!
+//! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
+//! *   **Additional concepts by:** [User]
+//! *   **Rust implementation by:** [User]
+//!
 //! # Examples
 //!
 //! ## Creating and serializing an OSC message
@@ -115,6 +121,10 @@ impl OscMessage {
     ///
     /// * `path` - The OSC address pattern.
     /// * `args` - A vector of `OscArg` values.
+    ///
+    /// # Returns
+    ///
+    /// A new `OscMessage` instance.
     pub fn new(path: String, args: Vec<OscArg>) -> Self {
         OscMessage { path, args }
     }
@@ -123,6 +133,14 @@ impl OscMessage {
     ///
     /// The byte slice should be a valid OSC 1.0 message, including the path,
     /// type tag string, and arguments, all properly padded.
+    ///
+    /// # Arguments
+    ///
+    /// * `bytes` - The byte slice containing the OSC message data.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` containing the deserialized `OscMessage` or an `OscError`.
     pub fn from_bytes(bytes: &[u8]) -> Result<Self> {
         let mut cursor = Cursor::new(bytes);
 
@@ -168,6 +186,10 @@ impl OscMessage {
     ///
     /// The resulting byte vector will be a valid OSC 1.0 message, ready to be
     /// sent over a network.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` containing the serialized byte vector or an `OscError`.
     pub fn to_bytes(&self) -> Result<Vec<u8>> {
         let mut bytes = Vec::new();
 
@@ -210,6 +232,14 @@ impl FromStr for OscMessage {
     /// The string format is the OSC path followed by a space, then the type tag string,
     /// and then a space-separated list of arguments. String arguments with spaces
     /// should be enclosed in double quotes.
+    ///
+    /// # Arguments
+    ///
+    /// * `s` - The string representation of the OSC message.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` containing the parsed `OscMessage` or an `OscError`.
     ///
     /// # Example
     ///
@@ -287,6 +317,14 @@ impl FromStr for OscMessage {
 impl std::fmt::Display for OscMessage {
     /// Converts the `OscMessage` to a string representation.
     ///
+    /// # Arguments
+    ///
+    /// * `f` - The formatter to write the string to.
+    ///
+    /// # Returns
+    ///
+    /// A `std::fmt::Result` indicating success or failure.
+    ///
     /// # Example
     ///
     /// ```
@@ -332,6 +370,14 @@ impl std::fmt::Display for OscMessage {
 ///
 /// This function splits a string into tokens by whitespace, but treats text
 /// enclosed in double quotes as a single token.
+///
+/// # Arguments
+///
+/// * `s` - The string to tokenize.
+///
+/// # Returns
+///
+/// A `Result` containing a vector of tokens (strings) or an `OscError`.
 pub fn tokenize(s: &str) -> Result<Vec<String>> {
     let mut tokens = Vec::new();
     let mut current_token = String::new();
@@ -385,6 +431,14 @@ pub fn tokenize(s: &str) -> Result<Vec<String>> {
 }
 
 /// Reads a null-terminated and 4-byte padded OSC string from a cursor.
+///
+/// # Arguments
+///
+/// * `cursor` - A mutable reference to a cursor over the byte slice.
+///
+/// # Returns
+///
+/// A `Result` containing the parsed string or an `OscError`.
 fn read_osc_string(cursor: &mut Cursor<&[u8]>) -> Result<String> {
     let mut bytes = Vec::new();
     loop {
@@ -404,6 +458,15 @@ fn read_osc_string(cursor: &mut Cursor<&[u8]>) -> Result<String> {
 }
 
 /// Writes a null-terminated and 4-byte padded OSC string to a byte vector.
+///
+/// # Arguments
+///
+/// * `bytes` - A mutable reference to the byte vector.
+/// * `s` - The string to write.
+///
+/// # Returns
+///
+/// A `Result` indicating success or failure.
 fn write_osc_string(bytes: &mut Vec<u8>, s: &str) -> Result<()> {
     bytes.write_all(s.as_bytes())?;
     bytes.write_u8(0)?;

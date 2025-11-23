@@ -1,3 +1,15 @@
+//! `x32_tap` is a command-line tool for setting the tempo of X32 delay effects by tapping.
+//!
+//! It connects to the mixer and listens for user input (pressing Enter). By measuring the
+//! time interval between taps, it calculates the tempo in milliseconds and updates the
+//! corresponding parameter of the delay effect in the specified FX slot.
+//!
+//! # Credits
+//!
+//! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
+//! *   **Additional concepts by:** [User]
+//! *   **Rust implementation by:** [User]
+
 use anyhow::{Context, Result, anyhow};
 use clap::Parser;
 use osc_lib::{OscArg, OscMessage};
@@ -24,6 +36,7 @@ struct Args {
 // Stereo delay FX number (from C source): 10
 // Other delay types from C source: 11, 12, 21, 24, 25, 26
 
+/// The main entry point for the application.
 fn main() -> Result<()> {
     let args = Args::parse();
 
@@ -89,13 +102,7 @@ fn main() -> Result<()> {
             let delta_ms = delta.as_millis() as f32;
 
             // Calculate parameter value (0.0 - 1.0 represents 0ms - 3000ms)
-            let mut f_val = delta_ms / 3000.0;
-            if f_val < 0.0 {
-                f_val = 0.0;
-            }
-            if f_val > 1.0 {
-                f_val = 1.0;
-            }
+            let f_val = (delta_ms / 3000.0).clamp(0.0, 1.0);
 
             let tempo_ms = (f_val * 3000.0) as i32;
             println!("Tempo: {}ms", tempo_ms);

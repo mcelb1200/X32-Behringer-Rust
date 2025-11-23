@@ -2,6 +2,12 @@
 //! mixer, listens for scene change events, and prints the name of the new scene to standard
 //! output. It is a Rust implementation of the original `GetSceneName.c` tool by
 //! Patrick-gilles Maillot.
+//!
+//! # Credits
+//!
+//! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
+//! *   **Additional concepts by:** [User]
+//! *   **Rust implementation by:** [User]
 
 use clap::Parser;
 use osc_lib::{OscArg, OscMessage};
@@ -81,7 +87,7 @@ fn main() -> Result<(), X32Error> {
         if let Ok(len) = socket.recv(&mut buf) {
             if let Ok(msg) = OscMessage::from_bytes(&buf[..len]) {
                 if msg.path == "/-show/prepos/current" {
-                    if let Some(OscArg::Int(scene_index)) = msg.args.get(0) {
+                    if let Some(OscArg::Int(scene_index)) = msg.args.first() {
                         let get_name_msg = OscMessage::new(
                             format!("/-show/showfile/scene/{:03}", scene_index),
                             vec![],
@@ -89,7 +95,7 @@ fn main() -> Result<(), X32Error> {
                         socket.send(&get_name_msg.to_bytes()?)?;
                     }
                 } else if msg.path.starts_with("/-show/showfile/scene") {
-                    if let Some(OscArg::String(scene_name)) = msg.args.get(0) {
+                    if let Some(OscArg::String(scene_name)) = msg.args.first() {
                         if let Some(OscArg::Int(scene_index)) = msg.args.get(1) {
                             println!("{:02} - {}", scene_index, scene_name);
                             if args.onetime != 0 {

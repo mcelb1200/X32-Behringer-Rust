@@ -1,5 +1,11 @@
 //! `x32_tcp` is a command-line utility that acts as a TCP to UDP bridge for the Behringer X32 and Midas M32 digital mixers.
 //! It allows you to send OSC commands to the mixer using a simple text-based TCP protocol.
+//!
+//! # Credits
+//!
+//! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
+//! *   **Additional concepts by:** [User]
+//! *   **Rust implementation by:** [User]
 
 use anyhow::Result;
 use clap::Parser;

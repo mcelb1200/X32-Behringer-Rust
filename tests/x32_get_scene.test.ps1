@@ -1,4 +1,10 @@
 # Test module for x32_get_scene
+#
+# Credits
+#
+# *   Original concept and work on the C library: Patrick-Gilles Maillot
+# *   Additional concepts by: [User]
+# *   Rust implementation by: [User]
 
 function Test-X32GetScene {
     Log-Message "--- Running x32_get_scene tests ---"

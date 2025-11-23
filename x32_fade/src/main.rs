@@ -1,5 +1,11 @@
 //! `x32_fade` is a command-line utility for controlling and fading faders on a
 //! Behringer X32 or Midas M32 digital mixing console.
+//!
+//! # Credits
+//!
+//! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
+//! *   **Additional concepts by:** [User]
+//! *   **Rust implementation by:** [User]
 
 use anyhow::Result;
 use clap::Parser;
@@ -68,6 +74,7 @@ struct Config {
     steps: Option<u32>,
 }
 
+/// The main entry point for the application.
 fn main() -> Result<()> {
     let args = Args::parse();
     let mut config = Config::default();

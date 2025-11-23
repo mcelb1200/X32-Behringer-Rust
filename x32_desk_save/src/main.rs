@@ -1,6 +1,12 @@
 //! `x32_desk_save` is a command-line utility for saving preferences, scenes, and routing data
 //! from a Behringer X32 digital mixer to a file. It is a Rust implementation of the original
 //! `X32DeskSave.c` tool by Patrick-Gilles Maillot.
+//!
+//! # Credits
+//!
+//! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
+//! *   **Additional concepts by:** [User]
+//! *   **Rust implementation by:** [User]
 
 use clap::Parser;
 use osc_lib::{OscArg, OscMessage};
@@ -43,10 +49,14 @@ struct Args {
 
 /// Sends a list of OSC commands to the X32 and returns the responses.
 ///
+/// This function iterates through a list of OSC addresses, sends a `/node` request for
+/// each one to the mixer, and collects the string representations of the responses.
+/// These responses typically contain the current value of the requested parameters.
+///
 /// # Arguments
 ///
 /// * `socket` - A `UdpSocket` connected to the X32 console.
-/// * `commands` - A slice of strings, where each string is an OSC command to be sent.
+/// * `commands` - A slice of strings, where each string is an OSC address to query.
 ///
 /// # Returns
 ///
@@ -69,8 +79,9 @@ fn get_desk_data(socket: &UdpSocket, commands: &[String]) -> Result<Vec<String>,
 
 /// The main entry point for the `x32_desk_save` utility.
 ///
-/// This function parses command-line arguments, determines which OSC commands to send,
-/// connects to the X32, retrieves the data, and saves it to a file.
+/// This function parses command-line arguments, determines which OSC commands to send
+/// (based on the selected mode or pattern file), connects to the X32, retrieves the data,
+/// and saves it to a file.
 fn main() -> Result<(), X32Error> {
     let args = Args::parse();
 

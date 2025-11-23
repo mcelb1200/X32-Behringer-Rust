@@ -1,8 +1,21 @@
+//! `x32_get_scene` is a command-line tool for retrieving scene data from a Behringer X32 mixer.
+//!
+//! It reads a list of OSC addresses from standard input (one per line), queries the mixer
+//! for their current values using the `/node` command, and prints the results to standard
+//! output in a format suitable for saving as a scene file.
+//!
+//! # Credits
+//!
+//! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
+//! *   **Additional concepts by:** [User]
+//! *   **Rust implementation by:** [User]
+
 use clap::Parser;
 use osc_lib::{OscArg, OscMessage};
 use std::io::{self, BufRead};
 use x32_lib::{create_socket, error::Result};
 
+/// Command-line arguments for `x32_get_scene`.
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
@@ -19,6 +32,7 @@ struct Args {
     note: Option<String>,
 }
 
+/// The main entry point for the application.
 fn main() -> Result<()> {
     let args = Args::parse();
     let socket = create_socket(&args.ip, 100)?;
@@ -60,8 +74,8 @@ fn main() -> Result<()> {
             let response = OscMessage::from_bytes(&buf[..len])?;
 
             let mut output = response.path.clone();
-            if let Some(OscArg::String(s)) = response.args.get(0) {
-                output.push_str(" ");
+            if let Some(OscArg::String(s)) = response.args.first() {
+                output.push(' ');
                 output.push_str(s);
             }
             println!("{}", output);

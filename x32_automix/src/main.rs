@@ -1,3 +1,16 @@
+//! `x32_automix` is a command-line tool that provides automixing functionality for Behringer X32/M32 mixers.
+//!
+//! It monitors the input levels of specified channels and automatically adjusts their
+//! faders (or mix sends) to maintain a balanced mix. It also includes a Number of
+//! Open Mics (NOM) attenuation feature to prevent feedback and background noise buildup
+//! when multiple microphones are open.
+//!
+//! # Credits
+//!
+//! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
+//! *   **Additional concepts by:** [User]
+//! *   **Rust implementation by:** [User]
+
 use clap::Parser;
 use osc_lib::{OscArg, OscMessage};
 use std::io::ErrorKind;
@@ -46,6 +59,7 @@ struct Args {
     nom: bool,
 }
 
+/// The main entry point for the automixer application.
 fn main() -> Result<()> {
     let args = Args::parse();
     println!("Connecting to X32 at {}...", args.ip);
@@ -56,6 +70,15 @@ fn main() -> Result<()> {
     run_automix(args, socket)
 }
 
+/// Runs the automixing loop.
+///
+/// This function continuously monitors channel levels and adjusts faders based on the
+/// configured rules.
+///
+/// # Arguments
+///
+/// * `args` - The command-line arguments containing the automix configuration.
+/// * `socket` - The UDP socket connected to the mixer.
 fn run_automix(args: Args, socket: UdpSocket) -> Result<()> {
     let mut last_remote_time = Instant::now();
     let mut channel_status: Vec<(bool, Instant)> = vec![(false, Instant::now()); 32];
@@ -164,6 +187,14 @@ fn run_automix(args: Args, socket: UdpSocket) -> Result<()> {
     }
 }
 
+/// Updates the master gain based on the Number of Open Mics (NOM).
+///
+/// # Arguments
+///
+/// * `socket` - The UDP socket connected to the mixer.
+/// * `mix_address` - The OSC address of the master fader.
+/// * `active_channels` - The count of currently active channels.
+/// * `nom_level` - A mutable reference to the current NOM attenuation level.
 fn update_nom_gain(
     socket: &UdpSocket,
     mix_address: &str,
@@ -183,6 +214,13 @@ fn update_nom_gain(
     Ok(())
 }
 
+/// Adjusts the gain of a fader by a relative decibel amount.
+///
+/// # Arguments
+///
+/// * `socket` - The UDP socket connected to the mixer.
+/// * `address` - The OSC address of the fader to adjust.
+/// * `db_change` - The amount to change the gain by, in decibels.
 fn adjust_gain(socket: &UdpSocket, address: &str, db_change: f32) -> Result<()> {
     socket.send(&OscMessage::new(address.to_string(), vec![]).to_bytes()?)?;
     let mut buf = [0; 512];
@@ -200,6 +238,7 @@ fn adjust_gain(socket: &UdpSocket, address: &str, db_change: f32) -> Result<()> 
     Ok(())
 }
 
+/// Converts a linear fader level (0.0 to 1.0) to decibels.
 fn level_to_db(level: f32) -> f32 {
     if level >= 0.5 {
         40.0 * level - 30.0
@@ -212,6 +251,7 @@ fn level_to_db(level: f32) -> f32 {
     }
 }
 
+/// Converts a decibel value to a linear fader level (0.0 to 1.0).
 fn db_to_level(db: f32) -> f32 {
     let level = if db > -10.0 {
         (db + 30.0) / 40.0

@@ -1,6 +1,7 @@
 use crate::state::SharedState;
 use anyhow::Result;
 use osc_lib::{OscArg, OscMessage};
+use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::net::UdpSocket;
 
@@ -88,7 +89,7 @@ async fn map_ch_to_track(ch: i32, state: &SharedState) -> Option<i32> {
     // if Xchbank_on, Set actual channel number to match Channel Bank
     // cnum = Xchbkof * bkchsz + cnum
 
-    if !(1..=32).contains(&ch) {
+    if ch < 1 || ch > 32 {
         return None;
     }
 

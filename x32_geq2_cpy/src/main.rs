@@ -1,9 +1,25 @@
+//! `x32_geq2_cpy` is a command-line utility for copying Graphic EQ (GEQ) settings on an
+//! X32/M32 digital mixer.
+//!
+//! It specifically targets the Dual GEQ (GEQ2) and Dual TruEQ (TEQ2) effects, allowing
+//! users to:
+//! - Copy settings from side A to side B (or vice versa) within the same FX slot.
+//! - Reset the EQ curves to flat.
+//! - Copy the entire EQ configuration from one FX slot to another.
+//!
+//! # Credits
+//!
+//! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
+//! *   **Additional concepts by:** [User]
+//! *   **Rust implementation by:** [User]
+
 use anyhow::Result;
 use clap::{Parser, ValueEnum};
 use std::thread;
 use std::time::Duration;
 use x32_lib::{create_socket, get_parameter, set_parameter, verify_fx_type};
 
+/// Command-line arguments for the `x32_geq2_cpy` tool.
 #[derive(Parser, Debug)]
 #[command(author, version, about = "A utility to copy GEQ settings between FX slots on an X32 console.", long_about = None)]
 struct Args {
@@ -36,6 +52,7 @@ struct Args {
     debug: bool,
 }
 
+/// Enumerates the possible directions for the copy operation.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 enum Direction {
     /// Copy from side A to side B of the source slot.
@@ -48,6 +65,7 @@ enum Direction {
     CopyTo,
 }
 
+/// The main entry point for the application.
 fn main() -> Result<()> {
     let args = Args::parse();
 
@@ -68,11 +86,9 @@ fn main() -> Result<()> {
     }
 
     // If we're copying to another slot, verify the destination slot as well.
-    if args.direction == Direction::CopyTo {
-        if !verify_fx_type(&socket, args.to, "EQ")? {
-            println!("--!!-- No GEQ2/TEQ2 effect at FX slot #{}", args.to);
-            return Ok(());
-        }
+    if args.direction == Direction::CopyTo && !verify_fx_type(&socket, args.to, "EQ")? {
+        println!("--!!-- No GEQ2/TEQ2 effect at FX slot #{}", args.to);
+        return Ok(());
     }
 
     if args.verbose {

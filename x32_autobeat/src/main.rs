@@ -1,3 +1,16 @@
+//! `x32_autobeat` is a command-line tool for automatic beat detection and synchronization.
+//!
+//! It listens to an audio source (via system audio or OSC meter monitoring), detects the
+//! beat (BPM), and then automatically adjusts the time parameters of an effect in a
+//! specific slot on the X32 mixer. This allows delays and other time-based effects to
+//! stay in sync with the music automatically.
+//!
+//! # Credits
+//!
+//! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
+//! *   **Additional concepts by:** [User]
+//! *   **Rust implementation by:** [User]
+
 use crate::audio::AudioEngine;
 use crate::compressor::CompressorHandler;
 use crate::detection::{BeatDetector, EnergyDetector, OscLevelDetector, SpectralFluxDetector};
@@ -18,25 +31,26 @@ mod network;
 mod scaling;
 mod ui;
 
+/// Command-line arguments for the `x32_autobeat` tool.
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
 struct Cli {
     #[command(subcommand)]
     command: Option<Commands>,
 
-    /// X32 IP Address
+    /// X32 IP Address.
     #[arg(long, default_value = "192.168.1.50")]
     ip: String,
 
-    /// Audio Device Name (Substring match)
+    /// Audio Device Name (Substring match).
     #[arg(long)]
     device: Option<String>,
 
-    /// Audio Input Channel (1-32)
+    /// Audio Input Channel (1-32).
     #[arg(long, default_value_t = 1)]
     channel: usize,
 
-    /// Target Effect Slot (1-8)
+    /// Target Effect Slot (1-8).
     #[arg(long, default_value_t = 1)]
     slot: usize,
 
@@ -57,9 +71,10 @@ struct Cli {
     compressor_subdivision: f32,
 }
 
+/// Subcommands for the tool.
 #[derive(Subcommand)]
 enum Commands {
-    /// List available audio devices
+    /// List available audio devices.
     ListDevices,
 }
 

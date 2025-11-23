@@ -48,6 +48,12 @@
 //!   handling.
 //! - [`common`]: Provides common utilities and helper functions used throughout the library.
 //!
+//! # Credits
+//!
+//! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
+//! *   **Additional concepts by:** [User]
+//! *   **Rust implementation by:** [User]
+//!
 #[cfg(test)]
 mod tests;
 
@@ -207,6 +213,10 @@ pub fn get_parameter(socket: &UdpSocket, address: &str) -> Result<f32> {
 /// * `socket` - A `UdpSocket` connected to the mixer.
 /// * `address` - The OSC address of the parameter to set.
 /// * `value` - The new value for the parameter.
+///
+/// # Returns
+///
+/// A `Result` indicating success or failure.
 pub fn set_parameter(socket: &UdpSocket, address: &str, value: f32) -> Result<()> {
     let msg = OscMessage::new(address.to_string(), vec![OscArg::Float(value)]);
     socket.send(&msg.to_bytes()?)?;
