@@ -928,11 +928,10 @@ async fn handle_user_par(
                     state.ch_bank_offset += 1;
                     update_bk_ch(x_sock, x_addr, config, state, Some((r_sock, r_addr))).await?;
                 }
-            } else if btn_idx == config.bank_dn
-                && state.ch_bank_offset > 0 {
-                    state.ch_bank_offset -= 1;
-                    update_bk_ch(x_sock, x_addr, config, state, Some((r_sock, r_addr))).await?;
-                }
+            } else if btn_idx == config.bank_dn && state.ch_bank_offset > 0 {
+                state.ch_bank_offset -= 1;
+                update_bk_ch(x_sock, x_addr, config, state, Some((r_sock, r_addr))).await?;
+            }
         }
     }
     Ok(())
@@ -1098,20 +1097,19 @@ async fn process_single_reaper_message(
                         // X32 /mix/on: 1 = ON (audio passes), 0 = OFF (muted).
                         // So Reaper Mute (1) -> X32 On (0).
 
-                        if tnum >= config.trk_min && tnum <= config.trk_max
-                            && config.ch_bank_on {
-                                let idx = tnum - config.trk_min;
-                                if let Some(track) = state_guard.bank_tracks.get_mut(idx as usize) {
-                                    track.mute = *f;
-                                }
-                                let bank_cnum = idx - state_guard.ch_bank_offset * config.bank_size;
-                                if bank_cnum >= 0 && bank_cnum < config.bank_size {
-                                    xb_msg = Some(OscMessage {
-                                        path: format!("/ch/{:02}/mix/on", bank_cnum + 1),
-                                        args: vec![OscArg::Int(x_val)],
-                                    });
-                                }
+                        if tnum >= config.trk_min && tnum <= config.trk_max && config.ch_bank_on {
+                            let idx = tnum - config.trk_min;
+                            if let Some(track) = state_guard.bank_tracks.get_mut(idx as usize) {
+                                track.mute = *f;
                             }
+                            let bank_cnum = idx - state_guard.ch_bank_offset * config.bank_size;
+                            if bank_cnum >= 0 && bank_cnum < config.bank_size {
+                                xb_msg = Some(OscMessage {
+                                    path: format!("/ch/{:02}/mix/on", bank_cnum + 1),
+                                    args: vec![OscArg::Int(x_val)],
+                                });
+                            }
+                        }
                     }
                 } else if msg.path.contains("/select") {
                     xx_mask = TRACKSELECT;
