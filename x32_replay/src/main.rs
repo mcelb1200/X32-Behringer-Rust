@@ -138,7 +138,11 @@ async fn run_logic(state: Arc<Mutex<AppState>>, socket: Arc<UdpSocket>, default_
     let mut file_reader: Option<BufReader<File>> = None;
 
     // Subscribe
-    let _ = socket.send(b"/info\0\0\0,"); // Simple manual packet or use osc_lib
+    // Use proper OSC message construction or explicit bytes.
+    // Assuming simple bytes are intended here for minimal overhead or legacy reasons.
+    if let Err(e) = socket.send(b"/info\0\0\0,").await {
+        eprintln!("Failed to send subscription: {}", e);
+    }
 
     loop {
         let mode = { state.lock().unwrap().mode };
@@ -158,7 +162,9 @@ async fn run_logic(state: Arc<Mutex<AppState>>, socket: Arc<UdpSocket>, default_
 
                 // Send /xremote keepalive
                 if last_xremote.elapsed() > Duration::from_secs(9) {
-                    let _ = socket.send(b"/xremote\0\0\0\0,"); // Padding needed? osc_lib better.
+                    if let Err(e) = socket.send(b"/xremote\0\0\0\0,").await {
+                        eprintln!("Failed to send keepalive: {}", e);
+                    }
                     last_xremote = Instant::now();
                 }
 

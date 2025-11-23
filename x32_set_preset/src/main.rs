@@ -176,7 +176,7 @@ fn main() -> Result<()> {
 
         let msg = OscMessage::new(full_address, osc_args);
         if args.verbose {
-            println!("Sending: {}", msg.to_string());
+            println!("Sending: {}", msg);
         }
         socket.send(&msg.to_bytes()?)?;
     }
@@ -227,7 +227,7 @@ fn parse_target(target: &str, ptype: &PresetType) -> Result<String> {
             if let Some(suffix) = t.strip_prefix("fx") {
                 // fx1 -> /fx/1
                 let id: u32 = suffix.parse()?;
-                if id < 1 || id > 8 {
+                if !(1..=8).contains(&id) {
                     return Err(anyhow!("FX slot must be 1-8"));
                 }
                 return Ok(format!("/fx/{}", id));

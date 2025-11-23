@@ -224,7 +224,7 @@ async fn init_user_ctrl(
     } else {
         if config.marker_btn_on {
             let btn_idx = config.marker_btn;
-            if btn_idx >= 5 && btn_idx <= 12 {
+            if (5..=12).contains(&btn_idx) {
                 let msg = OscMessage {
                     path: format!("/config/userctrl/C/btn/{}", btn_idx),
                     args: vec![OscArg::String(mn[btn_idx as usize - 5].to_string())],
@@ -239,7 +239,7 @@ async fn init_user_ctrl(
         }
         if config.ch_bank_on {
             for &btn_idx in &[config.bank_up, config.bank_dn] {
-                if btn_idx >= 5 && btn_idx <= 12 {
+                if (5..=12).contains(&btn_idx) {
                     let msg = OscMessage {
                         path: format!("/config/userctrl/C/btn/{}", btn_idx),
                         args: vec![OscArg::String(mn[btn_idx as usize - 5].to_string())],
@@ -398,7 +398,7 @@ async fn process_x32_message(
             if let Ok(raw) = parts[2].parse::<i32>() {
                 cnum = raw;
                 if cnum <= config.bank_size && config.ch_bank_on {
-                    cnum = state_guard.ch_bank_offset * config.bank_size + cnum;
+                    cnum += state_guard.ch_bank_offset * config.bank_size;
                 }
                 cnum1 = cnum + config.trk_min - 1;
             }
@@ -543,7 +543,7 @@ async fn process_x32_message(
                             if let Some(track) =
                                 state_guard.bank_tracks.get_mut((cnum - 1) as usize)
                             {
-                                if bus >= 1 && bus <= 16 {
+                                if (1..=16).contains(&bus) {
                                     track.mixbus[bus as usize - 1] = *f;
                                 }
                             }
@@ -676,7 +676,7 @@ async fn process_x32_message(
                         if sw_idx < config.bank_size + 1 && config.trk_max > 0 {
                             i = sw_idx + config.trk_min - 1;
                             if config.ch_bank_on {
-                                i = state_guard.ch_bank_offset * config.bank_size + i;
+                                i += state_guard.ch_bank_offset * config.bank_size;
                                 // Update state
                                 if let Some(track) = state_guard
                                     .bank_tracks
@@ -706,17 +706,13 @@ async fn process_x32_message(
             if parts.len() >= 4 {
                 if let Ok(par_idx) = parts[3].parse::<i32>() {
                     if let Some(OscArg::Int(val)) = msg.args.first() {
-                        handle_user_par(
-                            par_idx,
-                            *val,
-                            config,
-                            &mut state_guard,
+                        let sockets = Sockets {
                             x_sock,
                             x_addr,
                             r_sock,
                             r_addr,
-                        )
-                        .await?;
+                        };
+                        handle_user_par(par_idx, *val, config, &mut state_guard, sockets).await?;
                     }
                 }
             }
@@ -732,16 +728,24 @@ async fn process_x32_message(
     Ok(())
 }
 
+struct Sockets<'a> {
+    x_sock: &'a UdpSocket,
+    x_addr: SocketAddr,
+    r_sock: &'a UdpSocket,
+    r_addr: SocketAddr,
+}
+
 async fn handle_user_par(
     idx: i32,
     val: i32,
     config: &Config,
     state: &mut AppState,
-    x_sock: &UdpSocket,
-    x_addr: SocketAddr,
-    r_sock: &UdpSocket,
-    r_addr: SocketAddr,
+    sockets: Sockets<'_>,
 ) -> Result<()> {
+    let x_sock = sockets.x_sock;
+    let x_addr = sockets.x_addr;
+    let r_sock = sockets.r_sock;
+    let r_addr = sockets.r_addr;
     if config.transport_on {
         match idx {
             17 => {
@@ -901,36 +905,32 @@ async fn handle_user_par(
             // Encoders 33-36 logic omitted for brevity but follows same pattern
             _ => {}
         }
-    } else {
-        if val == 0 {
-            // Button up
-            let btn_idx = idx - 12;
-            if btn_idx == config.marker_btn {
-                send_to_r(
-                    r_sock,
-                    r_addr,
-                    &OscMessage {
-                        path: "/action/40157".to_string(),
-                        args: vec![],
-                    },
-                )
-                .await?;
-            }
+    } else if val == 0 {
+        // Button up
+        let btn_idx = idx - 12;
+        if btn_idx == config.marker_btn {
+            send_to_r(
+                r_sock,
+                r_addr,
+                &OscMessage {
+                    path: "/action/40157".to_string(),
+                    args: vec![],
+                },
+            )
+            .await?;
+        }
 
-            if config.ch_bank_on {
-                if btn_idx == config.bank_up {
-                    if state.ch_bank_offset
-                        < ((config.trk_max - config.trk_min + 1) / config.bank_size) - 1
-                    {
-                        state.ch_bank_offset += 1;
-                        update_bk_ch(x_sock, x_addr, config, state, Some((r_sock, r_addr))).await?;
-                    }
-                } else if btn_idx == config.bank_dn {
-                    if state.ch_bank_offset > 0 {
-                        state.ch_bank_offset -= 1;
-                        update_bk_ch(x_sock, x_addr, config, state, Some((r_sock, r_addr))).await?;
-                    }
+        if config.ch_bank_on {
+            if btn_idx == config.bank_up {
+                if state.ch_bank_offset
+                    < ((config.trk_max - config.trk_min + 1) / config.bank_size) - 1
+                {
+                    state.ch_bank_offset += 1;
+                    update_bk_ch(x_sock, x_addr, config, state, Some((r_sock, r_addr))).await?;
                 }
+            } else if btn_idx == config.bank_dn && state.ch_bank_offset > 0 {
+                state.ch_bank_offset -= 1;
+                update_bk_ch(x_sock, x_addr, config, state, Some((r_sock, r_addr))).await?;
             }
         }
     }
@@ -1027,7 +1027,7 @@ async fn process_single_reaper_message(
                             // Here `tnum` IS the reaper track number.
                             // If `tnum` corresponds to an X32 DCA.
                             let dca_idx = tnum - config.dca_min; // 0..7
-                            if dca_idx >= 0 && dca_idx < 8 {
+                            if (0..8).contains(&dca_idx) {
                                 xb_msg = Some(OscMessage {
                                     path: format!("/dca/{}/fader", dca_idx + 1),
                                     args: vec![OscArg::Float(x32_val)],
@@ -1097,19 +1097,17 @@ async fn process_single_reaper_message(
                         // X32 /mix/on: 1 = ON (audio passes), 0 = OFF (muted).
                         // So Reaper Mute (1) -> X32 On (0).
 
-                        if tnum >= config.trk_min && tnum <= config.trk_max {
-                            if config.ch_bank_on {
-                                let idx = tnum - config.trk_min;
-                                if let Some(track) = state_guard.bank_tracks.get_mut(idx as usize) {
-                                    track.mute = *f;
-                                }
-                                let bank_cnum = idx - state_guard.ch_bank_offset * config.bank_size;
-                                if bank_cnum >= 0 && bank_cnum < config.bank_size {
-                                    xb_msg = Some(OscMessage {
-                                        path: format!("/ch/{:02}/mix/on", bank_cnum + 1),
-                                        args: vec![OscArg::Int(x_val)],
-                                    });
-                                }
+                        if tnum >= config.trk_min && tnum <= config.trk_max && config.ch_bank_on {
+                            let idx = tnum - config.trk_min;
+                            if let Some(track) = state_guard.bank_tracks.get_mut(idx as usize) {
+                                track.mute = *f;
+                            }
+                            let bank_cnum = idx - state_guard.ch_bank_offset * config.bank_size;
+                            if bank_cnum >= 0 && bank_cnum < config.bank_size {
+                                xb_msg = Some(OscMessage {
+                                    path: format!("/ch/{:02}/mix/on", bank_cnum + 1),
+                                    args: vec![OscArg::Int(x_val)],
+                                });
                             }
                         }
                     }
@@ -1172,11 +1170,7 @@ async fn process_single_reaper_message(
         if msg.path.starts_with("/play") {
             if let Some(OscArg::Float(f)) = msg.args.first() {
                 let val = if *f > 0.5 { 127 } else { 0 };
-                if val == 127 {
-                    state_guard.play = true;
-                } else {
-                    state_guard.play = false;
-                }
+                state_guard.play = val == 127;
                 xb_msg = Some(OscMessage {
                     path: "/-stat/userpar/18/value".to_string(),
                     args: vec![OscArg::Int(val)],
