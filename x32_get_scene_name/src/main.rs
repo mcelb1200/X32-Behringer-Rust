@@ -2,6 +2,12 @@
 //! mixer, listens for scene change events, and prints the name of the new scene to standard
 //! output. It is a Rust implementation of the original `GetSceneName.c` tool by
 //! Patrick-gilles Maillot.
+//!
+//! # Credits
+//!
+//! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
+//! *   **Additional concepts by:** [User]
+//! *   **Rust implementation by:** [User]
 
 use clap::Parser;
 use osc_lib::{OscArg, OscMessage};

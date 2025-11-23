@@ -1,4 +1,10 @@
 # Test module for x32_wav_xlive
+#
+# Credits
+#
+# *   Original concept and work on the C library: Patrick-Gilles Maillot
+# *   Additional concepts by: [User]
+# *   Rust implementation by: [User]
 
 # Helper function to generate a minimal, valid, 24-bit mono WAV file.
 function New-MonoWavFile {

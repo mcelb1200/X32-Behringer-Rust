@@ -5,6 +5,12 @@
 //! - **Play**: Replay a recorded file back to the mixer, respecting the original timing intervals.
 //!
 //! This is useful for diagnosing issues, creating regression tests, or automating repetitive tasks.
+//!
+//! # Credits
+//!
+//! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
+//! *   **Additional concepts by:** [User]
+//! *   **Rust implementation by:** [User]
 
 use anyhow::Result;
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt}; // C code uses system endianness (usually Little on x86)

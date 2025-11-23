@@ -1,6 +1,12 @@
 #!/bin/bash
 
 # Test module for x32_get_scene_name
+#
+# Credits
+#
+# *   Original concept and work on the C library: Patrick-Gilles Maillot
+# *   Additional concepts by: [User]
+# *   Rust implementation by: [User]
 
 test_x32_get_scene_name() {
     log_message "--- Running x32_get_scene_name tests ---"

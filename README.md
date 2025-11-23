@@ -4,19 +4,20 @@ This project is a complete rewrite of the X32 command-line tools in Rust, focusi
 
 ## Table of Contents
 
-- [Original Author](#original-author)
+- [Credits](#credits)
 - [License](#license)
 - [Architecture](#architecture)
 - [Workspace Crates](#workspace-crates)
 - [Building the Tools](#building-the-tools)
 - [Running the Tools](#running-the-tools)
 
-## Original Author
+## Credits
 
-This project is a fork and rewrite of the original X32 libraries. All credit for the original design, functionality, and years of work goes to the original author:
+This project is a fork and rewrite of the original X32 libraries.
 
-*   **Author:** Patrick-Gilles Maillot
-*   **Original Work:** [https://sites.google.com/site/patrickmaillot/x32](https://sites.google.com/site/patrickmaillot/x32)
+*   **Original concept and work on the C library:** Patrick-Gilles Maillot ([https://sites.google.com/site/patrickmaillot/x32](https://sites.google.com/site/patrickmaillot/x32))
+*   **Additional concepts by:** [User]
+*   **Rust implementation by:** [User]
 
 ## License
 

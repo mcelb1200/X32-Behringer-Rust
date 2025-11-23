@@ -3,8 +3,14 @@
 //! It connects to the mixer and listens for user input (pressing Enter). By measuring the
 //! time interval between taps, it calculates the tempo in milliseconds and updates the
 //! corresponding parameter of the delay effect in the specified FX slot.
+//!
+//! # Credits
+//!
+//! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
+//! *   **Additional concepts by:** [User]
+//! *   **Rust implementation by:** [User]
 
-use anyhow::{Context, Result, anyhow};
+use anyhow::{anyhow, Context, Result};
 use clap::Parser;
 use osc_lib::{OscArg, OscMessage};
 use std::io::{self, Write};

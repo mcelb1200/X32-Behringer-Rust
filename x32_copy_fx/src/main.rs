@@ -6,6 +6,12 @@
 //! - Copy settings between the 'A' and 'B' sides of a dual-channel effect within the same slot.
 //!
 //! It supports reading custom default values from a file, allowing for personalized initial states.
+//!
+//! # Credits
+//!
+//! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
+//! *   **Additional concepts by:** [User]
+//! *   **Rust implementation by:** [User]
 
 mod fx_defaults;
 

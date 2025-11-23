@@ -4,10 +4,16 @@
 //! beat (BPM), and then automatically adjusts the time parameters of an effect in a
 //! specific slot on the X32 mixer. This allows delays and other time-based effects to
 //! stay in sync with the music automatically.
+//!
+//! # Credits
+//!
+//! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
+//! *   **Additional concepts by:** [User]
+//! *   **Rust implementation by:** [User]
 
 use crate::audio::AudioEngine;
 use crate::detection::{BeatDetector, EnergyDetector, OscLevelDetector};
-use crate::effects::{EffectHandler, get_handler};
+use crate::effects::{get_handler, EffectHandler};
 use crate::network::{NetworkEvent, NetworkManager};
 use crate::ui::{AppState, Tui, UIEvent};
 use anyhow::Result;
@@ -237,8 +243,6 @@ fn main() -> Result<()> {
                     UIEvent::Reset => {
                         is_panic = false;
                     }
-                    // Removed unreachable patterns or explicit ignore
-                    _ => {}
                 }
             }
 

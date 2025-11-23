@@ -3,6 +3,12 @@
 //!
 //! It is a Rust rewrite of the original C program `X32Wav_Xlive.c` by Patrick-Gilles Maillot.
 //!
+//! # Credits
+//!
+//! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
+//! *   **Additional concepts by:** [User]
+//! *   **Rust implementation by:** [User]
+//!
 //! ## Usage
 //!
 //! ```sh
@@ -13,7 +19,7 @@
 //! and creates a new session directory containing one or more multi-channel, 32-bit WAV files
 //! and a `SE_LOG.BIN` metadata file.
 
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
 use byteorder::{LittleEndian, WriteBytesExt};
 use chrono::{Datelike, Timelike, Utc};
 use clap::Parser;
@@ -428,12 +434,10 @@ mod tests {
         };
         let result = run(&args);
         assert!(result.is_err());
-        assert!(
-            result
-                .unwrap_err()
-                .to_string()
-                .contains("is not a 24-bit WAV file")
-        );
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("is not a 24-bit WAV file"));
     }
 
     #[test]
