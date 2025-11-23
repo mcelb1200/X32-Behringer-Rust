@@ -20,3 +20,4 @@ osc_lib = { path = "../osc_lib" }
 x32_lib = { path = "../x32_lib" }
 rustfft = "6.1"
 num-complex = "0.4"
+lazy_static = "1.4.0"
