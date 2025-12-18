@@ -105,6 +105,11 @@ pub enum OscArg {
     Blob(Vec<u8>),
 }
 
+/// Helper function to calculate padded size.
+fn padded_size(len: usize) -> usize {
+    (len + 3) & !3
+}
+
 /// Represents a single OSC message, containing a path and a list of arguments.
 #[derive(Debug, PartialEq)]
 pub struct OscMessage {
@@ -191,21 +196,42 @@ impl OscMessage {
     ///
     /// A `Result` containing the serialized byte vector or an `OscError`.
     pub fn to_bytes(&self) -> Result<Vec<u8>> {
-        let mut bytes = Vec::new();
+        // Calculate the total size required
+        let path_size = padded_size(self.path.len() + 1);
+        let type_tags_len = 1 + self.args.len() + 1; // ',' + args + null
+        let type_tags_size = padded_size(type_tags_len);
 
-        write_osc_string(&mut bytes, &self.path)?;
-
-        let mut type_tags = ",".to_string();
+        let mut args_size = 0;
         for arg in &self.args {
             match arg {
-                OscArg::Int(_) => type_tags.push('i'),
-                OscArg::Float(_) => type_tags.push('f'),
-                OscArg::String(_) => type_tags.push('s'),
-                OscArg::Blob(_) => type_tags.push('b'),
+                OscArg::Int(_) | OscArg::Float(_) => args_size += 4,
+                OscArg::String(s) => args_size += padded_size(s.len() + 1),
+                OscArg::Blob(b) => args_size += 4 + padded_size(b.len()),
             }
         }
-        write_osc_string(&mut bytes, &type_tags)?;
 
+        let total_size = path_size + type_tags_size + args_size;
+        let mut bytes = Vec::with_capacity(total_size);
+
+        // Write path
+        write_osc_string(&mut bytes, &self.path)?;
+
+        // Write type tags
+        bytes.write_u8(b',')?;
+        for arg in &self.args {
+            match arg {
+                OscArg::Int(_) => bytes.write_u8(b'i')?,
+                OscArg::Float(_) => bytes.write_u8(b'f')?,
+                OscArg::String(_) => bytes.write_u8(b's')?,
+                OscArg::Blob(_) => bytes.write_u8(b'b')?,
+            }
+        }
+        bytes.write_u8(0)?; // Null terminator
+        while bytes.len() % 4 != 0 {
+            bytes.write_u8(0)?;
+        }
+
+        // Write args
         for arg in &self.args {
             match arg {
                 OscArg::Int(val) => bytes.write_i32::<BigEndian>(*val)?,
@@ -214,7 +240,7 @@ impl OscMessage {
                 OscArg::Blob(val) => {
                     bytes.write_i32::<BigEndian>(val.len() as i32)?;
                     bytes.write_all(val)?;
-                    while !bytes.len().is_multiple_of(4) {
+                    while bytes.len() % 4 != 0 {
                         bytes.write_u8(0)?;
                     }
                 }
@@ -470,7 +496,7 @@ fn read_osc_string(cursor: &mut Cursor<&[u8]>) -> Result<String> {
 fn write_osc_string(bytes: &mut Vec<u8>, s: &str) -> Result<()> {
     bytes.write_all(s.as_bytes())?;
     bytes.write_u8(0)?;
-    while !bytes.len().is_multiple_of(4) {
+    while bytes.len() % 4 != 0 {
         bytes.write_u8(0)?;
     }
     Ok(())

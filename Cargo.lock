@@ -2021,6 +2021,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "x32_get_lib"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "osc_lib",
+ "x32_lib",
+]
+
+[[package]]
 name = "x32_get_scene"
 version = "0.1.0"
 dependencies = [
@@ -2049,6 +2059,51 @@ dependencies = [
  "lazy_static",
  "osc_lib",
  "x32_emulator",
+]
+
+[[package]]
+name = "x32_reaper"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "osc_lib",
+ "serde",
+ "serde_json",
+ "tokio",
+ "x32_lib",
+]
+
+[[package]]
+name = "x32_replay"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "byteorder",
+ "clap",
+ "osc_lib",
+ "tokio",
+ "x32_lib",
+]
+
+[[package]]
+name = "x32_set_lib"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "osc_lib",
+ "x32_lib",
+]
+
+[[package]]
+name = "x32_set_preset"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "osc_lib",
+ "x32_lib",
 ]
 
 [[package]]
