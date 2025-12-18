@@ -46,19 +46,18 @@ impl Tui {
                 .margin(1)
                 .constraints(
                     [
-                        Constraint::Percentage(20), // Header
-                        Constraint::Percentage(40), // BPM Big
-                        Constraint::Percentage(20), // Info
-                        Constraint::Percentage(20), // Status
+                        Constraint::Length(3), // Header (fixed height for title)
+                        Constraint::Min(5),    // BPM Big (takes available space)
+                        Constraint::Length(3), // Input Level (Gauge needs ~3 lines)
+                        Constraint::Length(7), // Info/Status (needs space for ~5 lines)
+                        Constraint::Length(3), // Controls (Footer)
                     ]
                     .as_ref(),
                 )
                 .split(f.size());
 
             // Header
-            let header = Block::default()
-                .title("X32 AutoBeat (Press 'a' to switch algorithm)")
-                .borders(Borders::ALL);
+            let header = Block::default().title("X32 AutoBeat").borders(Borders::ALL);
             f.render_widget(header, chunks[0]);
 
             // BPM Display
@@ -90,7 +89,11 @@ impl Tui {
 
             // Input Level Gauge
             let gauge = Gauge::default()
-                .block(Block::default().borders(Borders::ALL).title("Input Level"))
+                .block(
+                    Block::default()
+                        .borders(Borders::ALL)
+                        .title("Input Level (RMS)"),
+                )
                 .gauge_style(Style::default().fg(Color::Cyan))
                 .ratio(state.input_level.clamp(0.0, 1.0) as f64);
             f.render_widget(gauge, chunks[2]);
@@ -121,6 +124,35 @@ impl Tui {
             let info = Paragraph::new(info_text)
                 .block(Block::default().borders(Borders::ALL).title("Status"));
             f.render_widget(info, chunks[3]);
+
+            // Controls Footer
+            let controls_text = if state.is_panic {
+                vec![Line::from(vec![
+                    Span::raw(" CONTROLS: "),
+                    Span::raw("[Q] Quit | "),
+                    Span::styled(
+                        "[R] RESET PANIC",
+                        Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
+                    ),
+                    Span::raw(" | [Esc] Panic | [A] Algorithm"),
+                ])]
+            } else {
+                vec![Line::from(vec![
+                    Span::raw(" CONTROLS: "),
+                    Span::styled("[Q]", Style::default().add_modifier(Modifier::BOLD)),
+                    Span::raw(" Quit | "),
+                    Span::styled("[R]", Style::default().add_modifier(Modifier::BOLD)),
+                    Span::raw(" Reset | "),
+                    Span::styled("[Esc]", Style::default().add_modifier(Modifier::BOLD)),
+                    Span::raw(" Panic | "),
+                    Span::styled("[A]", Style::default().add_modifier(Modifier::BOLD)),
+                    Span::raw(" Algorithm"),
+                ])]
+            };
+
+            let controls = Paragraph::new(controls_text)
+                .block(Block::default().borders(Borders::ALL).title("Controls"));
+            f.render_widget(controls, chunks[4]);
         })?;
         Ok(())
     }
