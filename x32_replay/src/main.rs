@@ -13,12 +13,11 @@
 //! *   **Rust implementation by:** [User]
 
 use anyhow::Result;
-use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt}; // C code uses system endianness (usually Little on x86)
 use clap::Parser;
-use std::fs::File;
-use std::io::{BufReader, BufWriter, Read, Write};
 use std::sync::{Arc, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
+use tokio::fs::File;
+use tokio::io::{AsyncReadExt, AsyncWriteExt, BufReader, BufWriter};
 use tokio::net::UdpSocket;
 use tokio::time::{self, Duration, Instant};
 
@@ -100,7 +99,13 @@ async fn main() -> Result<()> {
         }
         let cmd = line.trim();
 
-        let mut s = state.lock().unwrap();
+        let mut s = match state.lock() {
+            Ok(guard) => guard,
+            Err(_) => {
+                eprintln!("State mutex poisoned, exiting.");
+                break;
+            }
+        };
         match cmd {
             "exit" => break,
             "stop" => {
@@ -145,13 +150,19 @@ async fn run_logic(state: Arc<Mutex<AppState>>, socket: Arc<UdpSocket>, default_
     }
 
     loop {
-        let mode = { state.lock().unwrap().mode };
+        let mode = match state.lock() {
+            Ok(s) => s.mode,
+            Err(_) => {
+                eprintln!("State mutex poisoned in background task, exiting.");
+                break;
+            }
+        };
 
         match mode {
             Mode::Recording => {
                 // Ensure file is open
                 if file_writer.is_none() {
-                    match File::create(&default_file) {
+                    match File::create(&default_file).await {
                         Ok(f) => file_writer = Some(BufWriter::new(f)),
                         Err(e) => {
                             eprintln!("Failed to create file: {}", e);
@@ -175,22 +186,26 @@ async fn run_logic(state: Arc<Mutex<AppState>>, socket: Arc<UdpSocket>, default_
                     // Write timestamp + len + data
                     if let Some(w) = &mut file_writer {
                         let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
-                        let _ = w.write_u64::<LittleEndian>(now.as_secs());
-                        let _ = w.write_u32::<LittleEndian>(now.subsec_micros());
-                        let _ = w.write_u32::<LittleEndian>(len as u32);
-                        let _ = w.write_all(&buf[..len]);
-                        let _ = w.flush();
+                        let _ = w.write_u64_le(now.as_secs()).await;
+                        let _ = w.write_u32_le(now.subsec_micros()).await;
+                        let _ = w.write_u32_le(len as u32).await;
+                        let _ = w.write_all(&buf[..len]).await;
+                        let _ = w.flush().await;
                     }
                 }
             }
             Mode::Playing => {
                 // Ensure reader open
                 if file_reader.is_none() {
-                    match File::open(&default_file) {
+                    match File::open(&default_file).await {
                         Ok(f) => {
                             file_reader = Some(BufReader::new(f));
-                            let mut s = state.lock().unwrap();
-                            s.start_time = None; // Reset timing
+                            if let Ok(mut s) = state.lock() {
+                                s.start_time = None; // Reset timing
+                            } else {
+                                eprintln!("State mutex poisoned in background task, exiting.");
+                                break;
+                            }
                         }
                         Err(e) => {
                             eprintln!("Failed to open file: {}", e);
@@ -200,20 +215,28 @@ async fn run_logic(state: Arc<Mutex<AppState>>, socket: Arc<UdpSocket>, default_
                 }
 
                 if let Some(r) = &mut file_reader {
-                    match r.read_u64::<LittleEndian>() {
+                    match r.read_u64_le().await {
                         Ok(sec) => {
-                            let usec = r.read_u32::<LittleEndian>().unwrap_or(0);
-                            let len = r.read_u32::<LittleEndian>().unwrap_or(0);
+                            let usec = r.read_u32_le().await.unwrap_or(0);
+                            let len = r.read_u32_le().await.unwrap_or(0);
 
                             if len > 0 && len < 2048 {
                                 let mut data = vec![0u8; len as usize];
-                                if r.read_exact(&mut data).is_ok() {
+                                if r.read_exact(&mut data).await.is_ok() {
                                     // Timing Logic
                                     let packet_time = Duration::from_secs(sec)
                                         + Duration::from_micros(usec as u64);
 
                                     let sleep_dur = {
-                                        let mut s = state.lock().unwrap();
+                                        let mut s = match state.lock() {
+                                            Ok(guard) => guard,
+                                            Err(_) => {
+                                                eprintln!(
+                                                    "State mutex poisoned in background task, exiting."
+                                                );
+                                                break;
+                                            }
+                                        };
                                         if s.start_time.is_none() {
                                             // First packet defines t0
                                             s.start_time = Some(Instant::now());
@@ -250,9 +273,13 @@ async fn run_logic(state: Arc<Mutex<AppState>>, socket: Arc<UdpSocket>, default_
                         }
                         Err(_) => {
                             println!("End of file.");
-                            let mut s = state.lock().unwrap();
-                            s.mode = Mode::Idle;
-                            s.start_time = None;
+                            if let Ok(mut s) = state.lock() {
+                                s.mode = Mode::Idle;
+                                s.start_time = None;
+                            } else {
+                                eprintln!("State mutex poisoned in background task, exiting.");
+                                break;
+                            }
                             file_reader = None;
                         }
                     }
