@@ -4,6 +4,8 @@ use super::*;
 mod common;
 #[path = "tests/error.rs"]
 mod error;
+#[path = "tests/main_bus.rs"]
+mod main_bus;
 
 #[test]
 fn test_create_socket_with_port() {
