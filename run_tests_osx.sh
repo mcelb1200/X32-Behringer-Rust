@@ -18,6 +18,7 @@ BINARIES=(
     "x32_tcp"
     "x32_usb"
     "x32_wav_xlive"
+    "x32_ssavergw"
 )
 X32_CONNECTION_TYPE="None"
 X32_IP_ADDRESS=""

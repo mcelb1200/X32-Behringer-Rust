@@ -17,7 +17,8 @@ $Binaries = @(
     "x32_set_scene",
     "x32_tcp",
     "x32_usb",
-    "x32_wav_xlive"
+    "x32_wav_xlive",
+    "x32_ssavergw"
 )
 
 # --- Logging ---
