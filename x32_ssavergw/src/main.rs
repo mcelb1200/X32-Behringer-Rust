@@ -53,8 +53,13 @@ async fn main() -> Result<()> {
     println!("Connecting to X32 at {}...", args.ip);
 
     // Connect phase
-    let info_msg = OscMessage { path: "/info".to_string(), args: vec![] };
-    let info_bytes = info_msg.to_bytes().map_err(|e| anyhow::anyhow!("OSC Error: {}", e))?;
+    let info_msg = OscMessage {
+        path: "/info".to_string(),
+        args: vec![],
+    };
+    let info_bytes = info_msg
+        .to_bytes()
+        .map_err(|e| anyhow::anyhow!("OSC Error: {}", e))?;
     socket.send_to(&info_bytes, x32_addr).await?;
 
     let mut connected = false;
@@ -62,7 +67,9 @@ async fn main() -> Result<()> {
     let mut buf = [0u8; 1024];
 
     while connect_start.elapsed() < Duration::from_secs(1) {
-        if let Ok(Ok((len, _))) = time::timeout(Duration::from_millis(100), socket.recv_from(&mut buf)).await {
+        if let Ok(Ok((len, _))) =
+            time::timeout(Duration::from_millis(100), socket.recv_from(&mut buf)).await
+        {
             let s = String::from_utf8_lossy(&buf[..len]);
             if s.starts_with("/info") {
                 state.lock().await.is_connected = true;
@@ -95,7 +102,9 @@ async fn main() -> Result<()> {
         println!("Exiting... restoring screen brightness.");
         let mut st = state_clone.lock().await;
         if st.is_dimmed {
-            restore_brightness(&socket_ctrlc, addr_clone, &st).await.unwrap_or_else(|e| eprintln!("Failed to restore brightness: {}", e));
+            restore_brightness(&socket_ctrlc, addr_clone, &st)
+                .await
+                .unwrap_or_else(|e| eprintln!("Failed to restore brightness: {}", e));
             st.is_dimmed = false;
         }
         std::process::exit(0);
@@ -154,15 +163,22 @@ async fn main() -> Result<()> {
 
 async fn save_and_dim(socket: &UdpSocket, addr: SocketAddr, state: &mut AppState) -> Result<()> {
     // 1. Get current LCD bright
-    let req_lcd = OscMessage { path: "/-prefs/bright".to_string(), args: vec![] };
-    let req_lcd_bytes = req_lcd.to_bytes().map_err(|e| anyhow::anyhow!("OSC Error: {}", e))?;
+    let req_lcd = OscMessage {
+        path: "/-prefs/bright".to_string(),
+        args: vec![],
+    };
+    let req_lcd_bytes = req_lcd
+        .to_bytes()
+        .map_err(|e| anyhow::anyhow!("OSC Error: {}", e))?;
     socket.send_to(&req_lcd_bytes, addr).await?;
 
     // Wait for response, ignoring background traffic
     let mut buf = [0u8; 1024];
     let start_wait = Instant::now();
     while start_wait.elapsed() < Duration::from_millis(500) {
-        if let Ok(Ok((len, _))) = time::timeout(Duration::from_millis(100), socket.recv_from(&mut buf)).await {
+        if let Ok(Ok((len, _))) =
+            time::timeout(Duration::from_millis(100), socket.recv_from(&mut buf)).await
+        {
             if let Ok(msg) = OscMessage::from_bytes(&buf[..len]) {
                 if msg.path == "/-prefs/bright" {
                     if let Some(OscArg::Float(f)) = msg.args.first() {
@@ -175,13 +191,20 @@ async fn save_and_dim(socket: &UdpSocket, addr: SocketAddr, state: &mut AppState
     }
 
     // 2. Get current LED bright
-    let req_led = OscMessage { path: "/-prefs/ledbright".to_string(), args: vec![] };
-    let req_led_bytes = req_led.to_bytes().map_err(|e| anyhow::anyhow!("OSC Error: {}", e))?;
+    let req_led = OscMessage {
+        path: "/-prefs/ledbright".to_string(),
+        args: vec![],
+    };
+    let req_led_bytes = req_led
+        .to_bytes()
+        .map_err(|e| anyhow::anyhow!("OSC Error: {}", e))?;
     socket.send_to(&req_led_bytes, addr).await?;
 
     let start_wait = Instant::now();
     while start_wait.elapsed() < Duration::from_millis(500) {
-        if let Ok(Ok((len, _))) = time::timeout(Duration::from_millis(100), socket.recv_from(&mut buf)).await {
+        if let Ok(Ok((len, _))) =
+            time::timeout(Duration::from_millis(100), socket.recv_from(&mut buf)).await
+        {
             if let Ok(msg) = OscMessage::from_bytes(&buf[..len]) {
                 if msg.path == "/-prefs/ledbright" {
                     if let Some(OscArg::Float(f)) = msg.args.first() {
@@ -194,12 +217,22 @@ async fn save_and_dim(socket: &UdpSocket, addr: SocketAddr, state: &mut AppState
     }
 
     // 3. Set both to lowest values (0.0)
-    let set_lcd = OscMessage { path: "/-prefs/bright".to_string(), args: vec![OscArg::Float(0.0)] };
-    let set_lcd_bytes = set_lcd.to_bytes().map_err(|e| anyhow::anyhow!("OSC Error: {}", e))?;
+    let set_lcd = OscMessage {
+        path: "/-prefs/bright".to_string(),
+        args: vec![OscArg::Float(0.0)],
+    };
+    let set_lcd_bytes = set_lcd
+        .to_bytes()
+        .map_err(|e| anyhow::anyhow!("OSC Error: {}", e))?;
     socket.send_to(&set_lcd_bytes, addr).await?;
 
-    let set_led = OscMessage { path: "/-prefs/ledbright".to_string(), args: vec![OscArg::Float(0.0)] };
-    let set_led_bytes = set_led.to_bytes().map_err(|e| anyhow::anyhow!("OSC Error: {}", e))?;
+    let set_led = OscMessage {
+        path: "/-prefs/ledbright".to_string(),
+        args: vec![OscArg::Float(0.0)],
+    };
+    let set_led_bytes = set_led
+        .to_bytes()
+        .map_err(|e| anyhow::anyhow!("OSC Error: {}", e))?;
     socket.send_to(&set_led_bytes, addr).await?;
 
     state.is_dimmed = true;
@@ -207,12 +240,22 @@ async fn save_and_dim(socket: &UdpSocket, addr: SocketAddr, state: &mut AppState
 }
 
 async fn restore_brightness(socket: &UdpSocket, addr: SocketAddr, state: &AppState) -> Result<()> {
-    let set_lcd = OscMessage { path: "/-prefs/bright".to_string(), args: vec![OscArg::Float(state.saved_lcd_bright)] };
-    let set_lcd_bytes = set_lcd.to_bytes().map_err(|e| anyhow::anyhow!("OSC Error: {}", e))?;
+    let set_lcd = OscMessage {
+        path: "/-prefs/bright".to_string(),
+        args: vec![OscArg::Float(state.saved_lcd_bright)],
+    };
+    let set_lcd_bytes = set_lcd
+        .to_bytes()
+        .map_err(|e| anyhow::anyhow!("OSC Error: {}", e))?;
     socket.send_to(&set_lcd_bytes, addr).await?;
 
-    let set_led = OscMessage { path: "/-prefs/ledbright".to_string(), args: vec![OscArg::Float(state.saved_led_bright)] };
-    let set_led_bytes = set_led.to_bytes().map_err(|e| anyhow::anyhow!("OSC Error: {}", e))?;
+    let set_led = OscMessage {
+        path: "/-prefs/ledbright".to_string(),
+        args: vec![OscArg::Float(state.saved_led_bright)],
+    };
+    let set_led_bytes = set_led
+        .to_bytes()
+        .map_err(|e| anyhow::anyhow!("OSC Error: {}", e))?;
     socket.send_to(&set_led_bytes, addr).await?;
 
     Ok(())
