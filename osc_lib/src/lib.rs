@@ -466,19 +466,32 @@ pub fn tokenize(s: &str) -> Result<Vec<String>> {
 ///
 /// A `Result` containing the parsed string or an `OscError`.
 fn read_osc_string(cursor: &mut Cursor<&[u8]>) -> Result<String> {
-    let mut bytes = Vec::new();
-    loop {
-        let byte = cursor.read_u8()?;
-        if byte == 0 {
-            break;
-        }
-        bytes.push(byte);
-    }
-    let string = String::from_utf8(bytes)?;
+    let pos = cursor.position() as usize;
+    let buf = cursor.get_ref();
 
-    let current_pos = cursor.position();
-    let next_aligned_pos = (current_pos + 3) & !3;
-    cursor.set_position(next_aligned_pos);
+    if pos >= buf.len() {
+        return Err(OscError::ParseError("Unexpected end of buffer".to_string()));
+    }
+
+    let remainder = &buf[pos..];
+
+    // Find the null terminator byte (0)
+    let null_pos = match remainder.iter().position(|&b| b == 0) {
+        Some(p) => p,
+        None => return Err(OscError::ParseError("Missing null terminator in string".to_string())),
+    };
+
+    // Extract the string bytes and convert to String
+    let string_bytes = &remainder[..null_pos];
+    let string = String::from_utf8(string_bytes.to_vec())?;
+
+    // Calculate the new position after the null terminator and padding
+    let new_pos = pos + null_pos + 1; // +1 for the null terminator
+    let next_aligned_pos = (new_pos + 3) & !3;
+
+    // Ensure we don't set the cursor past the end of the buffer
+    let final_pos = std::cmp::min(next_aligned_pos, buf.len());
+    cursor.set_position(final_pos as u64);
 
     Ok(string)
 }
