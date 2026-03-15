@@ -2115,6 +2115,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "x32_ssavergw"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "assert_cmd",
+ "clap",
+ "escargot",
+ "osc_lib",
+ "predicates",
+ "tempfile",
+ "tokio",
+ "x32_lib",
+]
+
+[[package]]
 name = "x32_tap"
 version = "0.1.0"
 dependencies = [

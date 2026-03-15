@@ -1,0 +1,4 @@
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.09s
+     Running `target/debug/x32_emulator`
+X32 Emulator listening on 0.0.0.0:10023
+Error handling message: I/O error: failed to fill whole buffer
