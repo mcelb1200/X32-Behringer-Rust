@@ -2079,7 +2079,6 @@ name = "x32_replay"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "byteorder",
  "clap",
  "osc_lib",
  "tokio",
