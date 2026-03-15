@@ -100,7 +100,13 @@ async fn main() -> Result<()> {
         }
         let cmd = line.trim();
 
-        let mut s = state.lock().unwrap();
+        let mut s = match state.lock() {
+            Ok(guard) => guard,
+            Err(_) => {
+                eprintln!("State mutex poisoned, exiting.");
+                break;
+            }
+        };
         match cmd {
             "exit" => break,
             "stop" => {
@@ -145,7 +151,13 @@ async fn run_logic(state: Arc<Mutex<AppState>>, socket: Arc<UdpSocket>, default_
     }
 
     loop {
-        let mode = { state.lock().unwrap().mode };
+        let mode = match state.lock() {
+            Ok(s) => s.mode,
+            Err(_) => {
+                eprintln!("State mutex poisoned in background task, exiting.");
+                break;
+            }
+        };
 
         match mode {
             Mode::Recording => {
@@ -189,8 +201,12 @@ async fn run_logic(state: Arc<Mutex<AppState>>, socket: Arc<UdpSocket>, default_
                     match File::open(&default_file) {
                         Ok(f) => {
                             file_reader = Some(BufReader::new(f));
-                            let mut s = state.lock().unwrap();
-                            s.start_time = None; // Reset timing
+                            if let Ok(mut s) = state.lock() {
+                                s.start_time = None; // Reset timing
+                            } else {
+                                eprintln!("State mutex poisoned in background task, exiting.");
+                                break;
+                            }
                         }
                         Err(e) => {
                             eprintln!("Failed to open file: {}", e);
@@ -213,7 +229,15 @@ async fn run_logic(state: Arc<Mutex<AppState>>, socket: Arc<UdpSocket>, default_
                                         + Duration::from_micros(usec as u64);
 
                                     let sleep_dur = {
-                                        let mut s = state.lock().unwrap();
+                                        let mut s = match state.lock() {
+                                            Ok(guard) => guard,
+                                            Err(_) => {
+                                                eprintln!(
+                                                    "State mutex poisoned in background task, exiting."
+                                                );
+                                                break;
+                                            }
+                                        };
                                         if s.start_time.is_none() {
                                             // First packet defines t0
                                             s.start_time = Some(Instant::now());
@@ -250,9 +274,13 @@ async fn run_logic(state: Arc<Mutex<AppState>>, socket: Arc<UdpSocket>, default_
                         }
                         Err(_) => {
                             println!("End of file.");
-                            let mut s = state.lock().unwrap();
-                            s.mode = Mode::Idle;
-                            s.start_time = None;
+                            if let Ok(mut s) = state.lock() {
+                                s.mode = Mode::Idle;
+                                s.start_time = None;
+                            } else {
+                                eprintln!("State mutex poisoned in background task, exiting.");
+                                break;
+                            }
                             file_reader = None;
                         }
                     }
