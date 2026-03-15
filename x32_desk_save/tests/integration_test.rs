@@ -48,16 +48,16 @@ fn test_desk_save_command() {
         .run()
         .unwrap();
     let mut cmd = bin.command();
-    cmd.args(&["--ip", &addr.to_string(), "-d", "test_output.txt"]);
+    cmd.args(&["--ip", &addr.to_string(), "-d", "test_output_save.txt"]);
 
     let output = cmd.output().unwrap();
     assert!(output.status.success());
     let stdout = String::from_utf8(output.stdout).unwrap();
     assert!(stdout.contains(&format!("Successfully connected to X32 at {}", addr)));
-    assert!(stdout.contains("Successfully saved data to test_output.txt"));
+    assert!(stdout.contains("Successfully saved data to test_output_save.txt"));
 
     // Verify the content of the output file
-    let content = std::fs::read_to_string("test_output.txt").unwrap();
+    let content = std::fs::read_to_string("test_output_save.txt").unwrap();
     let lines: Vec<&str> = content.lines().collect();
     assert!(
         lines
@@ -66,7 +66,7 @@ fn test_desk_save_command() {
     );
 
     // Clean up the output file
-    std::fs::remove_file("test_output.txt").unwrap();
+    let _ = std::fs::remove_file("test_output_save.txt");
 }
 
 #[test]
@@ -89,18 +89,18 @@ fn test_pattern_file_command() {
         &addr.to_string(),
         "-p",
         "test_pattern.txt",
-        "test_output.txt",
+        "test_output_pattern.txt",
     ]);
 
     let output = cmd.output().unwrap();
     assert!(output.status.success());
     let stdout = String::from_utf8(output.stdout).unwrap();
     assert!(stdout.contains(&format!("Successfully connected to X32 at {}", addr)));
-    assert!(stdout.contains("Successfully saved data to test_output.txt"));
+    assert!(stdout.contains("Successfully saved data to test_output_pattern.txt"));
 
     // Verify the content of the output file
-    assert!(std::path::Path::new("test_output.txt").exists());
-    let content = std::fs::read_to_string("test_output.txt").unwrap();
+    assert!(std::path::Path::new("test_output_pattern.txt").exists());
+    let content = std::fs::read_to_string("test_output_pattern.txt").unwrap();
     let lines: Vec<&str> = content.lines().collect();
     assert_eq!(lines.len(), 2);
     assert!(
@@ -115,6 +115,6 @@ fn test_pattern_file_command() {
     );
 
     // Clean up the files
-    std::fs::remove_file("test_pattern.txt").unwrap();
-    std::fs::remove_file("test_output.txt").unwrap();
+    let _ = std::fs::remove_file("test_pattern.txt");
+    let _ = std::fs::remove_file("test_output_pattern.txt");
 }

@@ -478,11 +478,7 @@ fn read_osc_string(cursor: &mut Cursor<&[u8]>) -> Result<String> {
     // Find the null terminator byte (0)
     let null_pos = match remainder.iter().position(|&b| b == 0) {
         Some(p) => p,
-        None => {
-            return Err(OscError::ParseError(
-                "Missing null terminator in string".to_string(),
-            ));
-        }
+        None => return Err(OscError::ParseError("Missing null terminator in string".to_string())),
     };
 
     // Extract the string bytes and convert to String
