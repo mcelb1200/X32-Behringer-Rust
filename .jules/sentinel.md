@@ -1,0 +1,4 @@
+## 2024-05-24 - [DoS via Unbounded Line Reads]
+**Vulnerability:** The `x32_tcp` application used `BufRead::read_line` to accept incoming commands without a size limit. An attacker could establish a connection and send a continuous stream of bytes without a newline character, causing the application to continuously allocate memory.
+**Learning:** Rust's `BufRead::read_line` will read until it encounters a newline or EOF. If an input source is untrusted, this can lead to unbounded memory allocation and eventual Out Of Memory (OOM) crashes.
+**Prevention:** When reading lines from untrusted sources (e.g., network connections), always limit the maximum number of bytes read. This can be achieved efficiently using the `take()` adapter on the reader (e.g., `reader.by_ref().take(LIMIT).read_line(&mut buf)`).

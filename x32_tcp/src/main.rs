@@ -10,7 +10,7 @@
 use anyhow::Result;
 use clap::Parser;
 use osc_lib::OscMessage;
-use std::io::{BufRead, BufReader, Write};
+use std::io::{BufRead, BufReader, Read, Write};
 use std::net::{TcpListener, TcpStream};
 use std::str::FromStr;
 use std::thread;
@@ -100,9 +100,17 @@ fn handle_client(mut stream: TcpStream, args: Args) -> Result<()> {
 
     loop {
         let mut line = String::new();
-        let len = reader.read_line(&mut line)?;
+        // Limit reading to 4096 bytes to prevent DoS via extremely long lines
+        let len = reader.by_ref().take(4096).read_line(&mut line)?;
         if len == 0 {
             break; // Connection closed
+        }
+
+        if len == 4096 && !line.ends_with('\n') {
+            let error_msg = "Error: Input line too long (exceeds 4096 bytes). Connection closed.\n";
+            eprintln!("{}", error_msg.trim());
+            stream.write_all(error_msg.as_bytes())?;
+            break;
         }
 
         let trimmed_line = line.trim();
