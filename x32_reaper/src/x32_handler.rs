@@ -83,7 +83,7 @@ async fn process_x32_message(
 }
 
 async fn map_ch_to_track(ch: i32, state: &SharedState) -> Option<i32> {
-    let s = state.lock().unwrap();
+    let s = state.lock().unwrap_or_else(|e| e.into_inner());
     // Logic: cnum = cnum * 10 + ...
     // cnum1 = cnum + Xtrk_min - 1
     // if Xchbank_on, Set actual channel number to match Channel Bank

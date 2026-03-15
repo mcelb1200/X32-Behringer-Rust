@@ -68,7 +68,7 @@ async fn process_single_message(
         dca_max,
         track_send_offset,
     ) = {
-        let s = state.lock().unwrap();
+        let s = state.lock().unwrap_or_else(|e| e.into_inner());
         (
             s.config.map.track_min,
             s.config.map.track_max,
@@ -145,7 +145,7 @@ async fn process_single_message(
 }
 
 async fn map_track_to_x32(tnum: i32, suffix: &str, state: &SharedState) -> Option<String> {
-    let s = state.lock().unwrap();
+    let s = state.lock().unwrap_or_else(|e| e.into_inner());
     let map = &s.config.map;
 
     // Logic from C:

@@ -33,6 +33,9 @@ impl Default for ChannelState {
     }
 }
 
+#[allow(dead_code)]
+pub type SharedState = std::sync::Arc<std::sync::Mutex<AppState>>;
+
 pub struct AppState {
     pub bank_tracks: Vec<ChannelState>,
     pub x_selected: i32,
