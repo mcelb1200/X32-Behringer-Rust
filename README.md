@@ -55,6 +55,7 @@ graph TD;
         x32_set_lib;
         x32_set_preset;
         x32_set_scene;
+        x32_ssavergw;
         x32_tap;
         x32_tcp;
         x32_usb;
@@ -83,6 +84,7 @@ graph TD;
     x32_set_lib --> x32_lib;
     x32_set_preset --> x32_lib;
     x32_set_scene --> x32_lib;
+    x32_ssavergw --> x32_lib;
     x32_tap --> x32_lib;
     x32_tcp --> x32_lib;
     x32_usb --> x32_lib;
@@ -105,6 +107,7 @@ graph TD;
     x32_set_lib --> osc_lib;
     x32_set_preset --> osc_lib;
     x32_set_scene --> osc_lib;
+    x32_ssavergw --> osc_lib;
     x32_tap --> osc_lib;
     x32_tcp --> osc_lib;
     x32_usb --> osc_lib;
@@ -142,6 +145,7 @@ graph TD;
 | `x32_set_lib`        | Sends library presets to the mixer.                                                                     |
 | `x32_set_preset`     | Loads a preset on the mixer.                                                                            |
 | `x32_set_scene`      | Sends a series of OSC commands from standard input to the mixer.                                          |
+| `x32_ssavergw`       | A screen saver tool that dims the console's screens after a period of inactivity.                         |
 | `x32_tap`            | A tool for setting FX delay times by tapping.                                                           |
 | `x32_tcp`            | A TCP to UDP bridge for sending OSC commands to the mixer over a text-based TCP connection.               |
 | `x32_usb`            | A shell-like interface for managing a USB drive connected to the console.                                 |

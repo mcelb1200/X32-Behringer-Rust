@@ -2079,7 +2079,6 @@ name = "x32_replay"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "byteorder",
  "clap",
  "osc_lib",
  "tokio",
@@ -2112,6 +2111,21 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "osc_lib",
+ "x32_lib",
+]
+
+[[package]]
+name = "x32_ssavergw"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "assert_cmd",
+ "clap",
+ "escargot",
+ "osc_lib",
+ "predicates",
+ "tempfile",
+ "tokio",
  "x32_lib",
 ]
 
