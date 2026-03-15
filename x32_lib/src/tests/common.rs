@@ -20,8 +20,13 @@ mod tests {
     #[test]
     fn test_eq_type_enum() {
         assert_eq!(EqType::from_id(0), Some(EqType::Lcut));
+        assert_eq!(EqType::from_id(1), Some(EqType::LShv));
+        assert_eq!(EqType::from_id(2), Some(EqType::Peq));
+        assert_eq!(EqType::from_id(3), Some(EqType::Veq));
+        assert_eq!(EqType::from_id(4), Some(EqType::HShv));
         assert_eq!(EqType::from_id(5), Some(EqType::Hcut));
         assert_eq!(EqType::from_id(6), None);
+        assert_eq!(EqType::from_id(255), None);
     }
 
     #[test]
