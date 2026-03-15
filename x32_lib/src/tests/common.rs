@@ -39,8 +39,30 @@ mod tests {
     #[test]
     fn test_insert_selection_enum() {
         assert_eq!(InsertSelection::from_id(0), Some(InsertSelection::Off));
+        assert_eq!(InsertSelection::from_id(1), Some(InsertSelection::Fx1L));
+        assert_eq!(InsertSelection::from_id(2), Some(InsertSelection::Fx1R));
+        assert_eq!(InsertSelection::from_id(3), Some(InsertSelection::Fx2L));
+        assert_eq!(InsertSelection::from_id(4), Some(InsertSelection::Fx2R));
+        assert_eq!(InsertSelection::from_id(5), Some(InsertSelection::Fx3L));
+        assert_eq!(InsertSelection::from_id(6), Some(InsertSelection::Fx3R));
+        assert_eq!(InsertSelection::from_id(7), Some(InsertSelection::Fx4L));
+        assert_eq!(InsertSelection::from_id(8), Some(InsertSelection::Fx4R));
+        assert_eq!(InsertSelection::from_id(9), Some(InsertSelection::Fx5L));
+        assert_eq!(InsertSelection::from_id(10), Some(InsertSelection::Fx5R));
+        assert_eq!(InsertSelection::from_id(11), Some(InsertSelection::Fx6L));
+        assert_eq!(InsertSelection::from_id(12), Some(InsertSelection::Fx6R));
+        assert_eq!(InsertSelection::from_id(13), Some(InsertSelection::Fx7L));
+        assert_eq!(InsertSelection::from_id(14), Some(InsertSelection::Fx7R));
+        assert_eq!(InsertSelection::from_id(15), Some(InsertSelection::Fx8L));
+        assert_eq!(InsertSelection::from_id(16), Some(InsertSelection::Fx8R));
+        assert_eq!(InsertSelection::from_id(17), Some(InsertSelection::Aux1));
+        assert_eq!(InsertSelection::from_id(18), Some(InsertSelection::Aux2));
+        assert_eq!(InsertSelection::from_id(19), Some(InsertSelection::Aux3));
+        assert_eq!(InsertSelection::from_id(20), Some(InsertSelection::Aux4));
+        assert_eq!(InsertSelection::from_id(21), Some(InsertSelection::Aux5));
         assert_eq!(InsertSelection::from_id(22), Some(InsertSelection::Aux6));
         assert_eq!(InsertSelection::from_id(23), None);
+        assert_eq!(InsertSelection::from_id(255), None);
     }
 
     #[test]
