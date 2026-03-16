@@ -151,11 +151,15 @@ async fn handle_jog_move(socket: &UdpSocket, move_val: i32, delta_time: i32) -> 
 
                             let start2 = std::time::Instant::now();
                             while start2.elapsed() < timeout_duration {
-                                if let Ok(Ok(len2)) = timeout(Duration::from_millis(50), socket.recv(&mut buf)).await {
+                                if let Ok(Ok(len2)) =
+                                    timeout(Duration::from_millis(50), socket.recv(&mut buf)).await
+                                {
                                     let bytes2 = &buf[..len2];
                                     if let Ok(msg2) = OscMessage::from_bytes(bytes2) {
                                         if msg2.path == "/-stat/urec/etime" {
-                                            if let Some(osc_lib::OscArg::Int(etime)) = msg2.args.get(0) {
+                                            if let Some(osc_lib::OscArg::Int(etime)) =
+                                                msg2.args.get(0)
+                                            {
                                                 let mut new_etime = *etime;
                                                 if move_val > 64 {
                                                     new_etime += delta_time;
@@ -165,9 +169,15 @@ async fn handle_jog_move(socket: &UdpSocket, move_val: i32, delta_time: i32) -> 
                                                 new_etime += 1;
 
                                                 // Set new position
-                                                send_osc_int(socket, "/-action/setposition", new_etime).await?;
+                                                send_osc_int(
+                                                    socket,
+                                                    "/-action/setposition",
+                                                    new_etime,
+                                                )
+                                                .await?;
                                                 // Reset rotary cursor
-                                                send_osc_int(socket, "/-stat/userpar/33/value", 64).await?;
+                                                send_osc_int(socket, "/-stat/userpar/33/value", 64)
+                                                    .await?;
                                                 return Ok(());
                                             }
                                         }
@@ -186,7 +196,10 @@ async fn handle_jog_move(socket: &UdpSocket, move_val: i32, delta_time: i32) -> 
 }
 
 async fn send_osc(socket: &UdpSocket, path: &str, s: &str) -> Result<()> {
-    let msg = osc_lib::OscMessage::new(path.to_string(), vec![osc_lib::OscArg::String(s.to_string())]);
+    let msg = osc_lib::OscMessage::new(
+        path.to_string(),
+        vec![osc_lib::OscArg::String(s.to_string())],
+    );
     let buf = msg.to_bytes().map_err(|e| anyhow::anyhow!(e))?;
     socket.send(&buf).await?;
     Ok(())
