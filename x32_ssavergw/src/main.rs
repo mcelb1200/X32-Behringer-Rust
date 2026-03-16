@@ -10,7 +10,7 @@
 //! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
 //! *   **Rust implementation by:** [User]
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use clap::Parser;
 use osc_lib::{OscArg, OscMessage};
 use std::net::SocketAddr;
