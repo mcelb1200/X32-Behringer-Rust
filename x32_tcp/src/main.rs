@@ -10,7 +10,7 @@
 use anyhow::Result;
 use clap::Parser;
 use osc_lib::OscMessage;
-use std::io::{BufRead, BufReader, Write};
+use std::io::{BufRead, BufReader, Read, Write};
 use std::net::{TcpListener, TcpStream};
 use std::str::FromStr;
 use std::thread;
@@ -100,7 +100,8 @@ fn handle_client(mut stream: TcpStream, args: Args) -> Result<()> {
 
     loop {
         let mut line = String::new();
-        let len = reader.read_line(&mut line)?;
+        // Prevent unbounded memory allocation DoS by limiting the read size
+        let len = reader.by_ref().take(4096).read_line(&mut line)?;
         if len == 0 {
             break; // Connection closed
         }
