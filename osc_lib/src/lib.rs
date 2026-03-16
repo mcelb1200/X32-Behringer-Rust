@@ -217,18 +217,18 @@ impl OscMessage {
         write_osc_string(&mut bytes, &self.path)?;
 
         // Write type tags
-        bytes.write_u8(b',')?;
+        bytes.push(b',');
         for arg in &self.args {
             match arg {
-                OscArg::Int(_) => bytes.write_u8(b'i')?,
-                OscArg::Float(_) => bytes.write_u8(b'f')?,
-                OscArg::String(_) => bytes.write_u8(b's')?,
-                OscArg::Blob(_) => bytes.write_u8(b'b')?,
+                OscArg::Int(_) => bytes.push(b'i'),
+                OscArg::Float(_) => bytes.push(b'f'),
+                OscArg::String(_) => bytes.push(b's'),
+                OscArg::Blob(_) => bytes.push(b'b'),
             }
         }
-        bytes.write_u8(0)?; // Null terminator
+        bytes.push(0); // Null terminator
         while bytes.len() % 4 != 0 {
-            bytes.write_u8(0)?;
+            bytes.push(0);
         }
 
         // Write args
@@ -362,23 +362,23 @@ impl std::fmt::Display for OscMessage {
     /// assert_eq!(msg_str, "/ch/01/mix/fader ,f 0.75");
     /// ```
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.path)?;
+        f.write_str(&self.path)?;
         if !self.args.is_empty() {
-            write!(f, " ,")?;
+            f.write_str(" ,")?;
             for arg in &self.args {
                 match arg {
-                    OscArg::Int(_) => write!(f, "i")?,
-                    OscArg::Float(_) => write!(f, "f")?,
-                    OscArg::String(_) => write!(f, "s")?,
-                    OscArg::Blob(_) => write!(f, "b")?,
+                    OscArg::Int(_) => f.write_str("i")?,
+                    OscArg::Float(_) => f.write_str("f")?,
+                    OscArg::String(_) => f.write_str("s")?,
+                    OscArg::Blob(_) => f.write_str("b")?,
                 }
             }
             for arg in &self.args {
-                write!(f, " ")?;
+                f.write_str(" ")?;
                 match arg {
                     OscArg::Int(val) => write!(f, "{}", val)?,
                     OscArg::Float(val) => write!(f, "{}", val)?,
-                    OscArg::String(val) => write!(f, "\"{}\"", val)?,
+                    OscArg::String(val) => { f.write_str("\"")?; f.write_str(val)?; f.write_str("\"")?; },
                     OscArg::Blob(val) => {
                         for byte in val {
                             write!(f, "{:02x}", byte)?;
@@ -511,10 +511,10 @@ fn read_osc_string(cursor: &mut Cursor<&[u8]>) -> Result<String> {
 ///
 /// A `Result` indicating success or failure.
 fn write_osc_string(bytes: &mut Vec<u8>, s: &str) -> Result<()> {
-    bytes.write_all(s.as_bytes())?;
-    bytes.write_u8(0)?;
+    bytes.extend_from_slice(s.as_bytes());
+    bytes.push(0);
     while bytes.len() % 4 != 0 {
-        bytes.write_u8(0)?;
+        bytes.push(0);
     }
     Ok(())
 }
