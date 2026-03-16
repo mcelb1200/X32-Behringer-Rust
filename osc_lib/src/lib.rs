@@ -378,11 +378,7 @@ impl std::fmt::Display for OscMessage {
                 match arg {
                     OscArg::Int(val) => write!(f, "{}", val)?,
                     OscArg::Float(val) => write!(f, "{}", val)?,
-                    OscArg::String(val) => {
-                        f.write_str("\"")?;
-                        f.write_str(val)?;
-                        f.write_str("\"")?;
-                    }
+                    OscArg::String(val) => { f.write_str("\"")?; f.write_str(val)?; f.write_str("\"")?; },
                     OscArg::Blob(val) => {
                         for byte in val {
                             write!(f, "{:02x}", byte)?;
