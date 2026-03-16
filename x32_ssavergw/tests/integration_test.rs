@@ -1,4 +1,4 @@
-use assert_cmd::Command;
+
 use predicates::prelude::*;
 use std::process::{Child, Command as StdCommand};
 use std::time::Duration;
@@ -30,7 +30,7 @@ impl Drop for EmulatorGuard {
 
 #[test]
 fn test_ssavergw_connection_timeout() {
-    let mut cmd = Command::cargo_bin("x32_ssavergw").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("x32_ssavergw");
     cmd.arg("--ip").arg("127.0.0.99").arg("--delay").arg("1"); // Invalid IP to force timeout
 
     cmd.assert()
@@ -46,7 +46,7 @@ fn test_ssavergw_connects_and_dims() {
     // since it's a daemon. We'll use escargot to start the process to be able to control it
     // easily if assert_cmd timeout isn't sufficient, but assert_cmd with timeout is good enough.
 
-    let mut cmd = Command::cargo_bin("x32_ssavergw").unwrap();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("x32_ssavergw");
     cmd.arg("--ip").arg("127.0.0.1").arg("--delay").arg("1");
 
     let result = cmd.timeout(Duration::from_secs(3)).assert();
