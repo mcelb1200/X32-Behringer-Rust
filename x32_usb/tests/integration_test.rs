@@ -24,8 +24,7 @@ where
 #[test]
 fn test_not_connected() {
     // We don't start a server for this test, to simulate a connection failure.
-    let bin = escargot::CargoBuild::new().bin("x32_usb").run().unwrap();
-    let mut cmd = bin.command();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("x32_usb");
     cmd.arg("--ip").arg("127.0.0.1:10047").arg("ls");
 
     let output = cmd.output().unwrap();
@@ -46,8 +45,7 @@ fn test_ls_command() {
         ]);
     });
 
-    let bin = escargot::CargoBuild::new().bin("x32_usb").run().unwrap();
-    let mut cmd = bin.command();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("x32_usb");
     cmd.arg("--ip").arg("127.0.0.1:10048").arg("ls");
 
     let output = cmd.output().unwrap();
@@ -77,8 +75,7 @@ fn test_file_operations() {
         ]);
     });
 
-    let bin = escargot::CargoBuild::new().bin("x32_usb").run().unwrap();
-    let mut cmd = bin.command();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("x32_usb");
     cmd.arg("--ip")
         .arg("127.0.0.1:10049")
         .arg("cd")
@@ -89,7 +86,7 @@ fn test_file_operations() {
     let stdout = String::from_utf8(output.stdout).unwrap();
     assert_eq!(stdout, "Changed directory to [MyScenes]\n");
 
-    let mut cmd = bin.command();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("x32_usb");
     cmd.arg("--ip")
         .arg("1.2.3.4")
         .arg("load")
@@ -100,7 +97,7 @@ fn test_file_operations() {
     let stdout = String::from_utf8(output.stdout).unwrap();
     assert!(stdout.contains("Not connected to X32."));
 
-    let mut cmd = bin.command();
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("x32_usb");
     cmd.arg("--ip").arg("127.0.0.1:10049").arg("play").arg("4");
 
     let output = cmd.output().unwrap();
