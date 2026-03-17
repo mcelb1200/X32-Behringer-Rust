@@ -37,8 +37,8 @@
 //! assert_eq!(msg.args, vec![OscArg::Float(0.75)]);
 //! ```
 
-use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
-use std::io::{self, Cursor, Read, Write};
+use byteorder::{BigEndian, ReadBytesExt};
+use std::io::{self, Cursor, Read};
 use std::str::FromStr;
 use std::string::FromUtf8Error;
 
@@ -67,10 +67,10 @@ impl std::fmt::Display for OscError {
         match self {
             OscError::Io(e) => write!(f, "I/O error: {}", e),
             OscError::Utf8(e) => write!(f, "UTF-8 conversion error: {}", e),
-            OscError::InvalidTypeTag => write!(f, "Invalid OSC type tag string"),
+            OscError::InvalidTypeTag => f.write_str("Invalid OSC type tag string"),
             OscError::UnsupportedTypeTag(c) => write!(f, "Unsupported OSC type tag: {}", c),
             OscError::ParseError(s) => write!(f, "Parse error: {}", s),
-            OscError::UnexpectedResponse => write!(f, "Unexpected response from mixer"),
+            OscError::UnexpectedResponse => f.write_str("Unexpected response from mixer"),
         }
     }
 }
@@ -156,7 +156,7 @@ impl OscMessage {
             return Err(OscError::InvalidTypeTag);
         }
 
-        let mut args = Vec::new();
+        let mut args = Vec::with_capacity(type_tags.len().saturating_sub(1));
         for tag in type_tags[1..].chars() {
             match tag {
                 'i' => {
@@ -234,14 +234,14 @@ impl OscMessage {
         // Write args
         for arg in &self.args {
             match arg {
-                OscArg::Int(val) => bytes.write_i32::<BigEndian>(*val)?,
-                OscArg::Float(val) => bytes.write_f32::<BigEndian>(*val)?,
+                OscArg::Int(val) => bytes.extend_from_slice(&val.to_be_bytes()),
+                OscArg::Float(val) => bytes.extend_from_slice(&val.to_be_bytes()),
                 OscArg::String(val) => write_osc_string(&mut bytes, val)?,
                 OscArg::Blob(val) => {
-                    bytes.write_i32::<BigEndian>(val.len() as i32)?;
-                    bytes.write_all(val)?;
+                    bytes.extend_from_slice(&(val.len() as i32).to_be_bytes());
+                    bytes.extend_from_slice(val);
                     while bytes.len() % 4 != 0 {
-                        bytes.write_u8(0)?;
+                        bytes.push(0);
                     }
                 }
             }
@@ -285,12 +285,14 @@ impl FromStr for OscMessage {
             .next()
             .ok_or(OscError::ParseError("Empty command string".to_string()))?
             .to_string();
-        let mut args = Vec::new();
+        let mut args = Vec::new(); // Capacity will be reserved later
 
         if let Some(type_tags) = it.next() {
             if !type_tags.starts_with(',') {
                 return Err(OscError::InvalidTypeTag);
             }
+
+            args.reserve_exact(type_tags.len().saturating_sub(1));
 
             for tag in type_tags[1..].chars() {
                 let val_str = it.next().ok_or(OscError::ParseError(format!(
@@ -318,7 +320,7 @@ impl FromStr for OscMessage {
                                 val_str
                             )));
                         }
-                        let mut blob = Vec::new();
+                        let mut blob = Vec::with_capacity(val_str.len() / 2);
                         for i in (0..val_str.len()).step_by(2) {
                             let byte = u8::from_str_radix(&val_str[i..i + 2], 16)
                                 .map_err(|e| OscError::ParseError(e.to_string()))?;
