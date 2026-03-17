@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
@@ -16,7 +16,8 @@ impl MidiOscCommand {
     /// based on the logic in the original C code:
     /// XMCommand = (Md1 << 8) | (Mmc | ((Mch - 1) & 0xF))
     pub fn get_match_key(&self) -> u32 {
-        ((self.data1 as u32) << 8) | ((self.midi_status as u32) | ((self.midi_channel as u32 - 1) & 0xF))
+        ((self.data1 as u32) << 8)
+            | ((self.midi_status as u32) | ((self.midi_channel as u32 - 1) & 0xF))
     }
 }
 
@@ -47,13 +48,16 @@ pub fn parse_file(path: &str) -> Result<Vec<MidiOscCommand>> {
             let midi_status = u8::from_str_radix(parts[0], 16)
                 .map_err(|e| anyhow!("Failed to parse midi status hex: {}", e))?;
 
-            let midi_channel: u8 = parts[1].parse()
+            let midi_channel: u8 = parts[1]
+                .parse()
                 .map_err(|e| anyhow!("Failed to parse midi channel: {}", e))?;
 
-            let data1: i32 = parts[2].parse()
+            let data1: i32 = parts[2]
+                .parse()
                 .map_err(|e| anyhow!("Failed to parse data1: {}", e))?;
 
-            let data2: i32 = parts[3].parse()
+            let data2: i32 = parts[3]
+                .parse()
                 .map_err(|e| anyhow!("Failed to parse data2: {}", e))?;
 
             commands.push(MidiOscCommand {

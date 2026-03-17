@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use clap::Parser;
 use midir::{Ignore, MidiInput};
 use osc_lib::{OscArg, OscMessage};
@@ -54,12 +54,12 @@ async fn main() -> Result<()> {
 
     let in_ports = midi_in.ports();
     let in_port = match args.midi_in_port {
-        Some(p) => {
-            in_ports.get(p).ok_or_else(|| anyhow!("Invalid MIDI input port number: {}", p))?
-        }
-        None => {
-            in_ports.get(0).ok_or_else(|| anyhow!("No MIDI input ports available"))?
-        }
+        Some(p) => in_ports
+            .get(p)
+            .ok_or_else(|| anyhow!("Invalid MIDI input port number: {}", p))?,
+        None => in_ports
+            .get(0)
+            .ok_or_else(|| anyhow!("No MIDI input ports available"))?,
     };
 
     println!("Listening on MIDI input: {}", midi_in.port_name(in_port)?);
@@ -70,75 +70,79 @@ async fn main() -> Result<()> {
     let commands_arc = Arc::new(commands);
 
     // Run MIDI listener
-    let _conn_in = midi_in.connect(
-        in_port,
-        "x32_midi2osc-read",
-        move |_stamp, message, _| {
-            // MIDI message parsing
-            // message is typically 3 bytes: status, data1, data2
-            // For some messages (like Program Change), it might be 2 bytes
+    let _conn_in = midi_in
+        .connect(
+            in_port,
+            "x32_midi2osc-read",
+            move |_stamp, message, _| {
+                // MIDI message parsing
+                // message is typically 3 bytes: status, data1, data2
+                // For some messages (like Program Change), it might be 2 bytes
 
-            if message.is_empty() { return; }
-            let status = message[0];
-            let data1 = if message.len() > 1 { message[1] } else { 0 };
-            let data2 = if message.len() > 2 { message[2] } else { 0 };
+                if message.is_empty() {
+                    return;
+                }
+                let status = message[0];
+                let data1 = if message.len() > 1 { message[1] } else { 0 };
+                let data2 = if message.len() > 2 { message[2] } else { 0 };
 
-            if debug {
-                println!("MIDI in: {:02X} {:02X} {:02X}", status, data1, data2);
-            }
+                if debug {
+                    println!("MIDI in: {:02X} {:02X} {:02X}", status, data1, data2);
+                }
 
-            // Only process channel messages (0x80 to 0xEF)
-            if status >= 0x80 && status < 0xF0 {
-                let cmd_type = status & 0xF0;
-                let channel = (status & 0x0F) + 1;
+                // Only process channel messages (0x80 to 0xEF)
+                if status >= 0x80 && status < 0xF0 {
+                    let cmd_type = status & 0xF0;
+                    let channel = (status & 0x0F) + 1;
 
-                // Match the C code logic for 'dwParam1'
-                // dwParam1 is a 32-bit int, containing status, data1, data2
-                // We'll reconstruct the match key:
+                    // Match the C code logic for 'dwParam1'
+                    // dwParam1 is a 32-bit int, containing status, data1, data2
+                    // We'll reconstruct the match key:
 
-                // Check if it's a Program Change or Channel Aftertouch (0xC0 or 0xD0)
-                let actual_data2 = if cmd_type == 0xC0 || cmd_type == 0xD0 {
-                    0x80 // Magic value used in C code for these commands
-                } else {
-                    data2
-                };
+                    // Check if it's a Program Change or Channel Aftertouch (0xC0 or 0xD0)
+                    let actual_data2 = if cmd_type == 0xC0 || cmd_type == 0xD0 {
+                        0x80 // Magic value used in C code for these commands
+                    } else {
+                        data2
+                    };
 
-                let match_key = ((data1 as u32) << 8) | (status as u32);
+                    let match_key = ((data1 as u32) << 8) | (status as u32);
 
-                let mparam = [channel as f64, data1 as f64, actual_data2 as f64];
+                    let mparam = [channel as f64, data1 as f64, actual_data2 as f64];
 
-                for cmd in commands_arc.iter() {
-                    if match_key == cmd.get_match_key() {
-                        let osc_str = &cmd.osc_command;
+                    for cmd in commands_arc.iter() {
+                        if match_key == cmd.get_match_key() {
+                            let osc_str = &cmd.osc_command;
 
-                        // Execute OSC generation in a blocking context because we are in a sync callback
-                        // It's a bit tricky but since the callback is sync, we can use try_lock
-                        if let Ok(mut calc) = rpn_calc.try_lock() {
-                            match process_osc_string(osc_str, &mut calc, &mparam) {
-                                Ok(msg) => {
-                                    if debug {
-                                        println!("Sending OSC: {:?}", msg);
-                                    }
-                                    match msg.to_bytes() {
-                                        Ok(bytes) => {
-                                            if let Err(e) = x32_socket.send(&bytes) {
-                                                eprintln!("Failed to send OSC message: {}", e);
-                                            }
+                            // Execute OSC generation in a blocking context because we are in a sync callback
+                            // It's a bit tricky but since the callback is sync, we can use try_lock
+                            if let Ok(mut calc) = rpn_calc.try_lock() {
+                                match process_osc_string(osc_str, &mut calc, &mparam) {
+                                    Ok(msg) => {
+                                        if debug {
+                                            println!("Sending OSC: {:?}", msg);
                                         }
-                                        Err(e) => eprintln!("Failed to serialize OSC: {}", e),
+                                        match msg.to_bytes() {
+                                            Ok(bytes) => {
+                                                if let Err(e) = x32_socket.send(&bytes) {
+                                                    eprintln!("Failed to send OSC message: {}", e);
+                                                }
+                                            }
+                                            Err(e) => eprintln!("Failed to serialize OSC: {}", e),
+                                        }
                                     }
+                                    Err(e) => eprintln!("Error generating OSC: {}", e),
                                 }
-                                Err(e) => eprintln!("Error generating OSC: {}", e),
                             }
-                        }
 
-                        break;
+                            break;
+                        }
                     }
                 }
-            }
-        },
-        (),
-    ).map_err(|e| anyhow!("Failed to connect to MIDI input port: {}", e))?;
+            },
+            (),
+        )
+        .map_err(|e| anyhow!("Failed to connect to MIDI input port: {}", e))?;
 
     println!("Press Ctrl+C to exit.");
 
@@ -149,15 +153,21 @@ async fn main() -> Result<()> {
     loop {
         interval.tick().await;
         if let Err(e) = x32_socket_main.send(xremote_msg) {
-             eprintln!("Failed to send /xremote: {}", e);
+            eprintln!("Failed to send /xremote: {}", e);
         }
     }
 }
 
-
-fn process_osc_string(osc_str: &str, calc: &mut RpnCalculator, mparam: &[f64; 3]) -> Result<OscMessage> {
+fn process_osc_string(
+    osc_str: &str,
+    calc: &mut RpnCalculator,
+    mparam: &[f64; 3],
+) -> Result<OscMessage> {
     let mut parts = osc_str.split_whitespace();
-    let path = parts.next().ok_or_else(|| anyhow!("Empty OSC command"))?.to_string();
+    let path = parts
+        .next()
+        .ok_or_else(|| anyhow!("Empty OSC command"))?
+        .to_string();
 
     let mut args = Vec::new();
     let mut type_tags = String::new();
@@ -221,10 +231,11 @@ fn process_osc_string(osc_str: &str, calc: &mut RpnCalculator, mparam: &[f64; 3]
         let expr = &exprs[expr_idx];
 
         let val = if expr.starts_with('[') && expr.ends_with(']') {
-            let inner = &expr[1..expr.len()-1];
+            let inner = &expr[1..expr.len() - 1];
             calc.calculate(inner, mparam)?
         } else {
-            expr.parse::<f64>().map_err(|e| anyhow!("Failed to parse constant: {}", e))?
+            expr.parse::<f64>()
+                .map_err(|e| anyhow!("Failed to parse constant: {}", e))?
         };
 
         match t {
