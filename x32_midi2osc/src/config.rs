@@ -1,4 +1,5 @@
-use anyhow::{Result, anyhow};
+#![allow(dead_code)]
+use anyhow::{anyhow, Result};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 

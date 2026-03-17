@@ -1,4 +1,5 @@
-use anyhow::{Result, anyhow};
+#![allow(dead_code)]
+use anyhow::{anyhow, Result};
 
 pub struct RpnCalculator {
     memory: f64,
