@@ -87,8 +87,8 @@ enum Algorithm {
 impl std::fmt::Display for Algorithm {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Algorithm::Energy => write!(f, "Energy"),
-            Algorithm::Spectral => write!(f, "Spectral"),
+            Algorithm::Energy => f.write_str("Energy"),
+            Algorithm::Spectral => f.write_str("Spectral"),
         }
     }
 }

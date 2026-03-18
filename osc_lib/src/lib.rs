@@ -37,8 +37,8 @@
 //! assert_eq!(msg.args, vec![OscArg::Float(0.75)]);
 //! ```
 
-use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
-use std::io::{self, Cursor, Read, Write};
+use byteorder::{BigEndian, ReadBytesExt};
+use std::io::{self, Cursor, Read};
 use std::str::FromStr;
 use std::string::FromUtf8Error;
 
@@ -67,10 +67,10 @@ impl std::fmt::Display for OscError {
         match self {
             OscError::Io(e) => write!(f, "I/O error: {}", e),
             OscError::Utf8(e) => write!(f, "UTF-8 conversion error: {}", e),
-            OscError::InvalidTypeTag => write!(f, "Invalid OSC type tag string"),
+            OscError::InvalidTypeTag => f.write_str("Invalid OSC type tag string"),
             OscError::UnsupportedTypeTag(c) => write!(f, "Unsupported OSC type tag: {}", c),
             OscError::ParseError(s) => write!(f, "Parse error: {}", s),
-            OscError::UnexpectedResponse => write!(f, "Unexpected response from mixer"),
+            OscError::UnexpectedResponse => f.write_str("Unexpected response from mixer"),
         }
     }
 }
@@ -234,14 +234,14 @@ impl OscMessage {
         // Write args
         for arg in &self.args {
             match arg {
-                OscArg::Int(val) => bytes.write_i32::<BigEndian>(*val)?,
-                OscArg::Float(val) => bytes.write_f32::<BigEndian>(*val)?,
+                OscArg::Int(val) => bytes.extend_from_slice(&val.to_be_bytes()),
+                OscArg::Float(val) => bytes.extend_from_slice(&val.to_be_bytes()),
                 OscArg::String(val) => write_osc_string(&mut bytes, val)?,
                 OscArg::Blob(val) => {
-                    bytes.write_i32::<BigEndian>(val.len() as i32)?;
-                    bytes.write_all(val)?;
+                    bytes.extend_from_slice(&(val.len() as i32).to_be_bytes());
+                    bytes.extend_from_slice(val);
                     while bytes.len() % 4 != 0 {
-                        bytes.write_u8(0)?;
+                        bytes.push(0);
                     }
                 }
             }
