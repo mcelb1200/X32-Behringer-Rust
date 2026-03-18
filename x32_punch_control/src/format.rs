@@ -62,10 +62,12 @@ impl PunchReader {
 }
 
 /// A writer for `.xpc` files.
+#[allow(dead_code)]
 pub struct PunchWriter {
     writer: BufWriter<File>,
 }
 
+#[allow(dead_code)]
 impl PunchWriter {
     pub fn new(file: File) -> Self {
         Self {

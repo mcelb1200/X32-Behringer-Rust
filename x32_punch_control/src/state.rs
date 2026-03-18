@@ -1,6 +1,7 @@
 use std::time::Duration;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[allow(dead_code)]
 pub enum Mode {
     Idle,
     Playing,
@@ -9,6 +10,7 @@ pub enum Mode {
 }
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub struct AppState {
     pub mode: Mode,
     pub xplay: bool,

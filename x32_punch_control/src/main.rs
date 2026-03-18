@@ -253,9 +253,6 @@ async fn run_logic(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use format::{PunchReader, PunchRecord, PunchWriter};
-    use tempfile::NamedTempFile;
-    use tokio::fs::File as AsyncFile;
 
     #[tokio::test]
     async fn test_state_default() {
