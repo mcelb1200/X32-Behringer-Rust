@@ -24,6 +24,8 @@ impl Drop for EmulatorGuard {
     fn drop(&mut self) {
         let _ = self.child.kill();
         let _ = self.child.wait();
+        // Extra assurance we kill the descendant emulator process
+        let _ = StdCommand::new("pkill").arg("-f").arg("x32_emulator").status();
     }
 }
 
