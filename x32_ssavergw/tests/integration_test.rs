@@ -30,7 +30,7 @@ impl Drop for EmulatorGuard {
 #[test]
 fn test_ssavergw_connection_timeout() {
     let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("x32_ssavergw");
-    cmd.arg("--ip").arg("127.0.0.99").arg("--delay").arg("1"); // Invalid IP to force timeout
+    cmd.arg("--ip").arg("192.0.2.1").arg("--delay").arg("1"); // Invalid IP to force timeout
 
     cmd.assert()
         .success()
