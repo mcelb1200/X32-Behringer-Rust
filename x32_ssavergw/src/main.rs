@@ -18,7 +18,6 @@ use std::sync::Arc;
 use tokio::net::UdpSocket;
 use tokio::sync::Mutex;
 use tokio::time::{self, Duration, Instant};
-use x32_lib::create_socket;
 
 mod state;
 use state::AppState;
@@ -41,11 +40,14 @@ async fn main() -> Result<()> {
     let args = Args::parse();
 
     let x32_addr: SocketAddr = format!("{}:10023", args.ip).parse()?;
-    // We bind with tokio UdpSocket, using the standard create_socket from x32_lib configures a std::net::UdpSocket.
-    // For tokio loop we'll use tokio::net::UdpSocket.
-    let std_socket = create_socket(&args.ip, 50)?;
-    std_socket.set_nonblocking(true)?;
-    let socket = UdpSocket::from_std(std_socket)?;
+    // We bind with tokio UdpSocket, avoiding `connect` to permit proper `send_to` usage later,
+    // as macOS UDP sockets return "Socket is already connected (os error 56)" when using `send_to` on a `connect`ed socket.
+    let bind_addr = if x32_addr.is_ipv4() {
+        "0.0.0.0:0"
+    } else {
+        "[::]:0"
+    };
+    let socket = UdpSocket::bind(bind_addr).await?;
 
     let state = Arc::new(Mutex::new(AppState::new(args.delay)));
 
