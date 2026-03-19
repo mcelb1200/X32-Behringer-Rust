@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 
 pub struct RpnCalculator {
     memory: f64,
@@ -27,11 +27,7 @@ impl RpnCalculator {
         for token in tokens {
             if token.starts_with('$') {
                 let idx: usize = token[1..].parse().unwrap_or(0);
-                let val = if idx < mparam.len() {
-                    mparam[idx]
-                } else {
-                    0.0
-                };
+                let val = if idx < mparam.len() { mparam[idx] } else { 0.0 };
                 stack.push(val);
             } else if let Ok(val) = token.parse::<f64>() {
                 stack.push(val);
