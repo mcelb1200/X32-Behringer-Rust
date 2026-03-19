@@ -86,7 +86,7 @@ fn execute_template(
             current_expr.push(' ');
             if part.ends_with(']') {
                 in_expr = false;
-                current_expr.push_str(&part[..part.len()-1]);
+                current_expr.push_str(&part[..part.len() - 1]);
 
                 let val = calculator.evaluate(&current_expr, mparam)?;
 
@@ -135,7 +135,8 @@ fn execute_template(
     }
 
     let msg = OscMessage::new(path, args);
-    msg.to_bytes().map_err(|e| anyhow::anyhow!("Failed to serialize OscMessage: {}", e))
+    msg.to_bytes()
+        .map_err(|e| anyhow::anyhow!("Failed to serialize OscMessage: {}", e))
 }
 
 #[cfg(test)]
@@ -248,7 +249,8 @@ async fn main() -> Result<()> {
         let name = midi_in.port_name(port)?;
         if (!args.midi_in.is_empty() && name.to_lowercase().contains(&args.midi_in.to_lowercase()))
             || (args.midi_in.is_empty() && (i + 1) as i32 == config.midi_in_port)
-            || (args.midi_in.is_empty() && config.midi_in_port == 0 && i == 0) // fallback to 0th
+            || (args.midi_in.is_empty() && config.midi_in_port == 0 && i == 0)
+        // fallback to 0th
         {
             selected_port = Some(port.clone());
             println!("Selecting MIDI Input: {}", name);
@@ -288,7 +290,11 @@ async fn main() -> Result<()> {
             let mch = ((status & 0x0F) + 1) as i32;
 
             let md1 = message[1] as i32;
-            let md2 = if message.len() > 2 { message[2] as i32 } else { 0 };
+            let md2 = if message.len() > 2 {
+                message[2] as i32
+            } else {
+                0
+            };
 
             let mut mparam = [0.0; 3];
             mparam[0] = mch as f64;
@@ -313,7 +319,9 @@ async fn main() -> Result<()> {
                         mparam[2] = (rule.d2 & 0x7F) as f64;
                     }
 
-                    if let Ok(payload) = execute_template(&rule.osc_template, &mparam, &mut calculator) {
+                    if let Ok(payload) =
+                        execute_template(&rule.osc_template, &mparam, &mut calculator)
+                    {
                         let _ = tx.send(payload);
                     }
                 }
