@@ -43,10 +43,10 @@ impl AudioEngine {
             let device = if let Some(query) = device_name_query {
                 host.input_devices()?
                     .find(|x| x.name().map(|n| n.contains(&query)).unwrap_or(false))
-                    .context("Audio device not found matching query")?
+                    .ok_or_else(|| anyhow::anyhow!("Audio device not found matching query"))?
             } else {
                 host.default_input_device()
-                    .context("No default audio device available")?
+                    .ok_or_else(|| anyhow::anyhow!("No default audio device available"))?
             };
 
             let config: cpal::StreamConfig = device.default_input_config()?.into();
