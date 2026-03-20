@@ -16,7 +16,7 @@
 
 use clap::Parser;
 use std::fs::File;
-use std::io::{self, BufRead};
+use std::io::{self, BufRead, Read};
 use std::net::UdpSocket;
 use std::str::FromStr;
 use std::time::{Duration, Instant};
@@ -79,11 +79,17 @@ struct Command {
 /// A `Result` containing a vector of parsed `Command` structs or an I/O error.
 fn parse_command_file(path: &str) -> io::Result<Vec<Command>> {
     let file = File::open(path)?;
-    let reader = io::BufReader::new(file);
+    let mut reader = io::BufReader::new(file);
     let mut commands = Vec::new();
 
-    for line in reader.lines() {
-        let line = line?;
+    loop {
+        let mut line = String::new();
+        // Limit reading to 4096 bytes to prevent DoS via extremely long lines
+        let len = reader.by_ref().take(4096).read_line(&mut line)?;
+        if len == 0 {
+            break;
+        }
+
         let line = line.trim();
         if line.is_empty() || line.starts_with('#') {
             continue;
