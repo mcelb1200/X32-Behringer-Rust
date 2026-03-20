@@ -67,10 +67,10 @@ impl std::fmt::Display for OscError {
         match self {
             OscError::Io(e) => write!(f, "I/O error: {}", e),
             OscError::Utf8(e) => write!(f, "UTF-8 conversion error: {}", e),
-            OscError::InvalidTypeTag => write!(f, "Invalid OSC type tag string"),
+            OscError::InvalidTypeTag => f.write_str("Invalid OSC type tag string"),
             OscError::UnsupportedTypeTag(c) => write!(f, "Unsupported OSC type tag: {}", c),
             OscError::ParseError(s) => write!(f, "Parse error: {}", s),
-            OscError::UnexpectedResponse => write!(f, "Unexpected response from mixer"),
+            OscError::UnexpectedResponse => f.write_str("Unexpected response from mixer"),
         }
     }
 }
@@ -156,7 +156,7 @@ impl OscMessage {
             return Err(OscError::InvalidTypeTag);
         }
 
-        let mut args = Vec::new();
+        let mut args = Vec::with_capacity(type_tags.len().saturating_sub(1));
         for tag in type_tags[1..].chars() {
             match tag {
                 'i' => {
@@ -285,12 +285,14 @@ impl FromStr for OscMessage {
             .next()
             .ok_or(OscError::ParseError("Empty command string".to_string()))?
             .to_string();
-        let mut args = Vec::new();
+        let mut args = Vec::new(); // Capacity will be reserved later
 
         if let Some(type_tags) = it.next() {
             if !type_tags.starts_with(',') {
                 return Err(OscError::InvalidTypeTag);
             }
+
+            args.reserve_exact(type_tags.len().saturating_sub(1));
 
             for tag in type_tags[1..].chars() {
                 let val_str = it.next().ok_or(OscError::ParseError(format!(
@@ -318,7 +320,7 @@ impl FromStr for OscMessage {
                                 val_str
                             )));
                         }
-                        let mut blob = Vec::new();
+                        let mut blob = Vec::with_capacity(val_str.len() / 2);
                         for i in (0..val_str.len()).step_by(2) {
                             let byte = u8::from_str_radix(&val_str[i..i + 2], 16)
                                 .map_err(|e| OscError::ParseError(e.to_string()))?;
