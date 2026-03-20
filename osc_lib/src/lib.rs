@@ -150,15 +150,18 @@ impl OscMessage {
         let mut cursor = Cursor::new(bytes);
 
         let path = read_osc_string(&mut cursor)?;
-        let type_tags = read_osc_string(&mut cursor)?;
+        // OPTIMIZATION: Parse type tags as raw bytes instead of allocating a String
+        // and validating UTF-8, as type tags are guaranteed to be ASCII.
+        // This eliminates a Vec allocation and string conversion per OSC message parsed.
+        let type_tags = read_osc_string_bytes(&mut cursor)?;
 
-        if !type_tags.starts_with(',') {
+        if type_tags.is_empty() || type_tags[0] != b',' {
             return Err(OscError::InvalidTypeTag);
         }
 
         let mut args = Vec::with_capacity(type_tags.len().saturating_sub(1));
-        for tag in type_tags[1..].chars() {
-            match tag {
+        for &tag_byte in &type_tags[1..] {
+            match tag_byte as char {
                 'i' => {
                     let val = cursor.read_i32::<BigEndian>()?;
                     args.push(OscArg::Int(val));
@@ -180,7 +183,7 @@ impl OscMessage {
                     let next_aligned_pos = (current_pos + 3) & !3;
                     cursor.set_position(next_aligned_pos);
                 }
-                _ => return Err(OscError::UnsupportedTypeTag(tag)),
+                _ => return Err(OscError::UnsupportedTypeTag(tag_byte as char)),
             }
         }
 
@@ -462,7 +465,7 @@ pub fn tokenize(s: &str) -> Result<Vec<String>> {
     Ok(tokens)
 }
 
-/// Reads a null-terminated and 4-byte padded OSC string from a cursor.
+/// Reads a null-terminated and 4-byte padded OSC string from a cursor, returning raw bytes.
 ///
 /// # Arguments
 ///
@@ -470,8 +473,8 @@ pub fn tokenize(s: &str) -> Result<Vec<String>> {
 ///
 /// # Returns
 ///
-/// A `Result` containing the parsed string or an `OscError`.
-fn read_osc_string(cursor: &mut Cursor<&[u8]>) -> Result<String> {
+/// A `Result` containing the parsed string bytes or an `OscError`.
+fn read_osc_string_bytes<'a>(cursor: &mut Cursor<&'a [u8]>) -> Result<&'a [u8]> {
     let pos = cursor.position() as usize;
     let buf = cursor.get_ref();
 
@@ -491,9 +494,8 @@ fn read_osc_string(cursor: &mut Cursor<&[u8]>) -> Result<String> {
         }
     };
 
-    // Extract the string bytes and convert to String
+    // Extract the string bytes
     let string_bytes = &remainder[..null_pos];
-    let string = String::from_utf8(string_bytes.to_vec())?;
 
     // Calculate the new position after the null terminator and padding
     let new_pos = pos + null_pos + 1; // +1 for the null terminator
@@ -503,6 +505,22 @@ fn read_osc_string(cursor: &mut Cursor<&[u8]>) -> Result<String> {
     let final_pos = std::cmp::min(next_aligned_pos, buf.len());
     cursor.set_position(final_pos as u64);
 
+    Ok(string_bytes)
+}
+
+/// Reads a null-terminated and 4-byte padded OSC string from a cursor.
+///
+/// # Arguments
+///
+/// * `cursor` - A mutable reference to a cursor over the byte slice.
+///
+/// # Returns
+///
+/// A `Result` containing the parsed string or an `OscError`.
+fn read_osc_string(cursor: &mut Cursor<&[u8]>) -> Result<String> {
+    let string_bytes = read_osc_string_bytes(cursor)?;
+    // Extract the string bytes and convert to String
+    let string = String::from_utf8(string_bytes.to_vec())?;
     Ok(string)
 }
 
