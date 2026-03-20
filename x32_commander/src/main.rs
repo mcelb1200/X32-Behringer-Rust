@@ -86,7 +86,9 @@ fn parse_command_file(path: &str) -> io::Result<Vec<Command>> {
         let mut line = String::new();
         // Limit reading to 4096 bytes to prevent DoS via extremely long lines
         let len = reader.by_ref().take(4096).read_line(&mut line)?;
-        if len == 0 { break; }
+        if len == 0 {
+            break;
+        }
 
         let line = line.trim();
         if line.is_empty() || line.starts_with('#') {
