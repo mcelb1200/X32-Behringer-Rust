@@ -26,5 +26,5 @@ members = [
     "x32_tcp",
     "x32_usb",
     "x32_wav_xlive", "x32_ssavergw",
-    "x32_jog4xlive",
+    "x32_jog4xlive", "x32_punch_control", "x32_midi2osc",
 ]
