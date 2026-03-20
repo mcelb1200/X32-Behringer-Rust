@@ -1,4 +1,3 @@
-
 struct EmulatorGuard {
     child: Child,
 }
