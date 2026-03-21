@@ -113,7 +113,9 @@ async fn main() -> Result<()> {
     });
 
     let xremote_msg = OscMessage::new("/xremote".to_string(), vec![]);
-    let xremote_bytes = xremote_msg.to_bytes().unwrap_or_else(|_| b"/xremote\0\0\0\0".to_vec());
+    let xremote_bytes = xremote_msg
+        .to_bytes()
+        .unwrap_or_else(|_| b"/xremote\0\0\0\0".to_vec());
 
     loop {
         tokio::select! {
