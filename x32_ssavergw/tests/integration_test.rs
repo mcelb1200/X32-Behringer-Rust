@@ -1,3 +1,7 @@
+use std::process::{Child, Command as StdCommand};
+use std::time::Duration;
+use predicates::prelude::*;
+
 struct EmulatorGuard {
     child: Child,
 }
