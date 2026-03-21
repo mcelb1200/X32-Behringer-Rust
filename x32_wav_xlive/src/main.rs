@@ -19,7 +19,7 @@
 //! and creates a new session directory containing one or more multi-channel, 32-bit WAV files
 //! and a `SE_LOG.BIN` metadata file.
 
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
 use byteorder::{LittleEndian, WriteBytesExt};
 use chrono::{Datelike, Timelike, Utc};
 use clap::Parser;
@@ -434,12 +434,10 @@ mod tests {
         };
         let result = run(&args);
         assert!(result.is_err());
-        assert!(
-            result
-                .unwrap_err()
-                .to_string()
-                .contains("is not a 24-bit WAV file")
-        );
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("is not a 24-bit WAV file"));
     }
 
     #[test]
