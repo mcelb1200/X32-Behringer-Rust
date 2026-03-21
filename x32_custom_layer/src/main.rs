@@ -704,28 +704,58 @@ mod tests {
         let args_int = vec![OscArg::String("/test/int".to_string()), OscArg::Int(42)];
         assert_eq!(format_node_state(&args_int).unwrap(), "/test/int 42");
 
-        let args_float = vec![OscArg::String("/test/float".to_string()), OscArg::Float(3.14)];
+        let args_float = vec![
+            OscArg::String("/test/float".to_string()),
+            OscArg::Float(3.14),
+        ];
         assert_eq!(format_node_state(&args_float).unwrap(), "/test/float 3.14");
 
-        let args_string_nospace = vec![OscArg::String("/test/str".to_string()), OscArg::String("hello".to_string())];
-        assert_eq!(format_node_state(&args_string_nospace).unwrap(), "/test/str hello");
+        let args_string_nospace = vec![
+            OscArg::String("/test/str".to_string()),
+            OscArg::String("hello".to_string()),
+        ];
+        assert_eq!(
+            format_node_state(&args_string_nospace).unwrap(),
+            "/test/str hello"
+        );
 
-        let args_string_space = vec![OscArg::String("/test/str".to_string()), OscArg::String("hello world".to_string())];
-        assert_eq!(format_node_state(&args_string_space).unwrap(), "/test/str \"hello world\"");
+        let args_string_space = vec![
+            OscArg::String("/test/str".to_string()),
+            OscArg::String("hello world".to_string()),
+        ];
+        assert_eq!(
+            format_node_state(&args_string_space).unwrap(),
+            "/test/str \"hello world\""
+        );
 
-        let args_string_empty = vec![OscArg::String("/test/str".to_string()), OscArg::String("".to_string())];
-        assert_eq!(format_node_state(&args_string_empty).unwrap(), "/test/str \"\"");
+        let args_string_empty = vec![
+            OscArg::String("/test/str".to_string()),
+            OscArg::String("".to_string()),
+        ];
+        assert_eq!(
+            format_node_state(&args_string_empty).unwrap(),
+            "/test/str \"\""
+        );
 
-        let args_blob = vec![OscArg::String("/test/blob".to_string()), OscArg::Blob(vec![0x00, 0x1A, 0xFF, 0x42])];
-        assert_eq!(format_node_state(&args_blob).unwrap(), "/test/blob %001aff42");
+        let args_blob = vec![
+            OscArg::String("/test/blob".to_string()),
+            OscArg::Blob(vec![0x00, 0x1A, 0xFF, 0x42]),
+        ];
+        assert_eq!(
+            format_node_state(&args_blob).unwrap(),
+            "/test/blob %001aff42"
+        );
 
         let args_mixed = vec![
             OscArg::String("/test/mixed".to_string()),
             OscArg::Int(10),
             OscArg::Float(-1.5),
             OscArg::String("mixed test".to_string()),
-            OscArg::Blob(vec![0xAA, 0xBB])
+            OscArg::Blob(vec![0xAA, 0xBB]),
         ];
-        assert_eq!(format_node_state(&args_mixed).unwrap(), "/test/mixed 10 -1.5 \"mixed test\" %aabb");
+        assert_eq!(
+            format_node_state(&args_mixed).unwrap(),
+            "/test/mixed 10 -1.5 \"mixed test\" %aabb"
+        );
     }
 }
