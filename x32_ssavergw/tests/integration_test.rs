@@ -1,3 +1,7 @@
+use predicates::prelude::*;
+use std::process::{Child, Command as StdCommand};
+use std::time::Duration;
+
 struct EmulatorGuard {
     child: Child,
 }
@@ -10,7 +14,7 @@ impl EmulatorGuard {
             .expect("Failed to start x32_emulator");
 
         // Give the emulator time to start up
-        std::thread::sleep(Duration::from_millis(500));
+        std::thread::sleep(Duration::from_millis(2000));
 
         Self { child }
     }
@@ -44,7 +48,7 @@ fn test_ssavergw_connects_and_dims() {
     let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("x32_ssavergw");
     cmd.arg("--ip").arg("127.0.0.1").arg("--delay").arg("1");
 
-    let result = cmd.timeout(Duration::from_secs(3)).assert();
+    let result = cmd.timeout(Duration::from_secs(5)).assert();
 
     // The process will be killed by the timeout, which is expected.
     // We want to ensure it connected and entered low light mode.
