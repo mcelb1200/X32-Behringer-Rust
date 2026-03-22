@@ -135,8 +135,7 @@ fn run_automix(args: Args, socket: UdpSocket) -> Result<()> {
                         for ch in start_ch..stop_ch {
                             let start = ch * 4;
                             let end = start + 4;
-                            if let Some(bytes) =
-                                data.get(start..end).and_then(|s| s.try_into().ok())
+                            if let Some(bytes) = data.get(start..end).and_then(|s| s.try_into().ok())
                             {
                                 let level = f32::from_be_bytes(bytes);
                                 if let Some((is_active, last_active_time)) =
@@ -345,7 +344,7 @@ mod tests {
     #[test]
     fn test_meters_parsing_safety() {
         let data = vec![0u8; 8];
-        let mut status = vec![(false, Instant::now()); 32];
+        let status = vec![(false, Instant::now()); 32];
         let mut count = 0;
 
         let start_ch: u32 = 1;
