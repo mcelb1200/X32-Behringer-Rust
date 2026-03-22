@@ -6,6 +6,8 @@ mod common;
 mod error;
 #[path = "tests/main_bus.rs"]
 mod main_bus;
+#[path = "tests/output.rs"]
+mod output;
 
 #[test]
 fn test_create_socket_with_port() {
