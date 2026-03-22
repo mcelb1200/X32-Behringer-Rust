@@ -112,10 +112,15 @@ async fn main() -> Result<()> {
         std::process::exit(0);
     });
 
+    let xremote_msg = OscMessage::new("/xremote".to_string(), vec![]);
+    let xremote_bytes = xremote_msg
+        .to_bytes()
+        .unwrap_or_else(|_| b"/xremote\0\0\0\0".to_vec());
+
     loop {
         tokio::select! {
             _ = interval_xremote.tick() => {
-                let _ = socket_clone.send_to(b"/xremote", x32_addr).await;
+                let _ = socket_clone.send_to(&xremote_bytes, x32_addr).await;
             }
 
             _ = interval_check.tick() => {
