@@ -1,8 +1,16 @@
 mod config;
 mod rpn;
 
-use config::MidiOscRule;
+use anyhow::{Context, Result};
+use clap::Parser;
+
+use midir::{Ignore, MidiInput};
+use osc_lib::{OscArg, OscMessage};
 use rpn::RpnCalculator;
+use std::sync::Arc;
+use std::time::Duration;
+use tokio::net::UdpSocket;
+use tokio::time::{self, Instant};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -28,16 +36,17 @@ fn execute_template(
 ) -> Result<Vec<u8>> {
     let mut path = String::new();
     // OPTIMIZATION: Most OSC messages have <8 arguments. Pre-allocating capacity
-    // prevents reallocation in this hot path triggered by high-frequency MIDI events.
-    let mut type_tags = Vec::with_capacity(8);
+    // avoids repeated heap allocations and copying as the vector grows.
     let mut args = Vec::with_capacity(8);
+    let mut type_tags = Vec::with_capacity(8);
 
     let mut in_types = false;
     let mut in_expr = false;
-    // Pre-allocate to prevent growth during loop construction
+    // OPTIMIZATION: Pre-allocate expression buffer capacity since we reuse it.
     let mut current_expr = String::with_capacity(32);
 
-    // OPTIMIZATION: Avoid allocating an intermediate Vec<&str> using collect().
+    // OPTIMIZATION: Avoid splitting into an intermediate Vec of Strings
+    // using collect().
     // Instead, iterate directly over split_whitespace().
     let mut arg_idx = 0;
 
@@ -209,15 +218,12 @@ mod tests {
 async fn main() -> Result<()> {
     let args = Args::parse();
 
-    let rules = MidiOscRule::load_file(&args.file).context("Failed to load .m2o rules file")?;
+    let rules = config::parse_file(&args.file).context("Failed to load .m2o rules file")?;
     println!("Loaded {} rules from {}", rules.len(), args.file);
 
-    // Optionally load configuration, defaulting if the file isn't found
-    let config = config::Config::load(".X32Midi2OSC.ini").unwrap_or_default();
-
-    // We override config with explicit CLI ip if provided
+    // We use explicit CLI ip if provided
     let ip = if args.ip.is_empty() {
-        config.ip_str.clone()
+        "127.0.0.1".to_string() // Fallback if no IP is provided since Config was removed
     } else {
         args.ip.clone()
     };
@@ -245,9 +251,7 @@ async fn main() -> Result<()> {
     for (i, port) in in_ports.iter().enumerate() {
         let name = midi_in.port_name(port)?;
         if (!args.midi_in.is_empty() && name.to_lowercase().contains(&args.midi_in.to_lowercase()))
-            || (args.midi_in.is_empty() && (i + 1) as i32 == config.midi_in_port)
-            || (args.midi_in.is_empty() && config.midi_in_port == 0 && i == 0)
-        // fallback to 0th
+            || (args.midi_in.is_empty() && i == 0) // Fallback to 0th port if not specified since config was removed
         {
             selected_port = Some(port.clone());
             println!("Selecting MIDI Input: {}", name);
@@ -273,7 +277,7 @@ async fn main() -> Result<()> {
     let _conn_in = match midi_in.connect(
         &in_port,
         "x32_midi2osc_in",
-        move |_stamp, message, _| {
+        move |_stamp, message: &[u8], _| {
             if message.len() < 2 {
                 return;
             }
@@ -311,13 +315,13 @@ async fn main() -> Result<()> {
             let command_id = ((md1 << 8) | (mmc | ((mch - 1) & 0xF))) as u32;
 
             for rule in rules_clone.iter() {
-                if command_id == rule.command_id {
+                if command_id == rule.get_match_key() {
                     if (mparam[2] as i32) & 0x80 != 0 {
-                        mparam[2] = (rule.d2 & 0x7F) as f64;
+                        mparam[2] = (rule.data2 & 0x7F) as f64;
                     }
 
                     if let Ok(payload) =
-                        execute_template(&rule.osc_template, &mparam, &mut calculator)
+                        execute_template(&rule.osc_command, &mparam, &mut calculator)
                     {
                         let _ = tx.send(payload);
                     }
