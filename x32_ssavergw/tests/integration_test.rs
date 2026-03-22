@@ -55,6 +55,12 @@ fn test_ssavergw_connects_and_dims() {
 
     let output = result.get_output();
     let stdout = String::from_utf8_lossy(&output.stdout);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+
+    if !stdout.contains("Connected!") {
+        println!("STDOUT: {}", stdout);
+        println!("STDERR: {}", stderr);
+    }
 
     assert!(stdout.contains("Connected!"));
     assert!(stdout.contains("Delay before Low Light: 1 seconds"));

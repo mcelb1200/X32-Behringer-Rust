@@ -398,6 +398,9 @@ fn format_node_state(args: &[OscArg]) -> Result<String> {
                 }
             }
             OscArg::Blob(val) => {
+                use std::fmt::Write;
+                for byte in val {
+                    let _ = write!(s, "{:02x}", byte);
                 s.push('%');
                 for byte in val {
                     s.push_str(&format!("{:02x}", byte));
@@ -700,6 +703,13 @@ mod tests {
     }
 
     #[test]
+    fn test_format_node_state_with_blob() {
+        let args = vec![
+            OscArg::String("/some/node".to_string()),
+            OscArg::Blob(vec![0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef]),
+        ];
+        let result = format_node_state(&args).unwrap();
+        assert_eq!(result, "/some/node 0123456789abcdef");
     fn test_format_node_state() {
         let args_int = vec![OscArg::String("/test/int".to_string()), OscArg::Int(42)];
         assert_eq!(format_node_state(&args_int).unwrap(), "/test/int 42");
