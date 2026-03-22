@@ -230,6 +230,7 @@ impl OscMessage {
             }
         }
         bytes.push(0); // Null terminator
+        #[allow(clippy::manual_is_multiple_of)]
         while bytes.len() % 4 != 0 {
             bytes.push(0);
         }
@@ -243,6 +244,7 @@ impl OscMessage {
                 OscArg::Blob(val) => {
                     bytes.extend_from_slice(&(val.len() as i32).to_be_bytes());
                     bytes.extend_from_slice(val);
+                    #[allow(clippy::manual_is_multiple_of)]
                     while bytes.len() % 4 != 0 {
                         bytes.push(0);
                     }
@@ -537,6 +539,7 @@ fn read_osc_string(cursor: &mut Cursor<&[u8]>) -> Result<String> {
 fn write_osc_string(bytes: &mut Vec<u8>, s: &str) -> Result<()> {
     bytes.extend_from_slice(s.as_bytes());
     bytes.push(0);
+    #[allow(clippy::manual_is_multiple_of)]
     while bytes.len() % 4 != 0 {
         bytes.push(0);
     }

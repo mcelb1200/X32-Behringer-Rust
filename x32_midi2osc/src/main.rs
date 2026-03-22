@@ -1,11 +1,3 @@
-use anyhow::{Context, Result};
-use clap::Parser;
-use midir::{Ignore, MidiInput};
-use osc_lib::{OscArg, OscMessage};
-use std::sync::Arc;
-use tokio::net::UdpSocket;
-use tokio::time::{self, Duration, Instant};
-
 mod config;
 mod rpn;
 
@@ -63,9 +55,9 @@ fn execute_template(
             continue;
         }
 
-        if part.starts_with('[') {
+        if let Some(stripped) = part.strip_prefix('[') {
             in_expr = true;
-            current_expr = part[1..].to_string();
+            current_expr = stripped.to_string();
             if current_expr.ends_with(']') {
                 in_expr = false;
                 current_expr.pop(); // remove ']'
@@ -88,6 +80,7 @@ fn execute_template(
             }
         } else if in_expr {
             current_expr.push(' ');
+            #[allow(clippy::manual_strip)]
             if part.ends_with(']') {
                 in_expr = false;
                 current_expr.push_str(&part[..part.len() - 1]);
