@@ -107,4 +107,20 @@ mod tests {
         let response = mixer.dispatch(&bytes).unwrap();
         assert!(response.is_none());
     }
+
+    #[test]
+    fn test_mixer_seed_from_lines_malformed_int() {
+        let mut mixer = Mixer::new();
+        let lines = vec!["/ch/01/mix/on,i\tnot_an_int"];
+        mixer.seed_from_lines(lines);
+        assert_eq!(mixer.state.get("/ch/01/mix/on"), None);
+    }
+
+    #[test]
+    fn test_mixer_seed_from_lines_malformed_float() {
+        let mut mixer = Mixer::new();
+        let lines = vec!["/ch/01/mix/fader,f\tnot_a_float"];
+        mixer.seed_from_lines(lines);
+        assert_eq!(mixer.state.get("/ch/01/mix/fader"), None);
+    }
 }
