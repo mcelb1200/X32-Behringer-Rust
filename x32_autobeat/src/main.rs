@@ -87,8 +87,8 @@ enum Algorithm {
 impl std::fmt::Display for Algorithm {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Algorithm::Energy => write!(f, "Energy"),
-            Algorithm::Spectral => write!(f, "Spectral"),
+            Algorithm::Energy => f.write_str("Energy"),
+            Algorithm::Spectral => f.write_str("Spectral"),
         }
     }
 }
@@ -227,7 +227,7 @@ fn main() -> Result<()> {
                         if !is_panic {
                             let now = std::time::SystemTime::now()
                                 .duration_since(std::time::UNIX_EPOCH)
-                                .unwrap()
+                                .unwrap_or_default()
                                 .as_millis() as u64;
                             osc_detector.process_level(lvl, now);
                         }

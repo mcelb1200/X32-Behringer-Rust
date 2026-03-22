@@ -37,8 +37,8 @@
 //! assert_eq!(msg.args, vec![OscArg::Float(0.75)]);
 //! ```
 
-use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
-use std::io::{self, Cursor, Read, Write};
+use byteorder::{BigEndian, ReadBytesExt};
+use std::io::{self, Cursor, Read};
 use std::str::FromStr;
 use std::string::FromUtf8Error;
 
@@ -67,10 +67,10 @@ impl std::fmt::Display for OscError {
         match self {
             OscError::Io(e) => write!(f, "I/O error: {}", e),
             OscError::Utf8(e) => write!(f, "UTF-8 conversion error: {}", e),
-            OscError::InvalidTypeTag => write!(f, "Invalid OSC type tag string"),
+            OscError::InvalidTypeTag => f.write_str("Invalid OSC type tag string"),
             OscError::UnsupportedTypeTag(c) => write!(f, "Unsupported OSC type tag: {}", c),
             OscError::ParseError(s) => write!(f, "Parse error: {}", s),
-            OscError::UnexpectedResponse => write!(f, "Unexpected response from mixer"),
+            OscError::UnexpectedResponse => f.write_str("Unexpected response from mixer"),
         }
     }
 }
@@ -150,15 +150,18 @@ impl OscMessage {
         let mut cursor = Cursor::new(bytes);
 
         let path = read_osc_string(&mut cursor)?;
-        let type_tags = read_osc_string(&mut cursor)?;
+        // OPTIMIZATION: Parse type tags as raw bytes instead of allocating a String
+        // and validating UTF-8, as type tags are guaranteed to be ASCII.
+        // This eliminates a Vec allocation and string conversion per OSC message parsed.
+        let type_tags = read_osc_string_bytes(&mut cursor)?;
 
-        if !type_tags.starts_with(',') {
+        if type_tags.is_empty() || type_tags[0] != b',' {
             return Err(OscError::InvalidTypeTag);
         }
 
-        let mut args = Vec::new();
-        for tag in type_tags[1..].chars() {
-            match tag {
+        let mut args = Vec::with_capacity(type_tags.len().saturating_sub(1));
+        for &tag_byte in &type_tags[1..] {
+            match tag_byte as char {
                 'i' => {
                     let val = cursor.read_i32::<BigEndian>()?;
                     args.push(OscArg::Int(val));
@@ -180,7 +183,7 @@ impl OscMessage {
                     let next_aligned_pos = (current_pos + 3) & !3;
                     cursor.set_position(next_aligned_pos);
                 }
-                _ => return Err(OscError::UnsupportedTypeTag(tag)),
+                _ => return Err(OscError::UnsupportedTypeTag(tag_byte as char)),
             }
         }
 
@@ -217,31 +220,33 @@ impl OscMessage {
         write_osc_string(&mut bytes, &self.path)?;
 
         // Write type tags
-        bytes.write_u8(b',')?;
+        bytes.push(b',');
         for arg in &self.args {
             match arg {
-                OscArg::Int(_) => bytes.write_u8(b'i')?,
-                OscArg::Float(_) => bytes.write_u8(b'f')?,
-                OscArg::String(_) => bytes.write_u8(b's')?,
-                OscArg::Blob(_) => bytes.write_u8(b'b')?,
+                OscArg::Int(_) => bytes.push(b'i'),
+                OscArg::Float(_) => bytes.push(b'f'),
+                OscArg::String(_) => bytes.push(b's'),
+                OscArg::Blob(_) => bytes.push(b'b'),
             }
         }
-        bytes.write_u8(0)?; // Null terminator
+        bytes.push(0); // Null terminator
+        #[allow(clippy::manual_is_multiple_of)]
         while bytes.len() % 4 != 0 {
-            bytes.write_u8(0)?;
+            bytes.push(0);
         }
 
         // Write args
         for arg in &self.args {
             match arg {
-                OscArg::Int(val) => bytes.write_i32::<BigEndian>(*val)?,
-                OscArg::Float(val) => bytes.write_f32::<BigEndian>(*val)?,
+                OscArg::Int(val) => bytes.extend_from_slice(&val.to_be_bytes()),
+                OscArg::Float(val) => bytes.extend_from_slice(&val.to_be_bytes()),
                 OscArg::String(val) => write_osc_string(&mut bytes, val)?,
                 OscArg::Blob(val) => {
-                    bytes.write_i32::<BigEndian>(val.len() as i32)?;
-                    bytes.write_all(val)?;
+                    bytes.extend_from_slice(&(val.len() as i32).to_be_bytes());
+                    bytes.extend_from_slice(val);
+                    #[allow(clippy::manual_is_multiple_of)]
                     while bytes.len() % 4 != 0 {
-                        bytes.write_u8(0)?;
+                        bytes.push(0);
                     }
                 }
             }
@@ -285,12 +290,14 @@ impl FromStr for OscMessage {
             .next()
             .ok_or(OscError::ParseError("Empty command string".to_string()))?
             .to_string();
-        let mut args = Vec::new();
+        let mut args = Vec::new(); // Capacity will be reserved later
 
         if let Some(type_tags) = it.next() {
             if !type_tags.starts_with(',') {
                 return Err(OscError::InvalidTypeTag);
             }
+
+            args.reserve_exact(type_tags.len().saturating_sub(1));
 
             for tag in type_tags[1..].chars() {
                 let val_str = it.next().ok_or(OscError::ParseError(format!(
@@ -318,7 +325,7 @@ impl FromStr for OscMessage {
                                 val_str
                             )));
                         }
-                        let mut blob = Vec::new();
+                        let mut blob = Vec::with_capacity(val_str.len() / 2);
                         for i in (0..val_str.len()).step_by(2) {
                             let byte = u8::from_str_radix(&val_str[i..i + 2], 16)
                                 .map_err(|e| OscError::ParseError(e.to_string()))?;
@@ -362,23 +369,27 @@ impl std::fmt::Display for OscMessage {
     /// assert_eq!(msg_str, "/ch/01/mix/fader ,f 0.75");
     /// ```
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.path)?;
+        f.write_str(&self.path)?;
         if !self.args.is_empty() {
-            write!(f, " ,")?;
+            f.write_str(" ,")?;
             for arg in &self.args {
                 match arg {
-                    OscArg::Int(_) => write!(f, "i")?,
-                    OscArg::Float(_) => write!(f, "f")?,
-                    OscArg::String(_) => write!(f, "s")?,
-                    OscArg::Blob(_) => write!(f, "b")?,
+                    OscArg::Int(_) => f.write_str("i")?,
+                    OscArg::Float(_) => f.write_str("f")?,
+                    OscArg::String(_) => f.write_str("s")?,
+                    OscArg::Blob(_) => f.write_str("b")?,
                 }
             }
             for arg in &self.args {
-                write!(f, " ")?;
+                f.write_str(" ")?;
                 match arg {
                     OscArg::Int(val) => write!(f, "{}", val)?,
                     OscArg::Float(val) => write!(f, "{}", val)?,
-                    OscArg::String(val) => write!(f, "\"{}\"", val)?,
+                    OscArg::String(val) => {
+                        f.write_str("\"")?;
+                        f.write_str(val)?;
+                        f.write_str("\"")?;
+                    }
                     OscArg::Blob(val) => {
                         for byte in val {
                             write!(f, "{:02x}", byte)?;
@@ -456,7 +467,7 @@ pub fn tokenize(s: &str) -> Result<Vec<String>> {
     Ok(tokens)
 }
 
-/// Reads a null-terminated and 4-byte padded OSC string from a cursor.
+/// Reads a null-terminated and 4-byte padded OSC string from a cursor, returning raw bytes.
 ///
 /// # Arguments
 ///
@@ -464,8 +475,8 @@ pub fn tokenize(s: &str) -> Result<Vec<String>> {
 ///
 /// # Returns
 ///
-/// A `Result` containing the parsed string or an `OscError`.
-fn read_osc_string(cursor: &mut Cursor<&[u8]>) -> Result<String> {
+/// A `Result` containing the parsed string bytes or an `OscError`.
+fn read_osc_string_bytes<'a>(cursor: &mut Cursor<&'a [u8]>) -> Result<&'a [u8]> {
     let pos = cursor.position() as usize;
     let buf = cursor.get_ref();
 
@@ -485,9 +496,8 @@ fn read_osc_string(cursor: &mut Cursor<&[u8]>) -> Result<String> {
         }
     };
 
-    // Extract the string bytes and convert to String
+    // Extract the string bytes
     let string_bytes = &remainder[..null_pos];
-    let string = String::from_utf8(string_bytes.to_vec())?;
 
     // Calculate the new position after the null terminator and padding
     let new_pos = pos + null_pos + 1; // +1 for the null terminator
@@ -497,6 +507,22 @@ fn read_osc_string(cursor: &mut Cursor<&[u8]>) -> Result<String> {
     let final_pos = std::cmp::min(next_aligned_pos, buf.len());
     cursor.set_position(final_pos as u64);
 
+    Ok(string_bytes)
+}
+
+/// Reads a null-terminated and 4-byte padded OSC string from a cursor.
+///
+/// # Arguments
+///
+/// * `cursor` - A mutable reference to a cursor over the byte slice.
+///
+/// # Returns
+///
+/// A `Result` containing the parsed string or an `OscError`.
+fn read_osc_string(cursor: &mut Cursor<&[u8]>) -> Result<String> {
+    let string_bytes = read_osc_string_bytes(cursor)?;
+    // Extract the string bytes and convert to String
+    let string = String::from_utf8(string_bytes.to_vec())?;
     Ok(string)
 }
 
@@ -511,10 +537,11 @@ fn read_osc_string(cursor: &mut Cursor<&[u8]>) -> Result<String> {
 ///
 /// A `Result` indicating success or failure.
 fn write_osc_string(bytes: &mut Vec<u8>, s: &str) -> Result<()> {
-    bytes.write_all(s.as_bytes())?;
-    bytes.write_u8(0)?;
+    bytes.extend_from_slice(s.as_bytes());
+    bytes.push(0);
+    #[allow(clippy::manual_is_multiple_of)]
     while bytes.len() % 4 != 0 {
-        bytes.write_u8(0)?;
+        bytes.push(0);
     }
     Ok(())
 }
