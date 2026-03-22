@@ -251,7 +251,8 @@ async fn main() -> Result<()> {
     for (i, port) in in_ports.iter().enumerate() {
         let name = midi_in.port_name(port)?;
         if (!args.midi_in.is_empty() && name.to_lowercase().contains(&args.midi_in.to_lowercase()))
-            || (args.midi_in.is_empty() && i == 0) // Fallback to 0th port if not specified since config was removed
+            || (args.midi_in.is_empty() && i == 0)
+        // Fallback to 0th port if not specified since config was removed
         {
             selected_port = Some(port.clone());
             println!("Selecting MIDI Input: {}", name);
