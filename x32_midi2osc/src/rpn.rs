@@ -22,11 +22,11 @@ impl RpnCalculator {
     pub fn evaluate(&mut self, expr: &str, mparam: &[f64]) -> Result<f64> {
         let mut stack: Vec<f64> = Vec::new();
 
-        let tokens = expr.trim().split_whitespace();
+        let tokens = expr.split_whitespace();
 
         for token in tokens {
-            if token.starts_with('$') {
-                let idx: usize = token[1..].parse().unwrap_or(0);
+            if let Some(stripped) = token.strip_prefix('$') {
+                let idx: usize = stripped.parse().unwrap_or(0);
                 let val = if idx < mparam.len() { mparam[idx] } else { 0.0 };
                 stack.push(val);
             } else if let Ok(val) = token.parse::<f64>() {

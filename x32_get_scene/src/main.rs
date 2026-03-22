@@ -13,7 +13,7 @@
 
 use clap::Parser;
 use osc_lib::{OscArg, OscMessage};
-use std::io::{self, BufRead};
+use std::io::{self, BufRead, Read};
 use x32_lib::{create_socket, error::Result};
 
 /// Command-line arguments for `x32_get_scene`.
@@ -43,7 +43,7 @@ fn main() -> Result<()> {
         None => {
             println!("Please enter scene name: ");
             let mut name = String::new();
-            io::stdin().read_line(&mut name)?;
+            io::stdin().lock().take(4096).read_line(&mut name)?;
             name.trim().to_string()
         }
     };
@@ -53,7 +53,7 @@ fn main() -> Result<()> {
         None => {
             println!("Please enter note data: ");
             let mut note = String::new();
-            io::stdin().read_line(&mut note)?;
+            io::stdin().lock().take(4096).read_line(&mut note)?;
             note.trim().to_string()
         }
     };
@@ -64,10 +64,16 @@ fn main() -> Result<()> {
     );
 
     let stdin = io::stdin();
-    for line in stdin.lock().lines() {
-        let line = line?;
+    let mut stdin_lock = stdin.lock();
+    loop {
+        let mut line = String::new();
+        let len = stdin_lock.by_ref().take(4096).read_line(&mut line)?;
+        if len == 0 {
+            break;
+        }
+        let line = line.trim();
         if line.starts_with('/') {
-            let msg = OscMessage::new("/node".to_string(), vec![OscArg::String(line)]);
+            let msg = OscMessage::new("/node".to_string(), vec![OscArg::String(line.to_string())]);
             socket.send(&msg.to_bytes()?)?;
 
             let mut buf = [0; 512];
