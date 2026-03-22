@@ -13,7 +13,8 @@ fn test_help() {
 #[test]
 fn test_invalid_slot() {
     let mut cmd = cargo_bin_cmd!("x32_tap");
-    cmd.arg("--slot").arg("5")
+    cmd.arg("--slot")
+        .arg("5")
         .assert()
         .failure()
         .stderr(predicate::str::contains("FX slot must be between 1 and 4"));
