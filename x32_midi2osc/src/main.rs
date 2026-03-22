@@ -27,17 +27,21 @@ fn execute_template(
     calculator: &mut RpnCalculator,
 ) -> Result<Vec<u8>> {
     let mut path = String::new();
-    let mut type_tags = Vec::new();
-    let mut args = Vec::new();
+    // OPTIMIZATION: Most OSC messages have <8 arguments. Pre-allocating capacity
+    // prevents reallocation in this hot path triggered by high-frequency MIDI events.
+    let mut type_tags = Vec::with_capacity(8);
+    let mut args = Vec::with_capacity(8);
 
     let mut in_types = false;
     let mut in_expr = false;
-    let mut current_expr = String::new();
+    // Pre-allocate to prevent growth during loop construction
+    let mut current_expr = String::with_capacity(32);
 
-    let parts: Vec<&str> = template.split_whitespace().collect();
+    // OPTIMIZATION: Avoid allocating an intermediate Vec<&str> using collect().
+    // Instead, iterate directly over split_whitespace().
     let mut arg_idx = 0;
 
-    for (i, part) in parts.iter().enumerate() {
+    for (i, part) in template.split_whitespace().enumerate() {
         if i == 0 {
             path = part.to_string();
             continue;
