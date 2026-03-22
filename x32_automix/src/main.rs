@@ -135,8 +135,7 @@ fn run_automix(args: Args, socket: UdpSocket) -> Result<()> {
                         for ch in start_ch..stop_ch {
                             let start = ch * 4;
                             let end = start + 4;
-                            if let Some(bytes) =
-                                data.get(start..end).and_then(|s| s.try_into().ok())
+                            if let Some(bytes) = data.get(start..end).and_then(|s| s.try_into().ok())
                             {
                                 let level = f32::from_be_bytes(bytes);
                                 if let Some((is_active, last_active_time)) =
@@ -348,8 +347,8 @@ mod tests {
         let mut status = vec![(false, Instant::now()); 32];
         let mut count = 0;
 
-        let start_ch = 1;
-        let stop_ch = 32;
+        let start_ch: u32 = 1;
+        let stop_ch: u32 = 32;
 
         let start_idx = start_ch.saturating_sub(1) as usize;
         let stop_idx = stop_ch as usize;
