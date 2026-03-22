@@ -13,8 +13,8 @@ impl EmulatorGuard {
             .spawn()
             .expect("Failed to start x32_emulator");
 
-        // Give the emulator time to start up (especially needed on Windows CI)
-        std::thread::sleep(Duration::from_secs(2));
+        // Give the emulator time to start up
+        std::thread::sleep(Duration::from_millis(2000));
 
         Self { child }
     }
@@ -48,7 +48,7 @@ fn test_ssavergw_connects_and_dims() {
     let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("x32_ssavergw");
     cmd.arg("--ip").arg("127.0.0.1").arg("--delay").arg("1");
 
-    let result = cmd.timeout(Duration::from_secs(8)).assert();
+    let result = cmd.timeout(Duration::from_secs(5)).assert();
 
     // The process will be killed by the timeout, which is expected.
     // We want to ensure it connected and entered low light mode.
