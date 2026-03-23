@@ -38,6 +38,7 @@
 //! ```
 
 use byteorder::{BigEndian, ReadBytesExt};
+use std::fmt::Write;
 use std::io::{self, Cursor, Read};
 use std::str::FromStr;
 use std::string::FromUtf8Error;
@@ -391,8 +392,13 @@ impl std::fmt::Display for OscMessage {
                         f.write_str("\"")?;
                     }
                     OscArg::Blob(val) => {
+                        // OPTIMIZATION: Manually write hex characters instead of using the `write!` macro
+                        // with formatting `{:02x}`. This avoids the machinery of std::fmt and is
+                        // significantly faster for large binary blobs in hot paths.
+                        static HEX: &[u8; 16] = b"0123456789abcdef";
                         for byte in val {
-                            write!(f, "{:02x}", byte)?;
+                            f.write_char(HEX[(byte >> 4) as usize] as char)?;
+                            f.write_char(HEX[(byte & 0x0f) as usize] as char)?;
                         }
                         Ok(())
                     }?,
