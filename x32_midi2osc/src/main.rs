@@ -1,7 +1,7 @@
 mod config;
 mod rpn;
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use clap::Parser;
 
 use midir::{Ignore, MidiInput};
@@ -218,12 +218,6 @@ mod tests {
 async fn main() -> Result<()> {
     let args = Args::parse();
 
-    let rules = config::parse_file(&args.file).context("Failed to load .m2o rules file")?;
-    println!("Loaded {} rules from {}", rules.len(), args.file);
-
-    // We use explicit CLI ip if provided
-    let ip = if args.ip.is_empty() {
-        "127.0.0.1".to_string() // Fallback if no IP is provided since Config was removed
     let rules = config::parse_file(&args.file).unwrap_or_default();
     println!("Loaded {} rules from {}", rules.len(), args.file);
 
