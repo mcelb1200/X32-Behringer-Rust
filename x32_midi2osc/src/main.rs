@@ -218,7 +218,7 @@ async fn main() -> Result<()> {
     let rules = config::parse_file(&args.file).context("Failed to load .m2o rules file")?;
     println!("Loaded {} rules from {}", rules.len(), args.file);
 
-    let config = config::Config::load(".X32Midi2OSC.ini").unwrap_or_default();
+    let _config = config::Config::load(".X32Midi2OSC.ini").unwrap_or_default();
 
     let ip = if args.ip.is_empty() {
         "192.168.0.64".to_string()
