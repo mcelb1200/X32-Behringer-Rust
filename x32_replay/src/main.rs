@@ -14,6 +14,7 @@
 
 use anyhow::Result;
 use clap::Parser;
+use std::io::{BufRead, Read};
 use std::sync::{Arc, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::fs::File;
@@ -91,12 +92,19 @@ async fn main() -> Result<()> {
 
     // Stdin loop
     let stdin = std::io::stdin();
+    let mut stdin_lock = stdin.lock();
     let mut line = String::new();
     loop {
         line.clear();
-        if stdin.read_line(&mut line).is_err() {
+        let len = stdin_lock.by_ref().take(4096).read_line(&mut line).unwrap_or(0);
+        if len == 0 {
             break;
         }
+        if len == 4096 && !line.ends_with('\n') {
+            eprintln!("Error: Input line too long (exceeds 4096 bytes).");
+            break;
+        }
+
         let cmd = line.trim();
 
         let mut s = match state.lock() {
