@@ -224,6 +224,11 @@ async fn main() -> Result<()> {
     // We use explicit CLI ip if provided
     let ip = if args.ip.is_empty() {
         "127.0.0.1".to_string() // Fallback if no IP is provided since Config was removed
+    let rules = config::parse_file(&args.file).unwrap_or_default();
+    println!("Loaded {} rules from {}", rules.len(), args.file);
+
+    let ip = if args.ip.is_empty() {
+        "192.168.0.64".to_string()
     } else {
         args.ip.clone()
     };
