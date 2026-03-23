@@ -221,7 +221,7 @@ async fn main() -> Result<()> {
     let config = config::Config::load(".X32Midi2OSC.ini").unwrap_or_default();
 
     let ip = if args.ip.is_empty() {
-        config.ip_str.clone()
+        "192.168.0.64".to_string()
     } else {
         args.ip.clone()
     };
@@ -251,8 +251,7 @@ async fn main() -> Result<()> {
     for (i, port) in in_ports.iter().enumerate() {
         let name = midi_in.port_name(port)?;
         if (!args.midi_in.is_empty() && name.to_lowercase().contains(&args.midi_in.to_lowercase()))
-            || (args.midi_in.is_empty() && (i + 1) as i32 == config.midi_in_port)
-            || (args.midi_in.is_empty() && config.midi_in_port == 0 && i == 0)
+            || (args.midi_in.is_empty() && i == 0)
         // fallback to 0th
         {
             selected_port = Some(port.clone());
