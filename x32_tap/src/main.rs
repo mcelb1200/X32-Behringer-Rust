@@ -71,7 +71,11 @@ async fn main() -> Result<()> {
     match tokio::time::timeout(std::time::Duration::from_millis(500), socket.recv(&mut buf)).await {
         Ok(Ok(_)) => println!("Connected!"),
         Ok(Err(e)) => return Err(anyhow!("Failed to connect to X32: {}", e)),
-        Err(_) => return Err(anyhow!("Connection to X32 timed out. Is the IP address correct?")),
+        Err(_) => {
+            return Err(anyhow!(
+                "Connection to X32 timed out. Is the IP address correct?"
+            ));
+        }
     }
 
     // We can't reuse get_fx_type easily because it takes std::net::UdpSocket.
@@ -82,7 +86,9 @@ async fn main() -> Result<()> {
     let mut fx_type = 0;
 
     // Read response with timeout
-    if let Ok(res) = tokio::time::timeout(std::time::Duration::from_millis(500), socket.recv(&mut buf)).await {
+    if let Ok(res) =
+        tokio::time::timeout(std::time::Duration::from_millis(500), socket.recv(&mut buf)).await
+    {
         if let Ok(len) = res {
             if let Ok(msg) = OscMessage::from_bytes(&buf[..len]) {
                 if msg.path == type_req.path {
@@ -108,7 +114,10 @@ async fn main() -> Result<()> {
 
     if args.auto {
         println!("X32Tap - Auto Mode");
-        println!("Monitoring channel {} with threshold {}", args.channel, args.threshold);
+        println!(
+            "Monitoring channel {} with threshold {}",
+            args.channel, args.threshold
+        );
         println!("Press Ctrl+C to quit.");
 
         let mut last_tap: Option<Instant> = None;
@@ -139,7 +148,7 @@ async fn main() -> Result<()> {
                         OscArg::Int(0),
                         OscArg::Int(0),
                         OscArg::Int((args.channel - 1) as i32),
-                    ]
+                    ],
                 );
                 if let Err(e) = socket.send(&meter_req.to_bytes()?).await {
                     eprintln!("Failed to send /meters request: {}", e);
@@ -149,7 +158,10 @@ async fn main() -> Result<()> {
             }
 
             // Read UDP packets
-            if let Ok(Ok(len)) = tokio::time::timeout(std::time::Duration::from_millis(100), socket.recv(&mut buf)).await {
+            if let Ok(Ok(len)) =
+                tokio::time::timeout(std::time::Duration::from_millis(100), socket.recv(&mut buf))
+                    .await
+            {
                 if let Ok(msg) = OscMessage::from_bytes(&buf[..len]) {
                     if msg.path == "/meters/6" {
                         if let Some(OscArg::Blob(data)) = msg.args.first() {
@@ -173,11 +185,22 @@ async fn main() -> Result<()> {
                                             if delta_ms > 60.0 {
                                                 let f_val = (delta_ms / 3000.0).clamp(0.0, 1.0);
                                                 let tempo_ms = (f_val * 3000.0) as i32;
-                                                println!("Auto Tap: {}ms (level: {:.2})", tempo_ms, level);
+                                                println!(
+                                                    "Auto Tap: {}ms (level: {:.2})",
+                                                    tempo_ms, level
+                                                );
 
-                                                let update_msg = OscMessage::new(address.clone(), vec![OscArg::Float(f_val)]);
-                                                if let Err(e) = socket.send(&update_msg.to_bytes()?).await {
-                                                    eprintln!("Failed to update FX parameter: {}", e);
+                                                let update_msg = OscMessage::new(
+                                                    address.clone(),
+                                                    vec![OscArg::Float(f_val)],
+                                                );
+                                                if let Err(e) =
+                                                    socket.send(&update_msg.to_bytes()?).await
+                                                {
+                                                    eprintln!(
+                                                        "Failed to update FX parameter: {}",
+                                                        e
+                                                    );
                                                 }
                                                 last_tap = Some(tap_time);
                                             }
