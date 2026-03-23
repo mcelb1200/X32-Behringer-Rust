@@ -1,8 +1,14 @@
 mod config;
 mod rpn;
 
-use config::MidiOscRule;
+use anyhow::{Context, Result};
+use clap::Parser;
+use midir::{Ignore, MidiInput};
+use osc_lib::{OscArg, OscMessage};
 use rpn::RpnCalculator;
+use std::sync::Arc;
+use tokio::net::UdpSocket;
+use tokio::time::{self, Duration, Instant};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -209,13 +215,11 @@ mod tests {
 async fn main() -> Result<()> {
     let args = Args::parse();
 
-    let rules = MidiOscRule::load_file(&args.file).context("Failed to load .m2o rules file")?;
+    let rules = config::parse_file(&args.file).context("Failed to load .m2o rules file")?;
     println!("Loaded {} rules from {}", rules.len(), args.file);
 
-    // Optionally load configuration, defaulting if the file isn't found
     let config = config::Config::load(".X32Midi2OSC.ini").unwrap_or_default();
 
-    // We override config with explicit CLI ip if provided
     let ip = if args.ip.is_empty() {
         config.ip_str.clone()
     } else {
@@ -223,7 +227,9 @@ async fn main() -> Result<()> {
     };
 
     let x32_addr = format!("{}:10023", ip);
-    let socket = UdpSocket::bind("0.0.0.0:0").await?;
+    let socket: std::net::UdpSocket = std::net::UdpSocket::bind("0.0.0.0:0")?;
+    socket.set_nonblocking(true)?;
+    let socket = UdpSocket::from_std(socket)?;
     socket.connect(&x32_addr).await?;
     let socket = Arc::new(socket);
 
@@ -273,7 +279,7 @@ async fn main() -> Result<()> {
     let _conn_in = match midi_in.connect(
         &in_port,
         "x32_midi2osc_in",
-        move |_stamp, message, _| {
+        move |_stamp, message: &[u8], _| {
             if message.len() < 2 {
                 return;
             }
@@ -311,13 +317,13 @@ async fn main() -> Result<()> {
             let command_id = ((md1 << 8) | (mmc | ((mch - 1) & 0xF))) as u32;
 
             for rule in rules_clone.iter() {
-                if command_id == rule.command_id {
+                if command_id == rule.get_match_key() {
                     if (mparam[2] as i32) & 0x80 != 0 {
-                        mparam[2] = (rule.d2 & 0x7F) as f64;
+                        mparam[2] = (rule.data2 & 0x7F) as f64;
                     }
 
                     if let Ok(payload) =
-                        execute_template(&rule.osc_template, &mparam, &mut calculator)
+                        execute_template(&rule.osc_command, &mparam, &mut calculator)
                     {
                         let _ = tx.send(payload);
                     }
