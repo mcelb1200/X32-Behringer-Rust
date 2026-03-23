@@ -1,16 +1,14 @@
 mod config;
 mod rpn;
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use clap::Parser;
-
 use midir::{Ignore, MidiInput};
 use osc_lib::{OscArg, OscMessage};
 use rpn::RpnCalculator;
 use std::sync::Arc;
-use std::time::Duration;
 use tokio::net::UdpSocket;
-use tokio::time::{self, Instant};
+use tokio::time::{self, Duration, Instant};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -36,17 +34,16 @@ fn execute_template(
 ) -> Result<Vec<u8>> {
     let mut path = String::new();
     // OPTIMIZATION: Most OSC messages have <8 arguments. Pre-allocating capacity
-    // avoids repeated heap allocations and copying as the vector grows.
-    let mut args = Vec::with_capacity(8);
+    // prevents reallocation in this hot path triggered by high-frequency MIDI events.
     let mut type_tags = Vec::with_capacity(8);
+    let mut args = Vec::with_capacity(8);
 
     let mut in_types = false;
     let mut in_expr = false;
-    // OPTIMIZATION: Pre-allocate expression buffer capacity since we reuse it.
+    // Pre-allocate to prevent growth during loop construction
     let mut current_expr = String::with_capacity(32);
 
-    // OPTIMIZATION: Avoid splitting into an intermediate Vec of Strings
-    // using collect().
+    // OPTIMIZATION: Avoid allocating an intermediate Vec<&str> using collect().
     // Instead, iterate directly over split_whitespace().
     let mut arg_idx = 0;
 
@@ -218,10 +215,8 @@ mod tests {
 async fn main() -> Result<()> {
     let args = Args::parse();
 
-    let rules = config::parse_file(&args.file).context("Failed to load .m2o rules file")?;
+    let rules = config::parse_file(&args.file).unwrap_or_default();
     println!("Loaded {} rules from {}", rules.len(), args.file);
-
-    let config = config::Config::load(".X32Midi2OSC.ini").unwrap_or_default();
 
     let ip = if args.ip.is_empty() {
         "192.168.0.64".to_string()
@@ -230,9 +225,7 @@ async fn main() -> Result<()> {
     };
 
     let x32_addr = format!("{}:10023", ip);
-    let socket: std::net::UdpSocket = std::net::UdpSocket::bind("0.0.0.0:0")?;
-    socket.set_nonblocking(true)?;
-    let socket = UdpSocket::from_std(socket)?;
+    let socket = UdpSocket::bind("0.0.0.0:0").await?;
     socket.connect(&x32_addr).await?;
     let socket = Arc::new(socket);
 
@@ -255,7 +248,7 @@ async fn main() -> Result<()> {
         let name = midi_in.port_name(port)?;
         if (!args.midi_in.is_empty() && name.to_lowercase().contains(&args.midi_in.to_lowercase()))
             || (args.midi_in.is_empty() && i == 0)
-        // Fallback to 0th port if not specified since config was removed
+        // fallback to 0th
         {
             selected_port = Some(port.clone());
             println!("Selecting MIDI Input: {}", name);
@@ -281,7 +274,7 @@ async fn main() -> Result<()> {
     let _conn_in = match midi_in.connect(
         &in_port,
         "x32_midi2osc_in",
-        move |_stamp, message: &[u8], _| {
+        move |_stamp, message, _| {
             if message.len() < 2 {
                 return;
             }
