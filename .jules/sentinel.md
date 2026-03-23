@@ -11,3 +11,8 @@
 **Vulnerability:** Several CLI tools (`x32_get_scene`, `x32_set_scene`) used unbounded `io::stdin().read_line()` or `io::stdin().lock().lines()` to read piped inputs or manual inputs. This can lead to unbounded memory allocation and Out-Of-Memory (OOM) crashes if a script or an attacker pipes a massive stream of data without a newline.
 **Learning:** The same vulnerability pattern identified in networked tools (like `x32_tcp`) also applies to local CLI tools processing piped input. An unbounded `read_line` or `.lines()` iterator continuously allocates memory until it finds a `\n` or EOF.
 **Prevention:** When reading lines from any untrusted or uncontrolled source (including STDIN, which can be piped), limit the maximum number of bytes read using the `take()` adapter on the reader (e.g. `stdin_lock.by_ref().take(4096).read_line(&mut buf)`).
+
+## 2024-06-12 - [DoS via Panic in OSC Blob Parsing]
+**Vulnerability:** The `x32_automix` application used `try_into().unwrap()` when parsing meter data from OSC blobs. A malformed or truncated OSC message from the mixer (or an attacker spoofing the mixer) would cause the application to panic and crash.
+**Learning:** Using `unwrap()` on data derived from external network sources is a security risk. Even if the protocol specifies a certain length, network data should always be treated as untrusted and potentially malformed.
+**Prevention:** Always use safe parsing methods like `.get()` for slicing and `try_into().ok()` or `match` for conversions from network data. Ensure all indexing into fixed-size state vectors is bounds-checked or uses safe accessors like `.get()` and `.get_mut()`.
