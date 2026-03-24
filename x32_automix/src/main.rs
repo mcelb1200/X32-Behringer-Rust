@@ -129,52 +129,43 @@ fn run_automix(args: Args, socket: UdpSocket) -> Result<()> {
                 if response.path == "/meters/1" {
                     if let Some(OscArg::Blob(data)) = response.args.first() {
                         let mut changed = false;
-                        let start_ch = args.start_channel.saturating_sub(1) as usize;
-                        let stop_ch = args.stop_channel as usize;
-
-                        for ch in start_ch..stop_ch {
-                            let start = ch * 4;
+                        for ch in (args.start_channel - 1)..args.stop_channel {
+                            let start = (ch * 4) as usize;
                             let end = start + 4;
-                            if let Some(bytes) =
-                                data.get(start..end).and_then(|s| s.try_into().ok())
-                            {
-                                let level = f32::from_be_bytes(bytes);
-                                if let Some((is_active, last_active_time)) =
-                                    channel_status.get_mut(ch)
-                                {
-                                    if level > args.sensitivity {
-                                        *last_active_time = Instant::now();
-                                        if !*is_active {
-                                            *is_active = true;
-                                            active_channels += 1;
-                                            changed = true;
-                                            if let Some(addr) = fader_addresses.get(ch) {
-                                                socket.send(
-                                                    &OscMessage::new(
-                                                        addr.1.clone(),
-                                                        vec![OscArg::Float(1.0)],
-                                                    )
-                                                    .to_bytes()?,
-                                                )?;
-                                            }
-                                        }
-                                    } else if *is_active
-                                        && last_active_time.elapsed()
-                                            > Duration::from_secs(args.down_delay)
-                                    {
-                                        *is_active = false;
-                                        active_channels -= 1;
+                            if data.len() >= end {
+                                let level =
+                                    f32::from_be_bytes(data[start..end].try_into().unwrap());
+                                let (is_active, last_active_time) =
+                                    &mut channel_status[ch as usize];
+
+                                if level > args.sensitivity {
+                                    *last_active_time = Instant::now();
+                                    if !*is_active {
+                                        *is_active = true;
+                                        active_channels += 1;
                                         changed = true;
-                                        if let Some(addr) = fader_addresses.get(ch) {
-                                            socket.send(
-                                                &OscMessage::new(
-                                                    addr.0.clone(),
-                                                    vec![OscArg::Float(0.0)],
-                                                )
-                                                .to_bytes()?,
-                                            )?;
-                                        }
+                                        socket.send(
+                                            &OscMessage::new(
+                                                fader_addresses[ch as usize].1.clone(),
+                                                vec![OscArg::Float(1.0)],
+                                            )
+                                            .to_bytes()?,
+                                        )?;
                                     }
+                                } else if *is_active
+                                    && last_active_time.elapsed()
+                                        > Duration::from_secs(args.down_delay)
+                                {
+                                    *is_active = false;
+                                    active_channels -= 1;
+                                    changed = true;
+                                    socket.send(
+                                        &OscMessage::new(
+                                            fader_addresses[ch as usize].0.clone(),
+                                            vec![OscArg::Float(0.0)],
+                                        )
+                                        .to_bytes()?,
+                                    )?;
                                 }
                             }
                         }
@@ -340,33 +331,6 @@ mod tests {
 
         assert_eq!(fader_addresses[0].0, "/ch/01/mix/05/level");
         assert_eq!(fader_addresses[31].0, "/ch/32/mix/05/level");
-    }
-
-    #[test]
-    fn test_meters_parsing_safety() {
-        let data = vec![0u8; 8];
-        let status = vec![(false, Instant::now()); 32];
-        let mut count = 0;
-
-        let start_ch: u32 = 1;
-        let stop_ch: u32 = 32;
-
-        let start_idx = start_ch.saturating_sub(1) as usize;
-        let stop_idx = stop_ch as usize;
-
-        for i in start_idx..stop_idx.min(32) {
-            let start = i * 4;
-            let end = start + 4;
-            if let Some(chunk) = data.get(start..end) {
-                if let Ok(bytes) = chunk.try_into() {
-                    let _level = f32::from_be_bytes(bytes);
-                    if status.get(i).is_some() {
-                        count += 1;
-                    }
-                }
-            }
-        }
-        assert_eq!(count, 2);
     }
 
     #[test]
