@@ -142,7 +142,10 @@ fn parse_command_file(path: &str) -> io::Result<Vec<Command>> {
 fn parse_midi_hex(hex_str: &str) -> std::result::Result<Vec<u8>, anyhow::Error> {
     hex_str
         .split_whitespace()
-        .map(|s| u8::from_str_radix(s, 16).map_err(|e| anyhow::anyhow!("Invalid hex byte '{}': {}", s, e)))
+        .map(|s| {
+            u8::from_str_radix(s, 16)
+                .map_err(|e| anyhow::anyhow!("Invalid hex byte '{}': {}", s, e))
+        })
         .collect()
 }
 
@@ -187,8 +190,12 @@ fn run(args: Args) -> Result<(), anyhow::Error> {
         }
 
         if let Some(port) = found_port {
-            println!("Connecting to MIDI output: {}", midi_out.port_name(&port).unwrap_or_default());
-            let conn = midi_out.connect(&port, "x32_commander_out")
+            println!(
+                "Connecting to MIDI output: {}",
+                midi_out.port_name(&port).unwrap_or_default()
+            );
+            let conn = midi_out
+                .connect(&port, "x32_commander_out")
                 .map_err(|e| anyhow::anyhow!("Failed to connect to MIDI port: {}", e))?;
             midi_conn = Some(conn);
         } else {
@@ -261,14 +268,22 @@ fn run(args: Args) -> Result<(), anyhow::Error> {
                                             Ok(bytes) => {
                                                 if let Some(ref mut conn) = midi_conn {
                                                     if let Err(e) = conn.send(&bytes) {
-                                                        eprintln!("Failed to send MIDI message: {}", e);
+                                                        eprintln!(
+                                                            "Failed to send MIDI message: {}",
+                                                            e
+                                                        );
                                                     }
                                                 } else {
-                                                    eprintln!("Cannot send MIDI command: No MIDI output connected.");
+                                                    eprintln!(
+                                                        "Cannot send MIDI command: No MIDI output connected."
+                                                    );
                                                 }
                                             }
                                             Err(e) => {
-                                                eprintln!("Failed to parse outgoing MIDI command '{}': {}", command.outgoing_command, e);
+                                                eprintln!(
+                                                    "Failed to parse outgoing MIDI command '{}': {}",
+                                                    command.outgoing_command, e
+                                                );
                                             }
                                         }
                                     }
