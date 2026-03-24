@@ -398,9 +398,12 @@ fn format_node_state(args: &[OscArg]) -> Result<String> {
                 }
             }
             OscArg::Blob(val) => {
+                use std::fmt::Write;
                 s.push('%');
+                // OPTIMIZATION: Use `write!` directly to the existing string buffer
+                // instead of allocating a new String with `format!` for every byte.
                 for byte in val {
-                    s.push_str(&format!("{:02x}", byte));
+                    let _ = write!(s, "{:02x}", byte);
                 }
             }
         }

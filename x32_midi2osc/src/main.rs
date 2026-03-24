@@ -1,7 +1,7 @@
 mod config;
 mod rpn;
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use clap::Parser;
 use midir::{Ignore, MidiInput};
 use osc_lib::{OscArg, OscMessage};
@@ -215,7 +215,7 @@ mod tests {
 async fn main() -> Result<()> {
     let args = Args::parse();
 
-    let rules = config::parse_file(&args.file).context("Failed to load .m2o rules file")?;
+    let rules = config::parse_file(&args.file).unwrap_or_default();
     println!("Loaded {} rules from {}", rules.len(), args.file);
 
     let _config = config::Config::load(".X32Midi2OSC.ini").unwrap_or_default();
@@ -227,9 +227,7 @@ async fn main() -> Result<()> {
     };
 
     let x32_addr = format!("{}:10023", ip);
-    let socket: std::net::UdpSocket = std::net::UdpSocket::bind("0.0.0.0:0")?;
-    socket.set_nonblocking(true)?;
-    let socket = UdpSocket::from_std(socket)?;
+    let socket = UdpSocket::bind("0.0.0.0:0").await?;
     socket.connect(&x32_addr).await?;
     let socket = Arc::new(socket);
 
@@ -278,7 +276,7 @@ async fn main() -> Result<()> {
     let _conn_in = match midi_in.connect(
         &in_port,
         "x32_midi2osc_in",
-        move |_stamp, message: &[u8], _| {
+        move |_stamp, message, _| {
             if message.len() < 2 {
                 return;
             }

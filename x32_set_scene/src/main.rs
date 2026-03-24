@@ -12,7 +12,7 @@
 
 use clap::Parser;
 use osc_lib::OscMessage;
-use std::io::{self, BufRead, Read};
+use std::io::{self, BufRead};
 use std::str::FromStr;
 use std::thread;
 use std::time::Duration;
@@ -37,16 +37,10 @@ fn main() -> Result<()> {
     let socket = create_socket(&args.ip, 100)?;
 
     let stdin = io::stdin();
-    let mut stdin_lock = stdin.lock();
-    loop {
-        let mut line = String::new();
-        let len = stdin_lock.by_ref().take(4096).read_line(&mut line)?;
-        if len == 0 {
-            break;
-        }
-        let line = line.trim();
+    for line in stdin.lock().lines() {
+        let line = line?;
         if line.starts_with('/') {
-            match OscMessage::from_str(line) {
+            match OscMessage::from_str(&line) {
                 Ok(msg) => {
                     socket.send(&msg.to_bytes()?)?;
                     if args.delay > 0 {
