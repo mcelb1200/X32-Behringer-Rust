@@ -32,7 +32,8 @@ fn execute_template(
     mparam: &[f64; 3],
     calculator: &mut RpnCalculator,
 ) -> Result<Vec<u8>> {
-    let mut path = String::new();
+    // OPTIMIZATION: Pre-allocate path buffer to avoid re-allocation during hot loops.
+    let mut path = String::with_capacity(32);
     // OPTIMIZATION: Most OSC messages have <8 arguments. Pre-allocating capacity
     // prevents reallocation in this hot path triggered by high-frequency MIDI events.
     let mut type_tags = Vec::with_capacity(8);
@@ -49,21 +50,26 @@ fn execute_template(
 
     for (i, part) in template.split_whitespace().enumerate() {
         if i == 0 {
-            path = part.to_string();
+            // OPTIMIZATION: Instead of reallocating memory by using part.to_string(),
+            // clear the pre-allocated path and copy the string in to reuse the allocation
+            path.clear();
+            path.push_str(part);
             continue;
         }
 
         if !in_types && part.starts_with(',') {
             in_types = true;
-            for tag in part.chars().skip(1) {
-                type_tags.push(tag);
+            for tag in part.bytes().skip(1) {
+                type_tags.push(tag as char);
             }
             continue;
         }
 
         if let Some(stripped) = part.strip_prefix('[') {
             in_expr = true;
-            current_expr = stripped.to_string();
+            // OPTIMIZATION: Reuse pre-allocated String buffer instead of reallocating
+            current_expr.clear();
+            current_expr.push_str(stripped);
             if current_expr.ends_with(']') {
                 in_expr = false;
                 current_expr.pop(); // remove ']'
