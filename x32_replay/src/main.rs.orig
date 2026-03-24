@@ -91,12 +91,10 @@ async fn main() -> Result<()> {
 
     // Stdin loop
     let stdin = std::io::stdin();
-    let mut stdin_lock = stdin.lock();
     let mut line = String::new();
     loop {
         line.clear();
-        use std::io::{BufRead, Read};
-        if stdin_lock.by_ref().take(4096).read_line(&mut line).is_err() || line.is_empty() {
+        if stdin.read_line(&mut line).is_err() {
             break;
         }
         let cmd = line.trim();
