@@ -5,7 +5,7 @@
 ## Features
 
 -   **Manual Tap:** Press `Enter` repeatedly to set the delay time based on the interval between presses.
--   **Auto Tap:** Automatically detect tempo from a signal source on the mixer by monitoring a channel's gate meter level.
+-   **Auto Tap:** (Coming Soon) Automatically detect tempo from a signal source on the mixer.
 -   **FX Slot Selection:** Select which FX slot (1-4) to control.
 -   **Verification:** Automatically verifies that the selected slot contains a delay effect.
 
@@ -21,9 +21,7 @@ x32_tap [OPTIONS]
 | :--- | :--- | :--- | :--- |
 | `--ip` | `-i` | The IP address of the X32 mixer. | `192.168.0.64` |
 | `--slot` | `-s` | The FX slot number (1-4) containing the delay effect. | `1` |
-| `--auto` | `-a` | Enable auto-tap mode by monitoring a channel's meter level. | `false` |
-| `--channel` | `-c` | In auto mode, the channel number to monitor (1-32). | `1` |
-| `--threshold` | `-t` | In auto mode, the gate meter threshold level (e.g. 0.5) to trigger a tap. | `0.5` |
+| `--auto` | `-a` | Enable auto-tap mode (Not yet implemented). | `false` |
 
 ### Example
 
