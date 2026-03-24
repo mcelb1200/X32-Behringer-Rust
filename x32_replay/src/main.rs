@@ -96,7 +96,11 @@ async fn main() -> Result<()> {
     let mut line = String::new();
     loop {
         line.clear();
-        let len = stdin_lock.by_ref().take(4096).read_line(&mut line).unwrap_or(0);
+        let len = stdin_lock
+            .by_ref()
+            .take(4096)
+            .read_line(&mut line)
+            .unwrap_or(0);
         if len == 0 {
             break;
         }
