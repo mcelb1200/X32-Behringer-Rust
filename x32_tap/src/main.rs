@@ -10,7 +10,7 @@
 //! *   **Additional concepts by:** [User]
 //! *   **Rust implementation by:** [User]
 
-use anyhow::{Context, Result, anyhow};
+use anyhow::{anyhow, Context, Result};
 use clap::Parser;
 use osc_lib::{OscArg, OscMessage};
 use std::io::{self, Write};
@@ -226,14 +226,21 @@ async fn main() -> Result<()> {
 
         let mut last_tap: Option<Instant> = None;
         let mut stdin = tokio::io::BufReader::new(tokio::io::stdin());
-        use tokio::io::AsyncBufReadExt;
+        use tokio::io::{AsyncBufReadExt, AsyncReadExt};
         let mut input_buffer = String::new();
 
         loop {
             print!("> ");
             io::stdout().flush()?;
             input_buffer.clear();
-            stdin.read_line(&mut input_buffer).await?;
+
+            // Limit the amount of bytes read to 4096 to prevent memory DoS on large inputs
+            let mut take_reader = (&mut stdin).take(4096);
+            let bytes_read = take_reader.read_line(&mut input_buffer).await?;
+            if bytes_read == 0 && input_buffer.is_empty() {
+                // EOF reached
+                break;
+            }
 
             let input = input_buffer.trim();
 
