@@ -1,0 +1,15 @@
+--- x32_replay/src/main.rs
++++ x32_replay/src/main.rs
+@@ -93,9 +93,11 @@
+
+     // Stdin loop
+     let stdin = std::io::stdin();
++    let mut stdin_lock = stdin.lock();
+     let mut line = String::new();
+     loop {
+         line.clear();
+-        if stdin.read_line(&mut line).is_err() {
++        use std::io::{BufRead, Read};
++        if stdin_lock.by_ref().take(4096).read_line(&mut line).is_err() || line.is_empty() {
+             break;
+         }
