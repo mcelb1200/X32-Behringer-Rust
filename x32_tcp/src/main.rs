@@ -94,7 +94,7 @@ fn main() -> Result<()> {
 /// * `stream` - The TCP stream for the client connection.
 /// * `args` - The command-line arguments.
 fn handle_client(mut stream: TcpStream, args: Args) -> Result<()> {
-    let x32_socket = create_socket(&args.ip, 10)?;
+    let x32_socket = create_socket(&args.ip, 500)?;
 
     let mut reader = BufReader::new(stream.try_clone()?);
 
