@@ -21,6 +21,7 @@ use std::net::UdpSocket;
 use std::str::FromStr;
 use std::time::{Duration, Instant};
 
+use midir::MidiOutput;
 use osc_lib::OscMessage;
 use x32_lib::{create_socket, error::X32Error};
 
@@ -39,6 +40,10 @@ struct Args {
     /// OSC output address and port (e.g., 127.0.0.1:9000).
     #[arg(short, long)]
     output: Option<String>,
+
+    /// MIDI output port name.
+    #[arg(short = 'm', long)]
+    midi_out: Option<String>,
 }
 
 /// Represents the type of command to trigger.
@@ -125,6 +130,25 @@ fn parse_command_file(path: &str) -> io::Result<Vec<Command>> {
     Ok(commands)
 }
 
+/// Parses a space-separated hex string into a byte array.
+///
+/// # Arguments
+///
+/// * `hex_str` - The hex string (e.g., "F0 00 20 32 32 F7").
+///
+/// # Returns
+///
+/// A `Result` containing the parsed byte array.
+fn parse_midi_hex(hex_str: &str) -> std::result::Result<Vec<u8>, anyhow::Error> {
+    hex_str
+        .split_whitespace()
+        .map(|s| {
+            u8::from_str_radix(s, 16)
+                .map_err(|e| anyhow::anyhow!("Invalid hex byte '{}': {}", s, e))
+        })
+        .collect()
+}
+
 /// Runs the main application logic.
 ///
 /// # Arguments
@@ -134,11 +158,9 @@ fn parse_command_file(path: &str) -> io::Result<Vec<Command>> {
 /// # Returns
 ///
 /// A `Result` indicating success or failure.
-fn run(args: Args) -> Result<(), X32Error> {
-    // This application is a partial rewrite of the original X32Commander.c utility.
-    // Currently, only OSC commands are supported. MIDI functionality is not yet implemented.
+fn run(args: Args) -> Result<(), anyhow::Error> {
     let commands = parse_command_file(&args.file)
-        .map_err(|e| X32Error::Custom(format!("Failed to parse command file: {}", e)))?;
+        .map_err(|e| anyhow::anyhow!("Failed to parse command file: {}", e))?;
     println!("Successfully parsed {} commands.", commands.len());
 
     println!("Connecting to X32 at {}...", args.ip);
@@ -152,6 +174,41 @@ fn run(args: Args) -> Result<(), X32Error> {
     } else {
         None
     };
+
+    let mut midi_conn = None;
+    if let Some(ref midi_port_name) = args.midi_out {
+        let midi_out = MidiOutput::new("x32_commander")?;
+        let ports = midi_out.ports();
+        let mut found_port = None;
+        for port in &ports {
+            if let Ok(name) = midi_out.port_name(port) {
+                if name.to_lowercase().contains(&midi_port_name.to_lowercase()) {
+                    found_port = Some(port.clone());
+                    break;
+                }
+            }
+        }
+
+        if let Some(port) = found_port {
+            println!(
+                "Connecting to MIDI output: {}",
+                midi_out.port_name(&port).unwrap_or_default()
+            );
+            let conn = midi_out
+                .connect(&port, "x32_commander_out")
+                .map_err(|e| anyhow::anyhow!("Failed to connect to MIDI port: {}", e))?;
+            midi_conn = Some(conn);
+        } else {
+            eprintln!("MIDI output port '{}' not found.", midi_port_name);
+            println!("Available MIDI output ports:");
+            for port in &ports {
+                if let Ok(name) = midi_out.port_name(port) {
+                    println!("  {}", name);
+                }
+            }
+            return Err(anyhow::anyhow!("MIDI output port not found"));
+        }
+    }
 
     let mut last_xremote = Instant::now();
     let mut buf = [0u8; 1024];
@@ -204,9 +261,31 @@ fn run(args: Args) -> Result<(), X32Error> {
                                     }
                                     CommandType::Midi => {
                                         println!(
-                                            "Match found for: {}. This is a MIDI command, which is not yet supported in this version.",
-                                            incoming_msg.path
+                                            "Match found for: {}. Triggering MIDI: {}",
+                                            incoming_msg.path, command.outgoing_command
                                         );
+                                        match parse_midi_hex(&command.outgoing_command) {
+                                            Ok(bytes) => {
+                                                if let Some(ref mut conn) = midi_conn {
+                                                    if let Err(e) = conn.send(&bytes) {
+                                                        eprintln!(
+                                                            "Failed to send MIDI message: {}",
+                                                            e
+                                                        );
+                                                    }
+                                                } else {
+                                                    eprintln!(
+                                                        "Cannot send MIDI command: No MIDI output connected."
+                                                    );
+                                                }
+                                            }
+                                            Err(e) => {
+                                                eprintln!(
+                                                    "Failed to parse outgoing MIDI command '{}': {}",
+                                                    command.outgoing_command, e
+                                                );
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -216,7 +295,7 @@ fn run(args: Args) -> Result<(), X32Error> {
             }
             Err(e) => {
                 if e.kind() != io::ErrorKind::WouldBlock && e.kind() != io::ErrorKind::TimedOut {
-                    return Err(X32Error::Io(e));
+                    return Err(X32Error::Io(e).into());
                 }
             }
         }
@@ -291,5 +370,22 @@ M~~~/ch/02/mix/fader|/ch/03/mix/fader ,f 0.75
         let (_file, path) = create_test_file(content);
         let commands = parse_command_file(&path).unwrap();
         assert_eq!(commands.len(), 0);
+    }
+
+    #[test]
+    fn test_parse_midi_hex() {
+        let hex_str = "F0 00 20 32 32 2F 63 68 2F 30 31 2F 6D 69 78 2F 66 61 64 65 72 20 2C 66 20 30 2E 35 F7";
+        let parsed = parse_midi_hex(hex_str).unwrap();
+        assert_eq!(
+            parsed,
+            vec![
+                0xF0, 0x00, 0x20, 0x32, 0x32, 0x2F, 0x63, 0x68, 0x2F, 0x30, 0x31, 0x2F, 0x6D, 0x69,
+                0x78, 0x2F, 0x66, 0x61, 0x64, 0x65, 0x72, 0x20, 0x2C, 0x66, 0x20, 0x30, 0x2E, 0x35,
+                0xF7
+            ]
+        );
+
+        let invalid = "F0 00 20 32 32 XX F7";
+        assert!(parse_midi_hex(invalid).is_err());
     }
 }

@@ -2029,7 +2029,9 @@ dependencies = [
 name = "x32_commander"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "clap",
+ "midir",
  "osc_lib",
  "tempfile",
  "x32_lib",

@@ -2,11 +2,11 @@
 
 `x32_commander` is a command-line utility that listens for specific OSC messages from an X32/M32 console and, in response, triggers other OSC or MIDI commands. It acts as a bridge, allowing you to create custom workflows and interactions that are not natively supported by the mixer.
 
-**Note:** This is a partial rewrite of the original C-based `X32Commander` utility. Currently, only OSC-to-OSC command translation is fully supported. MIDI command functionality is not yet implemented.
+**Note:** This is a rewrite of the original C-based `X32Commander` utility. It supports both OSC-to-OSC and OSC-to-MIDI command translation.
 
 ## How It Works
 
-The tool reads a user-defined command file that specifies a list of trigger-action pairs. It then connects to the X32 and listens for incoming OSC messages. When a message matches a trigger, `x32_commander` sends the corresponding action command. The action can be sent back to the same X32 or to a different OSC-enabled device, such as a lighting controller or a digital audio workstation (DAW).
+The tool reads a user-defined command file that specifies a list of trigger-action pairs. It then connects to the X32 and listens for incoming OSC messages. When a message matches a trigger, `x32_commander` sends the corresponding action command. The action can be sent back to the same X32, to a different OSC-enabled device, or to a MIDI port.
 
 ## Command File Format
 
@@ -18,7 +18,7 @@ The command file is a plain text file (`.txt`) that defines the trigger-action m
 
 -   `<type>`: A single character indicating the type of the incoming and outgoing commands.
     -   `O`: OSC to OSC
-    -   `M`: OSC to MIDI (currently not supported)
+    -   `M`: OSC to MIDI
 -   `~~~`: A separator between the type and the incoming OSC address.
 -   `<incoming_osc_address>`: The OSC address that will trigger the action (e.g., `/ch/01/mix/fader`).
 -   `|`: A separator between the trigger and the action.
@@ -43,6 +43,7 @@ O~~~/ch/03/mix/on | /ch/04/mix/on ,i 1
 | Command File     | `-f`       | `--file`   | `X32Commander.txt` | The path to the command file that defines the trigger-action mappings. |
 | IP Address       | `-i`       | `--ip`     | (none)             | **Required.** The IP address of the X32/M32 console.              |
 | OSC Output       | `-o`       | `--output` | (none)             | An optional IP address and port for sending the outgoing OSC commands (e.g., `127.0.0.1:9000`). If not provided, commands are sent back to the X32. |
+| MIDI Output      | `-m`       | `--midi-out`| (none)             | An optional name or partial name of the MIDI output port to use. If not provided, MIDI commands will not be sent. |
 
 ## Example Usage
 
