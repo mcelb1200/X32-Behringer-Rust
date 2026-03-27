@@ -557,9 +557,15 @@ fn read_osc_string(cursor: &mut Cursor<&[u8]>) -> Result<String> {
 fn write_osc_string(bytes: &mut Vec<u8>, s: &str) -> Result<()> {
     bytes.extend_from_slice(s.as_bytes());
     bytes.push(0);
-    #[allow(clippy::manual_is_multiple_of)]
-    while bytes.len() % 4 != 0 {
-        bytes.push(0);
+
+    // OPTIMIZATION: Calculate exact padding required instead of a while loop.
+    // This allows rustc/LLVM to optimize away repeated bounds checks and
+    // branch predictions when writing the 0..3 trailing null bytes.
+    let rem = bytes.len() % 4;
+    if rem != 0 {
+        let pad_len = 4 - rem;
+        bytes.extend_from_slice(&[0, 0, 0][..pad_len]);
     }
+
     Ok(())
 }
