@@ -39,7 +39,7 @@
 
 use byteorder::{BigEndian, ReadBytesExt};
 use std::fmt::Write;
-use std::io::{self, Cursor, Read};
+use std::io::{self, Cursor};
 use std::str::FromStr;
 use std::string::FromUtf8Error;
 
@@ -177,12 +177,24 @@ impl OscMessage {
                 }
                 'b' => {
                     let len = cursor.read_i32::<BigEndian>()? as usize;
-                    let mut buf = vec![0; len];
-                    cursor.read_exact(&mut buf)?;
+
+                    // OPTIMIZATION: Instead of allocating a zero-initialized buffer `vec![0; len]`
+                    // and calling `cursor.read_exact(&mut buf)`, directly slice the underlying buffer
+                    // and copy it using `.to_vec()`. This skips the zero-initialization overhead,
+                    // which is significant for large binary blobs.
+                    let current_pos = cursor.position() as usize;
+                    let buf_ref = cursor.get_ref();
+
+                    let end_pos = current_pos + len;
+                    if end_pos > buf_ref.len() {
+                        return Err(OscError::ParseError("Unexpected end of buffer".to_string()));
+                    }
+
+                    let buf = buf_ref[current_pos..end_pos].to_vec();
                     args.push(OscArg::Blob(buf));
-                    let current_pos = cursor.position();
-                    let next_aligned_pos = (current_pos + 3) & !3;
-                    cursor.set_position(next_aligned_pos);
+
+                    let next_aligned_pos = (end_pos + 3) & !3;
+                    cursor.set_position(next_aligned_pos as u64);
                 }
                 _ => return Err(OscError::UnsupportedTypeTag(tag_byte as char)),
             }
