@@ -16,7 +16,7 @@
 use clap::{Parser, Subcommand};
 use osc_lib::{OscArg, OscMessage};
 use std::fs::File;
-use std::io::{BufRead, BufReader, Write};
+use std::io::{BufRead, BufReader, Read, Write};
 use std::net::UdpSocket;
 use std::str::FromStr;
 use x32_lib::{
@@ -459,16 +459,23 @@ fn get_node_state(socket: &UdpSocket, node: &str) -> Result<String> {
 fn handle_restore_command(ip: &str, file_path: &str) -> Result<()> {
     let socket = create_socket(ip, 200)?;
     let file = File::open(file_path)?;
-    let reader = BufReader::new(file);
+    let mut reader = BufReader::new(file);
 
     println!("Restoring configuration from {}...", file_path);
 
-    for line in reader.lines() {
-        let line = line?;
-        if !line.starts_with('#') {
-            let msg = OscMessage::from_str(&line)?;
-            socket.send(&msg.to_bytes()?)?;
+    let mut line = String::new();
+    loop {
+        line.clear();
+        if reader.by_ref().take(4096).read_line(&mut line).is_err() || line.is_empty() {
+            break;
         }
+        let trimmed_line = line.trim();
+        if trimmed_line.is_empty() || trimmed_line.starts_with('#') {
+            continue;
+        }
+
+        let msg = OscMessage::from_str(trimmed_line)?;
+        socket.send(&msg.to_bytes()?)?;
     }
 
     println!("Restore complete.");
