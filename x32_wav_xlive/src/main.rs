@@ -270,9 +270,9 @@ fn write_se_log_bin(
 
     let mut markers = args.markers.clone();
     if let Some(marker_file) = &args.marker_file {
-        let mut f = File::open(marker_file)?;
+        let f = File::open(marker_file)?;
         let mut s = String::new();
-        f.read_to_string(&mut s)?;
+        f.take(1024 * 1024).read_to_string(&mut s)?;
         for line in s.lines() {
             if let Ok(marker) = line.trim().parse::<f32>() {
                 markers.push(marker);
