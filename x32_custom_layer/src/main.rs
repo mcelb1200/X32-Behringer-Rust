@@ -374,6 +374,7 @@ fn handle_save_command(ip: &str, file_path: &str) -> Result<()> {
 
 /// Formats an OSC message's arguments into a string representation.
 fn format_node_state(args: &[OscArg]) -> Result<String> {
+    use std::fmt::Write as _;
     if args.is_empty() {
         return Err(X32Error::Custom("Empty node response".to_string()));
     }
@@ -388,19 +389,27 @@ fn format_node_state(args: &[OscArg]) -> Result<String> {
     for arg in &args[1..] {
         s.push(' ');
         match arg {
-            OscArg::Int(val) => s.push_str(&val.to_string()),
-            OscArg::Float(val) => s.push_str(&val.to_string()),
+            // OPTIMIZATION: Use `write!` macro directly to `&mut s` instead of creating
+            // an intermediate String with `val.to_string()` and pushing it.
+            OscArg::Int(val) => write!(&mut s, "{}", val).unwrap(),
+            OscArg::Float(val) => write!(&mut s, "{}", val).unwrap(),
             OscArg::String(val) => {
                 if val.contains(' ') || val.is_empty() {
-                    s.push_str(&format!("\"{}\"", val))
+                    // OPTIMIZATION: Prevent allocation from `format!()` by writing directly
+                    // into the pre-existing buffer.
+                    write!(&mut s, "\"{}\"", val).unwrap();
                 } else {
-                    s.push_str(val)
+                    s.push_str(val);
                 }
             }
             OscArg::Blob(val) => {
                 s.push('%');
-                for byte in val {
-                    s.push_str(&format!("{:02x}", byte));
+                // OPTIMIZATION: Manually map nibbles to hex characters to completely avoid
+                // allocating a String per-byte inside this hot serialization loop.
+                static HEX: &[u8; 16] = b"0123456789abcdef";
+                for &byte in val {
+                    s.push(HEX[(byte >> 4) as usize] as char);
+                    s.push(HEX[(byte & 0x0f) as usize] as char);
                 }
             }
         }

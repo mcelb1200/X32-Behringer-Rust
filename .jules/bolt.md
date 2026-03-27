@@ -13,3 +13,7 @@
 ## 2024-05-23 - [Avoiding generic Write trait abstractions in hot-paths]
 **Learning:** In hot loops like serialization, appending to a `Vec` via `Write` trait methods (e.g., `write_u8` or `write_all`) is slower than using native `Vec` methods (`push`, `extend_from_slice`) due to trait abstraction overhead.
 **Action:** In serialization logic where writing directly to an underlying `Vec<u8>` is possible (without the generic `Write` abstraction), always prefer `Vec::push` and `Vec::extend_from_slice` over `write_u8` and `write_all`.
+
+## 2024-05-25 - [Fast buffer allocation from underlying slices]
+**Learning:** In parsing paths (like reading binary `Blob` data), creating a buffer using `let mut buf = vec![0; len]` and then filling it with `Read::read_exact(&mut buf)` is inefficient due to the forced zero-initialization of the heap memory. We can avoid this and just copy memory directly by reading the underlying buffer `let buf = cursor.get_ref()[start..end].to_vec()` and manually advancing the cursor position.
+**Action:** Whenever parsing data directly into an exact-length vector from a `Cursor`, avoid `vec![0; len]` and `read_exact`. Instead, use `cursor.get_ref()[start..end].to_vec()` and update the cursor position manually.
