@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result, anyhow};
 use byteorder::{LittleEndian, ReadBytesExt};
 use clap::{Parser, ValueEnum};
 use std::fs::File;
@@ -85,7 +85,8 @@ fn main() -> Result<()> {
 
 /// Reads the SE_LOG.BIN file and extracts markers as a vector of floats (seconds).
 fn read_markers_from_file(path: &Path) -> Result<Vec<f32>> {
-    let mut file = File::open(path).with_context(|| format!("Failed to open {}", path.display()))?;
+    let mut file =
+        File::open(path).with_context(|| format!("Failed to open {}", path.display()))?;
 
     // Check file size, SE_LOG.BIN should be at least 2048 bytes but we only need up to markers
     let metadata = file.metadata()?;
@@ -129,8 +130,8 @@ fn read_markers_from_file(path: &Path) -> Result<Vec<f32>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::io::{Cursor, Write};
     use byteorder::{LittleEndian, WriteBytesExt};
+    use std::io::{Cursor, Write};
 
     fn create_dummy_selog(sample_rate: u32, markers: &[u32]) -> Vec<u8> {
         let mut buf = vec![0u8; 2048];
@@ -142,7 +143,9 @@ mod tests {
 
         // Write nb_markers at offset 20
         cursor.seek(SeekFrom::Start(20)).unwrap();
-        cursor.write_u32::<LittleEndian>(markers.len() as u32).unwrap();
+        cursor
+            .write_u32::<LittleEndian>(markers.len() as u32)
+            .unwrap();
 
         // Write markers at offset 1052
         cursor.seek(SeekFrom::Start(1052)).unwrap();
@@ -183,9 +186,14 @@ mod tests {
         assert_eq!(xmks, 3);
         assert_eq!(xmkt, 12);
 
-        let formatted = format!("Prefix{}, {:02}:{:02}:{:02}:{:02}, 00:00:00:00, 25fps, Cue, -",
-            1, xmkh, xmkm, xmks, xmkt);
+        let formatted = format!(
+            "Prefix{}, {:02}:{:02}:{:02}:{:02}, 00:00:00:00, 25fps, Cue, -",
+            1, xmkh, xmkm, xmks, xmkt
+        );
 
-        assert_eq!(formatted, "Prefix1, 01:02:03:12, 00:00:00:00, 25fps, Cue, -");
+        assert_eq!(
+            formatted,
+            "Prefix1, 01:02:03:12, 00:00:00:00, 25fps, Cue, -"
+        );
     }
 }
