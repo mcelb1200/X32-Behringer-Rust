@@ -37,9 +37,8 @@
 //! assert_eq!(msg.args, vec![OscArg::Float(0.75)]);
 //! ```
 
-use byteorder::{BigEndian, ReadBytesExt};
 use std::fmt::Write;
-use std::io::{self, Cursor};
+use std::io::{self, Cursor, Read};
 use std::str::FromStr;
 use std::string::FromUtf8Error;
 
@@ -164,11 +163,15 @@ impl OscMessage {
         for &tag_byte in &type_tags[1..] {
             match tag_byte as char {
                 'i' => {
-                    let val = cursor.read_i32::<BigEndian>()?;
+                    let mut b = [0u8; 4];
+                    cursor.read_exact(&mut b)?;
+                    let val = i32::from_be_bytes(b);
                     args.push(OscArg::Int(val));
                 }
                 'f' => {
-                    let val = cursor.read_f32::<BigEndian>()?;
+                    let mut b = [0u8; 4];
+                    cursor.read_exact(&mut b)?;
+                    let val = f32::from_be_bytes(b);
                     args.push(OscArg::Float(val));
                 }
                 's' => {
@@ -176,7 +179,9 @@ impl OscMessage {
                     args.push(OscArg::String(val));
                 }
                 'b' => {
-                    let len = cursor.read_i32::<BigEndian>()? as usize;
+                    let mut b = [0u8; 4];
+                    cursor.read_exact(&mut b)?;
+                    let len = i32::from_be_bytes(b) as usize;
 
                     // OPTIMIZATION: Instead of allocating a zero-initialized buffer `vec![0; len]`
                     // and calling `cursor.read_exact(&mut buf)`, directly slice the underlying buffer
@@ -212,13 +217,30 @@ impl OscMessage {
     ///
     /// A `Result` containing the serialized byte vector or an `OscError`.
     pub fn to_bytes(&self) -> Result<Vec<u8>> {
+        let arg_refs: Vec<&OscArg> = self.args.iter().collect();
+        Self::serialize_to_bytes(&self.path, &arg_refs)
+    }
+
+    /// Serializes an OSC message given its path and arguments as references.
+    ///
+    /// This is a performance-optimized method that avoids cloning OSC arguments.
+    ///
+    /// # Arguments
+    ///
+    /// * `path` - The OSC address pattern.
+    /// * `args` - A slice of `OscArg` references.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` containing the serialized byte vector or an `OscError`.
+    pub fn serialize_to_bytes(path: &str, args: &[&OscArg]) -> Result<Vec<u8>> {
         // Calculate the total size required
-        let path_size = padded_size(self.path.len() + 1);
-        let type_tags_len = 1 + self.args.len() + 1; // ',' + args + null
+        let path_size = padded_size(path.len() + 1);
+        let type_tags_len = 1 + args.len() + 1; // ',' + args + null
         let type_tags_size = padded_size(type_tags_len);
 
         let mut args_size = 0;
-        for arg in &self.args {
+        for &arg in args {
             match arg {
                 OscArg::Int(_) | OscArg::Float(_) => args_size += 4,
                 OscArg::String(s) => args_size += padded_size(s.len() + 1),
@@ -230,11 +252,11 @@ impl OscMessage {
         let mut bytes = Vec::with_capacity(total_size);
 
         // Write path
-        write_osc_string(&mut bytes, &self.path)?;
+        write_osc_string(&mut bytes, path)?;
 
         // Write type tags
         bytes.push(b',');
-        for arg in &self.args {
+        for &arg in args {
             match arg {
                 OscArg::Int(_) => bytes.push(b'i'),
                 OscArg::Float(_) => bytes.push(b'f'),
@@ -252,7 +274,7 @@ impl OscMessage {
         }
 
         // Write args
-        for arg in &self.args {
+        for &arg in args {
             match arg {
                 OscArg::Int(val) => bytes.extend_from_slice(&val.to_be_bytes()),
                 OscArg::Float(val) => bytes.extend_from_slice(&val.to_be_bytes()),
