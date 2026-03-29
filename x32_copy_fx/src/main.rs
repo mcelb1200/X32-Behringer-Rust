@@ -123,11 +123,23 @@ fn load_user_defaults(path: PathBuf) -> Result<HashMap<String, String>, X32Error
         name_line.clear();
         params_line.clear();
 
-        if reader.by_ref().take(4096).read_line(&mut name_line).is_err() || name_line.is_empty() {
+        if reader
+            .by_ref()
+            .take(4096)
+            .read_line(&mut name_line)
+            .is_err()
+            || name_line.is_empty()
+        {
             break;
         }
 
-        if reader.by_ref().take(4096).read_line(&mut params_line).is_err() || params_line.is_empty() {
+        if reader
+            .by_ref()
+            .take(4096)
+            .read_line(&mut params_line)
+            .is_err()
+            || params_line.is_empty()
+        {
             break;
         }
 
