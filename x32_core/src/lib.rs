@@ -197,20 +197,8 @@ impl Mixer {
                     let arg_type = arg_parts[0];
                     let arg_value = arg_parts[1];
                     let arg = match arg_type {
-                        "i" => {
-                            if let Ok(val) = arg_value.parse() {
-                                OscArg::Int(val)
-                            } else {
-                                continue;
-                            }
-                        }
-                        "f" => {
-                            if let Ok(val) = arg_value.parse() {
-                                OscArg::Float(val)
-                            } else {
-                                continue;
-                            }
-                        }
+                        "i" => OscArg::Int(arg_value.parse().unwrap()),
+                        "f" => OscArg::Float(arg_value.parse().unwrap()),
                         "s" => OscArg::String(arg_value.to_string()),
                         _ => continue,
                     };
@@ -255,17 +243,16 @@ impl Mixer {
         // If the message has no arguments, it's a request for a value.
         if osc_msg.args.is_empty() {
             if let Some(arg) = self.state.get(&osc_msg.path) {
-                // OPTIMIZATION: Use serialize_to_bytes to build response directly from
-                // references, avoiding unnecessary clones of path and arguments.
-                return Ok(Some(OscMessage::serialize_to_bytes(&osc_msg.path, &[arg])?));
+                let response = OscMessage {
+                    path: osc_msg.path.clone(),
+                    args: vec![arg.clone()],
+                };
+                return Ok(Some(response.to_bytes()?));
             }
         } else {
             // If the message has arguments, it's a command to set a value.
-            // Move the first argument instead of cloning it.
-            let mut osc_msg = osc_msg;
-            if !osc_msg.args.is_empty() {
-                let arg = osc_msg.args.remove(0);
-                self.state.set(&osc_msg.path, arg);
+            if let Some(arg) = osc_msg.args.first() {
+                self.state.set(&osc_msg.path, arg.clone());
             }
         }
 

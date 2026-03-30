@@ -19,7 +19,7 @@ use clap::Parser;
 use osc_lib::{OscArg, OscMessage};
 use std::collections::HashMap;
 use std::fs::File;
-use std::io::{BufRead, BufReader, Read};
+use std::io::{BufRead, BufReader};
 use std::net::UdpSocket;
 use std::path::PathBuf;
 use x32_lib::{create_socket, error::X32Error};
@@ -114,36 +114,14 @@ fn main() -> Result<(), X32Error> {
 /// A `Result` containing a HashMap of FX names to parameter strings.
 fn load_user_defaults(path: PathBuf) -> Result<HashMap<String, String>, X32Error> {
     let file = File::open(path)?;
-    let mut reader = BufReader::new(file);
+    let reader = BufReader::new(file);
     let mut user_defaults = HashMap::new();
-    let mut name_line = String::new();
-    let mut params_line = String::new();
+    let mut lines = reader.lines();
 
-    loop {
-        name_line.clear();
-        params_line.clear();
-
-        if reader
-            .by_ref()
-            .take(4096)
-            .read_line(&mut name_line)
-            .is_err()
-            || name_line.is_empty()
-        {
-            break;
+    while let Some(Ok(name_line)) = lines.next() {
+        if let Some(Ok(params_line)) = lines.next() {
+            user_defaults.insert(name_line.trim().to_string(), params_line.trim().to_string());
         }
-
-        if reader
-            .by_ref()
-            .take(4096)
-            .read_line(&mut params_line)
-            .is_err()
-            || params_line.is_empty()
-        {
-            break;
-        }
-
-        user_defaults.insert(name_line.trim().to_string(), params_line.trim().to_string());
     }
 
     Ok(user_defaults)
