@@ -41,6 +41,7 @@ pub struct AppState {
     pub xmidiss: u32,
     pub xmidifr: u32,
     pub xfrrate: u32,
+    pub xcatchdelay: i32,
 }
 
 impl Default for AppState {
@@ -69,6 +70,7 @@ impl Default for AppState {
             xmidiss: 0,
             xmidifr: 0,
             xfrrate: 0,
+            xcatchdelay: 10,
         }
     }
 }

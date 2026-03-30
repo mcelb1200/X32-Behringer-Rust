@@ -1,0 +1,3 @@
+x32_punch_control needs work. It has ~600 lines while the C version is ~1600 lines. The original C code has more complex timecode and catch-up/catch-back logic that seems absent in the current Rust port.
+x32_desk_restore needs work. It has ~110 lines while the C version is ~1200 lines. It lacks the XDS_parse function to process specific node commands.
+x32_reaper needs work. There are TODOs regarding Master track selection and Solo/Mute functionality.
