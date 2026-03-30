@@ -255,16 +255,17 @@ impl Mixer {
         // If the message has no arguments, it's a request for a value.
         if osc_msg.args.is_empty() {
             if let Some(arg) = self.state.get(&osc_msg.path) {
-                let response = OscMessage {
-                    path: osc_msg.path.clone(),
-                    args: vec![arg.clone()],
-                };
-                return Ok(Some(response.to_bytes()?));
+                // OPTIMIZATION: Use serialize_to_bytes to build response directly from
+                // references, avoiding unnecessary clones of path and arguments.
+                return Ok(Some(OscMessage::serialize_to_bytes(&osc_msg.path, &[arg])?));
             }
         } else {
             // If the message has arguments, it's a command to set a value.
-            if let Some(arg) = osc_msg.args.first() {
-                self.state.set(&osc_msg.path, arg.clone());
+            // Move the first argument instead of cloning it.
+            let mut osc_msg = osc_msg;
+            if !osc_msg.args.is_empty() {
+                let arg = osc_msg.args.remove(0);
+                self.state.set(&osc_msg.path, arg);
             }
         }
 
