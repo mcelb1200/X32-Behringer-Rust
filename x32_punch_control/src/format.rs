@@ -85,6 +85,7 @@ impl PunchWriter {
         self.writer.write_u32_le(usec).await?;
         self.writer.write_u32_le(len).await?;
         self.writer.write_all(&record.data).await?;
+        self.writer.flush().await?;
 
         Ok(())
     }
