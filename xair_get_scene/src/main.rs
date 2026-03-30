@@ -49,12 +49,12 @@ fn main() -> Result<()> {
 
     let scene_name = match args.scene_name {
         Some(name) => name,
-        None => "Unsaved".to_string()
+        None => "Unsaved".to_string(),
     };
 
     let note = match args.note {
         Some(note) => note,
-        None => "".to_string()
+        None => "".to_string(),
     };
 
     println!(
