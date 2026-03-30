@@ -211,11 +211,7 @@ async fn run_logic(
             if s.t_play.is_zero() {
                 s.t_play = now;
             }
-
-            // Only update dt_play if not in catch-up/back (which override dt_play for tests)
-            if s.t_rew.is_zero() && s.t_ff.is_zero() {
-                s.dt_play = now.saturating_sub(s.t_play);
-            }
+            s.dt_play = now.saturating_sub(s.t_play);
 
             if s.xfiledataready {
                 if s.dt_play > s.dt_read {
@@ -249,157 +245,20 @@ async fn run_logic(
             s.dt_play = Duration::ZERO;
         }
 
-        let now = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap_or_default();
-
-        // We will execute long-running catch-up/catch-back outside the lock
-        let mut do_rew = false;
-        let mut do_ff = false;
-        let xcatchdelay = s.xcatchdelay.max(0) as u64;
-
-        if !s.t_rew.is_zero() && now > s.t_rew {
-            do_rew = true;
-            s.t_rew = Duration::ZERO;
-        } else if !s.t_ff.is_zero() && now > s.t_ff {
-            do_ff = true;
-            s.t_ff = Duration::ZERO;
-        }
-
-        // Drop the lock to avoid starvation during sleep/IO
+        // Drop the lock to avoid starvation
         drop(s);
-
-        if do_rew {
-            println!("Executing catch-back logic (REW)...");
-
-            // Re-open reading file and newly created file up to this point
-            // For simplicity, we just reset the reader to the start and replay
-            if let Some(ref path) = file_path {
-                // To avoid deadlocks we need a quick way to read/write state without holding it indefinitely
-                if let Ok(f) = File::open(path).await {
-                    reader = Some(PunchReader::new(f));
-                    let mut s = state.lock().await;
-                    s.xreadfile = true;
-                    s.dt_read = Duration::ZERO;
-                }
-
-                let out_path = format!("{}_xpc", path);
-                let backup_path = format!("{}_xpc_backup", path);
-
-                // Rename current writer output
-                writer = None; // drop current writer
-                let rename_res = tokio::fs::rename(&out_path, &backup_path).await;
-                println!("Rename res: {:?}", rename_res);
-
-                if let Ok(f) = File::create(&out_path).await {
-                    writer = Some(PunchWriter::new(f));
-                }
-
-                if let Ok(backup_f) = File::open(&backup_path).await {
-                    let mut backup_reader = PunchReader::new(backup_f);
-
-                    if let Some(ref mut r) = reader {
-                        loop {
-                            let (xreadfile, dt_play, dt_read) = {
-                                let s = state.lock().await;
-                                (s.xreadfile, s.dt_play, s.dt_read)
-                            };
-
-                            // The C code uses: while (Xreadfile  && (timercmp(&dt_play, &dt_read, >)))
-                            // but in catch-back dt_read starts at 0 and goes up.
-                            if !xreadfile || dt_play <= dt_read {
-                                break;
-                            }
-
-                            // Read from both original and backup (ex-writer)
-                            // The C logic reads both but uses backup data to write
-                            let backup_time;
-                            match backup_reader.read_record().await {
-                                Ok(Some(b_record)) => {
-                                    backup_time = b_record.time;
-                                    let _ = socket.send(&b_record.data).await;
-                                    if let Some(ref mut w) = writer {
-                                        let _ = w.write_record(&b_record).await;
-                                    }
-                                    if xcatchdelay > 0 {
-                                        time::sleep(Duration::from_millis(xcatchdelay)).await;
-                                    }
-                                }
-                                _ => {
-                                    let mut s = state.lock().await;
-                                    s.xreadfile = false;
-                                    break;
-                                }
-                            }
-
-                            let mut current_dt_read = {
-                                let s = state.lock().await;
-                                s.dt_read
-                            };
-
-                            // Advance the original reader to match the backup_time
-                            // This ensures dt_read catches up to the current replayed time
-                            if current_dt_read <= backup_time {
-                                if let Ok(Some(record)) = r.read_record().await {
-                                    let mut s = state.lock().await;
-                                    s.dt_read = record.time;
-                                    current_dt_read = record.time;
-                                }
-                            }
-
-                            if backup_time >= dt_play || current_dt_read >= dt_play {
-                                break;
-                            }
-                        }
-                    }
-                }
-                let _ = tokio::fs::remove_file(&backup_path).await;
-            }
-            let mut s = state.lock().await;
-            s.xfiledataready = false;
-            current_record = None;
-        }
-
-        if do_ff {
-            println!("Executing catch-up logic (FF)...");
-            // Implement XCatchUpProc behavior: Read and send rapidly until catching up
-            if let Some(ref mut r) = reader {
-                loop {
-                    let (xreadfile, dt_play, dt_read) = {
-                        let s = state.lock().await;
-                        (s.xreadfile, s.dt_play, s.dt_read)
-                    };
-
-                    // The C code uses: while (Xreadfile  && (timercmp(&dt_play, &dt_read, >)))
-                    if !xreadfile || dt_play <= dt_read {
-                        break;
-                    }
-
-                    if let Ok(Some(record)) = r.read_record().await {
-                        {
-                            let mut s = state.lock().await;
-                            s.dt_read = record.time;
-                        }
-                        let _ = socket.send(&record.data).await;
-                        if let Some(ref mut w) = writer {
-                            let _ = w.write_record(&record).await;
-                        }
-                        // Introduce a small delay to help fader moves
-                        if xcatchdelay > 0 {
-                            time::sleep(Duration::from_millis(xcatchdelay)).await;
-                        }
-                    } else {
-                        let mut s = state.lock().await;
-                        s.xreadfile = false;
-                        s.xfiledataready = false;
-                        current_record = None;
-                        break;
-                    }
-                }
-            }
-        }
     }
 }
 
 #[cfg(test)]
-mod tests;
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_state_default() {
+        let state = AppState::default();
+        assert_eq!(state.xplay, false);
+        assert_eq!(state.xpause, false);
+        assert_eq!(state.xmerge, true);
+    }
+}

@@ -37,8 +37,9 @@
 //! assert_eq!(msg.args, vec![OscArg::Float(0.75)]);
 //! ```
 
+use byteorder::{BigEndian, ReadBytesExt};
 use std::fmt::Write;
-use std::io::{self, Cursor, Read};
+use std::io::{self, Cursor};
 use std::str::FromStr;
 use std::string::FromUtf8Error;
 
@@ -163,15 +164,11 @@ impl OscMessage {
         for &tag_byte in &type_tags[1..] {
             match tag_byte as char {
                 'i' => {
-                    let mut b = [0u8; 4];
-                    cursor.read_exact(&mut b)?;
-                    let val = i32::from_be_bytes(b);
+                    let val = cursor.read_i32::<BigEndian>()?;
                     args.push(OscArg::Int(val));
                 }
                 'f' => {
-                    let mut b = [0u8; 4];
-                    cursor.read_exact(&mut b)?;
-                    let val = f32::from_be_bytes(b);
+                    let val = cursor.read_f32::<BigEndian>()?;
                     args.push(OscArg::Float(val));
                 }
                 's' => {
@@ -179,9 +176,7 @@ impl OscMessage {
                     args.push(OscArg::String(val));
                 }
                 'b' => {
-                    let mut b = [0u8; 4];
-                    cursor.read_exact(&mut b)?;
-                    let len = i32::from_be_bytes(b) as usize;
+                    let len = cursor.read_i32::<BigEndian>()? as usize;
 
                     // OPTIMIZATION: Instead of allocating a zero-initialized buffer `vec![0; len]`
                     // and calling `cursor.read_exact(&mut buf)`, directly slice the underlying buffer
@@ -217,30 +212,13 @@ impl OscMessage {
     ///
     /// A `Result` containing the serialized byte vector or an `OscError`.
     pub fn to_bytes(&self) -> Result<Vec<u8>> {
-        let arg_refs: Vec<&OscArg> = self.args.iter().collect();
-        Self::serialize_to_bytes(&self.path, &arg_refs)
-    }
-
-    /// Serializes an OSC message given its path and arguments as references.
-    ///
-    /// This is a performance-optimized method that avoids cloning OSC arguments.
-    ///
-    /// # Arguments
-    ///
-    /// * `path` - The OSC address pattern.
-    /// * `args` - A slice of `OscArg` references.
-    ///
-    /// # Returns
-    ///
-    /// A `Result` containing the serialized byte vector or an `OscError`.
-    pub fn serialize_to_bytes(path: &str, args: &[&OscArg]) -> Result<Vec<u8>> {
         // Calculate the total size required
-        let path_size = padded_size(path.len() + 1);
-        let type_tags_len = 1 + args.len() + 1; // ',' + args + null
+        let path_size = padded_size(self.path.len() + 1);
+        let type_tags_len = 1 + self.args.len() + 1; // ',' + args + null
         let type_tags_size = padded_size(type_tags_len);
 
         let mut args_size = 0;
-        for &arg in args {
+        for arg in &self.args {
             match arg {
                 OscArg::Int(_) | OscArg::Float(_) => args_size += 4,
                 OscArg::String(s) => args_size += padded_size(s.len() + 1),
@@ -252,11 +230,11 @@ impl OscMessage {
         let mut bytes = Vec::with_capacity(total_size);
 
         // Write path
-        write_osc_string(&mut bytes, path)?;
+        write_osc_string(&mut bytes, &self.path)?;
 
         // Write type tags
         bytes.push(b',');
-        for &arg in args {
+        for arg in &self.args {
             match arg {
                 OscArg::Int(_) => bytes.push(b'i'),
                 OscArg::Float(_) => bytes.push(b'f'),
@@ -265,16 +243,13 @@ impl OscMessage {
             }
         }
         bytes.push(0); // Null terminator
-
-        // OPTIMIZATION: Calculate exact padding required instead of a while loop.
-        // This avoids repeated bounds checks and branch prediction overheads.
-        let rem = bytes.len() % 4;
-        if rem != 0 {
-            bytes.extend_from_slice(&[0, 0, 0][..4 - rem]);
+        #[allow(clippy::manual_is_multiple_of)]
+        while bytes.len() % 4 != 0 {
+            bytes.push(0);
         }
 
         // Write args
-        for &arg in args {
+        for arg in &self.args {
             match arg {
                 OscArg::Int(val) => bytes.extend_from_slice(&val.to_be_bytes()),
                 OscArg::Float(val) => bytes.extend_from_slice(&val.to_be_bytes()),
@@ -282,12 +257,9 @@ impl OscMessage {
                 OscArg::Blob(val) => {
                     bytes.extend_from_slice(&(val.len() as i32).to_be_bytes());
                     bytes.extend_from_slice(val);
-
-                    // OPTIMIZATION: Calculate exact padding required instead of a while loop.
-                    // This avoids repeated bounds checks and branch prediction overheads.
-                    let rem = bytes.len() % 4;
-                    if rem != 0 {
-                        bytes.extend_from_slice(&[0, 0, 0][..4 - rem]);
+                    #[allow(clippy::manual_is_multiple_of)]
+                    while bytes.len() % 4 != 0 {
+                        bytes.push(0);
                     }
                 }
             }
