@@ -329,7 +329,7 @@ async fn run_logic(
                                     let mut s = state.lock().await;
                                     s.xreadfile = false;
                                     break;
-                            }
+                                }
                             }
 
                             let mut current_dt_read = {

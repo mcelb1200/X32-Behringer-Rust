@@ -18,7 +18,9 @@ async fn test_catchup_logic() {
     state.dt_read = Duration::from_secs(1);
 
     // This is a unit test to verify state transition on catchup triggering
-    let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default();
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default();
     if !state.t_ff.is_zero() && now > state.t_ff {
         state.t_ff = Duration::ZERO;
     }
@@ -57,8 +59,18 @@ async fn test_run_logic_catch_up() {
 
     // Create dummy records
     let mut w = PunchWriter::new(File::create(test_file_path).await.unwrap());
-    w.write_record(&PunchRecord { time: Duration::from_secs(1), data: b"/test1".to_vec() }).await.unwrap();
-    w.write_record(&PunchRecord { time: Duration::from_secs(2), data: b"/test2".to_vec() }).await.unwrap();
+    w.write_record(&PunchRecord {
+        time: Duration::from_secs(1),
+        data: b"/test1".to_vec(),
+    })
+    .await
+    .unwrap();
+    w.write_record(&PunchRecord {
+        time: Duration::from_secs(2),
+        data: b"/test2".to_vec(),
+    })
+    .await
+    .unwrap();
     drop(w);
 
     let state = Arc::new(Mutex::new(AppState::default()));
@@ -84,7 +96,13 @@ async fn test_run_logic_catch_up() {
     let socket_clone = socket.clone();
 
     let task = tokio::spawn(async move {
-        run_logic(state_clone, socket_clone, Config::default(), Some(test_file_path.to_string())).await;
+        run_logic(
+            state_clone,
+            socket_clone,
+            Config::default(),
+            Some(test_file_path.to_string()),
+        )
+        .await;
     });
 
     // Let it process
@@ -108,9 +126,24 @@ async fn test_run_logic_catch_back() {
 
     // Create dummy records
     let mut w = PunchWriter::new(File::create(test_file_path).await.unwrap());
-    w.write_record(&PunchRecord { time: Duration::from_secs(1), data: b"/test1".to_vec() }).await.unwrap();
-    w.write_record(&PunchRecord { time: Duration::from_secs(2), data: b"/test2".to_vec() }).await.unwrap();
-    w.write_record(&PunchRecord { time: Duration::from_secs(3), data: b"/test3".to_vec() }).await.unwrap();
+    w.write_record(&PunchRecord {
+        time: Duration::from_secs(1),
+        data: b"/test1".to_vec(),
+    })
+    .await
+    .unwrap();
+    w.write_record(&PunchRecord {
+        time: Duration::from_secs(2),
+        data: b"/test2".to_vec(),
+    })
+    .await
+    .unwrap();
+    w.write_record(&PunchRecord {
+        time: Duration::from_secs(3),
+        data: b"/test3".to_vec(),
+    })
+    .await
+    .unwrap();
     drop(w);
 
     let state = Arc::new(Mutex::new(AppState::default()));
@@ -131,9 +164,27 @@ async fn test_run_logic_catch_back() {
     // So the writer output is exactly `out_path`! Let's ensure we flush properly.
     let mut out_w = PunchWriter::new(File::create(&out_path).await.unwrap());
     // Assume it had written test1 and test2 and test3 already in previous run
-    out_w.write_record(&PunchRecord { time: Duration::from_secs(1), data: b"/test1".to_vec() }).await.unwrap();
-    out_w.write_record(&PunchRecord { time: Duration::from_secs(2), data: b"/test2".to_vec() }).await.unwrap();
-    out_w.write_record(&PunchRecord { time: Duration::from_secs(3), data: b"/test3".to_vec() }).await.unwrap();
+    out_w
+        .write_record(&PunchRecord {
+            time: Duration::from_secs(1),
+            data: b"/test1".to_vec(),
+        })
+        .await
+        .unwrap();
+    out_w
+        .write_record(&PunchRecord {
+            time: Duration::from_secs(2),
+            data: b"/test2".to_vec(),
+        })
+        .await
+        .unwrap();
+    out_w
+        .write_record(&PunchRecord {
+            time: Duration::from_secs(3),
+            data: b"/test3".to_vec(),
+        })
+        .await
+        .unwrap();
     // In our PunchWriter implementation, writing requires flushing to actually hit disk immediately
     // Wait, the format.rs change added flush() to write_record so it should be fine. But just in case.
     drop(out_w);
@@ -143,10 +194,15 @@ async fn test_run_logic_catch_back() {
     assert!(file_check.len() > 0, "File should have been written to");
 
     // Write exactly the same file to the test_file_path itself (used by reader)
-    tokio::fs::write(&test_file_path, &file_check).await.unwrap();
+    tokio::fs::write(&test_file_path, &file_check)
+        .await
+        .unwrap();
 
     // Verify it exists
-    assert!(tokio::fs::metadata(&out_path).await.is_ok(), "Test setup failed: file not written");
+    assert!(
+        tokio::fs::metadata(&out_path).await.is_ok(),
+        "Test setup failed: file not written"
+    );
 
     // We also need to write the reader file that run_logic expects `test_file_path`
     // Which we did at the start of the test! Wait, let's verify it too
@@ -159,7 +215,13 @@ async fn test_run_logic_catch_back() {
     // The easiest way is to let `run_logic` initialize, then write to its out_path directly before triggering REW.
 
     let task = tokio::spawn(async move {
-        run_logic(state_clone, socket_clone, Config::default(), Some(test_file_path.to_string())).await;
+        run_logic(
+            state_clone,
+            socket_clone,
+            Config::default(),
+            Some(test_file_path.to_string()),
+        )
+        .await;
     });
 
     // Wait for run_logic to open the file and create the writer
