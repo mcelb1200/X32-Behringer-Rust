@@ -243,9 +243,12 @@ impl OscMessage {
             }
         }
         bytes.push(0); // Null terminator
-        #[allow(clippy::manual_is_multiple_of)]
-        while bytes.len() % 4 != 0 {
-            bytes.push(0);
+
+        // OPTIMIZATION: Calculate exact padding required instead of a while loop.
+        let rem = bytes.len() % 4;
+        if rem != 0 {
+            let pad_len = 4 - rem;
+            bytes.extend_from_slice(&[0, 0, 0][..pad_len]);
         }
 
         // Write args
@@ -257,9 +260,12 @@ impl OscMessage {
                 OscArg::Blob(val) => {
                     bytes.extend_from_slice(&(val.len() as i32).to_be_bytes());
                     bytes.extend_from_slice(val);
-                    #[allow(clippy::manual_is_multiple_of)]
-                    while bytes.len() % 4 != 0 {
-                        bytes.push(0);
+
+                    // OPTIMIZATION: Calculate exact padding required instead of a while loop.
+                    let rem = bytes.len() % 4;
+                    if rem != 0 {
+                        let pad_len = 4 - rem;
+                        bytes.extend_from_slice(&[0, 0, 0][..pad_len]);
                     }
                 }
             }
