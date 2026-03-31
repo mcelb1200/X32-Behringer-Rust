@@ -476,7 +476,9 @@ mod tests {
 
         let file = File::open(log_path).unwrap();
         let mut buffer = Vec::new();
-        std::io::Read::take(file, 2048 * 2).read_to_end(&mut buffer).unwrap();
+        std::io::Read::take(file, 2048 * 2)
+            .read_to_end(&mut buffer)
+            .unwrap();
 
         assert_eq!(buffer.len(), 2048, "SE_LOG.BIN is not 2048 bytes long");
     }
