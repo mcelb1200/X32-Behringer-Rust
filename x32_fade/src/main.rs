@@ -12,6 +12,7 @@ use clap::Parser;
 use osc_lib::{OscArg, OscMessage};
 use serde::{Deserialize, Serialize};
 use std::fs;
+use std::io::Read;
 use std::path::PathBuf;
 use std::thread;
 use std::time::Duration;
@@ -81,7 +82,9 @@ fn main() -> Result<()> {
 
     // Load configuration from a file if specified.
     if let Some(path) = &args.load_config {
-        let data = fs::read_to_string(path)?;
+        let f = std::fs::File::open(path)?;
+        let mut data = String::new();
+        f.take(1024 * 1024).read_to_string(&mut data)?;
         config = serde_json::from_str(&data)?;
         if args.debug {
             println!("Loaded config from {:?}: {:?}", path, config);
