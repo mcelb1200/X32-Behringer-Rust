@@ -94,12 +94,8 @@ fn main() -> Result<()> {
 
     // Security: Prevent OOM from maliciously large or corrupted files.
     let metadata = file.metadata()?;
-    if metadata.len() > 1024 * 1024 {
-        // 1MB limit
-        return Err(X32Error::Io(io::Error::new(
-            io::ErrorKind::InvalidData,
-            "File too large",
-        )));
+    if metadata.len() > 1024 * 1024 { // 1MB limit
+        return Err(X32Error::Io(io::Error::new(io::ErrorKind::InvalidData, "File too large")));
     }
 
     let commands: Vec<String> = io::BufReader::new(file)
