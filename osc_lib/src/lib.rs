@@ -315,26 +315,28 @@ impl FromStr for OscMessage {
 
             args.reserve_exact(type_tags.len().saturating_sub(1));
 
-            for tag in type_tags[1..].chars() {
+            // OPTIMIZATION: Use .bytes() instead of .chars() to bypass UTF-8 decoding
+            // overhead since OSC type tags are guaranteed to be ASCII.
+            for tag in type_tags[1..].bytes() {
                 let val_str = it.next().ok_or(OscError::ParseError(format!(
                     "Missing value for type tag '{}'",
-                    tag
+                    tag as char
                 )))?;
                 match tag {
-                    'i' => {
+                    b'i' => {
                         let val = i32::from_str(val_str)
                             .map_err(|e| OscError::ParseError(e.to_string()))?;
                         args.push(OscArg::Int(val));
                     }
-                    'f' => {
+                    b'f' => {
                         let val = f32::from_str(val_str)
                             .map_err(|e| OscError::ParseError(e.to_string()))?;
                         args.push(OscArg::Float(val));
                     }
-                    's' => {
+                    b's' => {
                         args.push(OscArg::String(val_str.to_string()));
                     }
-                    'b' => {
+                    b'b' => {
                         if val_str.len() % 2 != 0 {
                             return Err(OscError::ParseError(format!(
                                 "Invalid hex string length for blob: {}",
@@ -349,7 +351,7 @@ impl FromStr for OscMessage {
                         }
                         args.push(OscArg::Blob(blob));
                     }
-                    _ => return Err(OscError::UnsupportedTypeTag(tag)),
+                    _ => return Err(OscError::UnsupportedTypeTag(tag as char)),
                 }
             }
             if it.next().is_some() {
