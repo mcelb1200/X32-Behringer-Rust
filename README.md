@@ -60,6 +60,8 @@ graph TD;
         x32_tcp;
         x32_usb;
         x32_wav_xlive;
+        xair_get_scene;
+        xair_set_scene;
     end
 
     x32_lib --> osc_lib;
@@ -87,6 +89,8 @@ graph TD;
     x32_ssavergw --> x32_lib;
     x32_tap --> x32_lib;
     x32_tcp --> x32_lib;
+    xair_get_scene --> x32_lib;
+    xair_set_scene --> x32_lib;
     x32_usb --> x32_lib;
 
     x32_automix --> osc_lib;
@@ -110,6 +114,8 @@ graph TD;
     x32_ssavergw --> osc_lib;
     x32_tap --> osc_lib;
     x32_tcp --> osc_lib;
+    xair_get_scene --> osc_lib;
+    xair_set_scene --> osc_lib;
     x32_usb --> osc_lib;
 ```
 
@@ -150,6 +156,8 @@ graph TD;
 | `x32_tcp`            | A TCP to UDP bridge for sending OSC commands to the mixer over a text-based TCP connection.               |
 | `x32_usb`            | A shell-like interface for managing a USB drive connected to the console.                                 |
 | `x32_wav_xlive`      | A utility for merging multiple mono WAV files into a multi-channel X-Live! session.                       |
+| `xair_get_scene`     | Retrieves scene data from a Behringer XAir mixer.                                                       |
+| `xair_set_scene`     | Sends a sequence of OSC commands to a Behringer XAir mixer.                                             |
 
 For more detailed information on each tool, please refer to the `README.md` file in the respective crate's directory.
 
