@@ -25,3 +25,8 @@
 **Vulnerability:** Similar to unbounded `read_line`, functions like `fs::read_to_string` and `read_to_end` when used directly on files without verifying sizes can lead to unbounded memory allocations and OOM crashes, if the file is arbitrarily large.
 **Learning:** `fs::read_to_string` and `File::read_to_end` read all bytes until EOF. If reading user-provided files or network sources, this can be easily exploited to exhaust memory. The `x32_desk_save`, `x32_fade`, and `x32_wav_xlive` crates had this vulnerability when reading configurations or file sizes up to the memory limit.
 **Prevention:** Rather than reading entirely to memory blindly, bound reads even for files using the `take(LIMIT)` adapter: `let mut f = File::open("path")?; f.take(1024 * 1024).read_to_string(&mut buf)?;`.
+
+## 2024-05-25 - [Preventing Unbounded File Reads with Metadata Check]
+**Vulnerability:** In utilities that read files entirely into memory (e.g., `x32_desk_restore` via `.collect::<Vec<String>>()` or `read_to_string`), an arbitrarily large file (either malicious or corrupted) could exhaust system memory and trigger a Denial-of-Service (OOM crash).
+**Learning:** Using `io::Read::take()` alone can silently truncate data without raising an error, which might leave hardware in a bad state if the configuration stream is incomplete. It's safer to explicitly check the file's length using its metadata before starting the read process, rejecting it entirely if it exceeds a reasonable size.
+**Prevention:** Rather than silently truncating, explicitly validate the file length using `metadata.len() > limit` and fail fast with an `io::Error::new(io::ErrorKind::InvalidData, ...)` before allocating memory. This provides an explicit failure path rather than a silent corruption.

@@ -91,6 +91,13 @@ fn main() -> Result<()> {
     let args = Args::parse();
 
     let file = File::open(&args.file)?;
+
+    // Security: Prevent OOM from maliciously large or corrupted files.
+    let metadata = file.metadata()?;
+    if metadata.len() > 1024 * 1024 { // 1MB limit
+        return Err(X32Error::Io(io::Error::new(io::ErrorKind::InvalidData, "File too large")));
+    }
+
     let commands: Vec<String> = io::BufReader::new(file)
         .lines()
         .map_while(std::result::Result::ok)
