@@ -21,3 +21,7 @@
 ## 2024-05-27 - [Efficient byte padding using slice extension]
 **Learning:** When padding buffers with 0 bytes to align to a 4-byte boundary (e.g., OSC padding), using a while loop with `bytes.push(0)` introduces repeated bounds checks and branch predictions that LLVM may struggle to optimize away completely. Calculating the exact remaining bytes and directly extending the buffer with a static slice `bytes.extend_from_slice(&[0, 0, 0][..pad_len])` runs over 2.5x faster.
 **Action:** When a known maximum amount of padding is required, prefer pre-calculating the exact length and using slice extensions rather than variable-length loops.
+
+## 2024-05-27 - [Bypassing UTF-8 decoding for guaranteed ASCII characters]
+**Learning:** In hot loops where iterating over characters of a string that are guaranteed to be ASCII (such as OSC type tags in `osc_lib`), using `.chars()` incurs unnecessary UTF-8 decoding overhead. Using `.bytes()` instead is significantly faster.
+**Action:** When parsing formats with known ASCII sub-sections, prefer `.bytes()` for iteration and byte string literals (e.g., `b'i'`) for matching, ensuring to cast back to `char` when constructing error messages.
