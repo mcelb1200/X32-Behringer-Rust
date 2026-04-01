@@ -272,7 +272,7 @@ fn write_se_log_bin(
     if let Some(marker_file) = &args.marker_file {
         let f = File::open(marker_file)?;
         let mut s = String::new();
-        f.take(1024 * 1024).read_to_string(&mut s)?;
+        std::io::Read::take(f, 1024 * 1024).read_to_string(&mut s)?;
         for line in s.lines() {
             if let Ok(marker) = line.trim().parse::<f32>() {
                 markers.push(marker);
@@ -474,9 +474,11 @@ mod tests {
         let log_path = session_dir.join("SE_LOG.BIN");
         assert!(log_path.exists(), "SE_LOG.BIN was not created");
 
-        let mut file = File::open(log_path).unwrap();
+        let file = File::open(log_path).unwrap();
         let mut buffer = Vec::new();
-        file.read_to_end(&mut buffer).unwrap();
+        std::io::Read::take(file, 2048 * 2)
+            .read_to_end(&mut buffer)
+            .unwrap();
 
         assert_eq!(buffer.len(), 2048, "SE_LOG.BIN is not 2048 bytes long");
     }
