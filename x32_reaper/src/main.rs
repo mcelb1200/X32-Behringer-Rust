@@ -1215,15 +1215,17 @@ fn parse_osc_packet(data: &[u8]) -> Result<OscMessage> {
         .position(|&b| b == 0)
         .map(|p| p + type_tag_start)
         .unwrap_or(data.len());
-    let type_tags = String::from_utf8_lossy(&data[type_tag_start..type_tag_end]);
+    // OPTIMIZATION: Parse type tags directly from the byte slice instead of
+    // allocating a String with from_utf8_lossy, avoiding UTF-8 overhead.
+    let type_tags = &data[type_tag_start..type_tag_end];
 
     let mut args = Vec::new();
     let mut arg_idx = (type_tag_end + 4) & !3;
 
-    if type_tags.starts_with(',') {
-        for c in type_tags.chars().skip(1) {
+    if type_tags.starts_with(b",") {
+        for &c in type_tags.iter().skip(1) {
             match c {
-                'f' => {
+                b'f' => {
                     if arg_idx + 4 <= data.len() {
                         let bytes = [
                             data[arg_idx],
@@ -1236,7 +1238,7 @@ fn parse_osc_packet(data: &[u8]) -> Result<OscMessage> {
                         arg_idx += 4;
                     }
                 }
-                'i' => {
+                b'i' => {
                     if arg_idx + 4 <= data.len() {
                         let bytes = [
                             data[arg_idx],
@@ -1249,7 +1251,7 @@ fn parse_osc_packet(data: &[u8]) -> Result<OscMessage> {
                         arg_idx += 4;
                     }
                 }
-                's' => {
+                b's' => {
                     let str_end = data[arg_idx..]
                         .iter()
                         .position(|&b| b == 0)
