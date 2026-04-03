@@ -1,10 +1,10 @@
+use anyhow::{Context, Result};
 use clap::Parser;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::net::UdpSocket;
 use tokio::sync::Mutex;
-use anyhow::{Context, Result};
 
 /// XAir_Command - a simple udp client for XR12, 16 or 18 sending commands and getting answers
 #[derive(Parser, Debug)]
@@ -43,9 +43,13 @@ async fn main() -> Result<()> {
     print!("Connecting to XR18.");
 
     let port = std::env::var("XAIR_PORT").unwrap_or_else(|_| "10024".to_string());
-    let addr: SocketAddr = format!("{}:{}", args.ip, port).parse().context("Invalid IP address")?;
+    let addr: SocketAddr = format!("{}:{}", args.ip, port)
+        .parse()
+        .context("Invalid IP address")?;
 
-    let socket = UdpSocket::bind("0.0.0.0:0").await.context("Failed to bind socket")?;
+    let socket = UdpSocket::bind("0.0.0.0:0")
+        .await
+        .context("Failed to bind socket")?;
 
     let socket = Arc::new(socket);
 
@@ -54,9 +58,13 @@ async fn main() -> Result<()> {
 
     loop {
         // Send /xinfo request
-        socket.send_to(b"/xinfo", addr).await.context("Failed to send /xinfo")?;
+        socket
+            .send_to(b"/xinfo", addr)
+            .await
+            .context("Failed to send /xinfo")?;
 
-        let res = tokio::time::timeout(Duration::from_millis(500), socket.recv_from(&mut buf)).await;
+        let res =
+            tokio::time::timeout(Duration::from_millis(500), socket.recv_from(&mut buf)).await;
         match res {
             Ok(Ok((len, _src))) => {
                 let msg = String::from_utf8_lossy(&buf[..len]);

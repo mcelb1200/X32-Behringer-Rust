@@ -60,7 +60,9 @@ async fn test_udp_connection_and_batch() {
                 println!("Unexpected message: {}", msg_str);
             }
         }
-    }).await.unwrap();
+    })
+    .await
+    .unwrap();
 
     // After connecting, it should send the batch commands
     tokio::time::timeout(timeout, async {
@@ -82,10 +84,12 @@ async fn test_udp_connection_and_batch() {
                 }
             }
         }
-    }).await.unwrap();
+    })
+    .await
+    .unwrap();
 
-    let status = tokio::time::timeout(timeout, async {
-        child.wait().unwrap()
-    }).await.unwrap();
+    let status = tokio::time::timeout(timeout, async { child.wait().unwrap() })
+        .await
+        .unwrap();
     assert!(status.success());
 }
