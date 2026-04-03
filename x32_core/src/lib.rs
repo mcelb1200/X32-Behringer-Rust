@@ -241,10 +241,7 @@ impl Mixer {
         // If the message has no arguments, it's a request for a value.
         if osc_msg.args.is_empty() {
             if let Some(arg) = self.state.get(&osc_msg.path) {
-                return Ok(Some(OscMessage::serialize_to_bytes(
-                    &osc_msg.path,
-                    [arg],
-                )?));
+                return Ok(Some(OscMessage::serialize_to_bytes(&osc_msg.path, [arg])?));
             }
         } else {
             // If the message has arguments, it's a command to set a value.
