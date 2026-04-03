@@ -2567,6 +2567,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "xair_command"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "assert_cmd",
+ "clap",
+ "escargot",
+ "osc_lib",
+ "predicates",
+ "tempfile",
+ "tokio",
+]
+
+[[package]]
 name = "xair_get_scene"
 version = "0.1.0"
 dependencies = [
