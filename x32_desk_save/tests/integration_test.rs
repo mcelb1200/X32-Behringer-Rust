@@ -43,11 +43,7 @@ fn setup_mock_x32_server() -> SocketAddr {
 fn test_desk_save_command() {
     let addr = setup_mock_x32_server();
 
-    let bin = escargot::CargoBuild::new()
-        .bin("x32_desk_save")
-        .run()
-        .unwrap();
-    let mut cmd = bin.command();
+    let mut cmd = std::process::Command::new(assert_cmd::cargo::cargo_bin("x32_desk_save"));
     cmd.args(&["--ip", &addr.to_string(), "-d", "test_output_save.txt"]);
 
     let output = cmd.output().unwrap();
@@ -79,11 +75,7 @@ fn test_pattern_file_command() {
     writeln!(file, "/-stat/solosw").unwrap();
     writeln!(file, "/-prefs/remote").unwrap();
 
-    let bin = escargot::CargoBuild::new()
-        .bin("x32_desk_save")
-        .run()
-        .unwrap();
-    let mut cmd = bin.command();
+    let mut cmd = std::process::Command::new(assert_cmd::cargo::cargo_bin("x32_desk_save"));
     cmd.args(&[
         "--ip",
         &addr.to_string(),
