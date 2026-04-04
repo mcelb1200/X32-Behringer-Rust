@@ -228,26 +228,20 @@ impl Mixer {
 
         // Handle the /info command, which is a request for mixer information.
         if osc_msg.path == "/info" {
-            let response = OscMessage {
-                path: "/info".to_string(),
-                args: vec![
-                    OscArg::String("V2.07".to_string()),
-                    OscArg::String("X32 Emulator".to_string()),
-                    OscArg::String("X32".to_string()),
-                    OscArg::String("4.06".to_string()),
-                ],
-            };
-            return Ok(Some(response.to_bytes()?));
+            let arg1 = OscArg::String("V2.07".to_string());
+            let arg2 = OscArg::String("X32 Emulator".to_string());
+            let arg3 = OscArg::String("X32".to_string());
+            let arg4 = OscArg::String("4.06".to_string());
+            return Ok(Some(OscMessage::serialize_to_bytes(
+                "/info",
+                [&arg1, &arg2, &arg3, &arg4],
+            )?));
         }
 
         // If the message has no arguments, it's a request for a value.
         if osc_msg.args.is_empty() {
             if let Some(arg) = self.state.get(&osc_msg.path) {
-                let response = OscMessage {
-                    path: osc_msg.path.clone(),
-                    args: vec![arg.clone()],
-                };
-                return Ok(Some(response.to_bytes()?));
+                return Ok(Some(OscMessage::serialize_to_bytes(&osc_msg.path, [arg])?));
             }
         } else {
             // If the message has arguments, it's a command to set a value.

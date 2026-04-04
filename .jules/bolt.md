@@ -25,3 +25,11 @@
 ## 2024-05-27 - [Bypassing UTF-8 decoding for guaranteed ASCII characters]
 **Learning:** In hot loops where iterating over characters of a string that are guaranteed to be ASCII (such as OSC type tags in `osc_lib`), using `.chars()` incurs unnecessary UTF-8 decoding overhead. Using `.bytes()` instead is significantly faster.
 **Action:** When parsing formats with known ASCII sub-sections, prefer `.bytes()` for iteration and byte string literals (e.g., `b'i'`) for matching, ensuring to cast back to `char` when constructing error messages.
+
+## 2024-05-28 - [Avoiding string allocation for binary packet sub-sections]
+**Learning:** In network parsers handling binary protocols (like `x32_reaper`), calling `String::from_utf8_lossy` on a buffer sub-section (like OSC type tags) to iterate over its characters introduces unnecessary allocations and UTF-8 validation overhead. Parsing the raw `&[u8]` slice directly and matching against byte literals (`b"f"`, `b"i"`) avoids string allocation entirely.
+**Action:** When processing guaranteed ASCII data from byte slices, avoid intermediate `String` allocations. Work directly with the byte slice (`&[u8]`) and use byte literals (e.g., `b"f"`) to bypass UTF-8 decoding overhead and improve parsing performance.
+
+## 2024-05-30 - [Avoiding Vec allocations when serializing over references]
+**Learning:** We added an optimization to `osc_lib` to serialize directly from references. When designing zero-allocation wrapper functions in Rust that iterate multiple times (e.g., to calculate exact buffer size before serializing), taking an `IntoIterator` with a `Clone` bound (e.g., `I: IntoIterator<Item = &'a T> + Clone`) instead of a slice `&[&T]` allows the function to consume both arrays and iterator outputs safely. This prevents callers from having to `.collect()` into a temporary `Vec` just to pass a slice reference.
+**Action:** Always prefer `I: IntoIterator + Clone` to `&[&T]` in APIs requiring multiple iterations over dynamically collected items.

@@ -203,38 +203,47 @@ impl OscMessage {
         Ok(OscMessage { path, args })
     }
 
-    /// Serializes the `OscMessage` to a `Vec<u8>`.
+    /// Serializes an OSC message directly from a path and an iterator of argument references.
     ///
-    /// The resulting byte vector will be a valid OSC 1.0 message, ready to be
-    /// sent over a network.
+    /// This bypasses the overhead of heap-allocating an owned `OscMessage` struct
+    /// during hot paths like response generation.
+    ///
+    /// # Arguments
+    ///
+    /// * `path` - The OSC address pattern.
+    /// * `args` - An iterator of references to `OscArg` values.
     ///
     /// # Returns
     ///
     /// A `Result` containing the serialized byte vector or an `OscError`.
-    pub fn to_bytes(&self) -> Result<Vec<u8>> {
+    pub fn serialize_to_bytes<'a, I>(path: &str, args: I) -> Result<Vec<u8>>
+    where
+        I: IntoIterator<Item = &'a OscArg> + Clone,
+    {
         // Calculate the total size required
-        let path_size = padded_size(self.path.len() + 1);
-        let type_tags_len = 1 + self.args.len() + 1; // ',' + args + null
-        let type_tags_size = padded_size(type_tags_len);
+        let path_size = padded_size(path.len() + 1);
+        let mut type_tags_len = 2; // ',' + null
 
         let mut args_size = 0;
-        for arg in &self.args {
+        for arg in args.clone().into_iter() {
+            type_tags_len += 1;
             match arg {
                 OscArg::Int(_) | OscArg::Float(_) => args_size += 4,
                 OscArg::String(s) => args_size += padded_size(s.len() + 1),
                 OscArg::Blob(b) => args_size += 4 + padded_size(b.len()),
             }
         }
+        let type_tags_size = padded_size(type_tags_len);
 
         let total_size = path_size + type_tags_size + args_size;
         let mut bytes = Vec::with_capacity(total_size);
 
         // Write path
-        write_osc_string(&mut bytes, &self.path)?;
+        write_osc_string(&mut bytes, path)?;
 
         // Write type tags
         bytes.push(b',');
-        for arg in &self.args {
+        for arg in args.clone().into_iter() {
             match arg {
                 OscArg::Int(_) => bytes.push(b'i'),
                 OscArg::Float(_) => bytes.push(b'f'),
@@ -252,7 +261,7 @@ impl OscMessage {
         }
 
         // Write args
-        for arg in &self.args {
+        for arg in args.into_iter() {
             match arg {
                 OscArg::Int(val) => bytes.extend_from_slice(&val.to_be_bytes()),
                 OscArg::Float(val) => bytes.extend_from_slice(&val.to_be_bytes()),
@@ -272,6 +281,18 @@ impl OscMessage {
         }
 
         Ok(bytes)
+    }
+
+    /// Serializes the `OscMessage` to a `Vec<u8>`.
+    ///
+    /// The resulting byte vector will be a valid OSC 1.0 message, ready to be
+    /// sent over a network.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` containing the serialized byte vector or an `OscError`.
+    pub fn to_bytes(&self) -> Result<Vec<u8>> {
+        Self::serialize_to_bytes(&self.path, self.args.iter())
     }
 }
 

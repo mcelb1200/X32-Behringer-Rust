@@ -93,6 +93,15 @@ fn main() -> Result<(), X32Error> {
         nodes::RO_NODE.iter().map(|s| s.to_string()).collect()
     } else if let Some(pattern_file) = args.pattern_file {
         let file = File::open(pattern_file)?;
+        let metadata = file.metadata()?;
+        if metadata.len() > 1024 * 1024 {
+            // 1MB limit
+            return Err(X32Error::Io(io::Error::new(
+                io::ErrorKind::InvalidData,
+                "File too large",
+            )));
+        }
+
         let mut commands = Vec::new();
         for line in io::BufReader::new(file).lines() {
             let line = line?;
