@@ -24,6 +24,12 @@ impl MidiOscCommand {
 
 pub fn parse_file(path: &str) -> Result<Vec<MidiOscCommand>> {
     let file = File::open(path)?;
+
+    // Security: Prevent OOM from maliciously large or corrupted configuration files
+    if file.metadata()?.len() > 1024 * 1024 {
+        return Err(anyhow!("File too large"));
+    }
+
     let reader = BufReader::new(file);
     let mut commands = Vec::new();
 
@@ -127,6 +133,12 @@ impl Default for Config {
 impl Config {
     pub fn load(path: &str) -> Result<Self> {
         let file = File::open(path)?;
+
+        // Security: Prevent OOM from maliciously large or corrupted configuration files
+        if file.metadata()?.len() > 1024 * 1024 {
+            return Err(anyhow!("File too large"));
+        }
+
         let reader = BufReader::new(file);
 
         let mut midi_in_port = 0;
