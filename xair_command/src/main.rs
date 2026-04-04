@@ -146,7 +146,8 @@ async fn main() -> Result<()> {
         // Security: Prevent OOM from maliciously large or corrupted files.
         // Also protect against special system files (like /dev/zero) that report 0 length
         // but stream infinite data.
-        if file.metadata()?.len() > 1024 * 1024 { // 1MB limit
+        if file.metadata()?.len() > 1024 * 1024 {
+            // 1MB limit
             return Err(anyhow::anyhow!("File too large"));
         }
         let mut reader = BufReader::new(file);
