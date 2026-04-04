@@ -1,4 +1,4 @@
-use osc_lib::{OscMessage, OscArg};
+use osc_lib::{OscArg, OscMessage};
 
 // Parsing constants
 const R_PROT: &[&str] = &["MC", "HUI", "CC"];
@@ -13,34 +13,41 @@ const R_SH: &[&str] = &["CUES", "SCENES", "SNIPPETS"];
 const R_CL: &[&str] = &["24h", "12h"];
 const R_IM: &[&str] = &["NORM", "INV"];
 const R_ST: &[&str] = &["STOP", "PPAUSE", "PLAY", "RPAUSE", "REC", "FF", "REW"];
-const R_S_SS: &[&str] = &["CHAN", "METER", "ROUTE", "SETUP", "LIB", "FX", "MON", "USB", "SCENE", "ASSIGN", "LOCK"];
-const R_S_CP: &[&str] = &["HOME", "FX1", "FX2", "FX3", "FX4", "FX5", "FX6", "FX7", "FX8"];
+const R_S_SS: &[&str] = &[
+    "CHAN", "METER", "ROUTE", "SETUP", "LIB", "FX", "MON", "USB", "SCENE", "ASSIGN", "LOCK",
+];
+const R_S_CP: &[&str] = &[
+    "HOME", "FX1", "FX2", "FX3", "FX4", "FX5", "FX6", "FX7", "FX8",
+];
 const R_S_EP: &[&str] = &["CHANNEL", "MIXBUS", "AUX/FX", "IN/OUT", "RTA"];
-const R_S_RP: &[&str] = &["HOME", "ANAOUT", "AUXOUT", "P16OUT", "CARDOUT", "AES50A", "AES50B", "XLROUT"];
+const R_S_RP: &[&str] = &[
+    "HOME", "ANAOUT", "AUXOUT", "P16OUT", "CARDOUT", "AES50A", "AES50B", "XLROUT",
+];
 const R_S_TP: &[&str] = &["GLOB", "CONF", "REMOTE", "NETW", "NAMES", "PREAMPS", "CARD"];
 const R_S_LP: &[&str] = &["CHAN", "EFFECT", "ROUTE"];
-const R_S_FP: &[&str] = &["HOME", "FX1", "FX2", "FX3", "FX4", "FX5", "FX6", "FX7", "FX8"];
+const R_S_FP: &[&str] = &[
+    "HOME", "FX1", "FX2", "FX3", "FX4", "FX5", "FX6", "FX7", "FX8",
+];
 const R_S_MP: &[&str] = &["MONITOR", "TALKA", "TALKB", "OSC"];
 const R_S_UP: &[&str] = &["HOME", "CONFIG"];
 const R_S_SP: &[&str] = &["HOME", "SCENES", "BITS", "PARSAFE", "CHNSAFE", "MIDI"];
 const R_S_AP: &[&str] = &["HOME", "SETA", "SETB", "SETC"];
 const R_S_EL: &[&str] = &[
-    "Ch01", "Ch02", "Ch03", "Ch04", "Ch05", "Ch06", "Ch07", "Ch08", "Ch09", "Ch10",
-    "Ch11", "Ch12", "Ch13", "Ch14", "Ch15", "Ch16", "Ch17", "Ch18", "Ch19", "Ch20",
-    "Ch21", "Ch22", "Ch23", "Ch24", "Ch25", "Ch26", "Ch27", "Ch28", "Ch29", "Ch30",
-    "Ch31", "Ch32",
-    "Aux01", "Aux02", "Aux03", "Aux04", "Aux05", "Aux06", "Aux07", "Aux08",
-    "Fx1L", "Fx1R", "Fx2L", "Fx2R", "Fx3L", "Fx3R", "Fx4L", "Fx4R",
-    "Bus1", "Bus2", "Bus3", "Bus4", "Bus5", "Bus6", "Bus7", "Bus8", "Bus9",
-    "Bs10", "Bs11", "Bs12", "Bs13", "Bs14", "Bs15", "Bs16",
-    "Mtx1", "Mtx2", "Mtx3", "Mtx4", "Mtx5", "Mtx6",
-    "LR", "M/C"
+    "Ch01", "Ch02", "Ch03", "Ch04", "Ch05", "Ch06", "Ch07", "Ch08", "Ch09", "Ch10", "Ch11", "Ch12",
+    "Ch13", "Ch14", "Ch15", "Ch16", "Ch17", "Ch18", "Ch19", "Ch20", "Ch21", "Ch22", "Ch23", "Ch24",
+    "Ch25", "Ch26", "Ch27", "Ch28", "Ch29", "Ch30", "Ch31", "Ch32", "Aux01", "Aux02", "Aux03",
+    "Aux04", "Aux05", "Aux06", "Aux07", "Aux08", "Fx1L", "Fx1R", "Fx2L", "Fx2R", "Fx3L", "Fx3R",
+    "Fx4L", "Fx4R", "Bus1", "Bus2", "Bus3", "Bus4", "Bus5", "Bus6", "Bus7", "Bus8", "Bus9", "Bs10",
+    "Bs11", "Bs12", "Bs13", "Bs14", "Bs15", "Bs16", "Mtx1", "Mtx2", "Mtx3", "Mtx4", "Mtx5", "Mtx6",
+    "LR", "M/C",
 ];
 const R_B_AR: &[&str] = &["BAR", "SPEC"];
 const R_P_RE: &[&str] = &["PRE", "POST"];
 const R_R_MS: &[&str] = &["RMS", "PEAK"];
 const R_R_PH: &[&str] = &["OFF", "1", "2", "3", "4", "5", "6", "7", "8"];
-const R_R_TV: &[&str] = &["OFF", "25%", "30%", "35%", "40%", "45%", "50%", "55%", "60%", "65%", "70%", "75%", "80%"];
+const R_R_TV: &[&str] = &[
+    "OFF", "25%", "30%", "35%", "40%", "45%", "50%", "55%", "60%", "65%", "70%", "75%", "80%",
+];
 
 /// The main node parser function based on XDS_parse.
 pub fn parse_node_line(line: &str) -> Option<OscMessage> {
@@ -61,8 +68,29 @@ pub fn parse_node_line(line: &str) -> Option<OscMessage> {
     match path {
         // --- stat ---
         "/-stat/selidx" => parse_list(path, arg_str, R_S_EL),
-        "/-stat/chfaderbank" | "/-stat/grpfaderbank" | "/-stat/bussendbank" | "/-stat/eqband" | "/-stat/userbank" | "/-stat/rtasource" | "/-stat/xcardtype" | "/-stat/geqpos" | "/-stat/tape/etime" | "/-stat/tape/rtime" => parse_int(path, arg_str),
-        "/-stat/sendsonfader" | "/-stat/solo" | "/-stat/keysolo" | "/-stat/autosave" | "/-stat/lock" | "/-stat/usbmounted" | "/-stat/remote" | "/-stat/rtaeqpre" | "/-stat/rtaeqpost" | "/-stat/xcardsync" | "/-stat/geqonfdr" | "/-stat/screen/mutegrp" | "/-stat/screen/utils" => parse_onoff(path, arg_str),
+        "/-stat/chfaderbank"
+        | "/-stat/grpfaderbank"
+        | "/-stat/bussendbank"
+        | "/-stat/eqband"
+        | "/-stat/userbank"
+        | "/-stat/rtasource"
+        | "/-stat/xcardtype"
+        | "/-stat/geqpos"
+        | "/-stat/tape/etime"
+        | "/-stat/tape/rtime" => parse_int(path, arg_str),
+        "/-stat/sendsonfader"
+        | "/-stat/solo"
+        | "/-stat/keysolo"
+        | "/-stat/autosave"
+        | "/-stat/lock"
+        | "/-stat/usbmounted"
+        | "/-stat/remote"
+        | "/-stat/rtaeqpre"
+        | "/-stat/rtaeqpost"
+        | "/-stat/xcardsync"
+        | "/-stat/geqonfdr"
+        | "/-stat/screen/mutegrp"
+        | "/-stat/screen/utils" => parse_onoff(path, arg_str),
         "/-stat/rtamodeeq" | "/-stat/rtamodegeq" => parse_list(path, arg_str, R_B_AR),
 
         // --- stat screen ---
@@ -93,7 +121,17 @@ pub fn parse_node_line(line: &str) -> Option<OscMessage> {
         "/-prefs/bright" | "/-prefs/ledbright" => parse_flin(path, arg_str, 10.0, 90.0, 5.0),
         "/-prefs/lcdcont" => parse_flin(path, arg_str, 0.0, 100.0, 2.0),
         "/-prefs/lamp" => parse_flin(path, arg_str, 10.0, 90.0, 10.0),
-        "/-prefs/lampon" | "/-prefs/confirm_general" | "/-prefs/confirm_overwrite" | "/-prefs/confirm_sceneload" | "/-prefs/viewrtn" | "/-prefs/selfollowbank" | "/-prefs/sceneadvance" | "/-prefs/safe_masterlevels" | "/-prefs/autosel" | "/-prefs/hardmute" | "/-prefs/dcsmute" => parse_onoff(path, arg_str),
+        "/-prefs/lampon"
+        | "/-prefs/confirm_general"
+        | "/-prefs/confirm_overwrite"
+        | "/-prefs/confirm_sceneload"
+        | "/-prefs/viewrtn"
+        | "/-prefs/selfollowbank"
+        | "/-prefs/sceneadvance"
+        | "/-prefs/safe_masterlevels"
+        | "/-prefs/autosel"
+        | "/-prefs/hardmute"
+        | "/-prefs/dcsmute" => parse_onoff(path, arg_str),
         "/-prefs/clockrate" => parse_list(path, arg_str, R_CR),
         "/-prefs/clocksource" => parse_list(path, arg_str, R_CS),
         "/-prefs/show_control" => parse_list(path, arg_str, R_SH),
@@ -119,9 +157,18 @@ pub fn parse_node_line(line: &str) -> Option<OscMessage> {
 
         // --- prefs ip ---
         "/-prefs/ip/dhcp" => parse_onoff(path, arg_str),
-        "/-prefs/ip/addr/0" | "/-prefs/ip/addr/1" | "/-prefs/ip/addr/2" | "/-prefs/ip/addr/3" |
-        "/-prefs/ip/mask/0" | "/-prefs/ip/mask/1" | "/-prefs/ip/mask/2" | "/-prefs/ip/mask/3" |
-        "/-prefs/ip/gateway/0" | "/-prefs/ip/gateway/1" | "/-prefs/ip/gateway/2" | "/-prefs/ip/gateway/3" => parse_int(path, arg_str),
+        "/-prefs/ip/addr/0"
+        | "/-prefs/ip/addr/1"
+        | "/-prefs/ip/addr/2"
+        | "/-prefs/ip/addr/3"
+        | "/-prefs/ip/mask/0"
+        | "/-prefs/ip/mask/1"
+        | "/-prefs/ip/mask/2"
+        | "/-prefs/ip/mask/3"
+        | "/-prefs/ip/gateway/0"
+        | "/-prefs/ip/gateway/1"
+        | "/-prefs/ip/gateway/2"
+        | "/-prefs/ip/gateway/3" => parse_int(path, arg_str),
 
         // --- prefs remote ---
         "/-prefs/remote/enable" => parse_onoff(path, arg_str),
@@ -141,7 +188,7 @@ pub fn parse_node_line(line: &str) -> Option<OscMessage> {
             } else {
                 None
             }
-        },
+        }
 
         _ => None,
     }
@@ -150,11 +197,16 @@ pub fn parse_node_line(line: &str) -> Option<OscMessage> {
 fn parse_str(path: &str, val: &str) -> Option<OscMessage> {
     // Strings in node files are typically quoted, e.g. "Some Name"
     let clean_val = val.trim_matches('"');
-    Some(OscMessage::new(path.to_string(), vec![OscArg::String(clean_val.to_string())]))
+    Some(OscMessage::new(
+        path.to_string(),
+        vec![OscArg::String(clean_val.to_string())],
+    ))
 }
 
 fn parse_int(path: &str, val: &str) -> Option<OscMessage> {
-    val.parse::<i32>().ok().map(|i| OscMessage::new(path.to_string(), vec![OscArg::Int(i)]))
+    val.parse::<i32>()
+        .ok()
+        .map(|i| OscMessage::new(path.to_string(), vec![OscArg::Int(i)]))
 }
 
 fn parse_flin(path: &str, val: &str, xmin: f32, lmaxmin: f32, xstep: f32) -> Option<OscMessage> {
@@ -162,8 +214,12 @@ fn parse_flin(path: &str, val: &str, xmin: f32, lmaxmin: f32, xstep: f32) -> Opt
     v = (v - xmin) / lmaxmin;
     let step = lmaxmin / xstep;
     v = (v * step).round() / step;
-    if v <= 0.0 { v = 0.0; }
-    if v > 1.0 { v = 1.0; }
+    if v <= 0.0 {
+        v = 0.0;
+    }
+    if v > 1.0 {
+        v = 1.0;
+    }
     Some(OscMessage::new(path.to_string(), vec![OscArg::Float(v)]))
 }
 
@@ -171,8 +227,12 @@ fn parse_flog(path: &str, val: &str, xmin: f32, lmaxmin: f32, nsteps: f32) -> Op
     let mut v = val.parse::<f32>().ok()?;
     v = (v / xmin).ln() / lmaxmin;
     v = (v * nsteps).round() / nsteps;
-    if v <= 0.0 { v = 0.0; }
-    if v > 1.0 { v = 1.0; }
+    if v <= 0.0 {
+        v = 0.0;
+    }
+    if v > 1.0 {
+        v = 1.0;
+    }
     Some(OscMessage::new(path.to_string(), vec![OscArg::Float(v)]))
 }
 
@@ -199,7 +259,10 @@ fn parse_onoff(path: &str, val: &str) -> Option<OscMessage> {
 
 fn parse_list(path: &str, val: &str, list: &[&str]) -> Option<OscMessage> {
     let index = list.iter().position(|&s| s == val)?;
-    Some(OscMessage::new(path.to_string(), vec![OscArg::Int(index as i32)]))
+    Some(OscMessage::new(
+        path.to_string(),
+        vec![OscArg::Int(index as i32)],
+    ))
 }
 
 #[cfg(test)]
@@ -258,6 +321,9 @@ mod tests {
         assert_eq!(msg.args, vec![OscArg::String("test_file.wav".to_string())]);
 
         let msg2 = parse_node_line("/-stat/tape/file \"test file with spaces.wav\"").unwrap();
-        assert_eq!(msg2.args, vec![OscArg::String("test file with spaces.wav".to_string())]);
+        assert_eq!(
+            msg2.args,
+            vec![OscArg::String("test file with spaces.wav".to_string())]
+        );
     }
 }
