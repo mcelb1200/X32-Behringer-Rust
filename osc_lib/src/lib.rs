@@ -252,6 +252,7 @@ impl OscMessage {
             }
         }
         bytes.push(0); // Null terminator
+
         // OPTIMIZATION: Calculate exact padding required instead of a while loop.
         let rem = bytes.len() % 4;
         if rem != 0 {
@@ -268,6 +269,8 @@ impl OscMessage {
                 OscArg::Blob(val) => {
                     bytes.extend_from_slice(&(val.len() as i32).to_be_bytes());
                     bytes.extend_from_slice(val);
+
+                    // OPTIMIZATION: Calculate exact padding required instead of a while loop.
                     let rem = bytes.len() % 4;
                     if rem != 0 {
                         let pad_len = 4 - rem;
