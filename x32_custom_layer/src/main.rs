@@ -396,8 +396,10 @@ fn format_node_state(args: &[OscArg]) -> Result<String> {
             OscArg::String(val) => {
                 if val.contains(' ') || val.is_empty() {
                     // OPTIMIZATION: Prevent allocation from `format!()` by writing directly
-                    // into the pre-existing buffer.
-                    write!(&mut s, "\"{}\"", val).unwrap();
+                    // into the pre-existing buffer without using std::fmt machinery.
+                    s.push('"');
+                    s.push_str(val);
+                    s.push('"');
                 } else {
                     s.push_str(val);
                 }
