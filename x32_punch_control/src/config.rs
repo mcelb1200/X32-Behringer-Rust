@@ -64,6 +64,11 @@ impl Config {
             Ok(f) => f,
             Err(_) => return Ok(Config::default()), // If no config, return default
         };
+
+        if file.metadata()?.len() > 1024 * 1024 {
+            anyhow::bail!("Config file too large to load (max 1MB)");
+        }
+
         let reader = BufReader::new(file);
         let mut config = Config::default();
 
