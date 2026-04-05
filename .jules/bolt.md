@@ -33,3 +33,7 @@
 ## 2024-05-30 - [Avoiding Vec allocations when serializing over references]
 **Learning:** We added an optimization to `osc_lib` to serialize directly from references. When designing zero-allocation wrapper functions in Rust that iterate multiple times (e.g., to calculate exact buffer size before serializing), taking an `IntoIterator` with a `Clone` bound (e.g., `I: IntoIterator<Item = &'a T> + Clone`) instead of a slice `&[&T]` allows the function to consume both arrays and iterator outputs safely. This prevents callers from having to `.collect()` into a temporary `Vec` just to pass a slice reference.
 **Action:** Always prefer `I: IntoIterator + Clone` to `&[&T]` in APIs requiring multiple iterations over dynamically collected items.
+
+## 2024-05-31 - [Avoiding `write!` macro for string concatenation]
+**Learning:** Using the `write!(f, "{}", s)` macro to append a dynamic string variable to a formatter or a `String` buffer incurs the overhead of `std::fmt` machinery. It is significantly faster to directly use string manipulation methods like `f.write_str(s)` or `buffer.push_str(s)`.
+**Action:** Always replace `write!(f, "{}", s)` with `f.write_str(s)` (for formatters) or `s.push_str(val)` (for Strings) when appending string variables. Similarly, avoid `write!(&mut s, "\"{}\"", val)` by using `s.push('"'); s.push_str(val); s.push('"');`.
