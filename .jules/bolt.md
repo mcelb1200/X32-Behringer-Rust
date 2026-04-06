@@ -33,3 +33,7 @@
 ## 2024-05-30 - [Avoiding Vec allocations when serializing over references]
 **Learning:** We added an optimization to `osc_lib` to serialize directly from references. When designing zero-allocation wrapper functions in Rust that iterate multiple times (e.g., to calculate exact buffer size before serializing), taking an `IntoIterator` with a `Clone` bound (e.g., `I: IntoIterator<Item = &'a T> + Clone`) instead of a slice `&[&T]` allows the function to consume both arrays and iterator outputs safely. This prevents callers from having to `.collect()` into a temporary `Vec` just to pass a slice reference.
 **Action:** Always prefer `I: IntoIterator + Clone` to `&[&T]` in APIs requiring multiple iterations over dynamically collected items.
+
+## 2024-06-05 - [Avoiding std::fmt machinery in hot loops]
+**Learning:** The `write!` macro invokes the `std::fmt` machinery, which involves hidden parsing and allocation overhead even for simple strings or values. In hot loops or `fmt::Display` implementations, relying on `write!(f, "{}", val)` or `write!(f, "literal")` causes measurable degradation compared to direct manipulation.
+**Action:** To eliminate formatting machinery overhead in Rust hot loops, replace the `write!` macro (e.g., `write!(f, "{}", val)` or `write!(&mut s, "\"{}\"", val)`) with direct string manipulation methods like `f.write_str(val)`, `s.push()`, `s.push_str()`, or manual static character array mappings for hex values.
