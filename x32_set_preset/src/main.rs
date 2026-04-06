@@ -125,6 +125,11 @@ fn main() -> Result<()> {
 
     println!("Loading preset: {:?}", args.file);
     let file = File::open(&args.file).context("Failed to open preset file")?;
+
+    if file.metadata()?.len() > 1024 * 1024 {
+        return Err(anyhow!("Preset file too large to load (max 1MB)"));
+    }
+
     let reader = BufReader::new(file);
 
     for line in reader.lines() {

@@ -44,6 +44,11 @@ fn main() -> Result<()> {
     for path in args.files {
         println!("Processing file: {:?}", path);
         let file = File::open(&path)?;
+
+        if file.metadata()?.len() > 1024 * 1024 {
+            anyhow::bail!("Preset file too large to load (max 1MB)");
+        }
+
         let reader = BufReader::new(file);
 
         // Detect type from extension

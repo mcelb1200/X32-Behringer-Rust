@@ -114,6 +114,13 @@ fn main() -> Result<(), X32Error> {
 /// A `Result` containing a HashMap of FX names to parameter strings.
 fn load_user_defaults(path: PathBuf) -> Result<HashMap<String, String>, X32Error> {
     let file = File::open(path)?;
+
+    if file.metadata()?.len() > 1024 * 1024 {
+        return Err(X32Error::from(
+            "Defaults file too large to load (max 1MB)".to_string(),
+        ));
+    }
+
     let reader = BufReader::new(file);
     let mut user_defaults = HashMap::new();
     let mut lines = reader.lines();
