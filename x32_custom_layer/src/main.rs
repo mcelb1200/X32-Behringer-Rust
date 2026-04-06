@@ -461,6 +461,12 @@ fn get_node_state(socket: &UdpSocket, node: &str) -> Result<String> {
 fn handle_restore_command(ip: &str, file_path: &str) -> Result<()> {
     let socket = create_socket(ip, 200)?;
     let file = File::open(file_path)?;
+
+    // Sentinel: Prevent OOM from maliciously large or corrupted configuration files
+    if file.metadata()?.len() > 1024 * 1024 {
+        return Err(X32Error::Custom("File too large".to_string()));
+    }
+
     let mut reader = BufReader::new(file);
 
     println!("Restoring configuration from {}...", file_path);
