@@ -20,6 +20,8 @@ use x32_lib::{
     error::{Result, X32Error},
 };
 
+mod parse;
+
 /// A Rust implementation of the X32DeskRestore tool.
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -50,19 +52,29 @@ struct Args {
 fn send_commands(socket: &UdpSocket, commands: &[String]) -> Result<()> {
     let mut buf = [0; 512];
     for cmd_str in commands {
-        // Prepend "/" to the command string if it doesn't start with it
-        let command = if cmd_str.starts_with('/') {
-            cmd_str.to_string()
+        let msg = if cmd_str.starts_with("/-") {
+            // Attempt to parse `/-...` lines using XDS_parse logic.
+            // If it fails to parse (or unsupported), skip it or log it (C code skipped unsupported nodes).
+            if let Some(parsed_msg) = parse::parse_node_line(cmd_str) {
+                parsed_msg
+            } else {
+                continue;
+            }
         } else {
-            format!("/{}", cmd_str)
-        };
+            // Prepend "/" to the command string if it doesn't start with it
+            let command = if cmd_str.starts_with('/') {
+                cmd_str.to_string()
+            } else {
+                format!("/{}", cmd_str)
+            };
 
-        // Attempt to parse with OscMessage::from_str first
-        let msg = match OscMessage::from_str(&command) {
-            Ok(msg) => msg,
-            Err(_) => {
-                // If parsing fails, treat the line as a simple command with no arguments
-                OscMessage::new(command, vec![])
+            // Attempt to parse with OscMessage::from_str first
+            match OscMessage::from_str(&command) {
+                Ok(msg) => msg,
+                Err(_) => {
+                    // If parsing fails, treat the line as a simple command with no arguments
+                    OscMessage::new(command, vec![])
+                }
             }
         };
 
