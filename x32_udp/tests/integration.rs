@@ -1,6 +1,6 @@
 use assert_cmd::cargo::cargo_bin;
-use std::process::Command;
 use std::net::UdpSocket;
+use std::process::Command;
 
 #[test]
 fn test_x32_udp_communication() {
@@ -8,7 +8,9 @@ fn test_x32_udp_communication() {
     let server_addr = server.local_addr().expect("Failed to get local address");
     let port = server_addr.port().to_string();
 
-    server.set_read_timeout(Some(std::time::Duration::from_secs(5))).unwrap();
+    server
+        .set_read_timeout(Some(std::time::Duration::from_secs(5)))
+        .unwrap();
 
     let server_handle = std::thread::spawn(move || {
         let mut buf = [0u8; 512];
