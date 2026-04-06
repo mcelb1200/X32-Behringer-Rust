@@ -109,9 +109,11 @@ async fn main() -> Result<()> {
                         println!("X-> {}", msg);
                     } else {
                         let mut hex_str = String::new();
-                        for byte in &recv_buf[..len] {
-                            use std::fmt::Write;
-                            write!(&mut hex_str, "{:02x} ", byte).unwrap();
+                        static HEX: &[u8; 16] = b"0123456789abcdef";
+                        for &byte in &recv_buf[..len] {
+                            hex_str.push(HEX[(byte >> 4) as usize] as char);
+                            hex_str.push(HEX[(byte & 0x0f) as usize] as char);
+                            hex_str.push(' ');
                         }
                         println!("X-> [Raw] {}", hex_str);
                     }
