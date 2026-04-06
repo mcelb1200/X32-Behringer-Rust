@@ -144,9 +144,18 @@ async fn main() -> Result<()> {
         use std::io::{BufRead, BufReader};
 
         let file = File::open(file_path).context(format!("Cannot read file: {}", file_path))?;
-        let reader = BufReader::new(file);
 
-        for line_res in reader.lines() {
+        // Security: Prevent OOM from maliciously large or corrupted files.
+        // Also protect against special system files (like /dev/zero) that report 0 length
+        // but stream infinite data.
+        if file.metadata()?.len() > 1024 * 1024 {
+            // 1MB limit
+            return Err(anyhow::anyhow!("File too large"));
+        }
+        let mut reader = BufReader::new(file);
+        use std::io::Read;
+
+        for line_res in reader.by_ref().take(1024 * 1024).lines() {
             if !keep_on {
                 break;
             }
