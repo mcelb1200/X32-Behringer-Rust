@@ -26,5 +26,5 @@ members = [
     "x32_tcp",
     "x32_usb",
     "x32_wav_xlive", "x32_ssavergw",
-    "x32_jog4xlive", "x32_punch_control", "x32_midi2osc", "x32_xlive_wav", "xair_get_scene", "xair_set_scene", "xair_command", "x32_cpxlivemarkers",
+    "x32_jog4xlive", "x32_punch_control", "x32_midi2osc", "x32_xlive_wav", "xair_get_scene", "xair_set_scene", "xair_command", "x32_cpxlivemarkers", "x32_tapw",
 ]
