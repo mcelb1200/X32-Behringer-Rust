@@ -7,5 +7,7 @@ fn test_help() {
     cmd.arg("--help")
         .assert()
         .success()
-        .stdout(predicate::str::contains("X32Tap utility with a Text User Interface"));
+        .stdout(predicate::str::contains(
+            "X32Tap utility with a Text User Interface",
+        ));
 }

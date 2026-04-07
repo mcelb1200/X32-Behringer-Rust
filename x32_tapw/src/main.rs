@@ -2,28 +2,28 @@ mod app;
 
 use anyhow::Result;
 use app::{AppState, InputMode};
+use clap::Parser;
 use crossterm::{
     event::{self, Event, KeyCode, KeyEventKind},
     execute,
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
+use osc_lib::{OscArg, OscMessage};
 use ratatui::{
+    Frame, Terminal,
     backend::{Backend, CrosstermBackend},
     layout::{Constraint, Direction, Layout},
     style::{Color, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Paragraph},
-    Frame, Terminal,
 };
 use std::{
     io,
     sync::{Arc, Mutex},
     time::{Duration, Instant},
 };
-use clap::Parser;
 use tokio::net::UdpSocket;
 use tokio::sync::mpsc;
-use osc_lib::{OscArg, OscMessage};
 
 /// A Rust implementation of the X32Tap utility with a Text User Interface.
 #[derive(Parser, Debug)]
@@ -86,7 +86,8 @@ async fn run_network(app: Arc<Mutex<AppState>>, mut rx: mpsc::Receiver<OscMessag
 
         if ip != current_ip {
             current_ip = ip.clone();
-            if let Ok(parsed_addr) = format!("{}:10023", current_ip).parse::<std::net::SocketAddr>() {
+            if let Ok(parsed_addr) = format!("{}:10023", current_ip).parse::<std::net::SocketAddr>()
+            {
                 addr = Some(parsed_addr);
                 // Connect check
                 if let Some(a) = addr {
@@ -185,7 +186,11 @@ async fn run_network(app: Arc<Mutex<AppState>>, mut rx: mpsc::Receiver<OscMessag
     }
 }
 
-async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: Arc<Mutex<AppState>>, tx: mpsc::Sender<OscMessage>) -> Result<()> {
+async fn run_app<B: Backend>(
+    terminal: &mut Terminal<B>,
+    app: Arc<Mutex<AppState>>,
+    tx: mpsc::Sender<OscMessage>,
+) -> Result<()> {
     let mut last_tick = Instant::now();
     let tick_rate = Duration::from_millis(250);
 
@@ -205,8 +210,12 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: Arc<Mutex<AppState
                             KeyCode::Char('q') | KeyCode::Esc => app_state.should_quit = true,
                             KeyCode::Char('i') => app_state.active_input = InputMode::EditingIp,
                             KeyCode::Char('s') => app_state.active_input = InputMode::EditingSlot,
-                            KeyCode::Char('c') => app_state.active_input = InputMode::EditingChannel,
-                            KeyCode::Char('e') => app_state.active_input = InputMode::EditingSensitivity,
+                            KeyCode::Char('c') => {
+                                app_state.active_input = InputMode::EditingChannel
+                            }
+                            KeyCode::Char('e') => {
+                                app_state.active_input = InputMode::EditingSensitivity
+                            }
                             KeyCode::Char('a') => {
                                 app_state.is_auto = !app_state.is_auto;
                                 let status = if app_state.is_auto { "Auto" } else { "Manual" };
@@ -222,7 +231,8 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: Arc<Mutex<AppState
 
                                         let slot = app_state.slot;
                                         let address = format!("/fx/{}/par/02", slot);
-                                        let msg = OscMessage::new(address, vec![OscArg::Float(f_val)]);
+                                        let msg =
+                                            OscMessage::new(address, vec![OscArg::Float(f_val)]);
                                         let _ = tx.try_send(msg);
                                     } else {
                                         app_state.log("First tap...".to_string());
@@ -232,7 +242,9 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: Arc<Mutex<AppState
                             _ => {}
                         },
                         InputMode::EditingIp => match key.code {
-                            KeyCode::Enter | KeyCode::Esc => app_state.active_input = InputMode::Normal,
+                            KeyCode::Enter | KeyCode::Esc => {
+                                app_state.active_input = InputMode::Normal
+                            }
                             KeyCode::Char(c) => app_state.ip_input.push(c),
                             KeyCode::Backspace => {
                                 app_state.ip_input.pop();
@@ -311,7 +323,9 @@ fn ui(f: &mut Frame, app: &AppState) {
 
     // Help block
     let help_msg = match app.active_input {
-        InputMode::Normal => "q/Esc: Quit | i: IP | s: Slot | c: Channel | e: Sensitivity | a: Toggle Auto | Enter: Tap",
+        InputMode::Normal => {
+            "q/Esc: Quit | i: IP | s: Slot | c: Channel | e: Sensitivity | a: Toggle Auto | Enter: Tap"
+        }
         _ => "Enter/Esc: Confirm/Stop Editing",
     };
     let help = Paragraph::new(help_msg).block(Block::default().borders(Borders::ALL).title("Help"));
@@ -351,8 +365,8 @@ fn ui(f: &mut Frame, app: &AppState) {
         if app.is_auto { "Auto" } else { "Manual" },
         app.delay_type
     );
-    let mode_p = Paragraph::new(mode_text)
-        .block(Block::default().borders(Borders::ALL).title("Status"));
+    let mode_p =
+        Paragraph::new(mode_text).block(Block::default().borders(Borders::ALL).title("Status"));
     f.render_widget(mode_p, left_chunks[1]);
 
     // Delay Slot
@@ -371,7 +385,10 @@ fn ui(f: &mut Frame, app: &AppState) {
     let mut ch_text = vec![];
     let mut ch_line = vec![Span::raw("Channel: ")];
     if app.active_input == InputMode::EditingChannel {
-        ch_line.push(Span::styled(&app.ch_input, Style::default().fg(Color::Yellow)));
+        ch_line.push(Span::styled(
+            &app.ch_input,
+            Style::default().fg(Color::Yellow),
+        ));
     } else {
         ch_line.push(Span::raw(&app.ch_input));
     }
@@ -379,14 +396,20 @@ fn ui(f: &mut Frame, app: &AppState) {
 
     let mut sens_line = vec![Span::raw("Sens: ")];
     if app.active_input == InputMode::EditingSensitivity {
-        sens_line.push(Span::styled(&app.sens_input, Style::default().fg(Color::Yellow)));
+        sens_line.push(Span::styled(
+            &app.sens_input,
+            Style::default().fg(Color::Yellow),
+        ));
     } else {
         sens_line.push(Span::raw(&app.sens_input));
     }
     ch_text.push(Line::from(sens_line));
 
-    let ch_p = Paragraph::new(ch_text)
-        .block(Block::default().borders(Borders::ALL).title("Auto-Tap Settings"));
+    let ch_p = Paragraph::new(ch_text).block(
+        Block::default()
+            .borders(Borders::ALL)
+            .title("Auto-Tap Settings"),
+    );
     f.render_widget(ch_p, right_chunks[1]);
 
     // Log window
