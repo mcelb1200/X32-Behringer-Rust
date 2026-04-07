@@ -1,6 +1,6 @@
+use osc_lib::{OscArg, OscMessage};
 use std::process::Command;
 use std::time::Duration;
-use osc_lib::{OscArg, OscMessage};
 
 // Note: Testing interactive TUIs is tricky, but we can verify that the CLI help string matches
 // what we expect (which we already do in `cli.rs`).
