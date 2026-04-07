@@ -1,6 +1,4 @@
-use osc_lib::{OscArg, OscMessage};
 use std::process::Command;
-use std::time::Duration;
 
 // Note: Testing interactive TUIs is tricky, but we can verify that the CLI help string matches
 // what we expect (which we already do in `cli.rs`).
@@ -13,10 +11,10 @@ use std::time::Duration;
 #[tokio::test]
 async fn test_auto_mode_mock_server() {
     let mock_server = tokio::net::UdpSocket::bind("127.0.0.1:0").await.unwrap();
-    let local_addr = mock_server.local_addr().unwrap();
-    let port = local_addr.port();
+    let _local_addr = mock_server.local_addr().unwrap();
+    // let _port = local_addr.port(); // Not used currently because args are not parsed
 
-    let mut cmd = Command::new(env!("CARGO_BIN_EXE_x32_tapw"));
+    let _cmd = Command::new(env!("CARGO_BIN_EXE_x32_tapw"));
     // X32TapW doesn't accept args right now (except --help), we could theoretically test it
     // if we added arguments, but the prompt says to write tests. Since the TUI reads from
     // internal state, we can't easily pass it an IP without typing it via expect.

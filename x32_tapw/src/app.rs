@@ -1,8 +1,9 @@
 use std::borrow::Cow;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 /// AppState holds the internal state of the x32_tapw TUI application.
 pub struct AppState {
+    #[allow(dead_code)]
     pub ip: String,
     pub slot: u8,
     pub channel: u8,
@@ -121,6 +122,7 @@ impl AppState {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::time::Duration;
 
     #[test]
     fn test_calculate_fval() {
@@ -166,14 +168,8 @@ mod tests {
         assert!(app.was_above_threshold);
         assert_eq!(app.last_tap, Some(start));
 
-        assert_eq!(
-            app.process_meter_data(0.9, start + Duration::from_millis(10)),
-            None
-        );
-        assert_eq!(
-            app.process_meter_data(0.2, start + Duration::from_millis(20)),
-            None
-        );
+        assert_eq!(app.process_meter_data(0.9, start + Duration::from_millis(10)), None);
+        assert_eq!(app.process_meter_data(0.2, start + Duration::from_millis(20)), None);
         assert!(!app.was_above_threshold);
 
         let fval = app.process_meter_data(0.8, start + Duration::from_millis(1000));
@@ -184,9 +180,6 @@ mod tests {
         assert_eq!(app.current_delay_ms, Some(1000));
 
         app.was_above_threshold = false;
-        assert_eq!(
-            app.process_meter_data(0.8, start + Duration::from_millis(1020)),
-            None
-        );
+        assert_eq!(app.process_meter_data(0.8, start + Duration::from_millis(1020)), None);
     }
 }
