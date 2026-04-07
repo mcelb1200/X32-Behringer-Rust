@@ -16,7 +16,7 @@
 use clap::{Parser, Subcommand};
 use osc_lib::{OscArg, OscMessage};
 use std::fs::File;
-use std::io::{BufRead, BufReader, Read, Write};
+use std::io::{BufRead, BufReader, BufWriter, Read, Write};
 use std::net::UdpSocket;
 use std::str::FromStr;
 use x32_lib::{
@@ -343,8 +343,9 @@ fn handle_set_command(ip: &str, assignments_str: &[String]) -> Result<()> {
 /// Handles the 'save' command to save the current configuration to a file.
 fn handle_save_command(ip: &str, file_path: &str) -> Result<()> {
     let socket = create_socket(ip, 200)?;
-    let mut file = File::create(file_path)?;
-    file.write_all(SNIP_HEAD.as_bytes())?;
+    let file = File::create(file_path)?;
+    let mut file_writer = BufWriter::new(file);
+    file_writer.write_all(SNIP_HEAD.as_bytes())?;
 
     println!("Saving configuration to {}...", file_path);
 
@@ -353,8 +354,8 @@ fn handle_save_command(ip: &str, file_path: &str) -> Result<()> {
             for &node in SCH_NODES.iter() {
                 let formatted_node = node.replace("/ch/01/", &format!("/ch/{:02}/", i));
                 let line = get_node_state(&socket, &formatted_node)?;
-                file.write_all(line.as_bytes())?;
-                file.write_all(b"\n")?;
+                file_writer.write_all(line.as_bytes())?;
+                file_writer.write_all(b"\n")?;
             }
         } else {
             let aux_channel = i - 32;
@@ -362,8 +363,8 @@ fn handle_save_command(ip: &str, file_path: &str) -> Result<()> {
                 let formatted_node =
                     node.replace("/auxin/01/", &format!("/auxin/{:02}/", aux_channel));
                 let line = get_node_state(&socket, &formatted_node)?;
-                file.write_all(line.as_bytes())?;
-                file.write_all(b"\n")?;
+                file_writer.write_all(line.as_bytes())?;
+                file_writer.write_all(b"\n")?;
             }
         }
     }

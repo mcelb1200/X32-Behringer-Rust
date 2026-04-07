@@ -11,7 +11,7 @@
 use clap::Parser;
 use osc_lib::{OscArg, OscMessage};
 use std::fs::File;
-use std::io::{self, BufRead, Write};
+use std::io::{self, BufRead, BufWriter, Write};
 use std::net::UdpSocket;
 use std::path::PathBuf;
 use x32_lib::{create_socket, error::X32Error};
@@ -127,9 +127,10 @@ fn main() -> Result<(), X32Error> {
 
     let data = get_desk_data(&socket, &commands)?;
 
-    let mut file = File::create(&args.destination_file)?;
+    let file = File::create(&args.destination_file)?;
+    let mut file_writer = BufWriter::new(file);
     for line in data {
-        writeln!(file, "{}", line)?;
+        writeln!(file_writer, "{}", line)?;
     }
 
     println!(

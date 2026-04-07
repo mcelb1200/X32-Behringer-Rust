@@ -40,3 +40,7 @@
 ## 2024-06-05 - [Avoiding std::fmt machinery in hot loops]
 **Learning:** The `write!` macro invokes the `std::fmt` machinery, which involves hidden parsing and allocation overhead even for simple strings or values. In hot loops or `fmt::Display` implementations, relying on `write!(f, "{}", val)` or `write!(f, "literal")` causes measurable degradation compared to direct manipulation.
 **Action:** To eliminate formatting machinery overhead in Rust hot loops, replace the `write!` macro (e.g., `write!(f, "{}", val)` or `write!(&mut s, "\"{}\"", val)`) with direct string manipulation methods like `f.write_str(val)`, `s.push()`, `s.push_str()`, or manual static character array mappings for hex values.
+
+## 2024-06-12 - [Avoiding Unbuffered File IO during Sequential Writes]
+**Learning:** In Rust, `std::fs::File` is unbuffered by default. Writing to it sequentially in a loop (e.g. using `writeln!` or `write!`) triggers a system call for every iteration, which scales poorly and results in a severe performance bottleneck for large text structures like desk configs.
+**Action:** To avoid severe performance degradation from unbuffered system calls when writing sequentially to files in Rust loops, always wrap `File` instances with `std::io::BufWriter` (e.g. `let mut writer = BufWriter::new(file)`).

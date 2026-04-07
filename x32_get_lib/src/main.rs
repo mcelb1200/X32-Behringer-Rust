@@ -13,7 +13,7 @@ use anyhow::Result;
 use clap::{Parser, ValueEnum};
 use osc_lib::{OscArg, OscMessage};
 use std::fs::File;
-use std::io::Write;
+use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 use x32_lib::create_socket;
@@ -149,7 +149,8 @@ fn process_lib_slot(
 
     let filename = format!("{}.{}", name, t.extension());
     let path = out_dir.join(filename);
-    let mut file = File::create(&path)?;
+    let file = File::create(&path)?;
+    let mut file_writer = BufWriter::new(file);
 
     // Write Header (from C: #2.1#...)
     // Actually, we should fetch the data.
@@ -196,7 +197,7 @@ fn process_lib_slot(
     // Define list of params per type (from C PComList etc.)
     // Writing to file format: /address argument
 
-    writeln!(file, "#2.1# \"{}\" %000000000 1", name)?; // Simplified header
+    writeln!(file_writer, "#2.1# \"{}\" %000000000 1", name)?; // Simplified header
 
     let params = match t {
         LibType::Channel => vec![
@@ -239,16 +240,16 @@ fn process_lib_slot(
             };
 
             // Reconstruct line
-            write!(file, "{}", suffix)?;
+            write!(file_writer, "{}", suffix)?;
             for arg in resp.args {
                 match arg {
-                    OscArg::Int(i) => write!(file, " {}", i)?,
-                    OscArg::Float(f) => write!(file, " {:.4}", f)?,
-                    OscArg::String(s) => write!(file, " \"{}\"", s)?,
+                    OscArg::Int(i) => write!(file_writer, " {}", i)?,
+                    OscArg::Float(f) => write!(file_writer, " {:.4}", f)?,
+                    OscArg::String(s) => write!(file_writer, " \"{}\"", s)?,
                     _ => {}
                 }
             }
-            writeln!(file)?;
+            writeln!(file_writer)?;
         }
     }
 
