@@ -1120,7 +1120,9 @@ async fn process_single_reaper_message(
                         if tnum >= config.trk_min && tnum <= config.trk_max {
                             let mut t = tnum - config.trk_min + 1;
                             if config.ch_bank_on {
-                                if let Some(track) = state_guard.bank_tracks.get_mut((t - 1) as usize) {
+                                if let Some(track) =
+                                    state_guard.bank_tracks.get_mut((t - 1) as usize)
+                                {
                                     track.solo = *f;
                                 }
                                 t -= state_guard.ch_bank_offset * config.bank_size;
