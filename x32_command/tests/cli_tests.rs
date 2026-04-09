@@ -32,7 +32,8 @@ fn test_file_too_large() {
     temp_file.write_all(&data).unwrap();
 
     let mut cmd = Command::cargo_bin("x32_command").unwrap();
-    cmd.arg("-i")
+    cmd.env("X32_PORT", "0")
+        .arg("-i")
         .arg("127.0.0.1")
         .arg("-f")
         .arg(temp_file.path())
