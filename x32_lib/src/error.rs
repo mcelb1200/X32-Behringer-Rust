@@ -32,7 +32,10 @@ impl fmt::Display for X32Error {
             X32Error::Io(e) => write!(f, "IO error: {}", e),
             X32Error::AddrParse(e) => write!(f, "Address parse error: {}", e),
             X32Error::Osc(e) => write!(f, "OSC error: {}", e),
-            X32Error::Custom(s) => write!(f, "X32 error: {}", s),
+            X32Error::Custom(s) => {
+                f.write_str("X32 error: ")?;
+                f.write_str(s)
+            }
         }
     }
 }
