@@ -239,16 +239,20 @@ fn process_lib_slot(
             };
 
             // Reconstruct line
-            write!(file, "{}", suffix)?;
+            file.write_all(suffix.as_bytes())?;
             for arg in resp.args {
                 match arg {
                     OscArg::Int(i) => write!(file, " {}", i)?,
                     OscArg::Float(f) => write!(file, " {:.4}", f)?,
-                    OscArg::String(s) => write!(file, " \"{}\"", s)?,
+                    OscArg::String(s) => {
+                        file.write_all(b" \"")?;
+                        file.write_all(s.as_bytes())?;
+                        file.write_all(b"\"")?;
+                    }
                     _ => {}
                 }
             }
-            writeln!(file)?;
+            file.write_all(b"\n")?;
         }
     }
 

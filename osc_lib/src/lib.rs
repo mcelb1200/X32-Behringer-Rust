@@ -70,7 +70,10 @@ impl std::fmt::Display for OscError {
             OscError::Utf8(e) => write!(f, "UTF-8 conversion error: {}", e),
             OscError::InvalidTypeTag => f.write_str("Invalid OSC type tag string"),
             OscError::UnsupportedTypeTag(c) => write!(f, "Unsupported OSC type tag: {}", c),
-            OscError::ParseError(s) => write!(f, "Parse error: {}", s),
+            OscError::ParseError(s) => {
+                f.write_str("Parse error: ")?;
+                f.write_str(s)
+            }
             OscError::UnexpectedResponse => f.write_str("Unexpected response from mixer"),
         }
     }
