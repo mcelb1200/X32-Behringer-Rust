@@ -258,7 +258,8 @@ impl Mixer {
 
             if !found {
                 if self.clients.len() < 4 {
-                    self.clients.push((remote_addr, now + Duration::from_secs(10)));
+                    self.clients
+                        .push((remote_addr, now + Duration::from_secs(10)));
                 } else {
                     eprintln!("maximum client capacity reached");
                 }
@@ -272,10 +273,7 @@ impl Mixer {
             let arg2 = OscArg::String("X32 Emulator".to_string());
             let arg3 = OscArg::String("X32".to_string());
             let arg4 = OscArg::String("4.06".to_string());
-            let bytes = OscMessage::serialize_to_bytes(
-                "/info",
-                [&arg1, &arg2, &arg3, &arg4],
-            )?;
+            let bytes = OscMessage::serialize_to_bytes("/info", [&arg1, &arg2, &arg3, &arg4])?;
             responses.push((remote_addr, bytes));
             return Ok(responses);
         }

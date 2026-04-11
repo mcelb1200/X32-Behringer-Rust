@@ -119,7 +119,9 @@ mod tests {
     fn test_mixer_xremote_registration_and_broadcast() {
         let mut mixer = Mixer::new();
 
-        let msg_xremote = OscMessage::new("/xremote".to_string(), vec![]).to_bytes().unwrap();
+        let msg_xremote = OscMessage::new("/xremote".to_string(), vec![])
+            .to_bytes()
+            .unwrap();
 
         let responses = mixer.dispatch(&msg_xremote, test_addr(1111)).unwrap();
         assert!(responses.is_empty());
@@ -127,7 +129,9 @@ mod tests {
         assert_eq!(mixer.clients.len(), 1);
         assert_eq!(mixer.clients[0].0, test_addr(1111));
 
-        let msg_set = OscMessage::new("/ch/01/mix/fader".to_string(), vec![OscArg::Float(0.5)]).to_bytes().unwrap();
+        let msg_set = OscMessage::new("/ch/01/mix/fader".to_string(), vec![OscArg::Float(0.5)])
+            .to_bytes()
+            .unwrap();
         let responses = mixer.dispatch(&msg_set, test_addr(2222)).unwrap();
 
         assert_eq!(responses.len(), 1);
@@ -141,7 +145,9 @@ mod tests {
     #[test]
     fn test_mixer_xremote_max_clients() {
         let mut mixer = Mixer::new();
-        let msg_xremote = OscMessage::new("/xremote".to_string(), vec![]).to_bytes().unwrap();
+        let msg_xremote = OscMessage::new("/xremote".to_string(), vec![])
+            .to_bytes()
+            .unwrap();
 
         mixer.dispatch(&msg_xremote, test_addr(1111)).unwrap();
         mixer.dispatch(&msg_xremote, test_addr(2222)).unwrap();
@@ -155,6 +161,14 @@ mod tests {
 
         let mut addrs: Vec<SocketAddr> = mixer.clients.iter().map(|c| c.0).collect();
         addrs.sort();
-        assert_eq!(addrs, vec![test_addr(1111), test_addr(2222), test_addr(3333), test_addr(4444)]);
+        assert_eq!(
+            addrs,
+            vec![
+                test_addr(1111),
+                test_addr(2222),
+                test_addr(3333),
+                test_addr(4444)
+            ]
+        );
     }
 }
