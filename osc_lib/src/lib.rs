@@ -380,13 +380,23 @@ impl FromStr for OscMessage {
                                 b'0'..=b'9' => bytes[i] - b'0',
                                 b'a'..=b'f' => bytes[i] - b'a' + 10,
                                 b'A'..=b'F' => bytes[i] - b'A' + 10,
-                                _ => return Err(OscError::ParseError(format!("Invalid hex character in blob: '{}'", bytes[i] as char))),
+                                _ => {
+                                    return Err(OscError::ParseError(format!(
+                                        "Invalid hex character in blob: '{}'",
+                                        bytes[i] as char
+                                    )));
+                                }
                             };
-                            let low = match bytes[i+1] {
-                                b'0'..=b'9' => bytes[i+1] - b'0',
-                                b'a'..=b'f' => bytes[i+1] - b'a' + 10,
-                                b'A'..=b'F' => bytes[i+1] - b'A' + 10,
-                                _ => return Err(OscError::ParseError(format!("Invalid hex character in blob: '{}'", bytes[i+1] as char))),
+                            let low = match bytes[i + 1] {
+                                b'0'..=b'9' => bytes[i + 1] - b'0',
+                                b'a'..=b'f' => bytes[i + 1] - b'a' + 10,
+                                b'A'..=b'F' => bytes[i + 1] - b'A' + 10,
+                                _ => {
+                                    return Err(OscError::ParseError(format!(
+                                        "Invalid hex character in blob: '{}'",
+                                        bytes[i + 1] as char
+                                    )));
+                                }
                             };
                             blob.push((high << 4) | low);
                         }
