@@ -40,3 +40,6 @@
 ## 2024-06-05 - [Avoiding std::fmt machinery in hot loops]
 **Learning:** The `write!` macro invokes the `std::fmt` machinery, which involves hidden parsing and allocation overhead even for simple strings or values. In hot loops or `fmt::Display` implementations, relying on `write!(f, "{}", val)` or `write!(f, "literal")` causes measurable degradation compared to direct manipulation.
 **Action:** To eliminate formatting machinery overhead in Rust hot loops, replace the `write!` macro (e.g., `write!(f, "{}", val)` or `write!(&mut s, "\"{}\"", val)`) with direct string manipulation methods like `f.write_str(val)`, `s.push()`, `s.push_str()`, or manual static character array mappings for hex values.
+## 2024-06-10 - [Fast parsing of hex strings into byte arrays]
+**Learning:** In hot loops, parsing hex strings using standard library functions like `u8::from_str_radix` is slow because it creates slices and invokes generic parsing machinery. Manually mapping ASCII characters to numeric values using a `match` on `bytes[i]` and bitwise operations (`(high << 4) | low`) provides a ~2x speedup when decoding large binary blobs from string representations.
+**Action:** When parsing purely hex strings into bytes where performance matters, prefer direct byte matching instead of `from_str_radix`.
