@@ -47,7 +47,13 @@ jobs:
 
     - name: Install Linux Dependencies
       if: runner.os == 'Linux'
-      run: sudo apt-get update && sudo apt-get install -y libasound2-dev
+      run: |
+        sudo rm -f /etc/apt/sources.list.d/microsoft-prod.list || true
+        sudo rm -f /etc/apt/sources.list.d/azure-cli.list || true
+        sudo rm -f /etc/apt/sources.list.d/microsoft-prod.sources || true
+        sudo rm -f /etc/apt/sources.list.d/azure-cli.sources || true
+        sudo apt-get update
+        sudo apt-get install -y libasound2-dev
 
     - name: Install Rust toolchain
       uses: actions-rust-lang/setup-rust-toolchain@v1
