@@ -19,13 +19,13 @@
 //! and creates a new session directory containing one or more multi-channel, 32-bit WAV files
 //! and a `SE_LOG.BIN` metadata file.
 
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
 use byteorder::{LittleEndian, WriteBytesExt};
 use chrono::{Datelike, Timelike, Utc};
 use clap::Parser;
 use hound::{WavReader, WavSpec, WavWriter};
 use std::fs::{self, File};
-use std::io::{Read, Write};
+use std::io::{BufWriter, Read, Write};
 use std::path::{Path, PathBuf};
 
 /// A utility to merge mono WAV files into a multi-channel X-Live! session.
@@ -266,7 +266,8 @@ fn write_se_log_bin(
     args: &Args,
 ) -> Result<()> {
     let log_path = session_path.join("SE_LOG.BIN");
-    let mut file = File::create(log_path)?;
+    let file = File::create(log_path)?;
+    let mut file = BufWriter::new(file);
 
     let mut markers = args.markers.clone();
     if let Some(marker_file) = &args.marker_file {
@@ -316,6 +317,7 @@ fn write_se_log_bin(
     let zero_fill_size = 2048 - header_size;
     let zero_buf = vec![0u8; zero_fill_size];
     file.write_all(&zero_buf)?;
+    file.flush()?;
 
     Ok(())
 }
@@ -434,12 +436,10 @@ mod tests {
         };
         let result = run(&args);
         assert!(result.is_err());
-        assert!(
-            result
-                .unwrap_err()
-                .to_string()
-                .contains("is not a 24-bit WAV file")
-        );
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("is not a 24-bit WAV file"));
     }
 
     #[test]
