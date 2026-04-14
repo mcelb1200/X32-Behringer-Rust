@@ -84,6 +84,12 @@ struct Command {
 /// A `Result` containing a vector of parsed `Command` structs or an I/O error.
 fn parse_command_file(path: &str) -> io::Result<Vec<Command>> {
     let file = File::open(path)?;
+
+    // Security: Prevent OOM from maliciously large or corrupted configuration files
+    if file.metadata()?.len() > 1024 * 1024 {
+        return Err(io::Error::new(io::ErrorKind::InvalidData, "File too large"));
+    }
+
     let mut reader = io::BufReader::new(file);
     let mut commands = Vec::new();
 
