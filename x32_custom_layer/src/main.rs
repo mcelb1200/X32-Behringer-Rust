@@ -742,7 +742,7 @@ mod tests {
 
         let args_float = vec![
             OscArg::String("/test/float".to_string()),
-            OscArg::Float(std::f32::consts::PI),
+            OscArg::Float(3.14),
         ];
         assert_eq!(format_node_state(&args_float).unwrap(), "/test/float 3.14");
 
