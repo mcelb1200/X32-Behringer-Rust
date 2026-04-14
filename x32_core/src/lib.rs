@@ -56,7 +56,6 @@
 //! ```
 
 use std::collections::HashMap;
-use std::error::Error;
 use std::net::SocketAddr;
 use std::time::{Duration, Instant};
 
