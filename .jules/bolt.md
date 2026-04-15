@@ -43,3 +43,6 @@
 ## 2026-04-14 - [Handling Error Silencing with BufWriter]
 **Learning:** When using `std::io::BufWriter` in Rust to optimize file I/O, relying on its `Drop` implementation to flush the buffer causes any underlying I/O errors during that final flush to be silently ignored.
 **Action:** Always explicitly call `flush()?` (or `.into_inner()?`) before the `BufWriter` goes out of scope to ensure any write errors are properly caught and bubbled up.
+## 2026-04-14 - [BufWriter Performance degradation due to excessive flushing]
+**Learning:** Using `w.flush().await` (or `.flush()`) on a `BufWriter` inside a hot loop (like writing incoming UDP packets individually) completely defeats the purpose of the `BufWriter`. It forces a system call and disk I/O on every iteration, leading to significant performance degradation.
+**Action:** Remove explicit `.flush()` calls inside loops when using `BufWriter`. Allow the buffer to fill and flush automatically, and only call `.flush()` when explicitly required (e.g., when closing the file or when the application enters an idle state).

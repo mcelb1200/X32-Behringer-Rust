@@ -192,7 +192,9 @@ async fn run_logic(state: Arc<Mutex<AppState>>, socket: Arc<UdpSocket>, default_
                         let _ = w.write_u32_le(now.subsec_micros()).await;
                         let _ = w.write_u32_le(len as u32).await;
                         let _ = w.write_all(&buf[..len]).await;
-                        let _ = w.flush().await;
+                        // OPTIMIZATION: Removed w.flush().await here.
+                        // Flushing on every packet defeats the purpose of the BufWriter
+                        // and significantly degrades performance due to excessive I/O syscalls.
                     }
                 }
             }
@@ -288,7 +290,9 @@ async fn run_logic(state: Arc<Mutex<AppState>>, socket: Arc<UdpSocket>, default_
                 }
             }
             Mode::Idle | Mode::Paused => {
-                file_writer = None;
+                if let Some(mut w) = file_writer.take() {
+                    let _ = w.flush().await;
+                }
                 file_reader = None;
                 time::sleep(Duration::from_millis(100)).await;
             }
