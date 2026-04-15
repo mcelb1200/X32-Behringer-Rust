@@ -40,3 +40,6 @@
 ## 2024-06-05 - [Avoiding std::fmt machinery in hot loops]
 **Learning:** The `write!` macro invokes the `std::fmt` machinery, which involves hidden parsing and allocation overhead even for simple strings or values. In hot loops or `fmt::Display` implementations, relying on `write!(f, "{}", val)` or `write!(f, "literal")` causes measurable degradation compared to direct manipulation.
 **Action:** To eliminate formatting machinery overhead in Rust hot loops, replace the `write!` macro (e.g., `write!(f, "{}", val)` or `write!(&mut s, "\"{}\"", val)`) with direct string manipulation methods like `f.write_str(val)`, `s.push()`, `s.push_str()`, or manual static character array mappings for hex values.
+## 2026-04-14 - [Handling Error Silencing with BufWriter]
+**Learning:** When using `std::io::BufWriter` in Rust to optimize file I/O, relying on its `Drop` implementation to flush the buffer causes any underlying I/O errors during that final flush to be silently ignored.
+**Action:** Always explicitly call `flush()?` (or `.into_inner()?`) before the `BufWriter` goes out of scope to ensure any write errors are properly caught and bubbled up.

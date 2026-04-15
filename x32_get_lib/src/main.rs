@@ -13,7 +13,7 @@ use anyhow::Result;
 use clap::{Parser, ValueEnum};
 use osc_lib::{OscArg, OscMessage};
 use std::fs::File;
-use std::io::Write;
+use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 use x32_lib::create_socket;
@@ -149,7 +149,8 @@ fn process_lib_slot(
 
     let filename = format!("{}.{}", name, t.extension());
     let path = out_dir.join(filename);
-    let mut file = File::create(&path)?;
+    let file = File::create(&path)?;
+    let mut file = BufWriter::new(file);
 
     // Write Header (from C: #2.1#...)
     // Actually, we should fetch the data.
@@ -255,6 +256,7 @@ fn process_lib_slot(
             file.write_all(b"\n")?;
         }
     }
+    file.flush()?;
 
     Ok(())
 }

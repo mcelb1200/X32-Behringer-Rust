@@ -56,7 +56,6 @@
 //! ```
 
 use std::collections::HashMap;
-use std::error::Error;
 use std::net::SocketAddr;
 use std::time::{Duration, Instant};
 
@@ -237,7 +236,7 @@ impl Mixer {
         &mut self,
         msg: &[u8],
         remote_addr: SocketAddr,
-    ) -> Result<Vec<(SocketAddr, Vec<u8>)>, Box<dyn Error>> {
+    ) -> Result<Vec<(SocketAddr, Vec<u8>)>, Box<dyn std::error::Error>> {
         let osc_msg = OscMessage::from_bytes(msg)?;
         let mut responses = Vec::new();
 
