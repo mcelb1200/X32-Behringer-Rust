@@ -43,3 +43,7 @@
 ## 2026-04-14 - [Handling Error Silencing with BufWriter]
 **Learning:** When using `std::io::BufWriter` in Rust to optimize file I/O, relying on its `Drop` implementation to flush the buffer causes any underlying I/O errors during that final flush to be silently ignored.
 **Action:** Always explicitly call `flush()?` (or `.into_inner()?`) before the `BufWriter` goes out of scope to ensure any write errors are properly caught and bubbled up.
+
+## 2024-04-16 - [Optimize hex string parsing in OSC blob decoding]
+**Learning:** Using `u8::from_str_radix` in a loop to parse hex strings into bytes introduces significant overhead due to string slicing and generic parsing checks.
+**Action:** When parsing purely hex strings into bytes in performance-critical hot loops (e.g., OSC blobs), use manual ASCII byte matching and bitwise operations. This avoids slicing and parsing overhead, yielding a substantial speedup (~2.3x in synthetic benchmark).

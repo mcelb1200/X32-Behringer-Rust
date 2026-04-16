@@ -371,10 +371,23 @@ impl FromStr for OscMessage {
                             )));
                         }
                         let mut blob = Vec::with_capacity(val_str.len() / 2);
-                        for i in (0..val_str.len()).step_by(2) {
-                            let byte = u8::from_str_radix(&val_str[i..i + 2], 16)
-                                .map_err(|e| OscError::ParseError(e.to_string()))?;
-                            blob.push(byte);
+                        // Optimize hex string parsing using manual byte matching
+                        // instead of u8::from_str_radix to avoid slicing overhead
+                        let bytes = val_str.as_bytes();
+                        for chunk in bytes.chunks_exact(2) {
+                            let high = match chunk[0] {
+                                b'0'..=b'9' => chunk[0] - b'0',
+                                b'a'..=b'f' => chunk[0] - b'a' + 10,
+                                b'A'..=b'F' => chunk[0] - b'A' + 10,
+                                _ => return Err(OscError::ParseError(format!("Invalid hex digit for blob: {}", chunk[0] as char))),
+                            };
+                            let low = match chunk[1] {
+                                b'0'..=b'9' => chunk[1] - b'0',
+                                b'a'..=b'f' => chunk[1] - b'a' + 10,
+                                b'A'..=b'F' => chunk[1] - b'A' + 10,
+                                _ => return Err(OscError::ParseError(format!("Invalid hex digit for blob: {}", chunk[1] as char))),
+                            };
+                            blob.push((high << 4) | low);
                         }
                         args.push(OscArg::Blob(blob));
                     }
