@@ -379,13 +379,23 @@ impl FromStr for OscMessage {
                                 b'0'..=b'9' => chunk[0] - b'0',
                                 b'a'..=b'f' => chunk[0] - b'a' + 10,
                                 b'A'..=b'F' => chunk[0] - b'A' + 10,
-                                _ => return Err(OscError::ParseError(format!("Invalid hex digit for blob: {}", chunk[0] as char))),
+                                _ => {
+                                    return Err(OscError::ParseError(format!(
+                                        "Invalid hex digit for blob: {}",
+                                        chunk[0] as char
+                                    )));
+                                }
                             };
                             let low = match chunk[1] {
                                 b'0'..=b'9' => chunk[1] - b'0',
                                 b'a'..=b'f' => chunk[1] - b'a' + 10,
                                 b'A'..=b'F' => chunk[1] - b'A' + 10,
-                                _ => return Err(OscError::ParseError(format!("Invalid hex digit for blob: {}", chunk[1] as char))),
+                                _ => {
+                                    return Err(OscError::ParseError(format!(
+                                        "Invalid hex digit for blob: {}",
+                                        chunk[1] as char
+                                    )));
+                                }
                             };
                             blob.push((high << 4) | low);
                         }
