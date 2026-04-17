@@ -385,7 +385,7 @@ impl FromStr for OscMessage {
                                     return Err(OscError::ParseError(format!(
                                         "Invalid hex character in blob: {}",
                                         bytes[i] as char
-                                    )))
+                                    )));
                                 }
                             };
                             let low = match bytes[i + 1] {
@@ -396,7 +396,7 @@ impl FromStr for OscMessage {
                                     return Err(OscError::ParseError(format!(
                                         "Invalid hex character in blob: {}",
                                         bytes[i + 1] as char
-                                    )))
+                                    )));
                                 }
                             };
                             blob.push((high << 4) | low);
