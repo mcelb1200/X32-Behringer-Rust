@@ -37,6 +37,25 @@ fn test_message_from_str() {
 }
 
 #[test]
+fn test_message_from_str_with_blob_uppercase() {
+    let s = "/blobtest ,b 0123456789ABCDEF";
+    let message = OscMessage::from_str(s).unwrap();
+    assert_eq!(message.path, "/blobtest");
+    assert_eq!(message.args.len(), 1);
+    match &message.args[0] {
+        OscArg::Blob(b) => assert_eq!(b, &vec![0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef]),
+        _ => panic!("Incorrect argument type"),
+    }
+}
+
+#[test]
+fn test_message_from_str_with_blob_invalid_char() {
+    let s = "/blobtest ,b 01234x67";
+    let result = OscMessage::from_str(s);
+    assert!(matches!(result, Err(OscError::ParseError(_))));
+}
+
+#[test]
 fn test_message_from_str_with_quoted_string_no_space() {
     let s = "/ch/01/config/name ,s\"MyFader\"";
     let message = OscMessage::from_str(s).unwrap();
