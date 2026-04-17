@@ -33,6 +33,7 @@ fn test_cli_e2e() {
         .unwrap();
     let mut cmd = bin.command();
     cmd.arg(dir.path()).arg("TestSession").arg("-m").arg("0.05");
+    cmd.current_dir(dir.path());
 
     let output = cmd.output().unwrap();
     assert!(output.status.success());
@@ -84,6 +85,7 @@ fn test_single_take_se_log_bin() {
         .unwrap();
     let mut cmd = bin.command();
     cmd.arg(dir.path());
+    cmd.current_dir(dir.path());
 
     let output = cmd.output().unwrap();
     assert!(output.status.success());
