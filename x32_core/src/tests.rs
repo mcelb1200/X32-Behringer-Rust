@@ -82,7 +82,10 @@ mod tests {
         assert_eq!(response_msg.args.len(), 3);
         assert_eq!(response_msg.args[0], OscArg::String("active".to_string()));
         assert_eq!(response_msg.args[1], OscArg::String("0.0.0.0".to_string()));
-        assert_eq!(response_msg.args[2], OscArg::String("X32 Emulator".to_string()));
+        assert_eq!(
+            response_msg.args[2],
+            OscArg::String("X32 Emulator".to_string())
+        );
     }
 
     #[test]
