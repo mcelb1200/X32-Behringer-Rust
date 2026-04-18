@@ -277,6 +277,27 @@ impl Mixer {
             return Ok(responses);
         }
 
+        // Handle the /status command, which is a request for mixer status.
+        if osc_msg.path == "/status" {
+            let arg1 = OscArg::String("active".to_string());
+            let arg2 = OscArg::String("0.0.0.0".to_string()); // Default IP, in actual usage might want the bound IP
+            let arg3 = OscArg::String("X32 Emulator".to_string());
+            let bytes = OscMessage::serialize_to_bytes("/status", [&arg1, &arg2, &arg3])?;
+            responses.push((remote_addr, bytes));
+            return Ok(responses);
+        }
+
+        // Handle the /renew command, which does nothing but is recognized.
+        if osc_msg.path == "/renew" {
+            return Ok(responses);
+        }
+
+        // Handle the /unsubscribe command, which removes the client from xremote updates.
+        if osc_msg.path == "/unsubscribe" {
+            self.clients.retain(|&(addr, _)| addr != remote_addr);
+            return Ok(responses);
+        }
+
         // If the message has no arguments, it's a request for a value.
         if osc_msg.args.is_empty() {
             if let Some(arg) = self.state.get(&osc_msg.path) {
