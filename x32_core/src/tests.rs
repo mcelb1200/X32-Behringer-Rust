@@ -66,6 +66,63 @@ mod tests {
     }
 
     #[test]
+    fn test_mixer_dispatch_status() {
+        let mut mixer = Mixer::new();
+        let msg = OscMessage {
+            path: "/status".to_string(),
+            args: vec![],
+        };
+        let bytes = msg.to_bytes().unwrap();
+
+        let responses = mixer.dispatch(&bytes, test_addr(1234)).unwrap();
+        assert_eq!(responses.len(), 1);
+        let response_msg = OscMessage::from_bytes(&responses[0].1).unwrap();
+
+        assert_eq!(response_msg.path, "/status");
+        assert_eq!(response_msg.args.len(), 3);
+        assert_eq!(response_msg.args[0], OscArg::String("active".to_string()));
+        assert_eq!(response_msg.args[1], OscArg::String("0.0.0.0".to_string()));
+        assert_eq!(response_msg.args[2], OscArg::String("X32 Emulator".to_string()));
+    }
+
+    #[test]
+    fn test_mixer_dispatch_renew() {
+        let mut mixer = Mixer::new();
+        let msg = OscMessage {
+            path: "/renew".to_string(),
+            args: vec![],
+        };
+        let bytes = msg.to_bytes().unwrap();
+
+        let responses = mixer.dispatch(&bytes, test_addr(1234)).unwrap();
+        assert!(responses.is_empty());
+    }
+
+    #[test]
+    fn test_mixer_dispatch_unsubscribe() {
+        let mut mixer = Mixer::new();
+        let xremote_msg = OscMessage {
+            path: "/xremote".to_string(),
+            args: vec![],
+        };
+        let xremote_bytes = xremote_msg.to_bytes().unwrap();
+        mixer.dispatch(&xremote_bytes, test_addr(1234)).unwrap();
+
+        assert_eq!(mixer.clients.len(), 1);
+        assert_eq!(mixer.clients[0].0, test_addr(1234));
+
+        let unsubscribe_msg = OscMessage {
+            path: "/unsubscribe".to_string(),
+            args: vec![],
+        };
+        let unsubscribe_bytes = unsubscribe_msg.to_bytes().unwrap();
+
+        let responses = mixer.dispatch(&unsubscribe_bytes, test_addr(1234)).unwrap();
+        assert!(responses.is_empty());
+        assert_eq!(mixer.clients.len(), 0);
+    }
+
+    #[test]
     fn test_mixer_dispatch_set_value() {
         let mut mixer = Mixer::new();
         let msg = OscMessage {
