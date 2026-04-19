@@ -34,3 +34,11 @@
 **Vulnerability:** Several crates (`x32_reaper`, `x32_copy_fx`, `x32_set_lib`, `x32_set_preset`, `x32_punch_control`) had unbounded file read vulnerabilities where `BufReader::new(file)` was followed directly by `reader.lines()` without verifying file size constraints. This could result in an Out-of-Memory (OOM) Denial of Service (DoS) attack if a maliciously crafted or exceedingly large file was provided.
 **Learning:** Config and state restoration parsing patterns directly mapping from C equivalents frequently lack robust bounded iteration logic in Rust, relying solely on Rust's underlying stream handlers.
 **Prevention:** Always validate `metadata.len() > [limit]` before passing user-provided or dynamically located files to `BufReader` in file processing utilities. A common limit employed is 1MB. Use `metadata.len()` check instead of `.take()` constraints on readers where partial or truncated data could lead to inconsistent hardware state restoration.
+
+## Denial of Service via Unhandled Parsing Errors
+
+- **Vulnerability:** Unsafe `unwrap()` on `str::parse()` results for user-provided data.
+- **Context:** In `x32_core/src/lib.rs`, the `seed_from_lines` function was parsing integer and float values from a seed file (which could be user-provided) and calling `unwrap()` on the result.
+- **Risk:** Malformed input in the seed file would cause the emulator to panic, leading to a Denial of Service.
+- **Fix:** Replaced `unwrap()` with safe parsing using `if let Ok(val) = arg_value.parse()` and skipping (`continue`) malformed lines.
+- **Reusability:** Always use safe parsing and error handling for data originating from external sources (files, network, user input) to ensure application stability.
