@@ -57,6 +57,7 @@
 
 use std::collections::HashMap;
 use std::net::SocketAddr;
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use osc_lib::{OscArg, OscMessage};
@@ -236,7 +237,7 @@ impl Mixer {
         &mut self,
         msg: &[u8],
         remote_addr: SocketAddr,
-    ) -> Result<Vec<(SocketAddr, Vec<u8>)>, Box<dyn std::error::Error>> {
+    ) -> Result<Vec<(SocketAddr, Arc<[u8]>)>, Box<dyn std::error::Error>> {
         let osc_msg = OscMessage::from_bytes(msg)?;
         let mut responses = Vec::new();
 
@@ -273,7 +274,7 @@ impl Mixer {
             let arg3 = OscArg::String("X32".to_string());
             let arg4 = OscArg::String("4.06".to_string());
             let bytes = OscMessage::serialize_to_bytes("/info", [&arg1, &arg2, &arg3, &arg4])?;
-            responses.push((remote_addr, bytes));
+            responses.push((remote_addr, Arc::from(bytes)));
             return Ok(responses);
         }
 
@@ -283,7 +284,7 @@ impl Mixer {
             let arg2 = OscArg::String("0.0.0.0".to_string()); // Default IP, in actual usage might want the bound IP
             let arg3 = OscArg::String("X32 Emulator".to_string());
             let bytes = OscMessage::serialize_to_bytes("/status", [&arg1, &arg2, &arg3])?;
-            responses.push((remote_addr, bytes));
+            responses.push((remote_addr, Arc::from(bytes)));
             return Ok(responses);
         }
 
@@ -302,7 +303,7 @@ impl Mixer {
         if osc_msg.args.is_empty() {
             if let Some(arg) = self.state.get(&osc_msg.path) {
                 let bytes = OscMessage::serialize_to_bytes(&osc_msg.path, [arg])?;
-                responses.push((remote_addr, bytes));
+                responses.push((remote_addr, Arc::from(bytes)));
             }
         } else {
             // If the message has arguments, it's a command to set a value.
@@ -311,8 +312,9 @@ impl Mixer {
 
                 // Broadcast value change to all xremote clients
                 if let Ok(bytes) = OscMessage::serialize_to_bytes(&osc_msg.path, [arg]) {
+                    let shared_bytes: Arc<[u8]> = Arc::from(bytes);
                     for client in &self.clients {
-                        responses.push((client.0, bytes.clone()));
+                        responses.push((client.0, Arc::clone(&shared_bytes)));
                     }
                 }
             }

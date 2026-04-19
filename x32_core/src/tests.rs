@@ -58,7 +58,7 @@ mod tests {
 
         let responses = mixer.dispatch(&bytes, test_addr(1234)).unwrap();
         assert_eq!(responses.len(), 1);
-        let response_msg = OscMessage::from_bytes(&responses[0].1).unwrap();
+        let response_msg = OscMessage::from_bytes(responses[0].1.as_ref()).unwrap();
 
         assert_eq!(response_msg.path, "/info");
         assert_eq!(response_msg.args.len(), 4);
@@ -76,7 +76,7 @@ mod tests {
 
         let responses = mixer.dispatch(&bytes, test_addr(1234)).unwrap();
         assert_eq!(responses.len(), 1);
-        let response_msg = OscMessage::from_bytes(&responses[0].1).unwrap();
+        let response_msg = OscMessage::from_bytes(responses[0].1.as_ref()).unwrap();
 
         assert_eq!(response_msg.path, "/status");
         assert_eq!(response_msg.args.len(), 3);
@@ -156,7 +156,7 @@ mod tests {
 
         let responses = mixer.dispatch(&bytes, test_addr(1234)).unwrap();
         assert_eq!(responses.len(), 1);
-        let response_msg = OscMessage::from_bytes(&responses[0].1).unwrap();
+        let response_msg = OscMessage::from_bytes(responses[0].1.as_ref()).unwrap();
 
         assert_eq!(response_msg.path, "/ch/01/mix/fader");
         assert_eq!(response_msg.args, vec![OscArg::Float(0.8)]);
@@ -197,7 +197,7 @@ mod tests {
         assert_eq!(responses.len(), 1);
         assert_eq!(responses[0].0, test_addr(1111));
 
-        let response_msg = OscMessage::from_bytes(&responses[0].1).unwrap();
+        let response_msg = OscMessage::from_bytes(responses[0].1.as_ref()).unwrap();
         assert_eq!(response_msg.path, "/ch/01/mix/fader");
         assert_eq!(response_msg.args, vec![OscArg::Float(0.5)]);
     }
@@ -229,6 +229,38 @@ mod tests {
                 test_addr(3333),
                 test_addr(4444)
             ]
+        );
+    }
+
+    #[test]
+    #[ignore]
+    fn bench_dispatch_broadcast() {
+        use std::time::Instant;
+        let mut mixer = Mixer::new();
+
+        let msg_xremote = OscMessage::new("/xremote".to_string(), vec![])
+            .to_bytes()
+            .unwrap();
+
+        mixer.dispatch(&msg_xremote, test_addr(1111)).unwrap();
+        mixer.dispatch(&msg_xremote, test_addr(2222)).unwrap();
+        mixer.dispatch(&msg_xremote, test_addr(3333)).unwrap();
+        mixer.dispatch(&msg_xremote, test_addr(4444)).unwrap();
+
+        let msg_set = OscMessage::new("/ch/01/mix/fader".to_string(), vec![OscArg::Float(0.5)])
+            .to_bytes()
+            .unwrap();
+
+        let iterations = 100_000;
+        let start = Instant::now();
+        for _ in 0..iterations {
+            let responses = mixer.dispatch(&msg_set, test_addr(9999)).unwrap();
+            assert_eq!(responses.len(), 4);
+        }
+        let duration = start.elapsed();
+        println!(
+            "bench_dispatch_broadcast: {} iterations took {:?}",
+            iterations, duration
         );
     }
 }
