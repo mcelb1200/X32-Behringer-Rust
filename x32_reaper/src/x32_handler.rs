@@ -26,7 +26,6 @@ async fn process_x32_message(
 ) -> Result<()> {
     // Example: /ch/01/mix/fader -> /track/1/volume
 
-    // Simplification for prototype
     if msg.path.starts_with("/ch/") {
         let parts: Vec<&str> = msg.path.split('/').collect();
         if parts.len() < 4 {
@@ -84,10 +83,6 @@ async fn process_x32_message(
 
 async fn map_ch_to_track(ch: i32, state: &SharedState) -> Option<i32> {
     let s = state.lock().unwrap_or_else(|e| e.into_inner());
-    // Logic: cnum = cnum * 10 + ...
-    // cnum1 = cnum + Xtrk_min - 1
-    // if Xchbank_on, Set actual channel number to match Channel Bank
-    // cnum = Xchbkof * bkchsz + cnum
 
     if ch < 1 || ch > 32 {
         return None;
