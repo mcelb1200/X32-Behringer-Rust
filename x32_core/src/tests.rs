@@ -48,6 +48,27 @@ mod tests {
     }
 
     #[test]
+    fn test_mixer_seed_from_lines_malformed() {
+        let mut mixer = Mixer::new();
+        let lines = vec![
+            "/ch/01/mix/on,i\tnot_an_int",
+            "/ch/01/mix/fader,f\tnot_a_float",
+            "/ch/01/mix/fader,f\t0.5",
+        ];
+
+        // This should not panic
+        mixer.seed_from_lines(lines);
+
+        // Malformed lines should be skipped
+        assert_eq!(mixer.state.get("/ch/01/mix/on"), None);
+        // The valid line should be processed
+        assert_eq!(
+            mixer.state.get("/ch/01/mix/fader"),
+            Some(&OscArg::Float(0.5))
+        );
+    }
+
+    #[test]
     fn test_mixer_dispatch_info() {
         let mut mixer = Mixer::new();
         let msg = OscMessage {
