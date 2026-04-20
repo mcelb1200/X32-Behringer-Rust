@@ -11,7 +11,7 @@
 use clap::Parser;
 use osc_lib::OscMessage;
 use std::fs::File;
-use std::io::{self, BufRead};
+use std::io::{self, BufRead, Read};
 use std::net::UdpSocket;
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -114,7 +114,7 @@ fn main() -> Result<()> {
         )));
     }
 
-    let commands: Vec<String> = io::BufReader::new(file)
+    let commands: Vec<String> = io::BufReader::new(file.take(1024 * 1024))
         .lines()
         .map_while(std::result::Result::ok)
         .filter(|line| !line.starts_with('#') && !line.trim().is_empty())
