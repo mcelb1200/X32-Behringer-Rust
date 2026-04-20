@@ -18,11 +18,15 @@ pub fn parse_scene_line(line: &str) -> Vec<OscMessage> {
         Some((p, a)) => (p, a.trim()),
         None => (line, ""),
     };
-    if arg_str.is_empty() { return vec![]; }
+    if arg_str.is_empty() {
+        return vec![];
+    }
 
     let mut messages = Vec::new();
     let parts: Vec<&str> = path.trim_start_matches('/').split('/').collect();
-    if parts.is_empty() { return messages; }
+    if parts.is_empty() {
+        return messages;
+    }
 
     match parts.as_slice() {
         // --- Config ---
@@ -78,9 +82,18 @@ pub fn parse_scene_line(line: &str) -> Vec<OscMessage> {
             let p_ha = "/config/linkcfg/ha".to_string();
             if let Some(arg) = parse_onoff(arg_str, "OFF") {
                 messages.push(OscMessage::new(p_ha, vec![arg.clone()]));
-                messages.push(OscMessage::new("/config/linkcfg/eq".to_string(), vec![arg.clone()]));
-                messages.push(OscMessage::new("/config/linkcfg/dyn".to_string(), vec![arg.clone()]));
-                messages.push(OscMessage::new("/config/linkcfg/fdrmute".to_string(), vec![arg]));
+                messages.push(OscMessage::new(
+                    "/config/linkcfg/eq".to_string(),
+                    vec![arg.clone()],
+                ));
+                messages.push(OscMessage::new(
+                    "/config/linkcfg/dyn".to_string(),
+                    vec![arg.clone()],
+                ));
+                messages.push(OscMessage::new(
+                    "/config/linkcfg/fdrmute".to_string(),
+                    vec![arg],
+                ));
             }
         }
         ["config", "mono"] => {
@@ -93,16 +106,43 @@ pub fn parse_scene_line(line: &str) -> Vec<OscMessage> {
         }
         ["config", "solo"] => {
             let p = "/config/solo/source".to_string();
-            if let Some(arg) = parse_list(arg_str, &["OFF", "LR", "LR+C", "LRPFL", "LRAFL", "AUX56", "AUX78"]) {
+            if let Some(arg) = parse_list(
+                arg_str,
+                &["OFF", "LR", "LR+C", "LRPFL", "LRAFL", "AUX56", "AUX78"],
+            ) {
                 messages.push(OscMessage::new(p, vec![arg.clone()]));
-                messages.push(OscMessage::new("/config/solo/level".to_string(), vec![arg.clone()]));
-                messages.push(OscMessage::new("/config/solo/chmode".to_string(), vec![arg.clone()]));
-                messages.push(OscMessage::new("/config/solo/busmode".to_string(), vec![arg.clone()]));
-                messages.push(OscMessage::new("/config/solo/dcamode".to_string(), vec![arg.clone()]));
-                messages.push(OscMessage::new("/config/solo/exclusive".to_string(), vec![arg.clone()]));
-                messages.push(OscMessage::new("/config/solo/followsel".to_string(), vec![arg.clone()]));
-                messages.push(OscMessage::new("/config/solo/followfader".to_string(), vec![arg.clone()]));
-                messages.push(OscMessage::new("/config/solo/dimatt".to_string(), vec![arg]));
+                messages.push(OscMessage::new(
+                    "/config/solo/level".to_string(),
+                    vec![arg.clone()],
+                ));
+                messages.push(OscMessage::new(
+                    "/config/solo/chmode".to_string(),
+                    vec![arg.clone()],
+                ));
+                messages.push(OscMessage::new(
+                    "/config/solo/busmode".to_string(),
+                    vec![arg.clone()],
+                ));
+                messages.push(OscMessage::new(
+                    "/config/solo/dcamode".to_string(),
+                    vec![arg.clone()],
+                ));
+                messages.push(OscMessage::new(
+                    "/config/solo/exclusive".to_string(),
+                    vec![arg.clone()],
+                ));
+                messages.push(OscMessage::new(
+                    "/config/solo/followsel".to_string(),
+                    vec![arg.clone()],
+                ));
+                messages.push(OscMessage::new(
+                    "/config/solo/followfader".to_string(),
+                    vec![arg.clone()],
+                ));
+                messages.push(OscMessage::new(
+                    "/config/solo/dimatt".to_string(),
+                    vec![arg],
+                ));
             }
         }
         // General fallback handler for all specific channel/bus/etc settings
@@ -129,7 +169,11 @@ pub fn parse_scene_line(line: &str) -> Vec<OscMessage> {
                 }
             }
             // If it's -oo or looks like a float or level
-            else if arg_str == "-oo" || arg_str.contains('.') || arg_str.contains('k') || arg_str.contains('K') {
+            else if arg_str == "-oo"
+                || arg_str.contains('.')
+                || arg_str.contains('k')
+                || arg_str.contains('K')
+            {
                 // Frequency heuristics
                 if path.ends_with("/f") || path.contains("freq") || arg_str.contains('k') {
                     if let Some(arg) = parse_frequency(arg_str, 200.0) {
@@ -137,7 +181,11 @@ pub fn parse_scene_line(line: &str) -> Vec<OscMessage> {
                     }
                 }
                 // Level/fader heuristics
-                else if path.ends_with("/fader") || path.ends_with("/level") || path.ends_with("/mlevel") || path.ends_with("/trim") {
+                else if path.ends_with("/fader")
+                    || path.ends_with("/level")
+                    || path.ends_with("/mlevel")
+                    || path.ends_with("/trim")
+                {
                     if let Some(arg) = parse_level(arg_str, 1023.0) {
                         messages.push(OscMessage::new(exact_path, vec![arg]));
                     }
@@ -189,7 +237,9 @@ pub(crate) fn parse_onoff(val: &str, off_val: &str) -> Option<OscArg> {
 }
 
 pub(crate) fn parse_list(val: &str, list: &[&str]) -> Option<OscArg> {
-    list.iter().position(|&s| s == val).map(|i| OscArg::Int(i as i32))
+    list.iter()
+        .position(|&s| s == val)
+        .map(|i| OscArg::Int(i as i32))
 }
 
 pub(crate) fn parse_bits(val: &str) -> Option<OscArg> {
@@ -259,7 +309,9 @@ pub(crate) fn parse_level(val: &str, nsteps: f32) -> Option<OscArg> {
     if fval < -60.0 {
         fval = fval * 0.002_083_333_4 + 0.1875;
         fval = (fval * nsteps).round() / nsteps;
-        if fval < 0.0 { fval = 0.0; }
+        if fval < 0.0 {
+            fval = 0.0;
+        }
     } else if fval < -30.0 {
         fval = 0.00625 * fval + 0.4375;
         fval = (fval * nsteps).round() / nsteps;
@@ -268,7 +320,9 @@ pub(crate) fn parse_level(val: &str, nsteps: f32) -> Option<OscArg> {
         fval = (fval * nsteps).round() / nsteps;
     } else {
         fval = fval * 0.025 + 0.75;
-        if fval > 1.0 { fval = 1.0; }
+        if fval > 1.0 {
+            fval = 1.0;
+        }
     }
     Some(OscArg::Float(fval))
 }
