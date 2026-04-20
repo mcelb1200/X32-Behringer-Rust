@@ -204,8 +204,20 @@ impl Mixer {
                     let arg_type = arg_parts[0];
                     let arg_value = arg_parts[1];
                     let arg = match arg_type {
-                        "i" => OscArg::Int(arg_value.parse().unwrap()),
-                        "f" => OscArg::Float(arg_value.parse().unwrap()),
+                        "i" => {
+                            if let Ok(val) = arg_value.parse() {
+                                OscArg::Int(val)
+                            } else {
+                                continue;
+                            }
+                        }
+                        "f" => {
+                            if let Ok(val) = arg_value.parse() {
+                                OscArg::Float(val)
+                            } else {
+                                continue;
+                            }
+                        }
                         "s" => OscArg::String(arg_value.to_string()),
                         _ => continue,
                     };

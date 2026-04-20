@@ -35,7 +35,19 @@
 **Learning:** Config and state restoration parsing patterns directly mapping from C equivalents frequently lack robust bounded iteration logic in Rust, relying solely on Rust's underlying stream handlers.
 **Prevention:** Always validate `metadata.len() > [limit]` before passing user-provided or dynamically located files to `BufReader` in file processing utilities. A common limit employed is 1MB. Use `metadata.len()` check instead of `.take()` constraints on readers where partial or truncated data could lead to inconsistent hardware state restoration.
 
+## Denial of Service via Unhandled Parsing Errors
+
+- **Vulnerability:** Unsafe `unwrap()` on `str::parse()` results for user-provided data.
+- **Context:** In `x32_core/src/lib.rs`, the `seed_from_lines` function was parsing integer and float values from a seed file (which could be user-provided) and calling `unwrap()` on the result.
+- **Risk:** Malformed input in the seed file would cause the emulator to panic, leading to a Denial of Service.
+- **Fix:** Replaced `unwrap()` with safe parsing using `if let Ok(val) = arg_value.parse()` and skipping (`continue`) malformed lines.
+- **Reusability:** Always use safe parsing and error handling for data originating from external sources (files, network, user input) to ensure application stability.
 ## 2024-06-25 - [DoS via Unbounded STDIN Reads and UTF-8 Boundary Splits]
 **Vulnerability:** Interactive CLI tools like `x32_command` and `xair_command` used unbounded `stdin.lock().lines()` iteration. This unbounded read risks an Out-Of-Memory (OOM) crash if an attacker or script pipes massive streams without newlines.
 **Learning:** Limiting the input size via `take(LIMIT)` is correct for preventing OOMs. However, when a line exceeds the limit and must be discarded, utilizing `.read_line(&mut string_buffer)` inside a chunked loop (e.g. `.take(1024)`) can inadvertently split multi-byte UTF-8 characters across chunk boundaries. This results in an `InvalidData` error terminating the application abruptly, which degrades reliability.
 **Prevention:** To prevent DoS from unbounded STDIN while maintaining UTF-8 integrity, bound the initial read (`stdin_lock.by_ref().take(LIMIT).read_line(&mut string_buf)`). If the limit is reached without encountering a newline, discard the rest of the over-length line safely using a byte-oriented reader such as `read_until(b'\n', &mut Vec::new())` inside a bounded loop (`take(1024)`) that clears the vector on each iteration. This handles arbitrary byte splits gracefully without panicking on invalid intermediate UTF-8 strings.
+
+## 2024-06-26 - [Bypass of Unbounded Read Mitigation via Zero-Length Special Files]
+**Vulnerability:** A Denial of Service (DoS) vulnerability via memory exhaustion (OOM) was possible when processing input files directly into memory or arrays (e.g., via `io::BufReader::new(file).lines().collect()`). While a length validation check `if file.metadata()?.len() > LIMIT` was present, special pseudo-files like `/dev/zero` or named pipes return a metadata length of `0`. This zero length bypassed the check, allowing the subsequent unbounded reader to consume infinite data until OOM.
+**Learning:** Relying solely on `file.metadata()?.len()` to validate file sizes is insufficient if the tool can be coaxed into processing special device files or named pipes. While `metadata.len()` correctly rejects large regular files, it fails-open on infinite 0-length streams.
+**Prevention:** In addition to validating the `metadata.len()` (to fail fast on large valid files), *always* apply a hard read limit directly to the underlying `File` or stream descriptor using `.take(LIMIT)` before passing it to any unbounding processing logic or `BufReader`. For instance, use `io::BufReader::new(file.take(1024 * 1024))` rather than `io::BufReader::new(file)`. This provides defense-in-depth, preventing OOM regardless of what the filesystem reports the file size to be.
