@@ -19,7 +19,7 @@ use clap::Parser;
 use osc_lib::{OscArg, OscMessage};
 use std::collections::HashMap;
 use std::fs::File;
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, Read};
 use std::net::UdpSocket;
 use std::path::PathBuf;
 use x32_lib::{create_socket, error::X32Error};
@@ -121,7 +121,7 @@ fn load_user_defaults(path: PathBuf) -> Result<HashMap<String, String>, X32Error
         ));
     }
 
-    let reader = BufReader::new(file);
+    let reader = BufReader::new(file.take(1024 * 1024));
     let mut user_defaults = HashMap::new();
     let mut lines = reader.lines();
 
