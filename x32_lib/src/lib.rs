@@ -58,10 +58,10 @@
 mod tests;
 
 pub mod command;
-pub mod scene_parse;
 pub mod common;
 pub mod error;
 pub mod main_bus;
+pub mod scene_parse;
 
 use std::net::{SocketAddr, UdpSocket};
 use std::time::Duration;
