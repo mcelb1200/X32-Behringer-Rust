@@ -1,6 +1,6 @@
 use anyhow::Result;
 use std::fs::File;
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, Read};
 use std::path::Path;
 
 #[derive(Debug, Clone)]
@@ -69,7 +69,7 @@ impl Config {
             anyhow::bail!("Config file too large to load (max 1MB)");
         }
 
-        let reader = BufReader::new(file);
+        let reader = BufReader::new(file.take(1024 * 1024));
         let mut config = Config::default();
 
         for line_result in reader.lines() {

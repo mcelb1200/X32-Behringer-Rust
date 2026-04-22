@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 use anyhow::{Result, anyhow};
 use std::fs::File;
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, Read};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct MidiOscCommand {
@@ -30,7 +30,7 @@ pub fn parse_file(path: &str) -> Result<Vec<MidiOscCommand>> {
         return Err(anyhow!("File too large"));
     }
 
-    let reader = BufReader::new(file);
+    let reader = BufReader::new(file.take(1024 * 1024));
     let mut commands = Vec::new();
 
     for line in reader.lines() {
@@ -139,7 +139,7 @@ impl Config {
             return Err(anyhow!("File too large"));
         }
 
-        let reader = BufReader::new(file);
+        let reader = BufReader::new(file.take(1024 * 1024));
 
         let mut midi_in_port = 0;
         let mut ip_str = "192.168.0.64".to_string();
