@@ -11,7 +11,7 @@
 use clap::Parser;
 use osc_lib::{OscArg, OscMessage};
 use std::fs::File;
-use std::io::{self, BufRead, BufWriter, Write};
+use std::io::{self, BufRead, BufWriter, Read, Write};
 use std::net::UdpSocket;
 use std::path::PathBuf;
 use x32_lib::{create_socket, error::X32Error};
@@ -103,7 +103,7 @@ fn main() -> Result<(), X32Error> {
         }
 
         let mut commands = Vec::new();
-        for line in io::BufReader::new(file).lines() {
+        for line in io::BufReader::new(file.take(1024 * 1024)).lines() {
             let line = line?;
             if !line.starts_with('#') {
                 if let Some(command) = line.split_whitespace().next() {

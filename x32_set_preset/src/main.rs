@@ -16,7 +16,7 @@ use anyhow::{Context, Result, anyhow};
 use clap::Parser;
 use osc_lib::{OscArg, OscMessage};
 use std::fs::File;
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, Read};
 use std::path::PathBuf;
 use x32_lib::create_socket;
 
@@ -130,7 +130,7 @@ fn main() -> Result<()> {
         return Err(anyhow!("Preset file too large to load (max 1MB)"));
     }
 
-    let reader = BufReader::new(file);
+    let reader = BufReader::new(file.take(1024 * 1024));
 
     for line in reader.lines() {
         let line = line?;

@@ -469,7 +469,7 @@ fn handle_restore_command(ip: &str, file_path: &str) -> Result<()> {
         return Err(X32Error::Custom("File too large".to_string()));
     }
 
-    let mut reader = BufReader::new(file);
+    let mut reader = BufReader::new(file.take(1024 * 1024));
 
     println!("Restoring configuration from {}...", file_path);
 
