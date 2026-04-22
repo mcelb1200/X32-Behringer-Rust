@@ -58,6 +58,7 @@
 mod tests;
 
 pub mod command;
+pub mod scene_parse;
 pub mod common;
 pub mod error;
 pub mod main_bus;
