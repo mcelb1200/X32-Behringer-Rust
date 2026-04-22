@@ -46,14 +46,23 @@ fn main() -> Result<()> {
         }
         let line = line.trim();
         if line.starts_with('/') {
-            match OscMessage::from_str(line) {
-                Ok(msg) => {
+            if let Some(msgs) = x32_lib::scene_parse::parse_scene_line(line) {
+                for msg in msgs {
                     socket.send(&msg.to_bytes()?)?;
                     if args.delay > 0 {
                         thread::sleep(Duration::from_millis(args.delay));
                     }
                 }
-                Err(e) => eprintln!("Error parsing line: {}", e),
+            } else {
+                match OscMessage::from_str(line) {
+                    Ok(msg) => {
+                        socket.send(&msg.to_bytes()?)?;
+                        if args.delay > 0 {
+                            thread::sleep(Duration::from_millis(args.delay));
+                        }
+                    }
+                    Err(e) => eprintln!("Error parsing line: {}", e),
+                }
             }
         }
     }
