@@ -50,3 +50,7 @@
 ## 2024-05-18 - [Missing Async BufWriter Flush]
 **Learning:** In asynchronous Rust using Tokio, `tokio::io::BufWriter` cannot be flushed within its `Drop` implementation because dropping is a synchronous operation. Thus, merely letting the `BufWriter` fall out of scope (e.g., by reassigning `file_writer = None`) will silently discard any buffered data that has not been flushed to disk.
 **Action:** Always extract the inner `BufWriter` (e.g., using `Option::take()`) and explicitly await `.flush().await` before discarding the writer, especially during state transitions or exit paths.
+
+## 2024-06-15 - [Efficient broadcasting of shared data using Arc]
+**Learning:** When broadcasting the same payload (e.g. serialized OSC responses) to multiple clients, cloning a `Vec<u8>` for each recipient incurs unnecessary `O(N)` heap allocations and memory copying. Replacing `Vec<u8>` with `std::sync::Arc<[u8]>` allows cheap pointer cloning and zero-copy sharing across all outgoing messages.
+**Action:** When returning multiple identical byte buffers intended for different network addresses, use `Arc<[u8]>` instead of `Vec<u8>` to eliminate redundant allocations in the broadcast loop.
