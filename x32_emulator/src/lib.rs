@@ -52,11 +52,12 @@ pub mod server {
             }
 
             match socket.recv_from(&mut buf) {
-                Ok((len, remote_addr)) => match mixer.dispatch(&buf[..len]) {
-                    Ok(Some(response)) => {
-                        socket.send_to(&response, remote_addr)?;
+                Ok((len, remote_addr)) => match mixer.dispatch(&buf[..len], remote_addr) {
+                    Ok(responses) => {
+                        for (addr, response) in responses {
+                            socket.send_to(&response, addr)?;
+                        }
                     }
-                    Ok(None) => {}
                     Err(e) => {
                         eprintln!("Error handling message: {}", e);
                     }

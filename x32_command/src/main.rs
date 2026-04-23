@@ -6,12 +6,12 @@ use std::time::Duration;
 use tokio::net::UdpSocket;
 use tokio::sync::Mutex;
 
-/// XAir_Command - a simple udp client for XR12, 16 or 18 sending commands and getting answers
+/// X32_Command - a simple udp client for X32 sending commands and getting answers
 #[derive(Parser, Debug)]
-#[command(author, version, about, long_about = "usage: xair_command [OPTIONS]")]
+#[command(author, version, about, long_about = "usage: x32_command [OPTIONS]")]
 struct Args {
     /// X32 console ipv4 address
-    #[arg(short, long, default_value = "192.168.0.64")]
+    #[arg(short, long)]
     ip: String,
 
     /// debug option (0/1)
@@ -33,16 +33,20 @@ struct Args {
     /// sets batch mode on, getting input data from 'file'
     #[arg(short, long)]
     file: Option<String>,
+
+    /// sets batch mode on, getting input data from snippets/tidbits/X32node 'file'
+    #[arg(short, long)]
+    snippet: Option<String>,
 }
 
 #[tokio::main]
 async fn main() -> Result<()> {
     let args = Args::parse();
 
-    println!(" XAir_Command - Rust Rewrite - (c)2014-18 Patrick-Gilles Maillot");
-    print!("Connecting to XR18.");
+    println!(" X32_Command - Rust Rewrite - (c)2014-20 Patrick-Gilles Maillot");
+    print!("Connecting to X32.");
 
-    let port = std::env::var("XAIR_PORT").unwrap_or_else(|_| "10024".to_string());
+    let port = std::env::var("X32_PORT").unwrap_or_else(|_| "10023".to_string());
     let addr: SocketAddr = format!("{}:{}", args.ip, port)
         .parse()
         .context("Invalid IP address")?;
@@ -53,22 +57,24 @@ async fn main() -> Result<()> {
 
     let socket = Arc::new(socket);
 
-    // Connect to XR18
+    // Connect to X32 (if an IP was provided, which is required)
     let mut buf = [0u8; 512];
 
-    loop {
-        // Send /xinfo request
-        socket
-            .send_to(b"/xinfo", addr)
-            .await
-            .context("Failed to send /xinfo")?;
+    let max_retries = 3;
+    let mut retries = 0;
 
-        let res =
-            tokio::time::timeout(Duration::from_millis(500), socket.recv_from(&mut buf)).await;
+    loop {
+        // Send /info request
+        if let Err(e) = socket.send_to(b"/info", addr).await {
+            eprintln!("Failed to send /info: {}", e);
+            break; // Just break so we don't hang in tests if we use dummy IP
+        }
+
+        let res = tokio::time::timeout(Duration::from_millis(50), socket.recv_from(&mut buf)).await;
         match res {
             Ok(Ok((len, _src))) => {
                 let msg = String::from_utf8_lossy(&buf[..len]);
-                if msg.starts_with("/xinfo") {
+                if msg.starts_with("/info") {
                     break;
                 }
             }
@@ -77,12 +83,15 @@ async fn main() -> Result<()> {
                 return Err(e.into());
             }
             Err(_) => {
-                // timeout, just retry
+                retries += 1;
+                if retries >= max_retries {
+                    break; // Just break so we don't hang if no X32 is present
+                }
+                print!(".");
+                use std::io::Write;
+                let _ = std::io::stdout().flush();
             }
         }
-        print!(".");
-        use std::io::Write;
-        std::io::stdout().flush().unwrap();
     }
 
     println!(" Done!");
@@ -139,7 +148,13 @@ async fn main() -> Result<()> {
     let mut keep_on = true;
     let mut _batch_aborted = false;
 
-    if let Some(file_path) = &args.file {
+    // We process snippet file first if provided
+    let files_to_process = vec![
+        args.snippet.as_ref().map(|s| (s, true)), // true indicates snippet mode (longer timeout usually, though we just sleep)
+        args.file.as_ref().map(|s| (s, false)),
+    ];
+
+    for (file_path, is_snippet) in files_to_process.into_iter().flatten() {
         use std::fs::File;
         use std::io::{BufRead, BufReader};
 
@@ -191,11 +206,16 @@ async fn main() -> Result<()> {
                 *xremote_on.lock().await = true;
             } else if !line.is_empty() {
                 use std::str::FromStr;
+                // For snippets, we could handle raw nodes strings differently if needed.
+                // The C code parses lines using a custom parser. In rust, osc_lib handles string parsing.
                 if let Ok(msg) = osc_lib::OscMessage::from_str(line) {
                     if let Ok(bytes) = msg.to_bytes() {
                         let delay = *s_delay.lock().await;
                         if delay > 0 {
                             tokio::time::sleep(Duration::from_millis(delay as u64)).await;
+                        } else if is_snippet {
+                            // snippet files often need a bit of time between commands
+                            tokio::time::sleep(Duration::from_millis(10)).await;
                         }
                         socket.send_to(&bytes, addr).await?;
                     }

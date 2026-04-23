@@ -16,7 +16,7 @@
 use clap::{Parser, Subcommand};
 use osc_lib::{OscArg, OscMessage};
 use std::fs::File;
-use std::io::{BufRead, BufReader, Read, Write};
+use std::io::{BufRead, BufReader, BufWriter, Read, Write};
 use std::net::UdpSocket;
 use std::str::FromStr;
 use x32_lib::{
@@ -343,7 +343,8 @@ fn handle_set_command(ip: &str, assignments_str: &[String]) -> Result<()> {
 /// Handles the 'save' command to save the current configuration to a file.
 fn handle_save_command(ip: &str, file_path: &str) -> Result<()> {
     let socket = create_socket(ip, 200)?;
-    let mut file = File::create(file_path)?;
+    let file = File::create(file_path)?;
+    let mut file = BufWriter::new(file);
     file.write_all(SNIP_HEAD.as_bytes())?;
 
     println!("Saving configuration to {}...", file_path);
@@ -367,6 +368,7 @@ fn handle_save_command(ip: &str, file_path: &str) -> Result<()> {
             }
         }
     }
+    file.flush()?;
 
     println!("Save complete.");
     Ok(())
@@ -461,7 +463,13 @@ fn get_node_state(socket: &UdpSocket, node: &str) -> Result<String> {
 fn handle_restore_command(ip: &str, file_path: &str) -> Result<()> {
     let socket = create_socket(ip, 200)?;
     let file = File::open(file_path)?;
-    let mut reader = BufReader::new(file);
+
+    // Sentinel: Prevent OOM from maliciously large or corrupted configuration files
+    if file.metadata()?.len() > 1024 * 1024 {
+        return Err(X32Error::Custom("File too large".to_string()));
+    }
+
+    let mut reader = BufReader::new(file.take(1024 * 1024));
 
     println!("Restoring configuration from {}...", file_path);
 

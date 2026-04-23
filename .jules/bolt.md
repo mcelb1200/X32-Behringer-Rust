@@ -40,3 +40,13 @@
 ## 2024-06-05 - [Avoiding std::fmt machinery in hot loops]
 **Learning:** The `write!` macro invokes the `std::fmt` machinery, which involves hidden parsing and allocation overhead even for simple strings or values. In hot loops or `fmt::Display` implementations, relying on `write!(f, "{}", val)` or `write!(f, "literal")` causes measurable degradation compared to direct manipulation.
 **Action:** To eliminate formatting machinery overhead in Rust hot loops, replace the `write!` macro (e.g., `write!(f, "{}", val)` or `write!(&mut s, "\"{}\"", val)`) with direct string manipulation methods like `f.write_str(val)`, `s.push()`, `s.push_str()`, or manual static character array mappings for hex values.
+## 2026-04-14 - [Handling Error Silencing with BufWriter]
+**Learning:** When using `std::io::BufWriter` in Rust to optimize file I/O, relying on its `Drop` implementation to flush the buffer causes any underlying I/O errors during that final flush to be silently ignored.
+**Action:** Always explicitly call `flush()?` (or `.into_inner()?`) before the `BufWriter` goes out of scope to ensure any write errors are properly caught and bubbled up.
+## 2024-06-10 - [Avoiding string parsing overhead for purely hex data]
+**Learning:** In performance-critical hot loops (e.g., parsing OSC blobs), using `u8::from_str_radix` on string slices to parse hexadecimal data incurs measurable overhead due to slice creation, UTF-8 checks, and generic parsing machinery. Replacing this with a manual loop that matches on raw ASCII bytes (`b'0'..=b'9'`, `b'a'..=b'f'`, `b'A'..=b'F'`) and uses bitwise operations (`(high << 4) | low`) significantly improves execution time for purely hex data parsing.
+**Action:** When parsing purely hex strings into bytes in hot paths, avoid `u8::from_str_radix`. Work directly with byte slices and map ASCII characters to values using simple arithmetic and bitwise combinations.
+
+## 2024-05-18 - [Missing Async BufWriter Flush]
+**Learning:** In asynchronous Rust using Tokio, `tokio::io::BufWriter` cannot be flushed within its `Drop` implementation because dropping is a synchronous operation. Thus, merely letting the `BufWriter` fall out of scope (e.g., by reassigning `file_writer = None`) will silently discard any buffered data that has not been flushed to disk.
+**Action:** Always extract the inner `BufWriter` (e.g., using `Option::take()`) and explicitly await `.flush().await` before discarding the writer, especially during state transitions or exit paths.

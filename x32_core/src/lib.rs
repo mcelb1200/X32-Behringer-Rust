@@ -27,6 +27,7 @@
 //! ```
 //! use x32_core::Mixer;
 //! use osc_lib::{OscMessage, OscArg};
+//! use std::net::{SocketAddr, IpAddr, Ipv4Addr};
 //!
 //! fn main() -> Result<(), Box<dyn std::error::Error>> {
 //!     let mut mixer = Mixer::new();
@@ -39,9 +40,12 @@
 //!     let request_msg = OscMessage::new("/ch/01/mix/fader".to_string(), vec![]);
 //!     let request_bytes = request_msg.to_bytes()?;
 //!
+//!     let test_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 10023);
+//!
 //!     // Dispatch the message to the mixer
-//!     if let Some(response_bytes) = mixer.dispatch(&request_bytes)? {
-//!         let response_msg = OscMessage::from_bytes(&response_bytes)?;
+//!     let responses = mixer.dispatch(&request_bytes, test_addr)?;
+//!     if let Some((addr, response_bytes)) = responses.first() {
+//!         let response_msg = OscMessage::from_bytes(response_bytes)?;
 //!         assert_eq!(response_msg.path, "/ch/01/mix/fader");
 //!         assert_eq!(response_msg.args, vec![OscArg::Float(0.75)]);
 //!         println!("Successfully retrieved channel 1 fader level: 0.75");
@@ -52,7 +56,8 @@
 //! ```
 
 use std::collections::HashMap;
-use std::error::Error;
+use std::net::SocketAddr;
+use std::time::{Duration, Instant};
 
 use osc_lib::{OscArg, OscMessage};
 
@@ -158,6 +163,7 @@ impl MixerState {
 /// A struct that emulates the behavior of an X32 mixer.
 pub struct Mixer {
     state: MixerState,
+    clients: Vec<(SocketAddr, Instant)>,
 }
 
 impl Default for Mixer {
@@ -175,6 +181,7 @@ impl Mixer {
     pub fn new() -> Self {
         Self {
             state: MixerState::new(),
+            clients: Vec::new(),
         }
     }
 
@@ -197,8 +204,20 @@ impl Mixer {
                     let arg_type = arg_parts[0];
                     let arg_value = arg_parts[1];
                     let arg = match arg_type {
-                        "i" => OscArg::Int(arg_value.parse().unwrap()),
-                        "f" => OscArg::Float(arg_value.parse().unwrap()),
+                        "i" => {
+                            if let Ok(val) = arg_value.parse() {
+                                OscArg::Int(val)
+                            } else {
+                                continue;
+                            }
+                        }
+                        "f" => {
+                            if let Ok(val) = arg_value.parse() {
+                                OscArg::Float(val)
+                            } else {
+                                continue;
+                            }
+                        }
                         "s" => OscArg::String(arg_value.to_string()),
                         _ => continue,
                     };
@@ -208,7 +227,7 @@ impl Mixer {
         }
     }
 
-    /// Dispatches an incoming OSC message and returns an optional response.
+    /// Dispatches an incoming OSC message and returns a list of responses to send to specific clients.
     ///
     /// This is the core method of the emulator. It takes a raw byte slice representing
     /// an OSC message, parses it, and then either updates the internal state or generates
@@ -217,14 +236,47 @@ impl Mixer {
     /// # Arguments
     ///
     /// * `msg` - A byte slice containing the OSC message.
+    /// * `remote_addr` - The socket address of the client sending the message.
     ///
     /// # Returns
     ///
-    /// A `Result` containing an `Option<Vec<u8>>`. If the incoming message was a
-    /// request for data, the `Option` will contain a `Vec<u8>` with the response
-    /// OSC message. If the message was a command to set a value, it will be `None`.
-    pub fn dispatch(&mut self, msg: &[u8]) -> Result<Option<Vec<u8>>, Box<dyn Error>> {
+    /// A `Result` containing a `Vec<(SocketAddr, Vec<u8>)>` with the responses to send
+    /// to clients. If the message was a request for data or an info query, the response
+    /// is sent back to the requester. If it was a set command, the new value is broadcasted
+    /// to all registered `/xremote` clients.
+    pub fn dispatch(
+        &mut self,
+        msg: &[u8],
+        remote_addr: SocketAddr,
+    ) -> Result<Vec<(SocketAddr, Vec<u8>)>, Box<dyn std::error::Error>> {
         let osc_msg = OscMessage::from_bytes(msg)?;
+        let mut responses = Vec::new();
+
+        // Expire old clients before processing
+        let now = Instant::now();
+        self.clients.retain(|&(_, expiry)| now < expiry);
+
+        if osc_msg.path == "/xremote" {
+            // Check if already registered
+            let mut found = false;
+            for client in &mut self.clients {
+                if client.0 == remote_addr {
+                    client.1 = now + Duration::from_secs(10);
+                    found = true;
+                    break;
+                }
+            }
+
+            if !found {
+                if self.clients.len() < 4 {
+                    self.clients
+                        .push((remote_addr, now + Duration::from_secs(10)));
+                } else {
+                    eprintln!("maximum client capacity reached");
+                }
+            }
+            return Ok(responses);
+        }
 
         // Handle the /info command, which is a request for mixer information.
         if osc_msg.path == "/info" {
@@ -232,24 +284,52 @@ impl Mixer {
             let arg2 = OscArg::String("X32 Emulator".to_string());
             let arg3 = OscArg::String("X32".to_string());
             let arg4 = OscArg::String("4.06".to_string());
-            return Ok(Some(OscMessage::serialize_to_bytes(
-                "/info",
-                [&arg1, &arg2, &arg3, &arg4],
-            )?));
+            let bytes = OscMessage::serialize_to_bytes("/info", [&arg1, &arg2, &arg3, &arg4])?;
+            responses.push((remote_addr, bytes));
+            return Ok(responses);
+        }
+
+        // Handle the /status command, which is a request for mixer status.
+        if osc_msg.path == "/status" {
+            let arg1 = OscArg::String("active".to_string());
+            let arg2 = OscArg::String("0.0.0.0".to_string()); // Default IP, in actual usage might want the bound IP
+            let arg3 = OscArg::String("X32 Emulator".to_string());
+            let bytes = OscMessage::serialize_to_bytes("/status", [&arg1, &arg2, &arg3])?;
+            responses.push((remote_addr, bytes));
+            return Ok(responses);
+        }
+
+        // Handle the /renew command, which does nothing but is recognized.
+        if osc_msg.path == "/renew" {
+            return Ok(responses);
+        }
+
+        // Handle the /unsubscribe command, which removes the client from xremote updates.
+        if osc_msg.path == "/unsubscribe" {
+            self.clients.retain(|&(addr, _)| addr != remote_addr);
+            return Ok(responses);
         }
 
         // If the message has no arguments, it's a request for a value.
         if osc_msg.args.is_empty() {
             if let Some(arg) = self.state.get(&osc_msg.path) {
-                return Ok(Some(OscMessage::serialize_to_bytes(&osc_msg.path, [arg])?));
+                let bytes = OscMessage::serialize_to_bytes(&osc_msg.path, [arg])?;
+                responses.push((remote_addr, bytes));
             }
         } else {
             // If the message has arguments, it's a command to set a value.
             if let Some(arg) = osc_msg.args.first() {
                 self.state.set(&osc_msg.path, arg.clone());
+
+                // Broadcast value change to all xremote clients
+                if let Ok(bytes) = OscMessage::serialize_to_bytes(&osc_msg.path, [arg]) {
+                    for client in &self.clients {
+                        responses.push((client.0, bytes.clone()));
+                    }
+                }
             }
         }
 
-        Ok(None)
+        Ok(responses)
     }
 }
