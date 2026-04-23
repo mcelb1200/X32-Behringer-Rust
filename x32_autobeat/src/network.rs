@@ -3,8 +3,8 @@ use crossbeam_channel::Sender;
 use osc_lib::OscMessage;
 use std::net::UdpSocket;
 use std::sync::{
-    atomic::{AtomicBool, Ordering},
     Arc,
+    atomic::{AtomicBool, Ordering},
 };
 use std::thread;
 use std::time::Duration;
