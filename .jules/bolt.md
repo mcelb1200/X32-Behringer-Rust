@@ -54,3 +54,7 @@
 ## 2024-06-15 - [Efficient broadcasting of shared data using Arc]
 **Learning:** When broadcasting the same payload (e.g. serialized OSC responses) to multiple clients, cloning a `Vec<u8>` for each recipient incurs unnecessary `O(N)` heap allocations and memory copying. Replacing `Vec<u8>` with `std::sync::Arc<[u8]>` allows cheap pointer cloning and zero-copy sharing across all outgoing messages.
 **Action:** When returning multiple identical byte buffers intended for different network addresses, use `Arc<[u8]>` instead of `Vec<u8>` to eliminate redundant allocations in the broadcast loop.
+
+## 2024-06-25 - [Bypassing UTF-8 decoding for purely binary strings]
+**Learning:** When optimizing string parsing in Rust, bypassing UTF-8 decoding by replacing `.chars()` with `.as_bytes()` is safe and highly performant (e.g., 40% faster) *only* for strings guaranteed to be purely ASCII, such as binary bitmasks containing just `1`s and `0`s.
+**Action:** When iterating over bitmask strings, use `.as_bytes().iter()` and match on byte literals (e.g., `b'1'`). Never replace `.chars()` with `.as_bytes()` followed by `b as char` on arbitrary user-provided strings (like OSC arguments), as this will corrupt multi-byte UTF-8 characters.

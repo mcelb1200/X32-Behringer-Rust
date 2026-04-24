@@ -76,9 +76,11 @@ fn parse_single_value(val: &str) -> OscArg {
     // If it has a %, it's a bitmask
     if val.contains('%') {
         let mut bitmask = 0;
-        let bits = val.trim_matches('%');
-        for (i, c) in bits.chars().rev().enumerate() {
-            if c == '1' {
+        // OPTIMIZATION: Use .as_bytes() instead of .chars() for purely binary strings
+        // to bypass UTF-8 decoding overhead.
+        let bits = val.trim_matches('%').as_bytes();
+        for (i, &b) in bits.iter().rev().enumerate() {
+            if b == b'1' {
                 bitmask |= 1 << i;
             }
         }
