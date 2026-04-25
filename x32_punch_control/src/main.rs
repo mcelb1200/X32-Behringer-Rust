@@ -173,7 +173,15 @@ async fn run_logic(
 
     if let Some(ref path) = file_path {
         if let Ok(f) = File::open(path).await {
-            reader = Some(PunchReader::new(f));
+            if let Ok(metadata) = f.metadata().await {
+                if metadata.len() > 10 * 1024 * 1024 {
+                    eprintln!("Recording file too large to load (max 10MB)");
+                } else {
+                    reader = Some(PunchReader::new(f));
+                }
+            } else {
+                reader = Some(PunchReader::new(f));
+            }
         }
         let out_path = format!("{}_xpc", path);
         if let Ok(f) = File::create(&out_path).await {
