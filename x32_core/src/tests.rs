@@ -257,7 +257,9 @@ mod tests {
     fn test_mixer_dispatch_copy_command() {
         let mut mixer = Mixer::new();
         // Set up initial state for source channel 1
-        mixer.state.set("/ch/01/config/name", OscArg::String("Vox 1".to_string()));
+        mixer
+            .state
+            .set("/ch/01/config/name", OscArg::String("Vox 1".to_string()));
         mixer.state.set("/ch/01/preamp/trim", OscArg::Float(0.5));
 
         // Ensure destination channel 2 is empty initially
@@ -273,13 +275,16 @@ mod tests {
                 OscArg::Int(0), // source 0 (ch 01)
                 OscArg::Int(1), // dest 1 (ch 02)
                 OscArg::Int(2), // mask C_CONFIG
-            ]
+            ],
         };
         let bytes = msg.to_bytes().unwrap();
         let responses = mixer.dispatch(&bytes, test_addr(1234)).unwrap();
 
         // Check that state was updated appropriately based on mask
-        assert_eq!(mixer.state.get("/ch/02/config/name"), Some(&OscArg::String("Vox 1".to_string())));
+        assert_eq!(
+            mixer.state.get("/ch/02/config/name"),
+            Some(&OscArg::String("Vox 1".to_string()))
+        );
         assert_eq!(mixer.state.get("/ch/02/preamp/trim"), None); // HA not copied because mask didn't include it
 
         // Ensure acknowledgment response sent
@@ -296,7 +301,7 @@ mod tests {
         let mut mixer = Mixer::new();
         let msg = OscMessage {
             path: "/add".to_string(),
-            args: vec![OscArg::String("cue".to_string()), OscArg::Int(1)]
+            args: vec![OscArg::String("cue".to_string()), OscArg::Int(1)],
         };
         let bytes = msg.to_bytes().unwrap();
         let responses = mixer.dispatch(&bytes, test_addr(1234)).unwrap();
@@ -304,7 +309,10 @@ mod tests {
         assert_eq!(responses.len(), 1);
         let resp_msg = OscMessage::from_bytes(&responses[0].1).unwrap();
         assert_eq!(resp_msg.path, "/add");
-        assert_eq!(resp_msg.args, vec![OscArg::String("cue".to_string()), OscArg::Int(1)]);
+        assert_eq!(
+            resp_msg.args,
+            vec![OscArg::String("cue".to_string()), OscArg::Int(1)]
+        );
     }
 
     #[test]
@@ -312,7 +320,7 @@ mod tests {
         let mut mixer = Mixer::new();
         let msg = OscMessage {
             path: "/load".to_string(),
-            args: vec![OscArg::String("libchan".to_string()), OscArg::Int(1)]
+            args: vec![OscArg::String("libchan".to_string()), OscArg::Int(1)],
         };
         let bytes = msg.to_bytes().unwrap();
         let responses = mixer.dispatch(&bytes, test_addr(1234)).unwrap();
@@ -320,7 +328,10 @@ mod tests {
         assert_eq!(responses.len(), 1);
         let resp_msg = OscMessage::from_bytes(&responses[0].1).unwrap();
         assert_eq!(resp_msg.path, "/load");
-        assert_eq!(resp_msg.args, vec![OscArg::String("libchan".to_string()), OscArg::Int(1)]);
+        assert_eq!(
+            resp_msg.args,
+            vec![OscArg::String("libchan".to_string()), OscArg::Int(1)]
+        );
     }
 
     #[test]
@@ -333,17 +344,23 @@ mod tests {
                 OscArg::Int(5), // scene 5
                 OscArg::String("My Scene".to_string()),
                 OscArg::String("Note".to_string()),
-            ]
+            ],
         };
         let bytes = msg.to_bytes().unwrap();
         let responses = mixer.dispatch(&bytes, test_addr(1234)).unwrap();
 
         // C code saves to internal state based on type
-        assert_eq!(mixer.state.get("/-show/showfile/scene/005/name"), Some(&OscArg::String("My Scene".to_string())));
+        assert_eq!(
+            mixer.state.get("/-show/showfile/scene/005/name"),
+            Some(&OscArg::String("My Scene".to_string()))
+        );
 
         assert_eq!(responses.len(), 1);
         let resp_msg = OscMessage::from_bytes(&responses[0].1).unwrap();
         assert_eq!(resp_msg.path, "/save");
-        assert_eq!(resp_msg.args, vec![OscArg::String("scene".to_string()), OscArg::Int(1)]);
+        assert_eq!(
+            resp_msg.args,
+            vec![OscArg::String("scene".to_string()), OscArg::Int(1)]
+        );
     }
 }

@@ -323,7 +323,12 @@ impl Mixer {
                 osc_msg.args.get(2),
                 osc_msg.args.get(3),
             ) {
-                if copy_type == "libchan" && *source >= 0 && *source < 32 && *dest >= 0 && *dest < 32 {
+                if copy_type == "libchan"
+                    && *source >= 0
+                    && *source < 32
+                    && *dest >= 0
+                    && *dest < 32
+                {
                     let mut keys_to_copy = Vec::new();
 
                     let c_config = 0x0002;
@@ -340,20 +345,24 @@ impl Mixer {
                         if k.starts_with(&source_prefix) {
                             let sub_path = &k[source_prefix.len()..];
 
-                            let should_copy = if sub_path.starts_with("/config") && (mask & c_config) != 0 {
-                                true
-                            } else if sub_path.starts_with("/preamp") && (mask & c_ha) != 0 {
-                                true
-                            } else if sub_path.starts_with("/gate") && (mask & c_gate) != 0 {
-                                true
-                            } else if sub_path.starts_with("/dyn") && (mask & c_dyn) != 0 {
-                                true
-                            } else if sub_path.starts_with("/eq") && (mask & c_eq) != 0 {
-                                true
-                            } else { sub_path.starts_with("/mix") && (mask & c_send) != 0 };
+                            let should_copy =
+                                if sub_path.starts_with("/config") && (mask & c_config) != 0 {
+                                    true
+                                } else if sub_path.starts_with("/preamp") && (mask & c_ha) != 0 {
+                                    true
+                                } else if sub_path.starts_with("/gate") && (mask & c_gate) != 0 {
+                                    true
+                                } else if sub_path.starts_with("/dyn") && (mask & c_dyn) != 0 {
+                                    true
+                                } else if sub_path.starts_with("/eq") && (mask & c_eq) != 0 {
+                                    true
+                                } else {
+                                    sub_path.starts_with("/mix") && (mask & c_send) != 0
+                                };
 
                             if should_copy {
-                                keys_to_copy.push((format!("{}{}", dest_prefix, sub_path), v.clone()));
+                                keys_to_copy
+                                    .push((format!("{}{}", dest_prefix, sub_path), v.clone()));
                             }
                         }
                     }
