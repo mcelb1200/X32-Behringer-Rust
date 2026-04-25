@@ -310,6 +310,126 @@ impl Mixer {
             return Ok(responses);
         }
 
+        // Admin command: /copy
+        if osc_msg.path == "/copy" && osc_msg.args.len() == 4 {
+            if let (
+                Some(OscArg::String(copy_type)),
+                Some(OscArg::Int(source)),
+                Some(OscArg::Int(dest)),
+                Some(OscArg::Int(mask)),
+            ) = (
+                osc_msg.args.first(),
+                osc_msg.args.get(1),
+                osc_msg.args.get(2),
+                osc_msg.args.get(3),
+            ) {
+                if copy_type == "libchan" && *source >= 0 && *source < 32 && *dest >= 0 && *dest < 32 {
+                    let mut keys_to_copy = Vec::new();
+
+                    let c_config = 0x0002;
+                    let c_ha = 0x0001;
+                    let c_gate = 0x0004;
+                    let c_dyn = 0x0008;
+                    let c_eq = 0x0010;
+                    let c_send = 0x0020;
+
+                    let source_prefix = format!("/ch/{:02}", source + 1);
+                    let dest_prefix = format!("/ch/{:02}", dest + 1);
+
+                    for (k, v) in self.state.values.iter() {
+                        if k.starts_with(&source_prefix) {
+                            let sub_path = &k[source_prefix.len()..];
+
+                            let should_copy = if sub_path.starts_with("/config") && (mask & c_config) != 0 {
+                                true
+                            } else if sub_path.starts_with("/preamp") && (mask & c_ha) != 0 {
+                                true
+                            } else if sub_path.starts_with("/gate") && (mask & c_gate) != 0 {
+                                true
+                            } else if sub_path.starts_with("/dyn") && (mask & c_dyn) != 0 {
+                                true
+                            } else if sub_path.starts_with("/eq") && (mask & c_eq) != 0 {
+                                true
+                            } else { sub_path.starts_with("/mix") && (mask & c_send) != 0 };
+
+                            if should_copy {
+                                keys_to_copy.push((format!("{}{}", dest_prefix, sub_path), v.clone()));
+                            }
+                        }
+                    }
+
+                    for (new_k, new_v) in keys_to_copy {
+                        self.state.set(&new_k, new_v);
+                    }
+
+                    let bytes = OscMessage::serialize_to_bytes(
+                        "/copy",
+                        [&OscArg::String("libchan".to_string()), &OscArg::Int(1)],
+                    )?;
+                    responses.push((remote_addr, bytes.into()));
+                    return Ok(responses);
+                } else {
+                    let bytes = OscMessage::serialize_to_bytes(
+                        "/copy",
+                        [&OscArg::String(copy_type.clone()), &OscArg::Int(0)],
+                    )?;
+                    responses.push((remote_addr, bytes.into()));
+                    return Ok(responses);
+                }
+            }
+        }
+
+        // Admin command: /add
+        if osc_msg.path == "/add" && osc_msg.args.len() >= 2 {
+            if let Some(OscArg::String(add_type)) = osc_msg.args.first() {
+                let bytes = OscMessage::serialize_to_bytes(
+                    "/add",
+                    [&OscArg::String(add_type.clone()), &OscArg::Int(1)],
+                )?;
+                responses.push((remote_addr, bytes.into()));
+                return Ok(responses);
+            }
+        }
+
+        // Admin command: /load
+        if osc_msg.path == "/load" && osc_msg.args.len() >= 2 {
+            if let Some(OscArg::String(load_type)) = osc_msg.args.first() {
+                let bytes = OscMessage::serialize_to_bytes(
+                    "/load",
+                    [&OscArg::String(load_type.clone()), &OscArg::Int(1)],
+                )?;
+                responses.push((remote_addr, bytes.into()));
+                return Ok(responses);
+            }
+        }
+
+        // Admin command: /save
+        if osc_msg.path == "/save" && osc_msg.args.len() >= 4 {
+            if let (
+                Some(OscArg::String(save_type)),
+                Some(OscArg::Int(index)),
+                Some(OscArg::String(name)),
+                Some(OscArg::String(_note)), // Note isn't persisted individually in our mock right now, just the name is
+            ) = (
+                osc_msg.args.first(),
+                osc_msg.args.get(1),
+                osc_msg.args.get(2),
+                osc_msg.args.get(3),
+            ) {
+                if save_type == "scene" || save_type == "snippet" {
+                    let path = format!("/-show/showfile/{}/{:03}/name", save_type, index);
+                    self.state.set(&path, OscArg::String(name.clone()));
+                }
+
+                let bytes = OscMessage::serialize_to_bytes(
+                    "/save",
+                    [&OscArg::String(save_type.clone()), &OscArg::Int(1)],
+                )?;
+                responses.push((remote_addr, bytes.into()));
+                return Ok(responses);
+            }
+        }
+
         // If the message has no arguments, it's a request for a value.
         if osc_msg.args.is_empty() {
             if let Some(arg) = self.state.get(&osc_msg.path) {
