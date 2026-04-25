@@ -14,7 +14,7 @@
 use crate::audio::AudioEngine;
 use crate::compressor::CompressorHandler;
 use crate::detection::{BeatDetector, EnergyDetector, OscLevelDetector, SpectralFluxDetector};
-use crate::effects::{get_handler, EffectHandler};
+use crate::effects::{EffectHandler, get_handler};
 use crate::network::{NetworkEvent, NetworkManager};
 use crate::ui::{AppState, Tui, UIEvent};
 use anyhow::Result;
