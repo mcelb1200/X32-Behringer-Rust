@@ -54,3 +54,6 @@
 ## 2024-06-15 - [Efficient broadcasting of shared data using Arc]
 **Learning:** When broadcasting the same payload (e.g. serialized OSC responses) to multiple clients, cloning a `Vec<u8>` for each recipient incurs unnecessary `O(N)` heap allocations and memory copying. Replacing `Vec<u8>` with `std::sync::Arc<[u8]>` allows cheap pointer cloning and zero-copy sharing across all outgoing messages.
 **Action:** When returning multiple identical byte buffers intended for different network addresses, use `Arc<[u8]>` instead of `Vec<u8>` to eliminate redundant allocations in the broadcast loop.
+## 2025-05-24 - [Avoid string allocation in byte-slice substring search]
+**Learning:** In hot loops, converting a byte slice to a string using `String::from_utf8_lossy(&data)` and then calling `.contains("substring")` is highly inefficient due to memory allocation and UTF-8 validation overhead.
+**Action:** Instead, perform a zero-allocation byte-level search by using `data.windows(needle.len()).any(|w| w == b"substring")`. For simple prefix checks, use `data.starts_with(b"prefix")`.
