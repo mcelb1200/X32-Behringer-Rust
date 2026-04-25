@@ -93,7 +93,8 @@ fn parse_command_file(path: &str) -> io::Result<Vec<Command>> {
         ));
     }
 
-    let mut reader = io::BufReader::new(file);
+    let mut file = file.take(1024 * 1024);
+    let mut reader = io::BufReader::new(&mut file);
     let mut commands = Vec::new();
 
     loop {
@@ -101,6 +102,13 @@ fn parse_command_file(path: &str) -> io::Result<Vec<Command>> {
         // Limit reading to 4096 bytes to prevent DoS via extremely long lines
         let len = reader.by_ref().take(4096).read_line(&mut line)?;
         if len == 0 {
+            // Check if we hit the limit without reaching EOF on the underlying stream
+            if file.limit() == 0 {
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    "Configuration file exceeded the maximum length of 1MB during processing",
+                ));
+            }
             break;
         }
 
