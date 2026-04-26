@@ -77,8 +77,8 @@ fn parse_single_value(val: &str) -> OscArg {
     if val.contains('%') {
         let mut bitmask = 0;
         let bits = val.trim_matches('%');
-        for (i, c) in bits.chars().rev().enumerate() {
-            if c == '1' {
+        for (i, &b) in bits.as_bytes().iter().rev().enumerate() {
+            if b == b'1' {
                 bitmask |= 1 << i;
             }
         }
