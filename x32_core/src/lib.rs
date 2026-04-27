@@ -320,8 +320,7 @@ impl Mixer {
             if let Some(OscArg::String(ref item_type)) = osc_msg.args.first() {
                 let arg1 = OscArg::String(item_type.clone());
                 let arg2 = OscArg::Int(1);
-                let bytes =
-                    OscMessage::serialize_to_bytes(&osc_msg.path, [&arg1, &arg2])?;
+                let bytes = OscMessage::serialize_to_bytes(&osc_msg.path, [&arg1, &arg2])?;
                 responses.push((remote_addr, bytes.into()));
             }
             return Ok(responses);
