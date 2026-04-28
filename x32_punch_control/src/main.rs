@@ -85,13 +85,13 @@ async fn main() -> Result<()> {
             res = socket.recv(&mut buf) => {
                 if let Ok(len) = res {
                     let data = &buf[..len];
-                    let s_buf = String::from_utf8_lossy(data);
 
                     // Parse User Bank inputs (buttons mapped to play/stop/rew/etc)
-                    if s_buf.starts_with("/-stat/userpar/") && s_buf.len() >= 17 {
+                    // ⚡ Bolt: Use byte slice operations instead of String::from_utf8_lossy to avoid allocations.
+                    if data.starts_with(b"/-stat/userpar/") && data.len() >= 17 {
                         let mut lock = state.lock().await;
 
-                        if let Ok(bnum) = s_buf[15..17].parse::<u32>() {
+                        if let Ok(bnum) = std::str::from_utf8(&data[15..17]).unwrap_or("").parse::<u32>() {
                         // In c_origin: bnum = ((int)Xbank - 65) * 8 + i + 1;
                         // where Xbank is 'A', 'B', 'C'. A=65. So if Xbank='A', bnum is 1..8.
                         let bank_idx = (config.xbank as u32).saturating_sub(65);
@@ -187,6 +187,7 @@ async fn run_logic(
         let mut s = state.lock().await;
 
         // If file dataready flag is false, try to read the next record
+        #[allow(clippy::collapsible_if)]
         if !s.xfiledataready && s.xreadfile {
             if let Some(ref mut r) = reader {
                 match r.read_record().await {
@@ -213,14 +214,16 @@ async fn run_logic(
             }
             s.dt_play = now.saturating_sub(s.t_play);
 
+            #[allow(clippy::collapsible_if)]
             if s.xfiledataready {
                 if s.dt_play > s.dt_read {
                     if let Some(record) = current_record.take() {
                         let mut should_send = true;
                         if s.xmerge {
                             if s.xmergefaders {
-                                let data_str = String::from_utf8_lossy(&record.data);
-                                if data_str.contains("fader") {
+                                // ⚡ Bolt: Search for "fader" byte pattern using windows() directly on slice
+                                // to avoid String::from_utf8_lossy allocation.
+                                if record.data.windows(5).any(|w| w == b"fader") {
                                     should_send = false;
                                 }
                             } else {

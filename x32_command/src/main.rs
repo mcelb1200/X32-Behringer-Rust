@@ -73,8 +73,9 @@ async fn main() -> Result<()> {
         let res = tokio::time::timeout(Duration::from_millis(50), socket.recv_from(&mut buf)).await;
         match res {
             Ok(Ok((len, _src))) => {
-                let msg = String::from_utf8_lossy(&buf[..len]);
-                if msg.starts_with("/info") {
+                // ⚡ Bolt: Removed String::from_utf8_lossy to avoid string allocation when checking for /info.
+                let data = &buf[..len];
+                if data.starts_with(b"/info") {
                     break;
                 }
             }
