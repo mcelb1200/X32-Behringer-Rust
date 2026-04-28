@@ -165,8 +165,10 @@ async fn connect_x32(sock: &UdpSocket, addr: SocketAddr) -> Result<()> {
     let res = time::timeout(Duration::from_millis(1000), sock.recv_from(&mut buf)).await;
     match res {
         Ok(Ok((len, _src))) => {
-            let s = String::from_utf8_lossy(&buf[..len]);
-            if !s.starts_with("/info") {
+            let data = &buf[..len];
+            // ⚡ Bolt: Check for /info using byte slice instead of String::from_utf8_lossy to avoid allocation overhead on success.
+            if !data.starts_with(b"/info") {
+                let s = String::from_utf8_lossy(data);
                 eprintln!("Unexpected response from X32: {}", s);
                 return Err(anyhow::anyhow!("Unexpected response from X32"));
             }
