@@ -224,6 +224,36 @@ mod tests {
     }
 
     #[test]
+    fn test_mixer_dispatch_system_admin_commands() {
+        let mut mixer = Mixer::new();
+
+        let commands = vec!["/copy", "/add", "/load", "/save"];
+        let item_type = "libchan".to_string();
+
+        for cmd in commands {
+            let msg = OscMessage {
+                path: cmd.to_string(),
+                args: vec![
+                    OscArg::String(item_type.clone()),
+                    OscArg::Int(1),
+                    OscArg::Int(2),
+                    OscArg::Int(3),
+                ],
+            };
+            let bytes = msg.to_bytes().unwrap();
+
+            let responses = mixer.dispatch(&bytes, test_addr(1234)).unwrap();
+            assert_eq!(responses.len(), 1, "Failed on command: {}", cmd);
+
+            let response_msg = OscMessage::from_bytes(&responses[0].1).unwrap();
+            assert_eq!(response_msg.path, cmd);
+            assert_eq!(response_msg.args.len(), 2);
+            assert_eq!(response_msg.args[0], OscArg::String(item_type.clone()));
+            assert_eq!(response_msg.args[1], OscArg::Int(1));
+        }
+    }
+
+    #[test]
     fn test_mixer_xremote_max_clients() {
         let mut mixer = Mixer::new();
         let msg_xremote = OscMessage::new("/xremote".to_string(), vec![])

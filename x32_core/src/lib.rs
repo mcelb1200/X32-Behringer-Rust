@@ -244,6 +244,7 @@ impl Mixer {
     /// to clients. If the message was a request for data or an info query, the response
     /// is sent back to the requester. If it was a set command, the new value is broadcasted
     /// to all registered `/xremote` clients.
+    #[allow(clippy::type_complexity)]
     pub fn dispatch(
         &mut self,
         msg: &[u8],
@@ -307,6 +308,21 @@ impl Mixer {
         // Handle the /unsubscribe command, which removes the client from xremote updates.
         if osc_msg.path == "/unsubscribe" {
             self.clients.retain(|&(addr, _)| addr != remote_addr);
+            return Ok(responses);
+        }
+
+        // Handle system administration commands: /copy, /add, /load, /save
+        if osc_msg.path == "/copy"
+            || osc_msg.path == "/add"
+            || osc_msg.path == "/load"
+            || osc_msg.path == "/save"
+        {
+            if let Some(OscArg::String(ref item_type)) = osc_msg.args.first() {
+                let arg1 = OscArg::String(item_type.clone());
+                let arg2 = OscArg::Int(1);
+                let bytes = OscMessage::serialize_to_bytes(&osc_msg.path, [&arg1, &arg2])?;
+                responses.push((remote_addr, bytes.into()));
+            }
             return Ok(responses);
         }
 
