@@ -60,3 +60,6 @@
 ## 2026-04-30 - [Avoiding Cow formatting overhead with `.into_owned()`]
 **Learning:** When using `String::from_utf8_lossy`, calling `.to_string()` invokes the `Display` trait machinery for `Cow<str>`, which carries unnecessary formatting overhead. Since `from_utf8_lossy` returns a `Cow<str>` directly, calling `.into_owned()` is a cleaner and slightly more direct way to extract the owned `String` without invoking the `std::fmt` machinery.
 **Action:** Always replace `String::from_utf8_lossy(...).to_string()` with `String::from_utf8_lossy(...).into_owned()`.
+## 2026-04-30 - [Addressing common clippy errors during CI fixes]
+**Learning:** CI failures often include straightforward unused function warnings, which can be silenced with `#[allow(dead_code)]` if the logic is meant to be retained. Furthermore, redundant matching like `while let Ok(_) = rx.try_recv()` can be simplified to `while rx.try_recv().is_ok()`, and `c.is_digit(10)` should be replaced with the more performant `c.is_ascii_digit()`.
+**Action:** Address clippy lints directly using standard idiom improvements and `#[allow(...)]` where appropriate when clearing up CI breakages.

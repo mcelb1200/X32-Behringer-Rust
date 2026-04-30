@@ -35,14 +35,14 @@ impl CompressorHandler {
         // Release: [20, 2000] log (using XLIM reference from fxparse.c as a safe bet for dynamics)
 
         let hold_val = log2float(hold_ms, 0.02, 11.512925);
-        let release_val = log2float(release_ms, 20.0, 4.605170);
+        let release_val = log2float(release_ms, 20.0, 4.605_17);
 
         let hold_changed = self
             .last_hold_val
-            .map_or(true, |v| (v - hold_val).abs() > 0.001);
+            .is_none_or(|v| (v - hold_val).abs() > 0.001);
         let release_changed = self
             .last_release_val
-            .map_or(true, |v| (v - release_val).abs() > 0.001);
+            .is_none_or(|v| (v - release_val).abs() > 0.001);
 
         if !hold_changed && !release_changed {
             return Ok(());

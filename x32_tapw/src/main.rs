@@ -180,7 +180,7 @@ async fn run_network(app: Arc<Mutex<AppState>>, mut rx: mpsc::Receiver<OscMessag
             }
         } else {
             // Discard outgoing if not connected
-            while let Ok(_) = rx.try_recv() {}
+            while rx.try_recv().is_ok() {}
             tokio::time::sleep(Duration::from_millis(100)).await;
         }
     }
@@ -258,7 +258,7 @@ async fn run_app<B: Backend>(
                                     app_state.slot = val;
                                 }
                             }
-                            KeyCode::Char(c) if c.is_digit(10) => app_state.slot_input.push(c),
+                            KeyCode::Char(c) if c.is_ascii_digit() => app_state.slot_input.push(c),
                             KeyCode::Backspace => {
                                 app_state.slot_input.pop();
                             }
@@ -271,7 +271,7 @@ async fn run_app<B: Backend>(
                                     app_state.channel = val;
                                 }
                             }
-                            KeyCode::Char(c) if c.is_digit(10) => app_state.ch_input.push(c),
+                            KeyCode::Char(c) if c.is_ascii_digit() => app_state.ch_input.push(c),
                             KeyCode::Backspace => {
                                 app_state.ch_input.pop();
                             }
@@ -284,7 +284,7 @@ async fn run_app<B: Backend>(
                                     app_state.threshold = val;
                                 }
                             }
-                            KeyCode::Char(c) if c.is_digit(10) || c == '.' => {
+                            KeyCode::Char(c) if c.is_ascii_digit() || c == '.' => {
                                 app_state.sens_input.push(c)
                             }
                             KeyCode::Backspace => {
