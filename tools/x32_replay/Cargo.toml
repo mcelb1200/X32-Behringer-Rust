@@ -1,0 +1,11 @@
+[package]
+name = "x32_replay"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+clap = { workspace = true }
+anyhow = { workspace = true }
+tokio = { workspace = true }
+osc_lib = { workspace = true }
+x32_lib = { workspace = true }

@@ -1,0 +1,10 @@
+[package]
+name = "x32_copy_fx"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+clap = { workspace = true }
+lazy_static = "1.4.0"
+x32_lib = { workspace = true }
+osc_lib = { workspace = true }

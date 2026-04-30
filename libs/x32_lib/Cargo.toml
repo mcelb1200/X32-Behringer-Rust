@@ -1,0 +1,29 @@
+[package]
+name = "x32_lib"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+osc_lib = { workspace = true }
+bitflags = "2.4.1"
+lazy_static = "1.5.0"
+regex = "1.12.3"
+
+[features]
+dca = []
+channel = []
+auxin = []
+bus = []
+mtx = []
+main_bus = []
+fx = []
+fxrtn = []
+output = []
+headamp = []
+show = []
+misc = []
+prefstat = []
+libs = []
+
+[dev-dependencies]
+x32_emulator = { path = "../../tools/x32_emulator" }
