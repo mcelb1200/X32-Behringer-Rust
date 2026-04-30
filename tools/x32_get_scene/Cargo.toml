@@ -1,0 +1,10 @@
+[package]
+name = "x32_get_scene"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+clap = { workspace = true }
+osc_lib = { workspace = true }
+tokio = { workspace = true }
+x32_lib = { workspace = true }

@@ -1,0 +1,23 @@
+[package]
+name = "x32_autobeat"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+default = []
+audio = ["dep:cpal"]
+
+[dependencies]
+anyhow = { workspace = true }
+clap = { workspace = true }
+cpal = { version = "0.15", optional = true }
+crossterm = "0.27"
+ratatui = "0.24"
+tokio = { workspace = true }
+crossbeam-channel = "0.5"
+ringbuf = "0.3"
+osc_lib = { workspace = true }
+x32_lib = { workspace = true }
+rustfft = "6.1"
+num-complex = "0.4"
+lazy_static = "1.4.0"
