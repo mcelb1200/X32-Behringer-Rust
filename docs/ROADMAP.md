@@ -1,6 +1,6 @@
 # Architectural Roadmap: X32-Rust Evolution
 
-## 📋 Recommended Workplan
+## 📋 Recommended Workplan (Phase 1: Foundation)
 
 | Task | Priority | Complexity | Description |
 | :--- | :--- | :--- | :--- |
@@ -12,43 +12,57 @@
 
 ---
 
-## 🔬 Complexity Analysis & Estimates
+## 🚀 Strategic Roadmap (Phase 2: Intelligent Automation)
 
-### 1. Dependency Unification (Est: 1-2 hours)
-*   **Scope**: Editing ~35 `Cargo.toml` files and the root file.
-*   **Risk**: Low. Modern Cargo handles this elegantly.
-*   **Impact**: Instant build-time improvement.
+The following advanced features are planned for future development. Detailed specifications (PRDs) can be found in `docs/specs/`.
 
-### 2. Structural Reorganization (Est: 2-4 hours)
-*   **Scope**: Physical file moves and updating workspace paths.
-*   **Risk**: Medium. Can break internal paths/relative imports if not done surgically.
-*   **Impact**: Major improvement to repository discoverability.
+### [01. Gain Sharing Automixing](specs/01-gain-sharing-automix.md)
+*   **Goal**: Transition from binary gating to Dugan-style gain sharing.
+*   **Status**: Planning.
 
-### 3. `MixerClient` Abstraction (Est: 1-2 days)
-*   **Scope**: Refactoring the core networking logic and updating all binary entry points.
-*   **Risk**: High. Changes the fundamental way tools talk to the console.
-*   **Impact**: Eliminates 50% of boilerplate and centralizes security/performance fixes.
+### [02. SPL-Aware EQ Normalization](specs/02-spl-eq-normalization.md)
+*   **Goal**: Apply Fletcher-Munson reciprocity based on Master Fader proxy SPL.
+*   **Status**: Planning.
 
-### 4. Unified `x32-cli` (Est: 3-5 days)
-*   **Scope**: Merging entry points and flag logic for dozens of tools.
-*   **Risk**: High. Requires careful mapping of legacy CLI arguments to subcommands.
-*   **Impact**: Superior UX. One binary to rule them all.
+### [03. Phase-Synced Time Effects](specs/03-phase-synced-fx.md)
+*   **Goal**: Rhythmic transient alignment for Delays and LFOs via PLL.
+*   **Status**: Planning.
 
-### 5. Rust-Native Testing (Est: Ongoing/Incremental)
-*   **Scope**: Rewriting 15+ years of bash/powershell logic into Rust.
-*   **Risk**: Low. Can be done tool-by-tool.
-*   **Impact**: Guarantees stability across all OS platforms via `cargo test`.
+### [04. Probabilistic Beat Tracking](specs/04-ml-beat-tracking.md)
+*   **Goal**: Comb Filter Bank analyzer for syncopation-robust BPM detection.
+*   **Status**: Planning.
+
+### [05. Smart Proxy Digital Twin](specs/05-smart-proxy-digital-twin.md)
+*   **Goal**: High-fidelity shadow state mirroring and request coalescing in `x32_core`.
+*   **Status**: Planning.
 
 ---
 
-## 🤖 Proposed Execution Strategy (Best Practice)
+## 🔌 Phase 3: Hybrid Connectivity & Hardware Synergy
 
-For a refactor of this scale, I recommend the **"Staged Feature Branch"** approach:
+### [06. Dual-Protocol Transport](specs/06-dual-protocol-transport.md)
+*   **Goal**: Support direct USB connection via MIDI System Exclusive (Sysex) as an alternative to Ethernet.
+*   **Status**: Planning.
 
-1.  **Phase A (The Shell):** I will perform **Task 1 (Dependencies)** and **Task 2 (Folders)** directly to establish the new "Skeleton." This ensures the workspace structure is sound before deep logic changes.
-2.  **Phase B (The Core):** I will create a feature branch `refactor/mixer-client` and delegate the implementation of **Task 3** to **Jules AI**. Jules is excellent at exhaustive, repetitive refactoring across many files.
-3.  **Phase C (The Consolidation):** Once the core client is stable, we use a second feature branch for **Task 4**, migrating tools into the monolith one by one.
+### [07. DSP-Assisted Intelligence](specs/07-dsp-assisted-intelligence.md)
+*   **Goal**: Harvest high-resolution RTA and meter data directly from X32 internal DSP to reduce host CPU load.
+*   **Status**: Planning.
 
-**Best Practice Advice**: Do not attempt all 5 tasks in one PR. A single mistake in the `MixerClient` could break 30 tools simultaneously. By staging the structural changes first, we maintain a buildable state throughout the evolution.
+---
 
-**Should I proceed with the preliminary Skeleton (Tasks 1 & 2) now?**
+## 🔬 Complexity Analysis & Estimates (Phase 1)
+
+### 1. Dependency Unification (Est: 1-2 hours)
+*   **Status**: ✅ COMPLETED (Integrated into main).
+
+### 2. Structural Reorganization (Est: 2-4 hours)
+*   **Status**: ✅ COMPLETED (Crates moved to libs/, apps/, tools/).
+
+### 3. `MixerClient` Abstraction (Est: 1-2 days)
+*   **Status**: 🏗️ IN_PROGRESS (Delegated to Jules AI).
+
+### 4. Unified `x32-cli` (Est: 3-5 days)
+*   **Status**: BACKLOG.
+
+### 5. Rust-Native Testing (Est: Ongoing/Incremental)
+*   **Status**: BACKLOG.
