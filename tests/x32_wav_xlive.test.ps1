@@ -3,8 +3,8 @@
 # Credits
 #
 # *   Original concept and work on the C library: Patrick-Gilles Maillot
-# *   Additional concepts by: [User]
-# *   Rust implementation by: [User]
+# *   Additional concepts by: mcelb1200
+# *   Rust implementation by: mcelb1200
 
 # Helper function to generate a minimal, valid, 24-bit mono WAV file.
 function New-MonoWavFile {

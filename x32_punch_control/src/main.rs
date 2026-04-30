@@ -7,7 +7,7 @@
 //!
 //! # Credits
 //! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
-//! *   **Rust implementation by:** [User]
+//! *   **Rust implementation by:** mcelb1200
 
 use anyhow::Result;
 use clap::Parser;
