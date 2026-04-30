@@ -3,7 +3,7 @@ use osc_lib::{OscArg, OscError, OscMessage};
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::net::UdpSocket;
-use tokio::sync::{broadcast, mpsc, Mutex, watch};
+use tokio::sync::{Mutex, broadcast, mpsc, watch};
 use tokio::time::{self, Duration};
 
 const MAX_PACKET_SIZE: usize = 1024 * 1024; // 1MB Sentinel limit
@@ -100,8 +100,8 @@ impl MixerClient {
     }
 
     /// Queries a value from the mixer.
-    /// 
-    /// Note: This waits for the next message matching the path. 
+    ///
+    /// Note: This waits for the next message matching the path.
     /// In a multi-threaded environment, this might catch a message intended for someone else
     /// if they are querying the same path, but for X32 it's generally safe.
     pub async fn query_value(&self, path: &str) -> Result<OscArg> {
@@ -116,9 +116,11 @@ impl MixerClient {
             match time::timeout(timeout - start.elapsed(), rx.recv()).await {
                 Ok(Ok(msg)) => {
                     if msg.path == path {
-                        return msg.args.first().cloned().ok_or(
-                            OscError::ParseError("Empty response".to_string()).into()
-                        );
+                        return msg
+                            .args
+                            .first()
+                            .cloned()
+                            .ok_or(OscError::ParseError("Empty response".to_string()).into());
                     }
                 }
                 _ => break,
