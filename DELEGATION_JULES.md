@@ -18,6 +18,7 @@ Complete the migration of all remaining binary crates in `apps/` and `tools/` to
 2. **Security Compliance**: Ensure all file interactions within these crates use the `Sentinel` bounding logic (already integrated into the library's client module).
 3. **Performance Optimization**: Ensure `Bolt` optimized serialization is leveraged by defaulting to the client's internal buffering.
 4. **Validation**: Run `cargo test --workspace` frequently to ensure no regressions in tool behavior or integration tests with the `x32_core` emulator.
+5. **Conclusion**: When the refactor is complete and verified, **move this `DELEGATION_JULES.md` file to the `docs/archive/` directory** and commit the change.
 
 ## 🛡️ Constraints
 - **Zero Interface Change**: Do not modify the CLI arguments or external behavior of the tools.
