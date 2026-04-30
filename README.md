@@ -45,7 +45,7 @@ graph TD;
     x32_lib --> osc_lib;
     x32_core --> osc_lib;
     x32_emulator --> x32_core;
-    
+
     Binaries --> x32_lib;
     Binaries --> osc_lib;
 ```
