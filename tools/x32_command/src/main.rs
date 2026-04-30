@@ -1,11 +1,11 @@
 use anyhow::{Context, Result};
 use clap::Parser;
+use osc_lib::OscMessage;
+use std::str::FromStr;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tokio::time::Duration;
 use x32_lib::MixerClient;
-use osc_lib::OscMessage;
-use std::str::FromStr;
 
 /// X32_Command - a simple udp client for X32 sending commands and getting answers
 #[derive(Parser, Debug)]
@@ -47,7 +47,9 @@ async fn main() -> Result<()> {
     println!(" X32_Command - Rust Rewrite - (c)2014-20 Patrick-Gilles Maillot");
     print!("Connecting to X32.");
 
-    let client = MixerClient::connect(&args.ip, false).await.context("Failed to connect to X32")?;
+    let client = MixerClient::connect(&args.ip, false)
+        .await
+        .context("Failed to connect to X32")?;
     println!(" Done!");
 
     let mut do_keyboard = args.keyboard != 0;
@@ -69,7 +71,7 @@ async fn main() -> Result<()> {
 
     // We process snippet file first if provided
     let files_to_process = vec![
-        args.snippet.as_ref().map(|s| (s, true)), 
+        args.snippet.as_ref().map(|s| (s, true)),
         args.file.as_ref().map(|s| (s, false)),
     ];
 

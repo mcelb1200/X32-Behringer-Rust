@@ -17,9 +17,9 @@
 use clap::Parser;
 use std::fs::File;
 use std::io::{self, BufRead, Read};
-use tokio::net::UdpSocket;
 use std::str::FromStr;
 use std::time::Duration;
+use tokio::net::UdpSocket;
 
 use midir::MidiOutput;
 use osc_lib::OscMessage;
@@ -192,7 +192,9 @@ async fn main() -> anyhow::Result<()> {
                                     let _ = target_socket.send(&bytes).await;
                                 }
                             } else {
-                                let _ = client.send_message(&outgoing_msg.path, outgoing_msg.args).await;
+                                let _ = client
+                                    .send_message(&outgoing_msg.path, outgoing_msg.args)
+                                    .await;
                             }
                         }
                     }
@@ -301,4 +303,3 @@ M~~~/ch/02/mix/fader|/ch/03/mix/fader ,f 0.75
         Ok(())
     }
 }
-

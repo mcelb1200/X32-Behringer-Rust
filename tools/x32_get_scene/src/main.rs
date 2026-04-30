@@ -14,8 +14,8 @@
 use clap::Parser;
 use osc_lib::{OscArg, OscMessage};
 use std::io::{self, BufRead, Read};
-use x32_lib::{MixerClient, error::Result};
 use tokio::time::Duration;
+use x32_lib::{MixerClient, error::Result};
 
 /// Command-line arguments for `x32_get_scene`.
 #[derive(Parser, Debug)]
@@ -77,11 +77,15 @@ async fn main() -> Result<()> {
         if line.starts_with('/') {
             // Using query_value for /node might be tricky because we want the whole message or specific handling.
             // But let's see what the original did: it sent /node and expected a response.
-            
-            let mut rx = client.subscribe();
-            client.send_message("/node", vec![OscArg::String(line.to_string())]).await?;
 
-            if let Ok(Ok(response)) = tokio::time::timeout(Duration::from_millis(500), rx.recv()).await {
+            let mut rx = client.subscribe();
+            client
+                .send_message("/node", vec![OscArg::String(line.to_string())])
+                .await?;
+
+            if let Ok(Ok(response)) =
+                tokio::time::timeout(Duration::from_millis(500), rx.recv()).await
+            {
                 let mut output = response.path.clone();
                 if let Some(OscArg::String(s)) = response.args.first() {
                     output.push(' ');
