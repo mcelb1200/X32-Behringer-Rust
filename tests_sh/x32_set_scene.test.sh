@@ -5,8 +5,8 @@
 # Credits
 #
 # *   Original concept and work on the C library: Patrick-Gilles Maillot
-# *   Additional concepts by: [User]
-# *   Rust implementation by: [User]
+# *   Additional concepts by: mcelb1200
+# *   Rust implementation by: mcelb1200
 
 test_x32_set_scene() {
     log_message "--- Running x32_set_scene tests ---"

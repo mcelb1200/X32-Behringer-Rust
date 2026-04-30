@@ -7,8 +7,8 @@
 //!
 //! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
 //! *   **Original C code for XAir version:** Ken Mitchell
-//! *   **Additional concepts by:** [User]
-//! *   **Rust implementation by:** [User]
+//! *   **Additional concepts by:** mcelb1200
+//! *   **Rust implementation by:** mcelb1200
 
 use clap::Parser;
 use osc_lib::OscMessage;
@@ -46,22 +46,23 @@ fn main() -> Result<()> {
         }
         let line = line.trim();
         if line.starts_with('/') {
-            if let Some(msgs) = x32_lib::scene_parse::parse_scene_line(line) {
-                for msg in msgs {
-                    socket.send(&msg.to_bytes()?)?;
+            // First try to parse it as a scene line
+            let mut messages = x32_lib::scene_parse::parse_scene_line(line);
+
+            // If it returns empty, it might be a fully formed raw OSC line, fall back to from_str
+            if messages.is_empty() {
+                match OscMessage::from_str(line) {
+                    Ok(msg) => messages.push(msg),
+                    Err(e) => eprintln!("Error parsing line: {} - {}", line, e),
+                }
+            }
+
+            for msg in messages {
+                if let Ok(bytes) = msg.to_bytes() {
+                    socket.send(&bytes)?;
                     if args.delay > 0 {
                         thread::sleep(Duration::from_millis(args.delay));
                     }
-                }
-            } else {
-                match OscMessage::from_str(line) {
-                    Ok(msg) => {
-                        socket.send(&msg.to_bytes()?)?;
-                        if args.delay > 0 {
-                            thread::sleep(Duration::from_millis(args.delay));
-                        }
-                    }
-                    Err(e) => eprintln!("Error parsing line: {}", e),
                 }
             }
         }

@@ -73,8 +73,9 @@ async fn main() -> Result<()> {
         let res = tokio::time::timeout(Duration::from_millis(50), socket.recv_from(&mut buf)).await;
         match res {
             Ok(Ok((len, _src))) => {
-                let msg = String::from_utf8_lossy(&buf[..len]);
-                if msg.starts_with("/info") {
+                // ⚡ Bolt: Removed String::from_utf8_lossy to avoid string allocation when checking for /info.
+                let data = &buf[..len];
+                if data.starts_with(b"/info") {
                     break;
                 }
             }
@@ -167,10 +168,10 @@ async fn main() -> Result<()> {
             // 1MB limit
             return Err(anyhow::anyhow!("File too large"));
         }
-        let mut reader = BufReader::new(file);
         use std::io::Read;
+        let reader = BufReader::new(file.take(1024 * 1024));
 
-        for line_res in reader.by_ref().take(1024 * 1024).lines() {
+        for line_res in reader.lines() {
             if !keep_on {
                 break;
             }
@@ -253,7 +254,7 @@ async fn main() -> Result<()> {
                     match chunk_handle.read_until(b'\n', &mut discard) {
                         Ok(0) | Err(_) => break,
                         Ok(_) => {
-                            if discard.ends_with(&[b'\n']) {
+                            if discard.ends_with(b"\n") {
                                 break;
                             }
                         }

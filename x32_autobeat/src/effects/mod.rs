@@ -1,86 +1,71 @@
-use crate::effects::fx_data::{BaseUnit, FX_DATA};
 use crate::network::NetworkManager;
 use anyhow::Result;
 
-pub mod fx_data;
+pub mod delay;
+pub mod modulation;
+pub mod reverb;
 
+use delay::{GenericDelayHandler, TapDelayHandler};
+use modulation::ModulationHandler;
+use reverb::{ReverbHandler, ReverbType};
+
+#[derive(Clone, Debug)]
+pub struct EffectConfig {
+    pub subdivision: String,
+    pub style: String,
+    pub enabled: bool,
+}
+
+impl Default for EffectConfig {
+    fn default() -> Self {
+        Self {
+            subdivision: "1/4".to_string(),
+            style: "Standard".to_string(),
+            enabled: true,
+        }
+    }
+}
+
+/// Trait for Effect Handlers
 pub trait EffectHandler {
+    /// Update the effect parameters based on the current BPM and configuration.
     fn update(
         &self,
         network: &NetworkManager,
         slot: usize,
         bpm: f32,
-        subdivision: f32,
+        config: &EffectConfig,
     ) -> Result<()>;
 
+    /// Set effect to a "Safe" conservative state (Panic).
     fn panic(&self, network: &NetworkManager, slot: usize) -> Result<()>;
 }
 
-pub struct GenericFxHandler {
-    pub effect_name: String,
-}
-
-impl GenericFxHandler {
-    pub fn new(name: &str) -> Self {
-        Self {
-            effect_name: name.to_string(),
-        }
-    }
-}
-
-impl EffectHandler for GenericFxHandler {
-    fn update(
-        &self,
-        network: &NetworkManager,
-        slot: usize,
-        bpm: f32,
-        subdivision: f32,
-    ) -> Result<()> {
-        if let Some(def) = FX_DATA.get(self.effect_name.as_str()) {
-            for param in &def.parameters {
-                let target_val = match param.base_unit {
-                    BaseUnit::Milliseconds => {
-                        // ms = (60000 / BPM) * subdiv
-                        let ms = (60000.0 / bpm) * subdivision;
-                        ms
-                    }
-                    BaseUnit::Hertz => {
-                        // Hz = 1.0 / ((60.0/bpm) * subdivision) = bpm / (60.0 * subdivision)
-                        let hz = bpm / (60.0 * subdivision);
-                        hz
-                    }
-                };
-
-                let float_val = param.scaling.scale(target_val);
-                // Param index in FX_DATA is 1-based (usually matches document).
-                // NetworkManager might expect 1-based.
-                network.set_effect_param(slot, param.index, float_val)?;
-            }
-        }
-        Ok(())
-    }
-
-    fn panic(&self, network: &NetworkManager, slot: usize) -> Result<()> {
-        // Safe panic values:
-        // Time -> ~500ms
-        // Hz -> ~1Hz
-        if let Some(def) = FX_DATA.get(self.effect_name.as_str()) {
-            for param in &def.parameters {
-                let safe_val = match param.base_unit {
-                    BaseUnit::Milliseconds => 500.0,
-                    BaseUnit::Hertz => 1.0,
-                };
-                let float_val = param.scaling.scale(safe_val);
-                network.set_effect_param(slot, param.index, float_val)?;
-            }
-        }
-        Ok(())
-    }
-}
-
 pub fn get_handler(fx_type: &str) -> Option<Box<dyn EffectHandler + Send + Sync>> {
-    if FX_DATA.contains_key(fx_type) {
-        return Some(Box::new(GenericFxHandler::new(fx_type)));
+    match fx_type {
+        // Delays
+        "DLY" | "STEREO_DELAY" => Some(Box::new(GenericDelayHandler)),
+        "3TAP" => Some(Box::new(TapDelayHandler)),
+        "4TAP" => Some(Box::new(TapDelayHandler)),
+
+        // Reverbs
+        "HALL" => Some(Box::new(ReverbHandler::new(ReverbType::Hall))),
+        "AMBI" => Some(Box::new(ReverbHandler::new(ReverbType::Ambience))),
+        "PLAT" => Some(Box::new(ReverbHandler::new(ReverbType::Plate))),
+        "ROOM" => Some(Box::new(ReverbHandler::new(ReverbType::Room))),
+        "CHAM" => Some(Box::new(ReverbHandler::new(ReverbType::Chamber))),
+        "VREV" => Some(Box::new(ReverbHandler::new(ReverbType::Vintage))),
+        "VRM" => Some(Box::new(ReverbHandler::new(ReverbType::VintageRoom))),
+
+        // Modulation
+        "CRS" | "CHORUS" => Some(Box::new(ModulationHandler)),
+        "FLNG" | "FLANGER" => Some(Box::new(ModulationHandler)),
+        "PHAS" | "PHASER" => Some(Box::new(ModulationHandler)),
+
+        // TODO: Combined Effects (DLY+CHO, etc.) often behave like DLY for tempo
+        "DLY+CHO" | "D_CR" => Some(Box::new(GenericDelayHandler)),
+        "DLY+FLG" | "D_FL" => Some(Box::new(GenericDelayHandler)),
+
+        _ => None,
     }
-    None
 }

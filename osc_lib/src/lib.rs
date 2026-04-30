@@ -7,8 +7,8 @@
 //! # Credits
 //!
 //! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
-//! *   **Additional concepts by:** [User]
-//! *   **Rust implementation by:** [User]
+//! *   **Additional concepts by:** mcelb1200
+//! *   **Rust implementation by:** mcelb1200
 //!
 //! # Examples
 //!
@@ -223,20 +223,35 @@ impl OscMessage {
     where
         I: IntoIterator<Item = &'a OscArg> + Clone,
     {
-        // Calculate the total size required
+        // First pass: Calculate the total size required and collect type tags
         let path_size = padded_size(path.len() + 1);
-        let mut type_tags_len = 2; // ',' + null
+
+        let mut type_tags = Vec::with_capacity(8);
+        type_tags.push(b',');
 
         let mut args_size = 0;
-        for arg in args.clone().into_iter() {
-            type_tags_len += 1;
+        for arg in args.clone() {
             match arg {
-                OscArg::Int(_) | OscArg::Float(_) => args_size += 4,
-                OscArg::String(s) => args_size += padded_size(s.len() + 1),
-                OscArg::Blob(b) => args_size += 4 + padded_size(b.len()),
+                OscArg::Int(_) => {
+                    args_size += 4;
+                    type_tags.push(b'i');
+                }
+                OscArg::Float(_) => {
+                    args_size += 4;
+                    type_tags.push(b'f');
+                }
+                OscArg::String(s) => {
+                    args_size += padded_size(s.len() + 1);
+                    type_tags.push(b's');
+                }
+                OscArg::Blob(b) => {
+                    args_size += 4 + padded_size(b.len());
+                    type_tags.push(b'b');
+                }
             }
         }
-        let type_tags_size = padded_size(type_tags_len);
+        type_tags.push(0); // Null terminator
+        let type_tags_size = padded_size(type_tags.len());
 
         let total_size = path_size + type_tags_size + args_size;
         let mut bytes = Vec::with_capacity(total_size);
@@ -245,16 +260,7 @@ impl OscMessage {
         write_osc_string(&mut bytes, path)?;
 
         // Write type tags
-        bytes.push(b',');
-        for arg in args.clone().into_iter() {
-            match arg {
-                OscArg::Int(_) => bytes.push(b'i'),
-                OscArg::Float(_) => bytes.push(b'f'),
-                OscArg::String(_) => bytes.push(b's'),
-                OscArg::Blob(_) => bytes.push(b'b'),
-            }
-        }
-        bytes.push(0); // Null terminator
+        bytes.extend_from_slice(&type_tags);
 
         // OPTIMIZATION: Calculate exact padding required instead of a while loop.
         let rem = bytes.len() % 4;
@@ -263,8 +269,8 @@ impl OscMessage {
             bytes.extend_from_slice(&[0, 0, 0][..pad_len]);
         }
 
-        // Write args
-        for arg in args.into_iter() {
+        // Second pass: Write args
+        for arg in args {
             match arg {
                 OscArg::Int(val) => bytes.extend_from_slice(&val.to_be_bytes()),
                 OscArg::Float(val) => bytes.extend_from_slice(&val.to_be_bytes()),

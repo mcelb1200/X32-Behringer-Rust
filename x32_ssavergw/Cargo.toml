@@ -11,6 +11,7 @@ x32_lib = { path = "../x32_lib" }
 osc_lib = { path = "../osc_lib" }
 
 [dev-dependencies]
+x32_emulator = { path = "../x32_emulator" }
 assert_cmd = "2.0.14"
 predicates = "3.1.0"
 tempfile = "3.10.1"

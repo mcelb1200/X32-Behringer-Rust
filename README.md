@@ -1,184 +1,108 @@
 # X32 Tools - Rust Rewrite
 
-This project is a complete rewrite of the X32 command-line tools in Rust, focusing on simplicity, stability, and reliability. The goal is to provide a modern, high-quality, and easy-to-maintain suite of tools for controlling Behringer X32 and Midas M32 digital mixers.
+This project is a high-performance, secure rewrite of the X32 command-line tools in Rust. It provides a comprehensive suite of utilities for controlling, automating, and extending the capabilities of Behringer X32 and Midas M32 digital mixers.
 
-## Table of Contents
+## 🚀 Key Features
 
-- [Credits](#credits)
-- [License](#license)
-- [Architecture](#architecture)
-- [Workspace Crates](#workspace-crates)
-- [Building the Tools](#building-the-tools)
-- [Running the Tools](#running-the-tools)
+*   **⚡ Bolt Optimized:** High-frequency serialization paths have been hand-optimized to eliminate unnecessary allocations and macro overhead, ensuring minimal latency in live audio environments.
+*   **🛡️ Sentinel Hardened:** Built with safety in mind. All file and network inputs are bounded to prevent memory exhaustion (OOM) and Denial-of-Service attacks.
+*   **🧩 Modular Architecture:** A collection of 30+ specialized tools built on a shared, stateful emulator and OSC library.
+*   **🎹 Creative Extensions:** Includes advanced tools like `x32_autobeat` for BPM-syncing effects and `x32_tapw` for interactive TUI-based tempo control.
 
-## Credits
+---
 
-This project is a fork and rewrite of the original X32 libraries.
+## 🗺️ Project Architecture
 
-*   **Original concept and work on the C library:** Patrick-Gilles Maillot ([https://sites.google.com/site/patrickmaillot/x32](https://sites.google.com/site/patrickmaillot/x32))
-*   **Original C code for scene tools:** Ken Mitchell (XAir version)
-*   **Additional concepts by:** [User]
-*   **Rust implementation by:** [User]
-
-## License
-
-This Rust rewrite is licensed under the **GNU General Public License v3.0**. A full copy of the license is available in the `LICENSE` file in this directory.
-
-## Architecture
-
-The project is structured as a Cargo workspace with three core library crates and a collection of binary crates that provide the command-line tools.
+The project is structured as a Cargo workspace with three core library crates and a collection of binary crates providing specialized CLI tools.
 
 ```mermaid
 graph TD;
     subgraph Libraries
-        osc_lib;
-        x32_lib;
-        x32_core;
+        osc_lib[osc_lib: OSC Encoding/Decoding];
+        x32_lib[x32_lib: X32 Command DSL];
+        x32_core[x32_core: Stateful Emulator];
     end
 
     subgraph Binaries
-        x32_autobeat;
-        x32_automix;
-        x32_commander;
-        x32_copy_fx;
-        x32_custom_layer;
-        x32_desk_restore;
-        x32_desk_save;
-        x32_emulator;
-        x32_fade;
-        x32_geq2_cpy;
-        x32_get_lib;
-        x32_get_scene;
-        x32_get_scene_name;
-        x32_reaper;
-        x32_replay;
-        x32_set_lib;
-        x32_set_preset;
-        x32_set_scene;
-        x32_ssavergw;
-        x32_tap;
-        x32_tcp;
-        x32_usb;
-        x32_wav_xlive;
-        xair_get_scene;
-        xair_set_scene;
+        direction TB
+        subgraph Live_Performance
+            x32_autobeat; x32_automix; x32_tapw; x32_tap; x32_fade; x32_jog4xlive;
+        end
+        subgraph DAW_Integration
+            x32_reaper; x32_punch_control; x32_midi2osc;
+        end
+        subgraph Utility_Backup
+            x32_desk_save; x32_desk_restore; x32_get_lib; x32_set_lib; x32_copy_fx; x32_geq2_cpy;
+        end
+        subgraph Network_System
+            x32_emulator; x32_tcp; x32_udp; x32_ssavergw; x32_usb; x32_command; xair_command;
+        end
+        subgraph Recording_Media
+            x32_replay; x32_wav_xlive; x32_xlive_wav; x32_cpxlivemarkers;
+        end
     end
 
     x32_lib --> osc_lib;
     x32_core --> osc_lib;
     x32_emulator --> x32_core;
-    x32_emulator --> x32_lib;
-
-    x32_automix --> x32_lib;
-    x32_autobeat --> x32_lib;
-    x32_commander --> x32_lib;
-    x32_copy_fx --> x32_lib;
-    x32_custom_layer --> x32_lib;
-    x32_desk_restore --> x32_lib;
-    x32_desk_save --> x32_lib;
-    x32_fade --> x32_lib;
-    x32_geq2_cpy --> x32_lib;
-    x32_get_lib --> x32_lib;
-    x32_get_scene --> x32_lib;
-    x32_get_scene_name --> x32_lib;
-    x32_reaper --> x32_lib;
-    x32_replay --> x32_lib;
-    x32_set_lib --> x32_lib;
-    x32_set_preset --> x32_lib;
-    x32_set_scene --> x32_lib;
-    x32_ssavergw --> x32_lib;
-    x32_tap --> x32_lib;
-    x32_tcp --> x32_lib;
-    xair_get_scene --> x32_lib;
-    xair_set_scene --> x32_lib;
-    x32_usb --> x32_lib;
-
-    x32_automix --> osc_lib;
-    x32_autobeat --> osc_lib;
-    x32_commander --> osc_lib;
-    x32_copy_fx --> osc_lib;
-    x32_custom_layer --> osc_lib;
-    x32_desk_restore --> osc_lib;
-    x32_desk_save --> osc_lib;
-    x32_emulator --> osc_lib;
-    x32_fade --> osc_lib;
-    x32_geq2_cpy --> osc_lib;
-    x32_get_lib --> osc_lib;
-    x32_get_scene --> osc_lib;
-    x32_get_scene_name --> osc_lib;
-    x32_reaper --> osc_lib;
-    x32_replay --> osc_lib;
-    x32_set_lib --> osc_lib;
-    x32_set_preset --> osc_lib;
-    x32_set_scene --> osc_lib;
-    x32_ssavergw --> osc_lib;
-    x32_tap --> osc_lib;
-    x32_tcp --> osc_lib;
-    xair_get_scene --> osc_lib;
-    xair_set_scene --> osc_lib;
-    x32_usb --> osc_lib;
+    
+    Binaries --> x32_lib;
+    Binaries --> osc_lib;
 ```
 
-## Workspace Crates
+---
 
-### Library Crates
+## 🧩 Workspace Crates
 
-| Crate       | Description                                                                                             |
-| ----------- | ------------------------------------------------------------------------------------------------------- |
-| `osc_lib`   | A foundational library for encoding and decoding Open Sound Control (OSC) messages.                   |
-| `x32_lib`   | The primary library for generating and parsing X32-specific OSC commands.                               |
-| `x32_core`  | The core logic for the X32 emulator, which simulates the behavior of a real mixer.                      |
+### Core Libraries
+| Crate | Description |
+| :--- | :--- |
+| `osc_lib` | Foundational library for high-speed OSC message processing. |
+| `x32_lib` | The primary DSL for generating and parsing X32-specific OSC commands and parameter scaling. |
+| `x32_core` | Core emulator logic with support for `/xremote` client tracking and state broadcasting. |
 
-### Binary Crates
+### Featured Tools
+| Crate | Category | Description |
+| :--- | :--- | :--- |
+| `x32_autobeat` | **Live** | Automatic BPM detection (Energy/Spectral) and effect synchronization. |
+| `x32_tapw` | **Live** | Interactive TUI for setting delay tap tempo with auto-thresholding. |
+| `x32_reaper` | **Studio** | Bidirectional bridge between X32 and Reaper DAW (Faders, Mutes, Pans). |
+| `x32_punch_control`| **Studio** | MIDI-sync'd automation recording/playback via `.xpc` format. |
+| `x32_emulator` | **System** | Full-featured console simulator for offline development and testing. |
 
-| Crate                | Description                                                                                             |
-| -------------------- | ------------------------------------------------------------------------------------------------------- |
-| `x32_autobeat`       | Automatic beat detection and synchronization tool.                                                      |
-| `x32_automix`        | Provides automixing functionality by monitoring channel levels and adjusting faders.                      |
-| `x32_commander`      | A bridge that triggers OSC or MIDI commands in response to incoming OSC messages.                         |
-| `x32_copy_fx`        | A utility for copying and resetting FX parameters.                                                      |
-| `x32_custom_layer`   | A tool for creating, saving, and restoring custom channel layers.                                         |
-| `x32_desk_restore`   | Restores the mixer's state from a file containing OSC commands.                                           |
-| `x32_desk_save`      | Saves the mixer's state (scene, routing, etc.) to a file.                                                 |
-| `x32_emulator`       | A command-line utility that simulates an X32 console for offline testing and development.                 |
-| `x32_fade`           | A tool for creating smooth, timed fader transitions.                                                    |
-| `x32_geq2_cpy`       | A utility for copying and resetting Graphic EQ (GEQ) settings.                                            |
-| `x32_get_lib`        | Retrieves library presets from the mixer.                                                               |
-| `x32_get_scene`      | Retrieves scene data from the mixer.                                                                    |
-| `x32_get_scene_name` | Retrieves the name of the currently active scene.                                                       |
-| `x32_reaper`         | A bridge between X32 and Reaper DAW.                                                                    |
-| `x32_replay`         | Replays a recorded session of OSC commands.                                                             |
-| `x32_set_lib`        | Sends library presets to the mixer.                                                                     |
-| `x32_set_preset`     | Loads a preset on the mixer.                                                                            |
-| `x32_set_scene`      | Sends a series of OSC commands from standard input to the mixer.                                          |
-| `x32_ssavergw`       | A screen saver tool that dims the console's screens after a period of inactivity.                         |
-| `x32_tap`            | A tool for setting FX delay times by tapping.                                                           |
-| `x32_tcp`            | A TCP to UDP bridge for sending OSC commands to the mixer over a text-based TCP connection.               |
-| `x32_usb`            | A shell-like interface for managing a USB drive connected to the console.                                 |
-| `x32_wav_xlive`      | A utility for merging multiple mono WAV files into a multi-channel X-Live! session.                       |
-| `xair_get_scene`     | Retrieves scene data from a Behringer XAir mixer.                                                       |
-| `xair_set_scene`     | Sends a sequence of OSC commands to a Behringer XAir mixer.                                             |
+> [!TIP]
+> See the [Full Crate Index](docs/USER_GUIDE.md#crate-index) in the User Guide for the complete list of 30+ tools.
 
-For more detailed information on each tool, please refer to the `README.md` file in the respective crate's directory.
+---
 
-## Building the Tools
+## 🛠️ Getting Started
 
-This project is structured as a Rust workspace. To build all the tools, you will need to have a recent version of the Rust toolchain installed.
+### Prerequisites
+*   [Rust toolchain](https://rustup.rs/) (latest stable)
+*   Network access to an X32/M32 console (or run `x32_emulator` locally).
 
-1.  **Clone the repository.**
-2.  **Navigate to the root of the repository.**
-3.  **Build the entire workspace:**
-
-    ```bash
-    cargo build --release
-    ```
-
-The compiled binaries will be located in the `target/release/` directory.
-
-## Running the Tools
-
-Once built, you can run any of the tools from the `target/release/` directory. For example, to run `x32_get_scene_name`:
-
+### Building
 ```bash
-./target/release/x32_get_scene_name --ip 192.168.1.64
+cargo build --release
 ```
+Compiled binaries are located in `target/release/`.
+
+### Quick Start: Emulator & Command
+1. Start the emulator: `./target/release/x32_emulator`
+2. Send a command: `./target/release/x32_command --ip 127.0.0.1 "/ch/01/mix/fader 0.75"`
+
+---
+
+## 📖 Documentation Layers
+
+1.  **Discovery (This File):** Quick overview and project structure.
+2.  **Conceptual Map ([User Guide](docs/USER_GUIDE.md) / [Architecture](docs/ARCHITECTURE.md)):** Workflow-based instructions and system design.
+3.  **Deep Reference:** Individual `README.md` files in each crate folder and [Rustdoc](https://docs.rs) (run `cargo doc --open`).
+
+---
+
+## 📜 Credits & License
+
+*   **Original C Libraries:** Patrick-Gilles Maillot ([Patrick Maillot's X32 Site](https://sites.google.com/site/patrickmaillot/x32))
+*   **Rust Rewrite:** Google Jules & Gemini CLI.
+*   **License:** GNU General Public License v3.0 (See [LICENSE](LICENSE)).
