@@ -1,0 +1,15 @@
+[package]
+name = "x32_usb"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = { workspace = true }
+clap = { workspace = true }
+osc_lib = { workspace = true }
+x32_lib = { workspace = true }
+
+[dev-dependencies]
+assert_cmd = "2.0.14"
+predicates = "3.1.0"
+x32_emulator = { path = "../../tools/x32_emulator" }

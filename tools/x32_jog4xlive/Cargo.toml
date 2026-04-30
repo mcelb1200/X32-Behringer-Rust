@@ -1,0 +1,13 @@
+[package]
+name = "x32_jog4xlive"
+version = "0.1.0"
+edition = "2021"
+authors = ["Patrick-Gilles Maillot", "Jules"]
+description = "Jog for X32 X-Live!"
+
+[dependencies]
+anyhow = { workspace = true }
+clap = { workspace = true }
+tokio = { workspace = true }
+x32_lib = { workspace = true }
+osc_lib = { workspace = true }
