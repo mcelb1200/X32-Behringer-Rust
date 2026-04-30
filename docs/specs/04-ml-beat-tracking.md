@@ -16,7 +16,7 @@ Move from reactive "Peak Detection" to predictive **Probabilistic Beat Tracking*
 *   Use a temporal smoothing window (e.g., 4 bars) to prevent sudden jumps if a single transient is missed or a ghost note is played.
 
 ## 3. Gaps & Limitations
-*   **CPU Overhead:** Parallel Comb Filters (FFT-based) are computationally expensive compared to Energy detectors. 
+*   **CPU Overhead:** Parallel Comb Filters (FFT-based) are computationally expensive compared to Energy detectors.
 *   **Latency:** Probabilistic models require a history of transients, introducing a "warm-up" period (usually 2-4 seconds) before a locked BPM is reported.
 
 ## 4. Alternative Implementations & Redundancy
