@@ -99,6 +99,9 @@ fn test_single_take_se_log_bin() {
 
     let log_path = session_dir.join("SE_LOG.BIN");
     let mut file = File::open(log_path).unwrap();
+    if file.metadata().unwrap().len() > 1024 * 1024 {
+        panic!("SE_LOG.BIN file too large");
+    }
     let mut buffer = Vec::new();
     file.read_to_end(&mut buffer).unwrap();
 
