@@ -214,12 +214,7 @@ fn parse_flin(path: &str, val: &str, xmin: f32, lmaxmin: f32, xstep: f32) -> Opt
     v = (v - xmin) / lmaxmin;
     let step = lmaxmin / xstep;
     v = (v * step).round() / step;
-    if v <= 0.0 {
-        v = 0.0;
-    }
-    if v > 1.0 {
-        v = 1.0;
-    }
+    v = v.clamp(0.0, 1.0);
     Some(OscMessage::new(path.to_string(), vec![OscArg::Float(v)]))
 }
 
@@ -227,12 +222,7 @@ fn parse_flog(path: &str, val: &str, xmin: f32, lmaxmin: f32, nsteps: f32) -> Op
     let mut v = val.parse::<f32>().ok()?;
     v = (v / xmin).ln() / lmaxmin;
     v = (v * nsteps).round() / nsteps;
-    if v <= 0.0 {
-        v = 0.0;
-    }
-    if v > 1.0 {
-        v = 1.0;
-    }
+    v = v.clamp(0.0, 1.0);
     Some(OscMessage::new(path.to_string(), vec![OscArg::Float(v)]))
 }
 

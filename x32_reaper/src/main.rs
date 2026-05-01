@@ -1264,7 +1264,9 @@ fn parse_osc_packet(data: &[u8]) -> Result<OscMessage> {
         .iter()
         .position(|&b| b == 0)
         .context("Invalid OSC path")?;
-    let path = String::from_utf8_lossy(&data[..path_end]).to_string();
+
+    // ⚡ Bolt: Use `into_owned` instead of `to_string` to avoid Cow's Display formatting overhead
+    let path = String::from_utf8_lossy(&data[..path_end]).into_owned();
 
     let type_tag_start = (path_end + 4) & !3;
     if type_tag_start >= data.len() {
@@ -1318,7 +1320,8 @@ fn parse_osc_packet(data: &[u8]) -> Result<OscMessage> {
                         .position(|&b| b == 0)
                         .map(|p| p + arg_idx)
                         .unwrap_or(data.len());
-                    let s = String::from_utf8_lossy(&data[arg_idx..str_end]).to_string();
+                    // ⚡ Bolt: Use `into_owned` instead of `to_string` to avoid Cow's Display formatting overhead
+                    let s = String::from_utf8_lossy(&data[arg_idx..str_end]).into_owned();
                     args.push(OscArg::String(s));
                     arg_idx = (str_end + 4) & !3;
                 }
