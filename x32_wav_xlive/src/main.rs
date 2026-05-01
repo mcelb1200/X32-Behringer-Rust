@@ -272,6 +272,9 @@ fn write_se_log_bin(
     let mut markers = args.markers.clone();
     if let Some(marker_file) = &args.marker_file {
         let f = File::open(marker_file)?;
+        if f.metadata()?.len() > 1024 * 1024 {
+            anyhow::bail!("Marker file too large (max 1MB)");
+        }
         let mut s = String::new();
         std::io::Read::take(f, 1024 * 1024).read_to_string(&mut s)?;
         for line in s.lines() {
