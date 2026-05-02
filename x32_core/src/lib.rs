@@ -260,11 +260,12 @@ impl Mixer {
             return Ok(responses);
         }
 
-        // Handle system administration commands: /copy, /add, /load, /save
+        // Handle system administration commands: /copy, /add, /load, /save, /delete
         if osc_msg.path == "/copy"
             || osc_msg.path == "/add"
             || osc_msg.path == "/load"
             || osc_msg.path == "/save"
+            || osc_msg.path == "/delete"
         {
             if let Some(OscArg::String(ref item_type)) = osc_msg.args.first() {
                 let arg1 = OscArg::String(item_type.clone());
