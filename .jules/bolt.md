@@ -63,3 +63,6 @@
 ## 2026-04-30 - [Addressing common clippy errors during CI fixes]
 **Learning:** CI failures often include straightforward unused function warnings, which can be silenced with `#[allow(dead_code)]` if the logic is meant to be retained. Furthermore, redundant matching like `while let Ok(_) = rx.try_recv()` can be simplified to `while rx.try_recv().is_ok()`, and `c.is_digit(10)` should be replaced with the more performant `c.is_ascii_digit()`.
 **Action:** Address clippy lints directly using standard idiom improvements and `#[allow(...)]` where appropriate when clearing up CI breakages.
+## 2024-07-20 - [Avoiding Vec allocation before UTF-8 validation]
+**Learning:** In string parsing functions, calling `String::from_utf8(bytes.to_vec())?` immediately allocates a heap vector before attempting to validate the bytes as UTF-8. If the bytes contain invalid UTF-8, the validation fails and the freshly allocated vector is dropped, resulting in an unnecessary allocation on the error path.
+**Action:** Always replace `String::from_utf8(bytes.to_vec())?` with `std::str::from_utf8(bytes)?.to_owned()`. This performs UTF-8 validation directly on the slice first, completely bypassing the memory allocation if the string is invalid, and safely allocating the `String` only on success.
