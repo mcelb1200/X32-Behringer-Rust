@@ -274,7 +274,7 @@ fn main() -> Result<()> {
                     cfg.subdivision = subdivisions[new_idx].to_string();
                 }
                 NetworkEvent::EffectLoaded(slot, name) => {
-                    if slot >= 1 && slot <= 8 {
+                    if (1..=8).contains(&slot) {
                         let idx = slot - 1;
                         if active_effects[idx] != name {
                             active_effects[idx] = name.clone();

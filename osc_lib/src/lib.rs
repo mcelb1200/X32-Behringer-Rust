@@ -53,6 +53,7 @@ pub enum OscError {
     Io(io::Error),
     /// A string was not valid UTF-8.
     Utf8(FromUtf8Error),
+    StrUtf8(std::str::Utf8Error),
     /// The OSC type tag string was invalid (e.g., did not start with ',').
     InvalidTypeTag,
     /// An unsupported OSC type tag was encountered.
@@ -68,6 +69,7 @@ impl std::fmt::Display for OscError {
         match self {
             OscError::Io(e) => write!(f, "I/O error: {}", e),
             OscError::Utf8(e) => write!(f, "UTF-8 conversion error: {}", e),
+            OscError::StrUtf8(e) => write!(f, "UTF-8 conversion error: {}", e),
             OscError::InvalidTypeTag => f.write_str("Invalid OSC type tag string"),
             OscError::UnsupportedTypeTag(c) => write!(f, "Unsupported OSC type tag: {}", c),
             OscError::ParseError(s) => {
@@ -84,6 +86,12 @@ impl std::error::Error for OscError {}
 impl From<io::Error> for OscError {
     fn from(err: io::Error) -> Self {
         OscError::Io(err)
+    }
+}
+
+impl From<std::str::Utf8Error> for OscError {
+    fn from(err: std::str::Utf8Error) -> Self {
+        OscError::StrUtf8(err)
     }
 }
 
@@ -603,7 +611,7 @@ fn read_osc_string_bytes<'a>(cursor: &mut Cursor<&'a [u8]>) -> Result<&'a [u8]> 
 fn read_osc_string(cursor: &mut Cursor<&[u8]>) -> Result<String> {
     let string_bytes = read_osc_string_bytes(cursor)?;
     // Extract the string bytes and convert to String
-    let string = String::from_utf8(string_bytes.to_vec())?;
+    let string = std::str::from_utf8(string_bytes)?.to_owned();
     Ok(string)
 }
 

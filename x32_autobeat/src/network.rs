@@ -211,6 +211,7 @@ impl NetworkManager {
 
     /// Set text on a specific Scribble Strip (e.g. Bus 1, DCA 1, etc.)
     /// `target`: e.g., "/bus/01/config/name"
+    #[allow(dead_code)]
     pub fn set_scribble_target(&self, target_path: &str, text: &str) -> Result<()> {
         let msg = OscMessage {
             path: target_path.to_string(),
