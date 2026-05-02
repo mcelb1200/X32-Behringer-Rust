@@ -227,7 +227,7 @@ mod tests {
     fn test_mixer_dispatch_system_admin_commands() {
         let mut mixer = Mixer::new();
 
-        let commands = vec!["/copy", "/add", "/load", "/save"];
+        let commands = vec!["/copy", "/add", "/load", "/save", "/delete"];
         let item_type = "libchan".to_string();
 
         for cmd in commands {
