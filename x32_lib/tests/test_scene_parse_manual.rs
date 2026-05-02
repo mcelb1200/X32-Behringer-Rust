@@ -1,5 +1,5 @@
-use x32_lib::scene_parse::parse_scene_line;
 use osc_lib::OscArg;
+use x32_lib::scene_parse::parse_scene_line;
 
 #[test]
 fn test_multiple_args() {
