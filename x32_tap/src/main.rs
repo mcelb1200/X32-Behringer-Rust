@@ -86,6 +86,7 @@ async fn main() -> Result<()> {
     let mut fx_type = 0;
 
     // Read response with timeout
+    #[allow(clippy::collapsible_match)]
     if let Ok(res) =
         tokio::time::timeout(std::time::Duration::from_millis(500), socket.recv(&mut buf)).await
     {
