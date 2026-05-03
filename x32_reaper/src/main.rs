@@ -409,7 +409,7 @@ async fn process_x32_message(
         let parts: Vec<&str> = msg.path.split('/').collect();
         if parts.len() >= 3 {
             if let Ok(raw) = parts[2].parse::<i32>() {
-                cnum = raw; // Used for state indexing? Auxin doesn't use XMbanktracks in C code
+                cnum = raw;
                 cnum1 = raw + config.aux_min - 1;
             }
         }
@@ -1025,7 +1025,6 @@ async fn process_single_reaper_message(
                             // Handle Reaper DCA to X32 DCA
                             // Check if this track is in any Rdca range?
                             // Or if this IS an X32 DCA mapped track
-                            // C code: if (tnum >= Xdca_min && <= Xdca_max) ... check Rdca_min/max ...
                             // Here `tnum` IS the reaper track number.
                             // If `tnum` corresponds to an X32 DCA.
                             let dca_idx = tnum - config.dca_min; // 0..7
@@ -1035,16 +1034,13 @@ async fn process_single_reaper_message(
                                     args: vec![OscArg::Float(x32_val)],
                                 });
                                 // If there are Rdca tracks, update them too?
-                                // C code updates Reaper tracks if X32 fader moves.
                                 // Here Reaper fader moves.
                                 // If Reaper DCA moves, we send to X32 DCA.
 
                                 // Also update other Reaper tracks in the group?
-                                // C code: if (Rdca_min > 0) ... update all REAPER DCA tracks to same values...
                                 // Wait, if Reaper sends /track/X/volume, it means user moved fader X.
                                 // If X is a DCA master, we update X32 DCA.
                                 // Should we update other Reaper tracks?
-                                // C code line 1036: else if (tnum >= Xdca_min ...) { ... update all REAPER DCA tracks ... send_to_r ... }
                                 // So yes, we should echo to other Reaper tracks in the group.
                                 if (dca_idx as usize) < config.rdca.len() {
                                     let (rmin, rmax) = config.rdca[dca_idx as usize];
@@ -1091,13 +1087,7 @@ async fn process_single_reaper_message(
                 } else if msg.path.contains("/mute") {
                     xx_mask = TRACKMUTE;
                     if let Some(OscArg::Float(f)) = msg.args.first() {
-                        let x_val = if *f > 0.0 { 0 } else { 1 }; // Reaper 1=mute, X32 0=on (unmute) ??
-                        // C code: if (endian.ii == 1) endian.ff = 0.0 else endian.ff = 1.0; (for X32->Reaper)
-                        // For Reaper->X32 (line 1157):
-                        // if (endian.ff > 0.0) Xb_ls = Xfprint(..., 'i', &zero); else ... 'i', &one.
-                        // So if Reaper > 0 (Muted), X32 = 0 (Off/Muted? No, X32 'on' is Unmute).
-                        // X32 /mix/on: 1 = ON (audio passes), 0 = OFF (muted).
-                        // So Reaper Mute (1) -> X32 On (0).
+                        let x_val = if *f > 0.0 { 0 } else { 1 }; // Reaper 1=mute, X32 0=on (unmute)
 
                         if tnum >= config.trk_min && tnum <= config.trk_max && config.ch_bank_on {
                             let idx = tnum - config.trk_min;
