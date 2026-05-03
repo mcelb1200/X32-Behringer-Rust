@@ -272,6 +272,12 @@ fn write_se_log_bin(
     let mut markers = args.markers.clone();
     if let Some(marker_file) = &args.marker_file {
         let f = File::open(marker_file)?;
+
+        // Sentinel: Prevent OOM from maliciously large or corrupted marker files
+        if f.metadata()?.len() > 1024 * 1024 {
+            return Err(anyhow::anyhow!("Marker file too large to load (max 1MB)"));
+        }
+
         let mut s = String::new();
         std::io::Read::take(f, 1024 * 1024).read_to_string(&mut s)?;
         for line in s.lines() {
@@ -297,11 +303,17 @@ fn write_se_log_bin(
     for &size in take_sizes {
         file.write_u32::<LittleEndian>(size)?;
     }
+    if take_sizes.len() > 256 {
+        return Err(anyhow::anyhow!("Too many takes (max 256)"));
+    }
     let zero_buf = vec![0u8; 4 * (256 - take_sizes.len())];
     file.write_all(&zero_buf)?;
 
     for marker in &markers {
         file.write_u32::<LittleEndian>((*marker * sample_rate as f32) as u32)?;
+    }
+    if markers.len() > 125 {
+        return Err(anyhow::anyhow!("Too many markers (max 125)"));
     }
     let zero_buf = vec![0u8; 4 * (125 - markers.len())];
     file.write_all(&zero_buf)?;
@@ -477,6 +489,11 @@ mod tests {
         assert!(log_path.exists(), "SE_LOG.BIN was not created");
 
         let file = File::open(log_path).unwrap();
+
+        if file.metadata().unwrap().len() > 1024 * 1024 {
+            panic!("SE_LOG.BIN file too large");
+        }
+
         let mut buffer = Vec::new();
         std::io::Read::take(file, 2048 * 2)
             .read_to_end(&mut buffer)
