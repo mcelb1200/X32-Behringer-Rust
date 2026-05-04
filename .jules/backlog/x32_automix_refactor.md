@@ -1,34 +1,20 @@
-# Task: Refactor x32_automix to use MixerClient
+# TASK-003: Refactor x32_automix to use MixerClient
 
-## Context
-`x32_automix` implements a Dugan-style gain-sharing automixer for the X32/M32. It requires high-speed polling of input levels (meters) and rapid updates to fader/gain levels.
+## Objective
+Migrate the gain-sharing automixer to the async `MixerClient` architecture for high-speed meter processing.
 
-## Goal
-Migrate the network and polling logic to `x32_lib::MixerClient`.
+## Implementation Details
+1. **Meter Subscription**:
+   - Subscribe to `/meters/0` (In 1-32 levels).
+   - Use `client.subscribe()` to receive and parse the binary meter blob.
+2. **Control Loop**:
+   - Implement the Dugan-style algorithm as an async task.
+   - Calculate gain sharing based on real-time power estimates from meter data.
+3. **Gain Application**:
+   - Send gain corrections to `/-stat/userpar/XX/value` or relevant fader paths via `client.send_message`.
+   - Implement a deadband (0.1dB) to reduce network traffic.
 
-## Required Components & Logic
-
-### 1. Network & Polling
-- **Replace** manual `UdpSocket` with `MixerClient::connect(ip, true)`.
-- **Implement** a high-frequency polling loop that:
-    - Subscribes to `/meters/0` or `/meters/1` for input channel levels.
-    - Uses `client.subscribe()` to receive these meter blobs.
-    - Decodes the meter data to extract raw input levels.
-
-### 2. Automix Algorithm
-- **Preserve** the core gain-sharing logic:
-    - Calculation of total power across all active automix channels.
-    - Application of weights (if applicable).
-    - Smoothing/Attack/Release parameters for gain adjustments.
-- **Ensure** the algorithm correctly handles "priority" or "weight" settings per channel.
-
-### 3. Fader Updates
-- **Use** `client.send_message` (or a more optimized batch update if supported) to send gain corrections back to the mixer.
-- **Maintain** the logic that prevents the automixer from fighting with physical fader moves by the user.
-
-### 4. Configuration
-- **Preserve** command-line arguments for channel selection, threshold, and algorithm sensitivity.
-
-## Constraints
-- **Timing is critical**: The automixer must process meter data and send updates with minimal jitter.
-- Avoid excessive network congestion; ensure updates are only sent when gain changes exceed a small delta.
+## Success Criteria
+- [ ] Automixer maintains stable gain levels across active channels.
+- [ ] Processing latency for meter-to-fader loop is < 50ms.
+- [ ] Binary `x32_automix` builds and runs without raw `UdpSocket` management.
