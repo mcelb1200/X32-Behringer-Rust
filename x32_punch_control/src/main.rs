@@ -172,8 +172,15 @@ async fn run_logic(
     let mut current_record: Option<PunchRecord> = None;
 
     if let Some(ref path) = file_path {
+        #[allow(clippy::collapsible_if)]
         if let Ok(f) = File::open(path).await {
-            reader = Some(PunchReader::new(f));
+            if let Ok(meta) = f.metadata().await {
+                if meta.len() <= 10 * 1024 * 1024 {
+                    reader = Some(PunchReader::new(f));
+                } else {
+                    eprintln!("Warning: Punch file {} is too large (max 10MB)", path);
+                }
+            }
         }
         let out_path = format!("{}_xpc", path);
         if let Ok(f) = File::create(&out_path).await {
