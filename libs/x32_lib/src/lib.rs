@@ -244,7 +244,9 @@ pub fn set_parameter(socket: &UdpSocket, address: &str, value: f32) -> Result<()
 ///
 /// A `Result` indicating success or failure.
 pub async fn set_parameter_async(client: &MixerClient, address: &str, value: f32) -> Result<()> {
-    client.send_message(address, vec![OscArg::Float(value)]).await
+    client
+        .send_message(address, vec![OscArg::Float(value)])
+        .await
 }
 
 /// Gets the value of a floating-point parameter from the mixer asynchronously.

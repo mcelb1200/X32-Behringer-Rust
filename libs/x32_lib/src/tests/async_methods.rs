@@ -1,7 +1,7 @@
 use crate::*;
-use tokio::time::Duration;
 use osc_lib::OscArg;
 use std::thread;
+use tokio::time::Duration;
 
 #[tokio::test]
 async fn test_async_methods() {
@@ -13,7 +13,9 @@ async fn test_async_methods() {
     // Give emulator a moment to start
     tokio::time::sleep(Duration::from_millis(100)).await;
 
-    let client = MixerClient::connect("127.0.0.1:10025", false).await.unwrap();
+    let client = MixerClient::connect("127.0.0.1:10025", false)
+        .await
+        .unwrap();
 
     // Test query_value_async
     let arg = query_value_async(&client, "/info").await.unwrap();
