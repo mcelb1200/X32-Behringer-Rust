@@ -1,0 +1,48 @@
+{
+  "version": "1.0.0",
+  "strategy": "batch_and_queue",
+  "project": "X32-Behringer-Rust MixerClient Migration",
+  "tasks": [
+    {
+      "id": "TASK-001",
+      "title": "x32_lib Async Extension",
+      "delegation_file": ".jules/backlog/x32_lib_async_methods.md",
+      "status": "pending",
+      "priority": "high",
+      "description": "Add async helper methods to x32_lib to simplify migration for complex apps."
+    },
+    {
+      "id": "TASK-002",
+      "title": "x32_usb Functional Restoration",
+      "delegation_file": ".jules/backlog/x32_usb_refactor.md",
+      "status": "pending",
+      "priority": "high",
+      "description": "Restore full shell functionality while migrating to MixerClient."
+    },
+    {
+      "id": "TASK-003",
+      "title": "x32_automix Migration",
+      "delegation_file": ".jules/backlog/x32_automix_refactor.md",
+      "status": "pending",
+      "priority": "medium",
+      "description": "Port gain-sharing algorithm to async MixerClient polling."
+    },
+    {
+      "id": "TASK-004",
+      "title": "x32_reaper Bridge Refactor",
+      "delegation_file": ".jules/backlog/x32_reaper_refactor.md",
+      "status": "pending",
+      "priority": "medium",
+      "description": "Refactor complex bidirectional bridge to use MixerClient."
+    },
+    {
+      "id": "TASK-005",
+      "title": "x32_autobeat Full Refactor",
+      "delegation_file": ".jules/backlog/x32_autobeat_refactor.md",
+      "status": "pending",
+      "priority": "medium",
+      "description": "Migrate beat detection engine and TUI to async MixerClient."
+    }
+  ],
+  "concurrency_limit": 1
+}

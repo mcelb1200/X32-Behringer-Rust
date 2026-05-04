@@ -1,30 +1,20 @@
-# Task: Refactor x32_usb to use MixerClient (Restore full functionality)
+# TASK-002: Refactor x32_usb to use MixerClient (Restore full functionality)
 
-## Context
-The previous refactor attempt for `x32_usb` significantly regressed the tool, reducing it to a simple status check. We need to restore the full "USB Shell" functionality while correctly utilizing the new `MixerClient` abstraction.
+## Objective
+Restore the "USB Shell" interactive functionality (missing in recent regressed versions) using the `MixerClient` API.
 
-## Goal
-Restore all interactive USB management features (LS, CD, LOAD, etc.) and refactor the network layer to use `x32_lib::MixerClient`.
+## Implementation Details
+1. **Interactive Commands**:
+   - `Ls`: Query `/-usb/dir/maxpos` then loop `/-usb/dir/%03d/name`.
+   - `Cd <target>`: Support both numeric index and string name matching.
+   - `Load <target>`: Execute `/-action/recselect` for valid scene/preset files.
+2. **Transport Control**:
+   - Map `Play/Stop/Pause/Resume` to `/-stat/tape/state` (0=Stop, 1=Pause, 2=Play).
+3. **Network Layer**:
+   - Initialize with `MixerClient::connect(ip, true)`.
+   - Use `client.query_value` for all synchronous filesystem metadata requests.
 
-## Required Components & Logic
-
-### 1. Interactive Shell Features (TO RESTORE)
-- **`Ls`**: List directory contents by querying `/-usb/dir/maxpos` and iterating through `/-usb/dir/XXX/name`.
-- **`Cd`**: Change directory by selecting a folder index.
-- **`Load`**: Load scenes (`.scn`), snippets (`.snp`), effects (`.efx`), routing (`.rou`), preference (`.prf`), or channel (`.chn`) files.
-- **`Play` / `Stop` / `Pause` / `Resume`**: Full control over the USB WAV player/recorder.
-- **`Umount`**: Safely unmount the USB drive.
-
-### 2. MixerClient Integration
-- **Connect** using `MixerClient::connect(ip, true)`.
-- **Replace** the custom `X32Client` struct (which used `create_socket` and manual `recv`) with the standard `MixerClient`.
-- **Implement** `is_usb_mounted`, `get_file_list`, and `find_file` helper methods using `client.query_value` and `client.send_message`.
-
-### 3. File & Type Handling
-- **Maintain** the `FileType` enum and its extension-based detection logic.
-- **Maintain** the `FileEntry` struct for representing USB filesystem items.
-
-## Constraints
-- **Do NOT** use the regressed 27-line version from the recent ZIP.
-- Ensure the user can still use both numeric IDs and string names for `cd` and `load` targets.
-- Ensure `cargo test` and integration tests in `tools/x32_usb/tests/` pass.
+## Success Criteria
+- [ ] Binary `x32_usb` supports all subcommands: `ls`, `cd`, `load`, `play`, `stop`, `pause`, `resume`, `umount`.
+- [ ] Integration tests in `tools/x32_usb/tests/integration_test.rs` pass using the emulator.
+- [ ] No raw `UdpSocket` usage remains in `tools/x32_usb/src/main.rs`.
