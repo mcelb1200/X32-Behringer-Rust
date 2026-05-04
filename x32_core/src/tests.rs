@@ -231,7 +231,9 @@ mod tests {
         let item_type = "libchan".to_string();
 
         for cmd in commands {
-            if cmd == "/copy" || cmd == "/save" { continue; } // Tested separately
+            if cmd == "/copy" || cmd == "/save" {
+                continue;
+            } // Tested separately
             let msg = OscMessage {
                 path: cmd.to_string(),
                 args: vec![
@@ -289,10 +291,14 @@ mod tests {
         let mut mixer = Mixer::new();
 
         // Seed source channel (01)
-        mixer.state.set("/ch/01/config/name", OscArg::String("Source".to_string()));
+        mixer
+            .state
+            .set("/ch/01/config/name", OscArg::String("Source".to_string()));
         mixer.state.set("/ch/01/mix/fader", OscArg::Float(0.75));
         // Seed dest channel (02)
-        mixer.state.set("/ch/02/config/name", OscArg::String("Dest".to_string()));
+        mixer
+            .state
+            .set("/ch/02/config/name", OscArg::String("Dest".to_string()));
         mixer.state.set("/ch/02/mix/fader", OscArg::Float(0.1));
 
         // Copy /ch/01 to /ch/02 with a mask that includes everything (-1)
@@ -301,8 +307,8 @@ mod tests {
             path: "/copy".to_string(),
             args: vec![
                 OscArg::String("libchan".to_string()),
-                OscArg::Int(0), // Source 01 (0-based)
-                OscArg::Int(1), // Dest 02 (0-based)
+                OscArg::Int(0),  // Source 01 (0-based)
+                OscArg::Int(1),  // Dest 02 (0-based)
                 OscArg::Int(-1), // Mask all
             ],
         };
@@ -311,8 +317,14 @@ mod tests {
         let responses = mixer.dispatch(&bytes, test_addr(1234)).unwrap();
 
         // We expect the destination to be updated
-        assert_eq!(mixer.state.get("/ch/02/config/name"), Some(&OscArg::String("Source".to_string())));
-        assert_eq!(mixer.state.get("/ch/02/mix/fader"), Some(&OscArg::Float(0.75)));
+        assert_eq!(
+            mixer.state.get("/ch/02/config/name"),
+            Some(&OscArg::String("Source".to_string()))
+        );
+        assert_eq!(
+            mixer.state.get("/ch/02/mix/fader"),
+            Some(&OscArg::Float(0.75))
+        );
 
         // We expect a response acknowledging the copy
         assert_eq!(responses.len(), 1);
@@ -322,7 +334,6 @@ mod tests {
         assert_eq!(response_msg.args[0], OscArg::String("libchan".to_string()));
         assert_eq!(response_msg.args[1], OscArg::Int(1));
     }
-
 
     #[test]
     fn test_mixer_dispatch_save_scene() {
@@ -343,7 +354,10 @@ mod tests {
         let responses = mixer.dispatch(&bytes, test_addr(1234)).unwrap();
 
         // We expect the state to have "My Scene" at /-show/showfile/scene/005/name
-        assert_eq!(mixer.state.get("/-show/showfile/scene/005/name"), Some(&OscArg::String("My Scene".to_string())));
+        assert_eq!(
+            mixer.state.get("/-show/showfile/scene/005/name"),
+            Some(&OscArg::String("My Scene".to_string()))
+        );
         // The original C code puts the note at the next index, but doesn't explicitly mention the path for note in save.
         // I will assume standard format /note for it. Let's just check name for now to see if basic implementation works.
 
@@ -374,7 +388,10 @@ mod tests {
 
         let responses = mixer.dispatch(&bytes, test_addr(1234)).unwrap();
 
-        assert_eq!(mixer.state.get("/-show/showfile/snippet/002/name"), Some(&OscArg::String("My Snippet".to_string())));
+        assert_eq!(
+            mixer.state.get("/-show/showfile/snippet/002/name"),
+            Some(&OscArg::String("My Snippet".to_string()))
+        );
 
         assert_eq!(responses.len(), 1);
         let response_msg = OscMessage::from_bytes(&responses[0].1).unwrap();
@@ -418,5 +435,4 @@ mod tests {
             panic!("Expected blob argument");
         }
     }
-
 }

@@ -179,10 +179,24 @@ impl Mixer {
         for (&(addr, meter_idx), _) in &self.active_meters {
             // Number of floats expected per meter index (based on C code)
             let num_floats = match meter_idx {
-                0 => 70, 1 => 96, 2 => 49, 3 => 22, 4 => 82,
-                5 => 27, 6 => 4, 7 => 16, 8 => 6, 9 => 32,
-                10 => 32, 11 => 5, 12 => 4, 13 => 48, 14 => 80,
-                15 => 50, 16 => 48, _ => 0,
+                0 => 70,
+                1 => 96,
+                2 => 49,
+                3 => 22,
+                4 => 82,
+                5 => 27,
+                6 => 4,
+                7 => 16,
+                8 => 6,
+                9 => 32,
+                10 => 32,
+                11 => 5,
+                12 => 4,
+                13 => 48,
+                14 => 80,
+                15 => 50,
+                16 => 48,
+                _ => 0,
             };
 
             if num_floats > 0 {
@@ -300,7 +314,8 @@ impl Mixer {
         if osc_msg.path.starts_with("/meters/") {
             if let Ok(meter_idx) = osc_msg.path[8..].parse::<u8>() {
                 if meter_idx <= 16 {
-                    self.active_meters.insert((remote_addr, meter_idx), now + Duration::from_secs(10));
+                    self.active_meters
+                        .insert((remote_addr, meter_idx), now + Duration::from_secs(10));
                 }
             }
             return Ok(responses);
@@ -321,7 +336,12 @@ impl Mixer {
                     &osc_msg.args[2],
                     &osc_msg.args[3],
                 ) {
-                    if item_type == "libchan" && *src_idx >= 0 && *src_idx < 32 && *dst_idx >= 0 && *dst_idx < 32 {
+                    if item_type == "libchan"
+                        && *src_idx >= 0
+                        && *src_idx < 32
+                        && *dst_idx >= 0
+                        && *dst_idx < 32
+                    {
                         let src_prefix = format!("/ch/{:02}/", src_idx + 1);
                         let dst_prefix = format!("/ch/{:02}/", dst_idx + 1);
 
@@ -333,11 +353,11 @@ impl Mixer {
                         // C_SEND = 0x0020
 
                         let copy_config = (mask & 0x0002) != 0 || *mask == -1;
-                        let copy_ha     = (mask & 0x0001) != 0 || *mask == -1;
-                        let copy_gate   = (mask & 0x0004) != 0 || *mask == -1;
-                        let copy_dyn    = (mask & 0x0008) != 0 || *mask == -1;
-                        let copy_eq     = (mask & 0x0010) != 0 || *mask == -1;
-                        let copy_send   = (mask & 0x0020) != 0 || *mask == -1;
+                        let copy_ha = (mask & 0x0001) != 0 || *mask == -1;
+                        let copy_gate = (mask & 0x0004) != 0 || *mask == -1;
+                        let copy_dyn = (mask & 0x0008) != 0 || *mask == -1;
+                        let copy_eq = (mask & 0x0010) != 0 || *mask == -1;
+                        let copy_send = (mask & 0x0020) != 0 || *mask == -1;
 
                         // We will collect keys to clone to avoid borrow checker issues with mut state
                         let mut to_copy = Vec::new();
@@ -345,13 +365,23 @@ impl Mixer {
                             if key.starts_with(&src_prefix) {
                                 let suffix = &key[src_prefix.len()..];
 
-                                let should_copy = if suffix.starts_with("config/") { copy_config }
-                                else if suffix.starts_with("preamp/") { copy_ha }
-                                else if suffix.starts_with("gate/") { copy_gate }
-                                else if suffix.starts_with("dyn/") { copy_dyn }
-                                else if suffix.starts_with("eq/") { copy_eq }
-                                else if suffix.starts_with("mix/") { copy_send } // mix includes sends, panning, fader
-                                else { *mask == -1 }; // copy all if mask is -1
+                                let should_copy = if suffix.starts_with("config/") {
+                                    copy_config
+                                } else if suffix.starts_with("preamp/") {
+                                    copy_ha
+                                } else if suffix.starts_with("gate/") {
+                                    copy_gate
+                                } else if suffix.starts_with("dyn/") {
+                                    copy_dyn
+                                } else if suffix.starts_with("eq/") {
+                                    copy_eq
+                                } else if suffix.starts_with("mix/") {
+                                    copy_send
+                                }
+                                // mix includes sends, panning, fader
+                                else {
+                                    *mask == -1
+                                }; // copy all if mask is -1
 
                                 if should_copy {
                                     let new_key = format!("{}{}", dst_prefix, suffix);
@@ -375,7 +405,11 @@ impl Mixer {
                 }
             }
 
-            let arg_type = osc_msg.args.first().cloned().unwrap_or(OscArg::String("libchan".to_string()));
+            let arg_type = osc_msg
+                .args
+                .first()
+                .cloned()
+                .unwrap_or(OscArg::String("libchan".to_string()));
             let arg_res = OscArg::Int(if success { 1 } else { 0 });
             let bytes = OscMessage::serialize_to_bytes(&osc_msg.path, [&arg_type, &arg_res])?;
             responses.push((remote_addr, bytes.into()));
@@ -403,29 +437,40 @@ impl Mixer {
                         self.state.set(&name_path, OscArg::String(name.clone()));
                         self.state.set(&note_path, OscArg::String(note.clone()));
 
-                        if let Ok(b) = OscMessage::serialize_to_bytes(&name_path, [&OscArg::String(name.clone())]) {
+                        if let Ok(b) = OscMessage::serialize_to_bytes(
+                            &name_path,
+                            [&OscArg::String(name.clone())],
+                        ) {
                             let arc_b: Arc<[u8]> = b.into();
-                            for client in &self.clients { responses.push((client.0, arc_b.clone())); }
+                            for client in &self.clients {
+                                responses.push((client.0, arc_b.clone()));
+                            }
                         }
-                        if let Ok(b) = OscMessage::serialize_to_bytes(&note_path, [&OscArg::String(note.clone())]) {
+                        if let Ok(b) = OscMessage::serialize_to_bytes(
+                            &note_path,
+                            [&OscArg::String(note.clone())],
+                        ) {
                             let arc_b: Arc<[u8]> = b.into();
-                            for client in &self.clients { responses.push((client.0, arc_b.clone())); }
+                            for client in &self.clients {
+                                responses.push((client.0, arc_b.clone()));
+                            }
                         }
                         success = true;
                     }
                 }
             }
-            let arg_type = osc_msg.args.first().cloned().unwrap_or(OscArg::String("scene".to_string()));
+            let arg_type = osc_msg
+                .args
+                .first()
+                .cloned()
+                .unwrap_or(OscArg::String("scene".to_string()));
             let arg_res = OscArg::Int(if success { 1 } else { 0 });
             let bytes = OscMessage::serialize_to_bytes(&osc_msg.path, [&arg_type, &arg_res])?;
             responses.push((remote_addr, bytes.into()));
             return Ok(responses);
         }
 
-        if osc_msg.path == "/add"
-            || osc_msg.path == "/load"
-            || osc_msg.path == "/delete"
-        {
+        if osc_msg.path == "/add" || osc_msg.path == "/load" || osc_msg.path == "/delete" {
             if let Some(OscArg::String(ref item_type)) = osc_msg.args.first() {
                 let arg1 = OscArg::String(item_type.clone());
                 let arg2 = OscArg::Int(1);
