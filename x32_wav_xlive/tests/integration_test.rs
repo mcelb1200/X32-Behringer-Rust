@@ -1,3 +1,4 @@
+use assert_cmd::Command;
 use byteorder::{LittleEndian, ReadBytesExt};
 use hound::{WavReader, WavSpec, WavWriter};
 use std::fs::{self, File};
@@ -27,11 +28,7 @@ fn test_cli_e2e() {
     create_test_wav(dir.path(), "ch_1.wav", spec, 100);
     create_test_wav(dir.path(), "ch_2.wav", spec, 100);
 
-    let bin = escargot::CargoBuild::new()
-        .bin("x32_wav_xlive")
-        .run()
-        .unwrap();
-    let mut cmd = bin.command();
+    let mut cmd = Command::cargo_bin("x32_wav_xlive").unwrap();
     cmd.arg(dir.path()).arg("TestSession").arg("-m").arg("0.05");
     cmd.current_dir(dir.path());
 
@@ -79,11 +76,7 @@ fn test_single_take_se_log_bin() {
     };
     create_test_wav(dir.path(), "ch_1.wav", spec, 100);
 
-    let bin = escargot::CargoBuild::new()
-        .bin("x32_wav_xlive")
-        .run()
-        .unwrap();
-    let mut cmd = bin.command();
+    let mut cmd = Command::cargo_bin("x32_wav_xlive").unwrap();
     cmd.arg(dir.path());
     cmd.current_dir(dir.path());
 

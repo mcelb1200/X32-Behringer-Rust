@@ -50,6 +50,12 @@ pub fn name(channel_num: u8) -> String {
 }
 
 /// Returns the OSC address for a channel's color.
+///
+/// ```
+/// use x32_lib::command::channel;
+///
+/// assert_eq!(channel::color(1), "/ch/01/config/color");
+/// ```
 pub fn color(channel_num: u8) -> String {
     format!("/ch/{:02}/config/color", channel_num)
 }
@@ -616,5 +622,13 @@ mod tests {
         for i in 0..32 {
             assert_eq!(XCHANNEL_COMMANDS[i].len(), 126);
         }
+    }
+
+    #[test]
+    fn test_address_getters() {
+        assert_eq!(name(1), "/ch/01/config/name");
+        assert_eq!(name(32), "/ch/32/config/name");
+        assert_eq!(color(1), "/ch/01/config/color");
+        assert_eq!(color(32), "/ch/32/config/color");
     }
 }
