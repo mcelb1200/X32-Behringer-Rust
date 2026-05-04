@@ -44,7 +44,6 @@ impl CompressorHandler {
             .last_release_val
             .is_none_or(|v| (v - release_val).abs() > 0.001);
 
-
         if !hold_changed && !release_changed {
             return Ok(());
         }

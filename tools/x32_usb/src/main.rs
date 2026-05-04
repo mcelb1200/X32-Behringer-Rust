@@ -14,11 +14,10 @@
 
 use anyhow::{Result, anyhow};
 use clap::{Parser, Subcommand};
-use osc_lib::{OscArg, OscMessage};
+use osc_lib::OscArg;
 use std::error::Error;
-use std::net::UdpSocket;
 use std::str::FromStr;
-use x32_lib::create_socket;
+use x32_lib::client::MixerClient;
 
 /// A custom error type for connection-related issues.
 #[derive(Debug)]
@@ -152,13 +151,13 @@ struct FileEntry {
     file_type: FileType,
 }
 
-/// A client for communicating with the X32/M32 console.
+/// A wrapper for the asynchronous `MixerClient` from `x32_lib`.
 struct X32Client {
-    socket: UdpSocket,
+    client: MixerClient,
 }
 
 impl X32Client {
-    /// Creates a new `X32Client` and connects to the console.
+    /// Creates a new `X32Client` and connects to the console asynchronously.
     ///
     /// # Arguments
     ///
@@ -167,36 +166,9 @@ impl X32Client {
     /// # Returns
     ///
     /// A `Result` containing the new client or an error.
-    fn new(ip_address: &str) -> Result<Self> {
-        let socket = create_socket(ip_address, 500)?;
-        Ok(Self { socket })
-    }
-
-    /// Sends an OSC message to the console.
-    ///
-    /// # Arguments
-    ///
-    /// * `message` - The OSC message to send.
-    ///
-    /// # Returns
-    ///
-    /// A `Result` indicating success or failure.
-    fn send(&self, message: &OscMessage) -> Result<()> {
-        let bytes = message.to_bytes()?;
-        self.socket.send(&bytes)?;
-        Ok(())
-    }
-
-    /// Receives an OSC message from the console.
-    ///
-    /// # Returns
-    ///
-    /// A `Result` containing the received OSC message or an error.
-    fn receive(&self) -> Result<OscMessage> {
-        let mut buf = [0; 512];
-        let len = self.socket.recv(&mut buf)?;
-        let message = OscMessage::from_bytes(&buf[..len])?;
-        Ok(message)
+    async fn new(ip_address: &str) -> Result<Self> {
+        let client = MixerClient::connect(ip_address, true).await?;
+        Ok(Self { client })
     }
 
     /// Checks if a USB drive is mounted on the console.
@@ -204,18 +176,12 @@ impl X32Client {
     /// # Returns
     ///
     /// A `Result` containing `true` if a drive is mounted, `false` otherwise.
-    fn is_usb_mounted(&self) -> Result<bool> {
-        let msg = OscMessage::new("/-stat/usbmounted".to_string(), vec![]);
-        self.send(&msg)?;
-        match self.receive() {
-            Ok(response) => {
-                if let Some(OscArg::Int(val)) = response.args.first() {
-                    Ok(*val == 1)
-                } else {
-                    Ok(false)
-                }
-            }
-            Err(e) => Err(e),
+    async fn is_usb_mounted(&self) -> Result<bool> {
+        let response = self.client.query_value("/-stat/usbmounted").await?;
+        if let OscArg::Int(val) = response {
+            Ok(val == 1)
+        } else {
+            Ok(false)
         }
     }
 
@@ -224,13 +190,10 @@ impl X32Client {
     /// # Returns
     ///
     /// A `Result` containing a vector of `FileEntry` structs.
-    fn get_file_list(&self) -> Result<Vec<FileEntry>> {
-        let msg = OscMessage::new("/-usb/dir/maxpos".to_string(), vec![]);
-        self.send(&msg)?;
-        let response = self.receive()?;
-
-        let num_files = if let Some(OscArg::Int(val)) = response.args.first() {
-            *val
+    async fn get_file_list(&self) -> Result<Vec<FileEntry>> {
+        let response = self.client.query_value("/-usb/dir/maxpos").await?;
+        let num_files = if let OscArg::Int(val) = response {
+            val
         } else {
             return Err(anyhow!("Failed to get number of files from X32."));
         };
@@ -238,14 +201,12 @@ impl X32Client {
         let mut files = Vec::new();
         for i in 1..=num_files {
             let path = format!("/-usb/dir/{:03}/name", i);
-            let msg = OscMessage::new(path, vec![]);
-            self.send(&msg)?;
-            let response = self.receive()?;
-            if let Some(OscArg::String(name)) = response.args.first() {
-                let file_type = FileType::from_str(name)?;
+            let response = self.client.query_value(&path).await?;
+            if let OscArg::String(name) = response {
+                let file_type = FileType::from_str(&name)?;
                 files.push(FileEntry {
                     index: i,
-                    name: name.to_string(),
+                    name,
                     file_type,
                 });
             }
@@ -258,12 +219,11 @@ impl X32Client {
     /// # Arguments
     ///
     /// * `file_index` - The index of the file to select.
-    fn select_file(&self, file_index: i32) -> Result<()> {
-        let msg = OscMessage::new(
-            "/-action/recselect".to_string(),
-            vec![OscArg::Int(file_index)],
-        );
-        self.send(&msg)
+    async fn select_file(&self, file_index: i32) -> Result<()> {
+        self.client
+            .send_message("/-action/recselect", vec![OscArg::Int(file_index)])
+            .await?;
+        Ok(())
     }
 
     /// Finds a file or directory by its index or name.
@@ -275,8 +235,8 @@ impl X32Client {
     /// # Returns
     ///
     /// A `Result` containing the `FileEntry` if found.
-    fn find_file(&self, target: &str) -> Result<FileEntry> {
-        let files = self.get_file_list()?;
+    async fn find_file(&self, target: &str) -> Result<FileEntry> {
+        let files = self.get_file_list().await?;
         files
             .into_iter()
             .find(|f| {
@@ -299,80 +259,84 @@ impl X32Client {
     /// # Arguments
     ///
     /// * `state` - The desired state (0=Stop, 1=Pause, 2=Play).
-    fn set_tape_state(&self, state: i32) -> Result<()> {
-        let msg = OscMessage::new("/-stat/tape/state".to_string(), vec![OscArg::Int(state)]);
-        self.send(&msg)
+    async fn set_tape_state(&self, state: i32) -> Result<()> {
+        self.client
+            .send_message("/-stat/tape/state", vec![OscArg::Int(state)])
+            .await?;
+        Ok(())
     }
 
     /// Unmounts the USB drive.
-    fn unmount(&self) -> Result<()> {
-        let msg = OscMessage::new("/-stat/usbmounted".to_string(), vec![OscArg::Int(0)]);
-        self.send(&msg)
+    async fn unmount(&self) -> Result<()> {
+        self.client
+            .send_message("/-stat/usbmounted", vec![OscArg::Int(0)])
+            .await?;
+        Ok(())
     }
 }
 
 /// The main logic for the utility.
-fn run(args: Args) -> Result<()> {
-    let client = X32Client::new(&args.ip)?;
+async fn run(args: Args) -> Result<()> {
+    let client = X32Client::new(&args.ip).await?;
 
-    if !client.is_usb_mounted().map_err(ConnectionError)? {
+    if !client.is_usb_mounted().await.map_err(ConnectionError)? {
         println!("USB drive is not mounted.");
         return Ok(());
     }
 
     match &args.command {
         Commands::Ls => {
-            let files = client.get_file_list()?;
+            let files = client.get_file_list().await?;
             for file in files {
                 println!("{:?}", file);
             }
         }
         Commands::Cd { target } => {
-            let file = client.find_file(target)?;
+            let file = client.find_file(target).await?;
             if file.file_type == FileType::Directory || file.file_type == FileType::Parent {
-                client.select_file(file.index)?;
+                client.select_file(file.index).await?;
                 println!("Changed directory to {}", file.name);
             } else {
                 return Err(anyhow!("Not a directory: {}", file.name));
             }
         }
         Commands::Load { target } => {
-            let file = client.find_file(target)?;
+            let file = client.find_file(target).await?;
             match file.file_type {
                 FileType::Scene
                 | FileType::Snippet
                 | FileType::Effects
                 | FileType::Routing
                 | FileType::Channel => {
-                    client.select_file(file.index)?;
+                    client.select_file(file.index).await?;
                     println!("Loaded file: {}", file.name);
                 }
                 _ => return Err(anyhow!("Not a loadable file: {}", file.name)),
             }
         }
         Commands::Umount => {
-            client.unmount()?;
+            client.unmount().await?;
             println!("USB drive unmounted.");
         }
         Commands::Play { target } => {
-            let file = client.find_file(target)?;
+            let file = client.find_file(target).await?;
             if file.file_type == FileType::Wav {
-                client.select_file(file.index)?;
+                client.select_file(file.index).await?;
                 println!("Playing file: {}", file.name);
             } else {
                 return Err(anyhow!("Not a WAV file: {}", file.name));
             }
         }
         Commands::Stop => {
-            client.set_tape_state(0)?;
+            client.set_tape_state(0).await?;
             println!("Playback stopped.");
         }
         Commands::Pause => {
-            client.set_tape_state(1)?;
+            client.set_tape_state(1).await?;
             println!("Playback paused.");
         }
         Commands::Resume => {
-            client.set_tape_state(2)?;
+            client.set_tape_state(2).await?;
             println!("Playback resumed.");
         }
     }
@@ -381,9 +345,10 @@ fn run(args: Args) -> Result<()> {
 }
 
 /// The entry point of the application.
-fn main() {
+#[tokio::main]
+async fn main() {
     let args = Args::parse();
-    if let Err(e) = run(args) {
+    if let Err(e) = run(args).await {
         if e.is::<ConnectionError>() {
             println!("Not connected to X32.");
         } else {
