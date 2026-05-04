@@ -13,8 +13,7 @@ use osc_lib::OscMessage;
 use std::io::{BufRead, BufReader, Read, Write};
 use std::net::{TcpListener, TcpStream};
 use std::str::FromStr;
-use std::thread;
-use x32_lib::create_socket;
+use x32_lib::MixerClient;
 
 /// A TCP to UDP bridge for the Behringer X32 digital mixer.
 #[derive(Parser, Debug, Clone)]
@@ -45,7 +44,8 @@ struct Args {
 ///
 /// This function parses command-line arguments, starts the TCP server, and listens for incoming client connections.
 /// Each client connection is handled in a separate thread.
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> anyhow::Result<()> {
     let args = Args::parse();
 
     if args.verbose {
@@ -69,8 +69,8 @@ fn main() -> Result<()> {
                     println!("New client connected: {}", stream.peer_addr()?);
                 }
                 let args_clone = args.clone();
-                thread::spawn(move || {
-                    if let Err(e) = handle_client(stream, args_clone) {
+                tokio::spawn(async move {
+                    if let Err(e) = handle_client(stream, args_clone).await {
                         eprintln!("Error handling client: {}", e);
                     }
                 });
@@ -93,8 +93,8 @@ fn main() -> Result<()> {
 ///
 /// * `stream` - The TCP stream for the client connection.
 /// * `args` - The command-line arguments.
-fn handle_client(mut stream: TcpStream, args: Args) -> Result<()> {
-    let x32_socket = create_socket(&args.ip, 500)?;
+async fn handle_client(mut stream: TcpStream, args: Args) -> Result<()> {
+    let x32_socket = MixerClient::connect(&args.ip, true).await?;
 
     let mut reader = BufReader::new(stream.try_clone()?);
 
@@ -128,29 +128,29 @@ fn handle_client(mut stream: TcpStream, args: Args) -> Result<()> {
 
         match OscMessage::from_str(trimmed_line) {
             Ok(osc_msg) => {
-                let msg_bytes = osc_msg.to_bytes()?;
-                x32_socket.send(&msg_bytes)?;
+                let _msg_bytes = osc_msg.to_bytes()?;
+                x32_socket.send_message(&osc_msg.path, osc_msg.args).await?;
 
-                let mut buf = [0; 1024];
-                match x32_socket.recv(&mut buf) {
-                    Ok(len) => {
-                        let response_msg = OscMessage::from_bytes(&buf[..len])?;
-                        let response_str = response_msg.to_string();
+                match x32_socket.query_value(&osc_msg.path).await {
+                    Ok(arg) => {
+                        let response_str = format!("{} {:?}", osc_msg.path, arg);
                         if args.verbose {
                             println!("Sending to client: {}", response_str);
                         }
                         stream.write_all(response_str.as_bytes())?;
-                        stream.write_all(b"\n")?;
+                        stream.write_all(
+                            b"
+",
+                        )?;
                     }
                     Err(e) => {
-                        if e.kind() == std::io::ErrorKind::WouldBlock {
-                            if args.verbose {
-                                println!("No response from X32.");
-                            }
-                            stream.write_all(b"no data\n")?;
-                        } else {
-                            return Err(e.into());
+                        if args.verbose {
+                            println!("No response or error from X32: {}", e);
                         }
+                        stream.write_all(
+                            b"no data
+",
+                        )?;
                     }
                 }
             }

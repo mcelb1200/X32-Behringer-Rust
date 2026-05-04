@@ -115,7 +115,7 @@ fn padded_size(len: usize) -> usize {
 }
 
 /// Represents a single OSC message, containing a path and a list of arguments.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct OscMessage {
     /// The OSC address pattern (e.g., `/ch/01/mix/fader`).
     pub path: String,
