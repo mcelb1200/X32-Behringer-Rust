@@ -8,6 +8,8 @@ mod error;
 mod main_bus;
 #[path = "tests/output.rs"]
 mod output;
+#[path = "tests/async_methods.rs"]
+mod async_methods;
 
 #[test]
 fn test_create_socket_with_port() {

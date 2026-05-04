@@ -87,6 +87,7 @@ pub use osc_lib::{OscArg, OscError, OscMessage};
 ///
 /// A `Result` containing the configured `UdpSocket` or an `X32Error` if the
 /// connection fails.
+#[deprecated(since = "0.1.0", note = "Use MixerClient and async methods instead")]
 pub fn create_socket(ip: &str, timeout: u64) -> Result<UdpSocket> {
     // If the IP address does not contain a port, add the default X32 port.
     let full_ip = if (ip.contains(':') && !ip.starts_with('[')) || ip.contains("]:") {
@@ -120,6 +121,7 @@ pub fn create_socket(ip: &str, timeout: u64) -> Result<UdpSocket> {
 /// # Returns
 ///
 /// A `Result` containing the effect type as an integer, or an `X32Error` on failure.
+#[deprecated(since = "0.1.0", note = "Use MixerClient and async methods instead")]
 pub fn get_fx_type(socket: &UdpSocket, slot: u8) -> Result<i32> {
     let msg = OscMessage::new(format!("/fx/{}/type", slot), vec![]);
     socket.send(&msg.to_bytes()?)?;
@@ -143,6 +145,7 @@ pub fn get_fx_type(socket: &UdpSocket, slot: u8) -> Result<i32> {
 /// # Returns
 ///
 /// A `Result` containing the fader level as a float (0.0 to 1.0), or an `X32Error`.
+#[deprecated(since = "0.1.0", note = "Use MixerClient and async methods instead")]
 pub fn get_fader_level(socket: &UdpSocket, fader_addr: &str) -> Result<f32> {
     let msg = OscMessage::new(fader_addr.to_string(), vec![]);
     socket.send(&msg.to_bytes()?)?;
@@ -170,6 +173,7 @@ pub fn get_fader_level(socket: &UdpSocket, fader_addr: &str) -> Result<f32> {
 /// # Returns
 ///
 /// A `Result` containing `true` if the effect type matches, or `false` otherwise.
+#[deprecated(since = "0.1.0", note = "Use MixerClient and async methods instead")]
 pub fn verify_fx_type(socket: &UdpSocket, slot: u8, expected_type: &str) -> Result<bool> {
     let msg = OscMessage::new(
         "/node".to_string(),
@@ -196,6 +200,7 @@ pub fn verify_fx_type(socket: &UdpSocket, slot: u8, expected_type: &str) -> Resu
 /// # Returns
 ///
 /// A `Result` containing the parameter's value as a float.
+#[deprecated(since = "0.1.0", note = "Use MixerClient and async methods instead")]
 pub fn get_parameter(socket: &UdpSocket, address: &str) -> Result<f32> {
     let msg = OscMessage::new(address.to_string(), vec![]);
     socket.send(&msg.to_bytes()?)?;
@@ -220,8 +225,60 @@ pub fn get_parameter(socket: &UdpSocket, address: &str) -> Result<f32> {
 /// # Returns
 ///
 /// A `Result` indicating success or failure.
+#[deprecated(since = "0.1.0", note = "Use MixerClient and async methods instead")]
 pub fn set_parameter(socket: &UdpSocket, address: &str, value: f32) -> Result<()> {
     let msg = OscMessage::new(address.to_string(), vec![OscArg::Float(value)]);
     socket.send(&msg.to_bytes()?)?;
     Ok(())
+}
+
+/// Sets the value of a floating-point parameter on the mixer asynchronously.
+///
+/// # Arguments
+///
+/// * `client` - A `MixerClient` connected to the mixer.
+/// * `address` - The OSC address of the parameter to set.
+/// * `value` - The new value for the parameter.
+///
+/// # Returns
+///
+/// A `Result` indicating success or failure.
+pub async fn set_parameter_async(client: &MixerClient, address: &str, value: f32) -> Result<()> {
+    client.send_message(address, vec![OscArg::Float(value)]).await
+}
+
+/// Gets the value of a floating-point parameter from the mixer asynchronously.
+///
+/// # Arguments
+///
+/// * `client` - A `MixerClient` connected to the mixer.
+/// * `address` - The OSC address of the parameter to get.
+///
+/// # Returns
+///
+/// A `Result` containing the parameter's value as a float.
+pub async fn get_parameter_async(client: &MixerClient, address: &str) -> Result<f32> {
+    let arg = query_value_async(client, address).await?;
+    if let OscArg::Float(value) = arg {
+        Ok(value)
+    } else {
+        Err(OscError::ParseError("Unexpected response from mixer".to_string()).into())
+    }
+}
+
+/// Queries a value from the mixer asynchronously with a bounded timeout (500ms).
+///
+/// # Arguments
+///
+/// * `client` - A `MixerClient` connected to the mixer.
+/// * `address` - The OSC address to query.
+///
+/// # Returns
+///
+/// A `Result` containing the first argument of the response as an `OscArg`.
+pub async fn query_value_async(client: &MixerClient, address: &str) -> Result<OscArg> {
+    match tokio::time::timeout(Duration::from_millis(500), client.query_value(address)).await {
+        Ok(res) => res,
+        Err(_) => Err(OscError::ParseError("Query timeout".to_string()).into()),
+    }
 }
