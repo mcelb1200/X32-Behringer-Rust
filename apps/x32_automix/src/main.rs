@@ -14,7 +14,7 @@
 use clap::Parser;
 use osc_lib::OscArg;
 use std::time::{Duration, Instant};
-use x32_lib::{error::Result, MixerClient};
+use x32_lib::{MixerClient, error::Result};
 
 /// A utility to provide automixing functionality for the Behringer X32/X-Air consoles.
 #[derive(Parser, Debug)]
@@ -225,7 +225,9 @@ async fn adjust_gain(client: &MixerClient, address: &str, db_change: f32) -> Res
         let db = level_to_db(current_level);
         let new_db = (db + db_change).clamp(-90.0, 10.0);
         let new_level = db_to_level(new_db);
-        client.send_message(address, vec![OscArg::Float(new_level)]).await?;
+        client
+            .send_message(address, vec![OscArg::Float(new_level)])
+            .await?;
     }
     Ok(())
 }
