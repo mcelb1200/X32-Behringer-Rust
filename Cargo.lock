@@ -2255,6 +2255,7 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "osc_lib",
+ "tokio",
  "x32_lib",
 ]
 

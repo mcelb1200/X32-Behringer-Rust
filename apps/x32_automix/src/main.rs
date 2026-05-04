@@ -12,11 +12,9 @@
 //! *   **Rust implementation by:** mcelb1200
 
 use clap::Parser;
-use osc_lib::{OscArg, OscMessage};
-use std::io::ErrorKind;
-use std::net::UdpSocket;
+use osc_lib::OscArg;
 use std::time::{Duration, Instant};
-use x32_lib::{create_socket, error::Result};
+use x32_lib::{MixerClient, error::Result};
 
 /// A utility to provide automixing functionality for the Behringer X32/X-Air consoles.
 #[derive(Parser, Debug)]
@@ -60,14 +58,14 @@ struct Args {
 }
 
 /// The main entry point for the automixer application.
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     let args = Args::parse();
     println!("Connecting to X32 at {}...", args.ip);
 
-    let socket = create_socket(&args.ip, 1000)?;
-    socket.set_nonblocking(true)?;
+    let client = MixerClient::connect(&args.ip, true).await?;
 
-    run_automix(args, socket)
+    run_automix(args, client).await
 }
 
 /// Runs the automixing loop.
@@ -78,9 +76,8 @@ fn main() -> Result<()> {
 /// # Arguments
 ///
 /// * `args` - The command-line arguments containing the automix configuration.
-/// * `socket` - The UDP socket connected to the mixer.
-fn run_automix(args: Args, socket: UdpSocket) -> Result<()> {
-    let mut last_remote_time = Instant::now();
+/// * `client` - The MixerClient connected to the mixer.
+async fn run_automix(args: Args, client: MixerClient) -> Result<()> {
     let mut channel_status: Vec<(bool, Instant)> = vec![(false, Instant::now()); 32];
     let mut active_channels = 0;
     let mut nom_level = 1;
@@ -104,28 +101,28 @@ fn run_automix(args: Args, socket: UdpSocket) -> Result<()> {
         "/main/st/mix/fader".to_string()
     };
 
+    let mut rx = client.subscribe();
+    let mut meter_interval = tokio::time::interval(Duration::from_secs(9));
+
     loop {
-        if last_remote_time.elapsed() > Duration::from_secs(9) {
-            socket.send(&OscMessage::new("/xremote".to_string(), vec![]).to_bytes()?)?;
-            socket.send(
-                &OscMessage::new(
-                    "/meters".to_string(),
+        tokio::select! {
+            _ = meter_interval.tick() => {
+                client.send_message(
+                    "/meters",
                     vec![
                         OscArg::String("/meters/1".to_string()),
                         OscArg::Int(0),
                         OscArg::Int(0),
                         OscArg::Int(args.meter_rate_ms as i32 / 50),
-                    ],
-                )
-                .to_bytes()?,
-            )?;
-            last_remote_time = Instant::now();
-        }
-
-        let mut buf = [0; 4096];
-        match socket.recv(&mut buf) {
-            Ok(len) => {
-                let response = OscMessage::from_bytes(&buf[..len])?;
+                    ]
+                ).await?;
+            }
+            result = rx.recv() => {
+                let response = match result {
+                    Ok(msg) => msg,
+                    Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => continue,
+                    Err(tokio::sync::broadcast::error::RecvError::Closed) => break Ok(()),
+                };
                 if response.path == "/meters/1" {
                     if let Some(OscArg::Blob(data)) = response.args.first() {
                         let mut changed = false;
@@ -149,13 +146,10 @@ fn run_automix(args: Args, socket: UdpSocket) -> Result<()> {
                                             active_channels += 1;
                                             changed = true;
                                             if let Some(addr) = fader_addresses.get(ch) {
-                                                socket.send(
-                                                    &OscMessage::new(
-                                                        addr.1.clone(),
-                                                        vec![OscArg::Float(1.0)],
-                                                    )
-                                                    .to_bytes()?,
-                                                )?;
+                                                client.send_message(
+                                                    &addr.1,
+                                                    vec![OscArg::Float(1.0)],
+                                                ).await?;
                                             }
                                         }
                                     } else if *is_active
@@ -166,13 +160,10 @@ fn run_automix(args: Args, socket: UdpSocket) -> Result<()> {
                                         active_channels -= 1;
                                         changed = true;
                                         if let Some(addr) = fader_addresses.get(ch) {
-                                            socket.send(
-                                                &OscMessage::new(
-                                                    addr.0.clone(),
-                                                    vec![OscArg::Float(0.0)],
-                                                )
-                                                .to_bytes()?,
-                                            )?;
+                                            client.send_message(
+                                                &addr.0,
+                                                vec![OscArg::Float(0.0)],
+                                            ).await?;
                                         }
                                     }
                                 }
@@ -180,19 +171,16 @@ fn run_automix(args: Args, socket: UdpSocket) -> Result<()> {
                         }
                         if args.nom && changed {
                             update_nom_gain(
-                                &socket,
+                                &client,
                                 &mix_address,
                                 active_channels,
                                 &mut nom_level,
-                            )?;
+                            ).await?;
                         }
                     }
                 }
             }
-            Err(ref e) if e.kind() == ErrorKind::WouldBlock => {}
-            Err(e) => return Err(e.into()),
         }
-        std::thread::sleep(Duration::from_millis(10));
     }
 }
 
@@ -204,21 +192,21 @@ fn run_automix(args: Args, socket: UdpSocket) -> Result<()> {
 /// * `mix_address` - The OSC address of the master fader.
 /// * `active_channels` - The count of currently active channels.
 /// * `nom_level` - A mutable reference to the current NOM attenuation level.
-fn update_nom_gain(
-    socket: &UdpSocket,
+async fn update_nom_gain(
+    client: &MixerClient,
     mix_address: &str,
     active_channels: i32,
     nom_level: &mut i32,
 ) -> Result<()> {
     if active_channels >= *nom_level * 2 {
         *nom_level *= 2;
-        adjust_gain(socket, mix_address, -3.0)?;
+        adjust_gain(client, mix_address, -3.0).await?;
     } else if active_channels <= *nom_level / 2 {
         *nom_level /= 2;
         if *nom_level < 1 {
             *nom_level = 1;
         }
-        adjust_gain(socket, mix_address, 3.0)?;
+        adjust_gain(client, mix_address, 3.0).await?;
     }
     Ok(())
 }
@@ -230,19 +218,16 @@ fn update_nom_gain(
 /// * `socket` - The UDP socket connected to the mixer.
 /// * `address` - The OSC address of the fader to adjust.
 /// * `db_change` - The amount to change the gain by, in decibels.
-fn adjust_gain(socket: &UdpSocket, address: &str, db_change: f32) -> Result<()> {
-    socket.send(&OscMessage::new(address.to_string(), vec![]).to_bytes()?)?;
-    let mut buf = [0; 512];
-    let len = socket.recv(&mut buf)?;
-    let response = OscMessage::from_bytes(&buf[..len])?;
+async fn adjust_gain(client: &MixerClient, address: &str, db_change: f32) -> Result<()> {
+    let response = client.query_value(address).await?;
 
-    if let Some(OscArg::Float(current_level)) = response.args.first() {
-        let db = level_to_db(*current_level);
+    if let OscArg::Float(current_level) = response {
+        let db = level_to_db(current_level);
         let new_db = (db + db_change).clamp(-90.0, 10.0);
         let new_level = db_to_level(new_db);
-        socket.send(
-            &OscMessage::new(address.to_string(), vec![OscArg::Float(new_level)]).to_bytes()?,
-        )?;
+        client
+            .send_message(address, vec![OscArg::Float(new_level)])
+            .await?;
     }
     Ok(())
 }
