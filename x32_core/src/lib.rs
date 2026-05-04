@@ -147,6 +147,8 @@ impl MixerState {
 pub struct Mixer {
     state: MixerState,
     clients: Vec<(SocketAddr, Instant)>,
+    // Track active meters per client. Map of (client_addr, meter_idx) -> expiry time
+    active_meters: HashMap<(SocketAddr, u8), Instant>,
 }
 
 impl Default for Mixer {
@@ -161,7 +163,55 @@ impl Mixer {
         Self {
             state: MixerState::new(),
             clients: Vec::new(),
+            active_meters: HashMap::new(),
         }
+    }
+
+    /// Seeds the mixer's state from a vector of OSC command strings.
+    pub fn tick(&mut self) -> Vec<(SocketAddr, Arc<[u8]>)> {
+        let mut responses = Vec::new();
+        let now = Instant::now();
+
+        // Expire old meters
+        self.active_meters.retain(|_, expiry| now < *expiry);
+
+        // Generate meter blobs for each active subscription
+        for (&(addr, meter_idx), _) in &self.active_meters {
+            // Number of floats expected per meter index (based on C code)
+            let num_floats = match meter_idx {
+                0 => 70,
+                1 => 96,
+                2 => 49,
+                3 => 22,
+                4 => 82,
+                5 => 27,
+                6 => 4,
+                7 => 16,
+                8 => 6,
+                9 => 32,
+                10 => 32,
+                11 => 5,
+                12 => 4,
+                13 => 48,
+                14 => 80,
+                15 => 50,
+                16 => 48,
+                _ => 0,
+            };
+
+            if num_floats > 0 {
+                // Generate a dummy blob of 0.0 floats
+                let blob_size = num_floats * 4;
+                let blob = vec![0u8; blob_size];
+
+                let path = format!("/meters/{}", meter_idx);
+                if let Ok(bytes) = OscMessage::serialize_to_bytes(&path, [&OscArg::Blob(blob)]) {
+                    responses.push((addr, bytes.into()));
+                }
+            }
+        }
+
+        responses
     }
 
     /// Seeds the mixer's state from a vector of OSC command strings.
@@ -260,13 +310,167 @@ impl Mixer {
             return Ok(responses);
         }
 
+        // Handle /meters subscriptions
+        if osc_msg.path.starts_with("/meters/") {
+            if let Ok(meter_idx) = osc_msg.path[8..].parse::<u8>() {
+                if meter_idx <= 16 {
+                    self.active_meters
+                        .insert((remote_addr, meter_idx), now + Duration::from_secs(10));
+                }
+            }
+            return Ok(responses);
+        }
+
         // Handle system administration commands: /copy, /add, /load, /save, /delete
-        if osc_msg.path == "/copy"
-            || osc_msg.path == "/add"
-            || osc_msg.path == "/load"
-            || osc_msg.path == "/save"
-            || osc_msg.path == "/delete"
-        {
+        if osc_msg.path == "/copy" {
+            let mut success = false;
+            if osc_msg.args.len() >= 4 {
+                if let (
+                    OscArg::String(item_type),
+                    OscArg::Int(src_idx),
+                    OscArg::Int(dst_idx),
+                    OscArg::Int(mask),
+                ) = (
+                    &osc_msg.args[0],
+                    &osc_msg.args[1],
+                    &osc_msg.args[2],
+                    &osc_msg.args[3],
+                ) {
+                    if item_type == "libchan"
+                        && *src_idx >= 0
+                        && *src_idx < 32
+                        && *dst_idx >= 0
+                        && *dst_idx < 32
+                    {
+                        let src_prefix = format!("/ch/{:02}/", src_idx + 1);
+                        let dst_prefix = format!("/ch/{:02}/", dst_idx + 1);
+
+                        // C_CONFIG = 0x0002
+                        // C_HA = 0x0001
+                        // C_GATE = 0x0004
+                        // C_DYN = 0x0008
+                        // C_EQ = 0x0010
+                        // C_SEND = 0x0020
+
+                        let copy_config = (mask & 0x0002) != 0 || *mask == -1;
+                        let copy_ha = (mask & 0x0001) != 0 || *mask == -1;
+                        let copy_gate = (mask & 0x0004) != 0 || *mask == -1;
+                        let copy_dyn = (mask & 0x0008) != 0 || *mask == -1;
+                        let copy_eq = (mask & 0x0010) != 0 || *mask == -1;
+                        let copy_send = (mask & 0x0020) != 0 || *mask == -1;
+
+                        // We will collect keys to clone to avoid borrow checker issues with mut state
+                        let mut to_copy = Vec::new();
+                        for (key, val) in self.state.values.iter() {
+                            if key.starts_with(&src_prefix) {
+                                let suffix = &key[src_prefix.len()..];
+
+                                let should_copy = if suffix.starts_with("config/") {
+                                    copy_config
+                                } else if suffix.starts_with("preamp/") {
+                                    copy_ha
+                                } else if suffix.starts_with("gate/") {
+                                    copy_gate
+                                } else if suffix.starts_with("dyn/") {
+                                    copy_dyn
+                                } else if suffix.starts_with("eq/") {
+                                    copy_eq
+                                } else if suffix.starts_with("mix/") {
+                                    copy_send
+                                }
+                                // mix includes sends, panning, fader
+                                else {
+                                    *mask == -1
+                                }; // copy all if mask is -1
+
+                                if should_copy {
+                                    let new_key = format!("{}{}", dst_prefix, suffix);
+                                    to_copy.push((new_key, val.clone()));
+                                }
+                            }
+                        }
+
+                        for (k, v) in to_copy {
+                            self.state.set(&k, v.clone());
+                            // Need to broadcast to all clients
+                            if let Ok(b) = OscMessage::serialize_to_bytes(&k, [&v]) {
+                                let arc_b: Arc<[u8]> = b.into();
+                                for client in &self.clients {
+                                    responses.push((client.0, arc_b.clone()));
+                                }
+                            }
+                        }
+                        success = true;
+                    }
+                }
+            }
+
+            let arg_type = osc_msg
+                .args
+                .first()
+                .cloned()
+                .unwrap_or(OscArg::String("libchan".to_string()));
+            let arg_res = OscArg::Int(if success { 1 } else { 0 });
+            let bytes = OscMessage::serialize_to_bytes(&osc_msg.path, [&arg_type, &arg_res])?;
+            responses.push((remote_addr, bytes.into()));
+            return Ok(responses);
+        }
+
+        if osc_msg.path == "/save" {
+            let mut success = false;
+            if osc_msg.args.len() >= 4 {
+                if let (
+                    OscArg::String(item_type),
+                    OscArg::Int(idx),
+                    OscArg::String(name),
+                    OscArg::String(note),
+                ) = (
+                    &osc_msg.args[0],
+                    &osc_msg.args[1],
+                    &osc_msg.args[2],
+                    &osc_msg.args[3],
+                ) {
+                    if item_type == "scene" || item_type == "snippet" {
+                        let name_path = format!("/-show/showfile/{}/{:03}/name", item_type, idx);
+                        let note_path = format!("/-show/showfile/{}/{:03}/note", item_type, idx);
+
+                        self.state.set(&name_path, OscArg::String(name.clone()));
+                        self.state.set(&note_path, OscArg::String(note.clone()));
+
+                        if let Ok(b) = OscMessage::serialize_to_bytes(
+                            &name_path,
+                            [&OscArg::String(name.clone())],
+                        ) {
+                            let arc_b: Arc<[u8]> = b.into();
+                            for client in &self.clients {
+                                responses.push((client.0, arc_b.clone()));
+                            }
+                        }
+                        if let Ok(b) = OscMessage::serialize_to_bytes(
+                            &note_path,
+                            [&OscArg::String(note.clone())],
+                        ) {
+                            let arc_b: Arc<[u8]> = b.into();
+                            for client in &self.clients {
+                                responses.push((client.0, arc_b.clone()));
+                            }
+                        }
+                        success = true;
+                    }
+                }
+            }
+            let arg_type = osc_msg
+                .args
+                .first()
+                .cloned()
+                .unwrap_or(OscArg::String("scene".to_string()));
+            let arg_res = OscArg::Int(if success { 1 } else { 0 });
+            let bytes = OscMessage::serialize_to_bytes(&osc_msg.path, [&arg_type, &arg_res])?;
+            responses.push((remote_addr, bytes.into()));
+            return Ok(responses);
+        }
+
+        if osc_msg.path == "/add" || osc_msg.path == "/load" || osc_msg.path == "/delete" {
             if let Some(OscArg::String(ref item_type)) = osc_msg.args.first() {
                 let arg1 = OscArg::String(item_type.clone());
                 let arg2 = OscArg::Int(1);
