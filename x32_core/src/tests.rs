@@ -371,6 +371,108 @@ mod tests {
     }
 
     #[test]
+    fn test_mixer_dispatch_save_libchan() {
+        let mut mixer = Mixer::new();
+
+        // Save libchan format: /save ,sis "libchan" idx name
+        let msg = OscMessage {
+            path: "/save".to_string(),
+            args: vec![
+                OscArg::String("libchan".to_string()),
+                OscArg::Int(10), // Libchan idx 10
+                OscArg::String("My Channel Preset".to_string()),
+            ],
+        };
+        let bytes = msg.to_bytes().unwrap();
+
+        let responses = mixer.dispatch(&bytes, test_addr(1234)).unwrap();
+
+        assert_eq!(
+            mixer.state.get("/-libs/ch/010/name"),
+            Some(&OscArg::String("My Channel Preset".to_string()))
+        );
+        assert_eq!(
+            mixer.state.get("/-libs/ch/010/hasdata"),
+            Some(&OscArg::Int(1))
+        );
+
+        assert_eq!(responses.len(), 1);
+        let response_msg = OscMessage::from_bytes(&responses[0].1).unwrap();
+        assert_eq!(response_msg.path, "/save");
+        assert_eq!(response_msg.args.len(), 2);
+        assert_eq!(response_msg.args[0], OscArg::String("libchan".to_string()));
+        assert_eq!(response_msg.args[1], OscArg::Int(1)); // Success
+    }
+
+    #[test]
+    fn test_mixer_dispatch_save_libfx() {
+        let mut mixer = Mixer::new();
+
+        // Save libfx format: /save ,sis "libfx" idx name
+        let msg = OscMessage {
+            path: "/save".to_string(),
+            args: vec![
+                OscArg::String("libfx".to_string()),
+                OscArg::Int(15), // Libfx idx 15
+                OscArg::String("My FX Preset".to_string()),
+            ],
+        };
+        let bytes = msg.to_bytes().unwrap();
+
+        let responses = mixer.dispatch(&bytes, test_addr(1234)).unwrap();
+
+        assert_eq!(
+            mixer.state.get("/-libs/fx/015/name"),
+            Some(&OscArg::String("My FX Preset".to_string()))
+        );
+        assert_eq!(
+            mixer.state.get("/-libs/fx/015/hasdata"),
+            Some(&OscArg::Int(1))
+        );
+
+        assert_eq!(responses.len(), 1);
+        let response_msg = OscMessage::from_bytes(&responses[0].1).unwrap();
+        assert_eq!(response_msg.path, "/save");
+        assert_eq!(response_msg.args.len(), 2);
+        assert_eq!(response_msg.args[0], OscArg::String("libfx".to_string()));
+        assert_eq!(response_msg.args[1], OscArg::Int(1)); // Success
+    }
+
+    #[test]
+    fn test_mixer_dispatch_save_librout() {
+        let mut mixer = Mixer::new();
+
+        // Save librout format: /save ,sis "librout" idx name
+        let msg = OscMessage {
+            path: "/save".to_string(),
+            args: vec![
+                OscArg::String("librout".to_string()),
+                OscArg::Int(5), // Librout idx 5
+                OscArg::String("My Routing Preset".to_string()),
+            ],
+        };
+        let bytes = msg.to_bytes().unwrap();
+
+        let responses = mixer.dispatch(&bytes, test_addr(1234)).unwrap();
+
+        assert_eq!(
+            mixer.state.get("/-libs/r/005/name"),
+            Some(&OscArg::String("My Routing Preset".to_string()))
+        );
+        assert_eq!(
+            mixer.state.get("/-libs/r/005/hasdata"),
+            Some(&OscArg::Int(1))
+        );
+
+        assert_eq!(responses.len(), 1);
+        let response_msg = OscMessage::from_bytes(&responses[0].1).unwrap();
+        assert_eq!(response_msg.path, "/save");
+        assert_eq!(response_msg.args.len(), 2);
+        assert_eq!(response_msg.args[0], OscArg::String("librout".to_string()));
+        assert_eq!(response_msg.args[1], OscArg::Int(1)); // Success
+    }
+
+    #[test]
     fn test_mixer_dispatch_save_snippet() {
         let mut mixer = Mixer::new();
 

@@ -458,6 +458,44 @@ impl Mixer {
                         success = true;
                     }
                 }
+            } else if osc_msg.args.len() == 3 {
+                if let (OscArg::String(item_type), OscArg::Int(idx), OscArg::String(name)) =
+                    (&osc_msg.args[0], &osc_msg.args[1], &osc_msg.args[2])
+                {
+                    let short_type = match item_type.as_str() {
+                        "libchan" => Some("ch"),
+                        "libfx" => Some("fx"),
+                        "librout" => Some("r"),
+                        _ => None,
+                    };
+
+                    if let Some(t) = short_type {
+                        let name_path = format!("/-libs/{}/{:03}/name", t, idx);
+                        let hasdata_path = format!("/-libs/{}/{:03}/hasdata", t, idx);
+
+                        self.state.set(&name_path, OscArg::String(name.clone()));
+                        self.state.set(&hasdata_path, OscArg::Int(1));
+
+                        if let Ok(b) = OscMessage::serialize_to_bytes(
+                            &name_path,
+                            [&OscArg::String(name.clone())],
+                        ) {
+                            let arc_b: Arc<[u8]> = b.into();
+                            for client in &self.clients {
+                                responses.push((client.0, arc_b.clone()));
+                            }
+                        }
+                        if let Ok(b) =
+                            OscMessage::serialize_to_bytes(&hasdata_path, [&OscArg::Int(1)])
+                        {
+                            let arc_b: Arc<[u8]> = b.into();
+                            for client in &self.clients {
+                                responses.push((client.0, arc_b.clone()));
+                            }
+                        }
+                        success = true;
+                    }
+                }
             }
             let arg_type = osc_msg
                 .args
