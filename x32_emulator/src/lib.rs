@@ -34,7 +34,7 @@ pub mod server {
     pub fn run(bind_addr: &str, seeder: Seeder, shutdown: Option<Receiver<()>>) -> Result<()> {
         let addr: SocketAddr = bind_addr.parse()?;
         let socket = UdpSocket::bind(addr)?;
-        socket.set_nonblocking(true)?;
+        socket.set_read_timeout(Some(std::time::Duration::from_millis(10)))?;
         let mut mixer = Mixer::new();
 
         if let Some(seeder) = seeder {
@@ -62,7 +62,10 @@ pub mod server {
                         eprintln!("Error handling message: {}", e);
                     }
                 },
-                Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {
+                Err(ref e)
+                    if e.kind() == std::io::ErrorKind::WouldBlock
+                        || e.kind() == std::io::ErrorKind::TimedOut =>
+                {
                     // No data received, continue
                 }
                 Err(e) => {
@@ -70,7 +73,6 @@ pub mod server {
                     break;
                 }
             }
-            std::thread::sleep(std::time::Duration::from_millis(10));
         }
         Ok(())
     }
