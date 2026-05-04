@@ -3,8 +3,8 @@ use clap::Parser;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::Duration;
-use tokio::net::UdpSocket;
 use tokio::sync::Mutex;
+use x32_lib::MixerClient;
 
 /// XAir_Command - a simple udp client for XR12, 16 or 18 sending commands and getting answers
 #[derive(Parser, Debug)]
@@ -43,96 +43,23 @@ async fn main() -> Result<()> {
     print!("Connecting to XR18.");
 
     let port = std::env::var("XAIR_PORT").unwrap_or_else(|_| "10024".to_string());
-    let addr: SocketAddr = format!("{}:{}", args.ip, port)
+    let _addr: SocketAddr = format!("{}:{}", args.ip, port)
         .parse()
         .context("Invalid IP address")?;
 
-    let socket = UdpSocket::bind("0.0.0.0:0")
-        .await
-        .context("Failed to bind socket")?;
-
-    let socket = Arc::new(socket);
-
-    // Connect to XR18
-    let mut buf = [0u8; 512];
-
-    loop {
-        // Send /xinfo request
-        socket
-            .send_to(b"/xinfo", addr)
-            .await
-            .context("Failed to send /xinfo")?;
-
-        let res =
-            tokio::time::timeout(Duration::from_millis(500), socket.recv_from(&mut buf)).await;
-        match res {
-            Ok(Ok((len, _src))) => {
-                // ⚡ Bolt: Removed String::from_utf8_lossy to avoid string allocation when checking for /xinfo.
-                let data = &buf[..len];
-                if data.starts_with(b"/xinfo") {
-                    break;
-                }
-            }
-            Ok(Err(e)) => {
-                eprintln!("\nPolling for data failed: {}", e);
-                return Err(e.into());
-            }
-            Err(_) => {
-                // timeout, just retry
-            }
-        }
-        print!(".");
-        use std::io::Write;
-        std::io::stdout().flush().unwrap();
-    }
-
-    println!(" Done!");
-
-    // We might need to give the connection loop a moment to settle, or the OS a moment to route the UDP packet
-    tokio::time::sleep(Duration::from_millis(10)).await;
+    let client = MixerClient::connect(&args.ip, true).await?;
 
     let mut do_keyboard = args.keyboard != 0;
     let s_delay = Arc::new(Mutex::new(args.time));
     let verbose = Arc::new(Mutex::new(args.verbose != 0));
     let xremote_on = Arc::new(Mutex::new(false));
 
-    // Spawn a task to listen for incoming messages
-    let socket_recv = socket.clone();
+    let mut rx = client.subscribe();
     let verbose_recv = verbose.clone();
     tokio::spawn(async move {
-        let mut recv_buf = [0u8; 1024];
-        loop {
-            if let Ok((len, _src)) = socket_recv.recv_from(&mut recv_buf).await {
-                let is_verbose = *verbose_recv.lock().await;
-                if is_verbose {
-                    // Try to parse the OSC message
-                    if let Ok(msg) = osc_lib::OscMessage::from_bytes(&recv_buf[..len]) {
-                        println!("X-> {}", msg);
-                    } else {
-                        let mut hex_str = String::new();
-                        static HEX: &[u8; 16] = b"0123456789abcdef";
-                        for &byte in &recv_buf[..len] {
-                            hex_str.push(HEX[(byte >> 4) as usize] as char);
-                            hex_str.push(HEX[(byte & 0x0f) as usize] as char);
-                            hex_str.push(' ');
-                        }
-                        println!("X-> [Raw] {}", hex_str);
-                    }
-                }
-            }
-        }
-    });
-
-    // Spawn a task for xremote keeping the connection alive
-    let socket_xremote = socket.clone();
-    let xremote_state = xremote_on.clone();
-    tokio::spawn(async move {
-        let mut interval = tokio::time::interval(Duration::from_secs(9));
-        loop {
-            interval.tick().await;
-            let is_on = *xremote_state.lock().await;
-            if is_on {
-                let _ = socket_xremote.send_to(b"/xremote", addr).await;
+        while let Ok(msg) = rx.recv().await {
+            if *verbose_recv.lock().await {
+                println!("X-> {}", msg);
             }
         }
     });
@@ -187,18 +114,20 @@ async fn main() -> Result<()> {
                 let x = *xremote_on.lock().await;
                 println!(":: xremote is {}", if x { "on" } else { "off" });
             } else if line == "xremote off" {
+                client.stop_heartbeat();
                 *xremote_on.lock().await = false;
             } else if line == "xremote on" {
+                client.start_heartbeat();
                 *xremote_on.lock().await = true;
             } else if !line.is_empty() {
                 use std::str::FromStr;
                 if let Ok(msg) = osc_lib::OscMessage::from_str(line) {
-                    if let Ok(bytes) = msg.to_bytes() {
+                    if let Ok(_bytes) = msg.to_bytes() {
                         let delay = *s_delay.lock().await;
                         if delay > 0 {
                             tokio::time::sleep(Duration::from_millis(delay as u64)).await;
                         }
-                        socket.send_to(&bytes, addr).await?;
+                        client.send_message(&msg.path, msg.args).await?;
                     }
                 } else {
                     eprintln!("Failed to parse line: {}", line);
@@ -265,18 +194,20 @@ async fn main() -> Result<()> {
                 let x = *xremote_on.lock().await;
                 println!(":: xremote is {}", if x { "on" } else { "off" });
             } else if line == "xremote off" {
+                client.stop_heartbeat();
                 *xremote_on.lock().await = false;
             } else if line == "xremote on" {
+                client.start_heartbeat();
                 *xremote_on.lock().await = true;
             } else if !line.is_empty() {
                 use std::str::FromStr;
                 if let Ok(msg) = osc_lib::OscMessage::from_str(line) {
-                    if let Ok(bytes) = msg.to_bytes() {
+                    if let Ok(_bytes) = msg.to_bytes() {
                         let delay = *s_delay.lock().await;
                         if delay > 0 {
                             tokio::time::sleep(Duration::from_millis(delay as u64)).await;
                         }
-                        socket.send_to(&bytes, addr).await?;
+                        client.send_message(&msg.path, msg.args).await?;
                     }
                 } else {
                     eprintln!("Failed to parse line: {}", line);

@@ -1,79 +1,49 @@
-//! `xair_set_scene` is a command-line tool for sending a sequence of OSC commands to a Behringer XAir mixer.
-//!
-//! It reads OSC commands from standard input (one per line) and sends them to the mixer.
-//! This is typically used to restore a scene or apply a batch of settings.
-//!
-//! # Credits
-//!
-//! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
-//! *   **Original C code for XAir version:** Ken Mitchell
-//! *   **Additional concepts by:** mcelb1200
-//! *   **Rust implementation by:** mcelb1200
-
+use anyhow::Result;
 use clap::Parser;
-use osc_lib::OscMessage;
+use osc_lib::{OscArg, OscMessage};
 use std::io::{self, BufRead, Read};
-use std::str::FromStr;
-use std::thread;
-use std::time::Duration;
-use x32_lib::{create_socket, error::Result};
+use x32_lib::MixerClient;
 
-/// Command-line arguments for `xair_set_scene`.
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
-    /// The IP address of the XAir console.
-    #[arg(short, long, default_value = "192.168.0.64")]
+    #[arg(short, long)]
     ip: String,
-
-    /// Delay between commands in milliseconds.
-    #[arg(short, long, default_value_t = 1)]
-    delay: u64,
 }
 
-/// The main entry point for the application.
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     let args = Args::parse();
-
-    // The XAir port is 10024. `x32_lib::create_socket` adds `:10023` if no port is specified.
-    // For XAir tools, check if the IP contains a port (`ip.contains(':')`); if not, append `:10024`.
-    let ip = if args.ip.contains(':') {
-        args.ip.clone()
-    } else {
-        format!("{}:10024", args.ip)
-    };
-
-    let socket = create_socket(&ip, 100)?;
+    let client = MixerClient::connect(&args.ip, true).await?;
 
     let stdin = io::stdin();
     let mut stdin_lock = stdin.lock();
+    let mut line = String::new();
+
     loop {
-        let mut line = String::new();
+        line.clear();
         let len = stdin_lock.by_ref().take(4096).read_line(&mut line)?;
         if len == 0 {
             break;
         }
         let line = line.trim();
         if line.starts_with('/') {
-            // First try to parse it as a scene line
-            let mut messages = x32_lib::scene_parse::parse_scene_line(line);
+            let mut parts = line.split_whitespace();
+            let path = parts.next().unwrap();
+            let mut args = Vec::new();
 
-            // If it returns empty, it might be a fully formed raw OSC line, fall back to from_str
-            if messages.is_empty() {
-                match OscMessage::from_str(line) {
-                    Ok(msg) => messages.push(msg),
-                    Err(e) => eprintln!("Error parsing line: {} - {}", line, e),
+            for part in parts {
+                if let Ok(i) = part.parse::<i32>() {
+                    args.push(OscArg::Int(i));
+                } else if let Ok(f) = part.parse::<f32>() {
+                    args.push(OscArg::Float(f));
+                } else {
+                    args.push(OscArg::String(part.to_string()));
                 }
             }
 
-            for msg in messages {
-                if let Ok(bytes) = msg.to_bytes() {
-                    socket.send(&bytes)?;
-                    if args.delay > 0 {
-                        thread::sleep(Duration::from_millis(args.delay));
-                    }
-                }
-            }
+            let msg = OscMessage::new(path.to_string(), args);
+            client.send_message(&msg.path, msg.args).await?;
         }
     }
 

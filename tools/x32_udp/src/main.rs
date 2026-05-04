@@ -1,10 +1,9 @@
-use anyhow::{Context, Result};
+use anyhow::Context;
 use clap::Parser;
 use osc_lib::OscMessage;
 use std::str::FromStr;
 use std::time::Duration;
-use tokio::net::UdpSocket;
-use tokio::time::timeout;
+use x32_lib::MixerClient;
 
 /// A simple UDP client for sending OSC messages to the X32 mixer and receiving responses.
 #[derive(Parser, Debug)]
@@ -28,20 +27,12 @@ struct Args {
 }
 
 #[tokio::main]
-async fn main() -> Result<()> {
+async fn main() -> anyhow::Result<()> {
     let args = Args::parse();
 
     println!("Connection status: 1");
 
-    let socket = UdpSocket::bind("0.0.0.0:0")
-        .await
-        .context("Failed to bind UDP socket")?;
-
-    let addr = format!("{}:{}", args.ip, args.port);
-    socket
-        .connect(&addr)
-        .await
-        .context(format!("Failed to connect to {}", addr))?;
+    let client = MixerClient::connect(&args.ip, true).await?;
 
     let msg = match OscMessage::from_str(&args.command) {
         Ok(msg) => msg,
@@ -51,25 +42,19 @@ async fn main() -> Result<()> {
         }
     };
 
-    let payload = msg.to_bytes().context("Failed to serialize OSC message")?;
+    let _payload = msg.to_bytes().context("Failed to serialize OSC message")?;
 
-    match socket.send(&payload).await {
-        Ok(len) => {
-            println!("Send status: {}", len);
+    match client.send_message(&msg.path, msg.args).await {
+        Ok(_len) => {
+            println!("Send status: OK");
 
-            let mut buf = vec![0u8; 512];
+            let _buf = vec![0u8; 512];
             let timeout_duration = Duration::from_millis(args.timeout);
 
-            match timeout(timeout_duration, socket.recv(&mut buf)).await {
+            match tokio::time::timeout(timeout_duration, client.query_value(&msg.path)).await {
                 Ok(Ok(recv_len)) => {
-                    println!("Recv status: {}", recv_len);
-                    for &byte in &buf[..recv_len] {
-                        if byte < b' ' {
-                            print!("~");
-                        } else {
-                            print!("{}", byte as char);
-                        }
-                    }
+                    println!("Recv status: {:?}", recv_len);
+
                     println!();
                 }
                 Ok(Err(e)) => {

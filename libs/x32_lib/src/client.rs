@@ -1,9 +1,9 @@
-use crate::error::{Result, X32Error};
+use crate::error::Result;
 use osc_lib::{OscArg, OscError, OscMessage};
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::net::UdpSocket;
-use tokio::sync::{Mutex, broadcast, mpsc, watch};
+use tokio::sync::{broadcast, watch};
 use tokio::time::{self, Duration};
 
 const MAX_PACKET_SIZE: usize = 1024 * 1024; // 1MB Sentinel limit
@@ -44,19 +44,14 @@ impl MixerClient {
         // Background receiver task
         let _receiver_handle = tokio::spawn(async move {
             let mut buf = vec![0u8; MAX_PACKET_SIZE];
-            loop {
-                match socket_clone.recv(&mut buf).await {
-                    Ok(len) => {
-                        if let Ok(msg) = OscMessage::from_bytes(&buf[..len]) {
-                            let _ = msg_tx_clone.send(msg);
-                        }
-                    }
-                    Err(_) => break,
+            while let Ok(len) = socket_clone.recv(&mut buf).await {
+                if let Ok(msg) = OscMessage::from_bytes(&buf[..len]) {
+                    let _ = msg_tx_clone.send(msg);
                 }
             }
         });
 
-        let (heartbeat_tx, mut heartbeat_rx) = watch::channel(heartbeat);
+        let (heartbeat_tx, heartbeat_rx) = watch::channel(heartbeat);
         let socket_heartbeat = socket.clone();
         let _heartbeat_handle = tokio::spawn(async move {
             let mut interval = time::interval(Duration::from_secs(9));
@@ -64,10 +59,8 @@ impl MixerClient {
             let bytes = heartbeat_msg.to_bytes().unwrap();
             loop {
                 interval.tick().await;
-                if *heartbeat_rx.borrow() {
-                    if let Err(_) = socket_heartbeat.send(&bytes).await {
-                        break;
-                    }
+                if *heartbeat_rx.borrow() && socket_heartbeat.send(&bytes).await.is_err() {
+                    break;
                 }
             }
         });
