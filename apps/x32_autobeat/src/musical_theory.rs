@@ -62,8 +62,8 @@ impl MusicCalculator {
             // Handle "1", "2" (bars)
             let val: f32 = parts[0].parse().unwrap_or(1.0);
             val * 4.0 // Assuming input is in Bars if no fraction? Or Whole notes?
-                      // Standard convention: "1/4" is a quarter. "1" is a whole note.
-                      // If input is "1", that is a whole note = 4 beats.
+        // Standard convention: "1/4" is a quarter. "1" is a whole note.
+        // If input is "1", that is a whole note = 4 beats.
         } else {
             1.0
         };
