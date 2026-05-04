@@ -7,3 +7,4 @@ edition = "2021"
 clap = { workspace = true }
 x32_lib = { workspace = true }
 osc_lib = { workspace = true }
+tokio = { workspace = true }
