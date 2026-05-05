@@ -147,7 +147,14 @@ pub fn parse_scene_line(line: &str) -> Vec<OscMessage> {
         }
         // General fallback handler for all specific channel/bus/etc settings
         _ => {
-            let exact_path = format!("/{}", parts.join("/"));
+            let exact_path = if path.starts_with('/') {
+                path.to_string()
+            } else {
+                let mut s = String::with_capacity(path.len() + 1);
+                s.push('/');
+                s.push_str(path);
+                s
+            };
 
             // Try to figure out the type from the structure of `arg_str`
             // If it starts and ends with quotes, it's a string.
