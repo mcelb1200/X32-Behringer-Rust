@@ -2604,7 +2604,6 @@ dependencies = [
  "byteorder",
  "chrono",
  "clap",
- "escargot",
  "hound",
  "predicates",
  "tempfile",
