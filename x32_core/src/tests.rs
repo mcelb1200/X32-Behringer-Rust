@@ -339,10 +339,14 @@ mod tests {
     fn test_mixer_dispatch_copy_libfx() {
         let mut mixer = Mixer::new();
 
-        mixer.state.set("/-libs/fx/001/name", OscArg::String("SourceFX".to_string()));
+        mixer
+            .state
+            .set("/-libs/fx/001/name", OscArg::String("SourceFX".to_string()));
         mixer.state.set("/-libs/fx/001/hasdata", OscArg::Int(1));
 
-        mixer.state.set("/-libs/fx/002/name", OscArg::String("DestFX".to_string()));
+        mixer
+            .state
+            .set("/-libs/fx/002/name", OscArg::String("DestFX".to_string()));
 
         let msg = OscMessage {
             path: "/copy".to_string(),
@@ -377,10 +381,15 @@ mod tests {
     fn test_mixer_dispatch_copy_librout() {
         let mut mixer = Mixer::new();
 
-        mixer.state.set("/-libs/r/005/name", OscArg::String("SourceRout".to_string()));
+        mixer.state.set(
+            "/-libs/r/005/name",
+            OscArg::String("SourceRout".to_string()),
+        );
         mixer.state.set("/-libs/r/005/hasdata", OscArg::Int(1));
 
-        mixer.state.set("/-libs/r/010/name", OscArg::String("DestRout".to_string()));
+        mixer
+            .state
+            .set("/-libs/r/010/name", OscArg::String("DestRout".to_string()));
 
         let msg = OscMessage {
             path: "/copy".to_string(),
@@ -415,10 +424,19 @@ mod tests {
     fn test_mixer_dispatch_copy_scene() {
         let mut mixer = Mixer::new();
 
-        mixer.state.set("/-show/showfile/scene/015/name", OscArg::String("SourceScene".to_string()));
-        mixer.state.set("/-show/showfile/scene/015/note", OscArg::String("SourceNote".to_string()));
+        mixer.state.set(
+            "/-show/showfile/scene/015/name",
+            OscArg::String("SourceScene".to_string()),
+        );
+        mixer.state.set(
+            "/-show/showfile/scene/015/note",
+            OscArg::String("SourceNote".to_string()),
+        );
 
-        mixer.state.set("/-show/showfile/scene/020/name", OscArg::String("DestScene".to_string()));
+        mixer.state.set(
+            "/-show/showfile/scene/020/name",
+            OscArg::String("DestScene".to_string()),
+        );
 
         let msg = OscMessage {
             path: "/copy".to_string(),
