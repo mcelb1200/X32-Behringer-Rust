@@ -52,8 +52,23 @@ pub fn parse_file(path: &str) -> Result<Vec<MidiOscCommand>> {
                 return Err(anyhow!("Invalid MIDI command format: {}", midi_part));
             }
 
-            let midi_status = u8::from_str_radix(parts[0], 16)
-                .map_err(|e| anyhow!("Failed to parse midi status hex: {}", e))?;
+            // ⚡ Bolt: Parse midi_status hex manually instead of using u8::from_str_radix
+            // This avoids overhead of slice creation, generic parsing, and utf8 checks,
+            // which improves configuration loading speed for a better UX.
+            let status_str = parts[0];
+            if status_str.len() > 2 || status_str.is_empty() {
+                return Err(anyhow!("Invalid midi status hex length"));
+            }
+            let mut midi_status = 0u8;
+            for &b in status_str.as_bytes() {
+                let v = match b {
+                    b'0'..=b'9' => b - b'0',
+                    b'a'..=b'f' => b - b'a' + 10,
+                    b'A'..=b'F' => b - b'A' + 10,
+                    _ => return Err(anyhow!("Failed to parse midi status hex: invalid char '{}'", b as char)),
+                };
+                midi_status = (midi_status << 4) | v;
+            }
 
             let midi_channel: u8 = parts[1]
                 .parse()
