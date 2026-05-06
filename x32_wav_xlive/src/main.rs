@@ -279,7 +279,13 @@ fn write_se_log_bin(
         }
 
         let mut s = String::new();
-        std::io::Read::take(f, 1024 * 1024).read_to_string(&mut s)?;
+        let mut handle = std::io::Read::take(f, 1024 * 1024 + 1);
+        handle.read_to_string(&mut s)?;
+        if s.len() > 1024 * 1024 {
+            return Err(anyhow::anyhow!(
+                "Marker file exceeds 1MB limit or pseudo-file unbounded read detected"
+            ));
+        }
         for line in s.lines() {
             if let Ok(marker) = line.trim().parse::<f32>() {
                 markers.push(marker);
@@ -495,9 +501,11 @@ mod tests {
         }
 
         let mut buffer = Vec::new();
-        std::io::Read::take(file, 2048 * 2)
-            .read_to_end(&mut buffer)
-            .unwrap();
+        let mut handle = std::io::Read::take(file, 2048 * 2 + 1);
+        handle.read_to_end(&mut buffer).unwrap();
+        if buffer.len() > 2048 * 2 {
+            panic!("SE_LOG.BIN file exceeds limit or pseudo-file unbounded read detected");
+        }
 
         assert_eq!(buffer.len(), 2048, "SE_LOG.BIN is not 2048 bytes long");
     }

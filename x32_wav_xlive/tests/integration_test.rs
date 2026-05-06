@@ -91,12 +91,16 @@ fn test_single_take_se_log_bin() {
         .path();
 
     let log_path = session_dir.join("SE_LOG.BIN");
-    let mut file = File::open(log_path).unwrap();
+    let file = File::open(log_path).unwrap();
     if file.metadata().unwrap().len() > 1024 * 1024 {
         panic!("SE_LOG.BIN file too large");
     }
     let mut buffer = Vec::new();
-    file.read_to_end(&mut buffer).unwrap();
+    let mut handle = std::io::Read::take(file, 1024 * 1024 + 1);
+    handle.read_to_end(&mut buffer).unwrap();
+    if buffer.len() > 1024 * 1024 {
+        panic!("SE_LOG.BIN file exceeds limit or pseudo-file unbounded read detected");
+    }
 
     let mut cursor = Cursor::new(&buffer);
     cursor.set_position(28); // Skip to the take sizes array
