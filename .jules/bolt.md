@@ -66,3 +66,6 @@
 ## 2024-07-20 - [Avoiding Vec allocation before UTF-8 validation]
 **Learning:** In string parsing functions, calling `String::from_utf8(bytes.to_vec())?` immediately allocates a heap vector before attempting to validate the bytes as UTF-8. If the bytes contain invalid UTF-8, the validation fails and the freshly allocated vector is dropped, resulting in an unnecessary allocation on the error path.
 **Action:** Always replace `String::from_utf8(bytes.to_vec())?` with `std::str::from_utf8(bytes)?.to_owned()`. This performs UTF-8 validation directly on the slice first, completely bypassing the memory allocation if the string is invalid, and safely allocating the `String` only on success.
+## 2024-05-10 - [Avoiding string allocation in string split/join combinations]
+**Learning:** In `x32_lib::scene_parse`, a default fallback branch used `format!("/{}", parts.join("/"))` after splitting a path like `/ch/01/mix/fader`. Re-joining pieces of a string that already exist simply allocates a new vector, iterates the parts, and allocates a new `String`.
+**Action:** When reconstructing a path from parts that inherently matches the input string's layout, avoid `.join("/")`. Instead, use `if path.starts_with('/') { path.to_string() } else { format!("/{}", path) }` or direct string builder logic (`push_str`) to avoid `Vec` allocation and iterative string joining entirely.
