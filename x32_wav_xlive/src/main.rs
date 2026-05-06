@@ -282,7 +282,9 @@ fn write_se_log_bin(
         let mut handle = std::io::Read::take(f, 1024 * 1024 + 1);
         handle.read_to_string(&mut s)?;
         if s.len() > 1024 * 1024 {
-            return Err(anyhow::anyhow!("Marker file exceeds 1MB limit or pseudo-file unbounded read detected"));
+            return Err(anyhow::anyhow!(
+                "Marker file exceeds 1MB limit or pseudo-file unbounded read detected"
+            ));
         }
         for line in s.lines() {
             if let Ok(marker) = line.trim().parse::<f32>() {
