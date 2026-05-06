@@ -336,15 +336,38 @@ impl Mixer {
                     &osc_msg.args[2],
                     &osc_msg.args[3],
                 ) {
+                    let mut src_prefix = String::new();
+                    let mut dst_prefix = String::new();
+                    let mut valid = false;
+                    let mut copy_all = false;
+
                     if item_type == "libchan"
                         && *src_idx >= 0
                         && *src_idx < 32
                         && *dst_idx >= 0
                         && *dst_idx < 32
                     {
-                        let src_prefix = format!("/ch/{:02}/", src_idx + 1);
-                        let dst_prefix = format!("/ch/{:02}/", dst_idx + 1);
+                        src_prefix = format!("/ch/{:02}/", src_idx + 1);
+                        dst_prefix = format!("/ch/{:02}/", dst_idx + 1);
+                        valid = true;
+                    } else if item_type == "libfx" && *src_idx >= 0 && *dst_idx >= 0 {
+                        src_prefix = format!("/-libs/fx/{:03}/", src_idx);
+                        dst_prefix = format!("/-libs/fx/{:03}/", dst_idx);
+                        valid = true;
+                        copy_all = true;
+                    } else if item_type == "librout" && *src_idx >= 0 && *dst_idx >= 0 {
+                        src_prefix = format!("/-libs/r/{:03}/", src_idx);
+                        dst_prefix = format!("/-libs/r/{:03}/", dst_idx);
+                        valid = true;
+                        copy_all = true;
+                    } else if item_type == "scene" && *src_idx >= 0 && *dst_idx >= 0 {
+                        src_prefix = format!("/-show/showfile/scene/{:03}/", src_idx);
+                        dst_prefix = format!("/-show/showfile/scene/{:03}/", dst_idx);
+                        valid = true;
+                        copy_all = true;
+                    }
 
+                    if valid {
                         // C_CONFIG = 0x0002
                         // C_HA = 0x0001
                         // C_GATE = 0x0004
@@ -352,12 +375,12 @@ impl Mixer {
                         // C_EQ = 0x0010
                         // C_SEND = 0x0020
 
-                        let copy_config = (mask & 0x0002) != 0 || *mask == -1;
-                        let copy_ha = (mask & 0x0001) != 0 || *mask == -1;
-                        let copy_gate = (mask & 0x0004) != 0 || *mask == -1;
-                        let copy_dyn = (mask & 0x0008) != 0 || *mask == -1;
-                        let copy_eq = (mask & 0x0010) != 0 || *mask == -1;
-                        let copy_send = (mask & 0x0020) != 0 || *mask == -1;
+                        let copy_config = (mask & 0x0002) != 0 || *mask == -1 || copy_all;
+                        let copy_ha = (mask & 0x0001) != 0 || *mask == -1 || copy_all;
+                        let copy_gate = (mask & 0x0004) != 0 || *mask == -1 || copy_all;
+                        let copy_dyn = (mask & 0x0008) != 0 || *mask == -1 || copy_all;
+                        let copy_eq = (mask & 0x0010) != 0 || *mask == -1 || copy_all;
+                        let copy_send = (mask & 0x0020) != 0 || *mask == -1 || copy_all;
 
                         // We will collect keys to clone to avoid borrow checker issues with mut state
                         let mut to_copy = Vec::new();
@@ -365,7 +388,9 @@ impl Mixer {
                             if key.starts_with(&src_prefix) {
                                 let suffix = &key[src_prefix.len()..];
 
-                                let should_copy = if suffix.starts_with("config/") {
+                                let should_copy = if copy_all {
+                                    true
+                                } else if suffix.starts_with("config/") {
                                     copy_config
                                 } else if suffix.starts_with("preamp/") {
                                     copy_ha
