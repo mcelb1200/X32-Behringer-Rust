@@ -98,11 +98,11 @@ async fn main() -> Result<()> {
                         let bytes = &buf[..len];
                         if let Ok(msg) = OscMessage::from_bytes(bytes) {
                             if msg.path == "/-stat/userpar/33/value" {
-                                if let Some(osc_lib::OscArg::Int(move_val)) = msg.args.get(0) {
+                                if let Some(osc_lib::OscArg::Int(move_val)) = msg.args.first() {
                                     handle_jog_move(&socket, *move_val, delta_time).await?;
                                 }
                             } else if msg.path == "/-stat/userpar/35/value" {
-                                if let Some(osc_lib::OscArg::Int(move_val)) = msg.args.get(0) {
+                                if let Some(osc_lib::OscArg::Int(move_val)) = msg.args.first() {
                                     delta_time = calculate_delta_time(*move_val);
                                     if args.verbose {
                                         let tensofms = delta_time / 10;
@@ -144,7 +144,7 @@ async fn handle_jog_move(socket: &UdpSocket, move_val: i32, delta_time: i32) -> 
             let bytes = &buf[..len];
             if let Ok(msg) = OscMessage::from_bytes(bytes) {
                 if msg.path == "/-stat/urec/state" {
-                    if let Some(osc_lib::OscArg::Int(state)) = msg.args.get(0) {
+                    if let Some(osc_lib::OscArg::Int(state)) = msg.args.first() {
                         if (*state & 3) != 0 {
                             // In play (2) or pause (1)
                             query_osc(socket, "/-stat/urec/etime").await?;
@@ -158,7 +158,7 @@ async fn handle_jog_move(socket: &UdpSocket, move_val: i32, delta_time: i32) -> 
                                     if let Ok(msg2) = OscMessage::from_bytes(bytes2) {
                                         if msg2.path == "/-stat/urec/etime" {
                                             if let Some(osc_lib::OscArg::Int(etime)) =
-                                                msg2.args.get(0)
+                                                msg2.args.first()
                                             {
                                                 let mut new_etime = *etime;
                                                 if move_val > 64 {

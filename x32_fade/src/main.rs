@@ -83,6 +83,12 @@ fn main() -> Result<()> {
     // Load configuration from a file if specified.
     if let Some(path) = &args.load_config {
         let f = std::fs::File::open(path)?;
+
+        // Sentinel: Prevent OOM from maliciously large or corrupted config files
+        if f.metadata()?.len() > 1024 * 1024 {
+            return Err(anyhow::anyhow!("Config file too large to load (max 1MB)"));
+        }
+
         let mut data = String::new();
         f.take(1024 * 1024).read_to_string(&mut data)?;
         config = serde_json::from_str(&data)?;

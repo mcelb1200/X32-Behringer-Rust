@@ -27,6 +27,7 @@ impl MusicCalculator {
 
     /// Calculate Frequency (Hz) for a given BPM and cycles per bar.
     /// Used for Modulation effects (Phaser, Flanger).
+    #[allow(dead_code)]
     pub fn bpm_to_hz(bpm: f32, cycles_per_bar: f32) -> f32 {
         if bpm <= 0.0 || cycles_per_bar <= 0.0 {
             return 0.0;

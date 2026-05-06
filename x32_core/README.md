@@ -6,7 +6,7 @@ A headless, stateful emulator engine for Behringer X32 and Midas M32 mixers. It 
 
 *   **Stateful Emulation:** Tracks the real-time value of every console parameter via a thread-safe state store.
 *   **`/xremote` Broadcasting:** Implements full client tracking. When a parameter is "set", the change is automatically broadcasted to all registered subscribers.
-*   **System Admin Support:** Handles `/copy`, `/load`, `/save`, and `/add` commands to simulate complete console workflows.
+*   **System Admin Support:** Handles `/copy`, `/load`, `/save`, `/delete`, and `/add` commands to simulate complete console workflows.
 
 ## 🛠️ Usage (Integration Testing)
 
