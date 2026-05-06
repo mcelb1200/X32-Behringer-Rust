@@ -179,14 +179,21 @@ fn parse_midi_hex(hex_str: &str) -> std::result::Result<Vec<u8>, anyhow::Error> 
                 b'0'..=b'9' => b - b'0',
                 b'a'..=b'f' => b - b'a' + 10,
                 b'A'..=b'F' => b - b'A' + 10,
-                _ => return Err(anyhow::anyhow!("Invalid hex character in byte '{}'", b as char)),
+                _ => {
+                    return Err(anyhow::anyhow!(
+                        "Invalid hex character in byte '{}'",
+                        b as char
+                    ));
+                }
             };
             val = (val << 4) | v;
             count += 1;
             i += 1;
         }
         if count > 2 {
-            return Err(anyhow::anyhow!("Invalid hex byte length: expected at most 2 hex chars per byte"));
+            return Err(anyhow::anyhow!(
+                "Invalid hex byte length: expected at most 2 hex chars per byte"
+            ));
         }
         result.push(val);
     }

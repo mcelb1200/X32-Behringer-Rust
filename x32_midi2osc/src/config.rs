@@ -65,7 +65,12 @@ pub fn parse_file(path: &str) -> Result<Vec<MidiOscCommand>> {
                     b'0'..=b'9' => b - b'0',
                     b'a'..=b'f' => b - b'a' + 10,
                     b'A'..=b'F' => b - b'A' + 10,
-                    _ => return Err(anyhow!("Failed to parse midi status hex: invalid char '{}'", b as char)),
+                    _ => {
+                        return Err(anyhow!(
+                            "Failed to parse midi status hex: invalid char '{}'",
+                            b as char
+                        ));
+                    }
                 };
                 midi_status = (midi_status << 4) | v;
             }
