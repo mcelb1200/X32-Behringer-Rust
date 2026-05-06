@@ -21,3 +21,4 @@ x32_lib = { workspace = true }
 rustfft = "6.1"
 num-complex = "0.4"
 lazy_static = "1.4.0"
+async-trait = "0.1.80"

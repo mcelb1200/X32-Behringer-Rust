@@ -1,13 +1,14 @@
 use anyhow::Result;
 use crossbeam_channel::Sender;
 use osc_lib::OscMessage;
-use std::net::UdpSocket;
 use std::sync::{
     Arc,
     atomic::{AtomicBool, Ordering},
 };
-use std::thread;
-use std::time::Duration;
+use tokio::sync::broadcast::error::RecvError;
+use tokio::task;
+use tokio::time::{self, Duration};
+use x32_lib::client::MixerClient;
 
 pub enum NetworkEvent {
     MeterLevel(f32), // Normalized 0.0-1.0
@@ -17,7 +18,7 @@ pub enum NetworkEvent {
 }
 
 pub struct NetworkManager {
-    socket: Arc<UdpSocket>,
+    client: Arc<MixerClient>,
     ip: String,
     connected: Arc<AtomicBool>,
     event_sender: Sender<NetworkEvent>,
@@ -30,19 +31,18 @@ pub struct NetworkManager {
 }
 
 impl NetworkManager {
-    pub fn new(
+    pub async fn new(
         ip: &str,
         target_channel_idx: usize,
         event_sender: Sender<NetworkEvent>,
         panic_btn_path: &str,
         preset_enc_path: &str,
     ) -> Result<Self> {
-        let socket = x32_lib::create_socket("0.0.0.0", 0)?;
-        socket.set_read_timeout(Some(Duration::from_millis(100)))?;
-        let socket = Arc::new(socket);
+        let client = Arc::new(MixerClient::connect(ip, true).await?);
 
         Ok(Self {
-            socket,
+            client,
+
             ip: ip.to_string(),
             connected: Arc::new(AtomicBool::new(false)),
             event_sender,
@@ -54,88 +54,56 @@ impl NetworkManager {
     }
 
     pub fn connect(&self) -> Result<()> {
-        let msg = OscMessage {
-            path: "/xremote".to_string(),
-            args: vec![],
-        };
-        self.send(&msg)?;
         self.connected.store(true, Ordering::Relaxed);
         Ok(())
     }
 
-    pub fn send(&self, msg: &OscMessage) -> Result<()> {
-        let bytes = msg.to_bytes()?;
-        let target = format!("{}:10023", self.ip);
-        self.socket.send_to(&bytes, &target)?;
+    pub async fn send(&self, msg: &OscMessage) -> Result<()> {
+        self.client
+            .send_message(&msg.path, msg.args.clone())
+            .await?;
         Ok(())
     }
 
     pub fn start_polling(&self, _target_slot: usize) {
-        let socket = self.socket.clone();
+        let client = self.client.clone();
         let sender = self.event_sender.clone();
-        let ip = self.ip.clone();
         let is_connected = self.connected.clone();
         let channel_idx = self.target_channel_idx;
         let panic_path = self.panic_btn_path.clone();
         let enc_path = self.preset_enc_path.clone();
 
-        thread::spawn(move || {
-            let mut buf = [0u8; 2048];
-            let mut last_meter_poll = std::time::Instant::now();
-            let mut last_xremote = std::time::Instant::now();
-            let mut last_fx_poll = std::time::Instant::now();
+        task::spawn(async move {
+            let mut rx = client.subscribe();
+
+            let mut meter_interval = time::interval(Duration::from_millis(50));
+            let mut fx_interval = time::interval(Duration::from_secs(2));
 
             loop {
                 if !is_connected.load(Ordering::Relaxed) {
-                    thread::sleep(Duration::from_millis(100));
+                    time::sleep(Duration::from_millis(100)).await;
                     continue;
                 }
 
-                // 1. Maintain Subscription
-                if last_xremote.elapsed() > Duration::from_secs(9) {
-                    let renew = OscMessage {
-                        path: "/xremote".to_string(),
-                        args: vec![],
-                    };
-                    if let Ok(bytes) = renew.to_bytes() {
-                        let _ = socket.send_to(&bytes, format!("{}:10023", ip));
+                tokio::select! {
+                    _ = meter_interval.tick() => {
+                        let _ = client.send_message("/meters", vec![osc_lib::OscArg::String("/meters/1".to_string())]).await;
                     }
-                    last_xremote = std::time::Instant::now();
-                }
-
-                // 2. Poll Meters
-                if last_meter_poll.elapsed() > Duration::from_millis(50) {
-                    let meter_req = OscMessage {
-                        path: "/meters".to_string(),
-                        args: vec![osc_lib::OscArg::String("/meters/1".to_string())],
-                    };
-                    if let Ok(bytes) = meter_req.to_bytes() {
-                        let _ = socket.send_to(&bytes, format!("{}:10023", ip));
-                    }
-                    last_meter_poll = std::time::Instant::now();
-                }
-
-                // 3. Poll FX Type (All 8 Slots)
-                if last_fx_poll.elapsed() > Duration::from_secs(2) {
-                    for slot in 1..=8 {
-                        let fx_path = format!("/fx/{}/type", slot);
-                        let fx_req = OscMessage {
-                            path: fx_path,
-                            args: vec![],
-                        };
-                        if let Ok(bytes) = fx_req.to_bytes() {
-                            let _ = socket.send_to(&bytes, format!("{}:10023", ip));
-                            // Stagger requests slightly
-                            thread::sleep(Duration::from_millis(10));
+                    _ = fx_interval.tick() => {
+                        for slot in 1..=8 {
+                            let fx_path = format!("/fx/{}/type", slot);
+                            let _ = client.send_message(&fx_path, vec![]).await;
+                            time::sleep(Duration::from_millis(10)).await;
                         }
                     }
-                    last_fx_poll = std::time::Instant::now();
-                }
-
-                // 4. Read Responses
-                if let Ok((size, _addr)) = socket.recv_from(&mut buf) {
-                    if let Ok(msg) = osc_lib::OscMessage::from_bytes(&buf[..size]) {
-                        Self::handle_message(msg, &sender, channel_idx, &panic_path, &enc_path);
+                    msg_res = rx.recv() => {
+                        match msg_res {
+                            Ok(msg) => {
+                                Self::handle_message(msg, &sender, channel_idx, &panic_path, &enc_path);
+                            }
+                            Err(RecvError::Lagged(_)) => continue,
+                            Err(RecvError::Closed) => break,
+                        }
                     }
                 }
             }
@@ -200,39 +168,39 @@ impl NetworkManager {
         }
     }
 
-    pub fn set_scribble_text(&self, channel_num: usize, text: &str) -> Result<()> {
+    pub async fn set_scribble_text(&self, channel_num: usize, text: &str) -> Result<()> {
         let path = format!("/ch/{:02}/config/name", channel_num);
         let msg = OscMessage {
             path,
             args: vec![osc_lib::OscArg::String(text.to_string())],
         };
-        self.send(&msg)
+        self.send(&msg).await
     }
 
     /// Set text on a specific Scribble Strip (e.g. Bus 1, DCA 1, etc.)
     /// `target`: e.g., "/bus/01/config/name"
-    pub fn set_scribble_target(&self, target_path: &str, text: &str) -> Result<()> {
+    pub async fn set_scribble_target(&self, target_path: &str, text: &str) -> Result<()> {
         let msg = OscMessage {
             path: target_path.to_string(),
             args: vec![osc_lib::OscArg::String(text.to_string())],
         };
-        self.send(&msg)
+        self.send(&msg).await
     }
 
-    pub fn set_effect_param(&self, slot: usize, param_idx: usize, value: f32) -> Result<()> {
+    pub async fn set_effect_param(&self, slot: usize, param_idx: usize, value: f32) -> Result<()> {
         let path = format!("/fx/{}/par/{:02}", slot, param_idx);
         let msg = OscMessage {
             path,
             args: vec![osc_lib::OscArg::Float(value)],
         };
-        self.send(&msg)
+        self.send(&msg).await
     }
 
-    pub fn send_osc_float(&self, path: &str, value: f32) -> Result<()> {
+    pub async fn send_osc_float(&self, path: &str, value: f32) -> Result<()> {
         let msg = OscMessage {
             path: path.to_string(),
             args: vec![osc_lib::OscArg::Float(value)],
         };
-        self.send(&msg)
+        self.send(&msg).await
     }
 }

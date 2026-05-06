@@ -7,8 +7,9 @@ use anyhow::Result;
 /// Param 2 is Time.
 pub struct GenericDelayHandler;
 
+#[async_trait::async_trait]
 impl EffectHandler for GenericDelayHandler {
-    fn update(
+    async fn update(
         &self,
         network: &NetworkManager,
         slot: usize,
@@ -23,14 +24,14 @@ impl EffectHandler for GenericDelayHandler {
         // formula: val = (ms - 1) / 2999
         let val = (ms - 1.0) / 2999.0;
 
-        network.set_effect_param(slot, 2, val)?;
+        network.set_effect_param(slot, 2, val).await?;
         Ok(())
     }
 
-    fn panic(&self, network: &NetworkManager, slot: usize) -> Result<()> {
+    async fn panic(&self, network: &NetworkManager, slot: usize) -> Result<()> {
         // Kill feedback (Param 6 typically) and set neutral time
-        network.set_effect_param(slot, 2, 0.166)?; // ~500ms
-        network.set_effect_param(slot, 6, 0.0)?; // Feedback 0%
+        network.set_effect_param(slot, 2, 0.166).await?; // ~500ms
+        network.set_effect_param(slot, 6, 0.0).await?; // Feedback 0%
         Ok(())
     }
 }
@@ -39,8 +40,9 @@ impl EffectHandler for GenericDelayHandler {
 /// Param 1 is Time (Master).
 pub struct TapDelayHandler;
 
+#[async_trait::async_trait]
 impl EffectHandler for TapDelayHandler {
-    fn update(
+    async fn update(
         &self,
         network: &NetworkManager,
         slot: usize,
@@ -51,16 +53,16 @@ impl EffectHandler for TapDelayHandler {
         let ms = ms.clamp(1.0, 3000.0);
         let val = (ms - 1.0) / 2999.0;
 
-        network.set_effect_param(slot, 1, val)?;
+        network.set_effect_param(slot, 1, val).await?;
         Ok(())
     }
 
-    fn panic(&self, network: &NetworkManager, slot: usize) -> Result<()> {
-        network.set_effect_param(slot, 1, 0.166)?;
+    async fn panic(&self, network: &NetworkManager, slot: usize) -> Result<()> {
+        network.set_effect_param(slot, 1, 0.166).await?;
         // 3TAP feedback is Param 3? 4TAP feedback is Param 6?
         // Safe approach: zero out common feedback params 3 and 6
-        network.set_effect_param(slot, 3, 0.0)?;
-        network.set_effect_param(slot, 6, 0.0)?;
+        network.set_effect_param(slot, 3, 0.0).await?;
+        network.set_effect_param(slot, 6, 0.0).await?;
         Ok(())
     }
 }

@@ -8,8 +8,9 @@ use anyhow::Result;
 /// Range is usually 0.05 Hz to 5.0 Hz (Logarithmic).
 pub struct ModulationHandler;
 
+#[async_trait::async_trait]
 impl EffectHandler for ModulationHandler {
-    fn update(
+    async fn update(
         &self,
         network: &NetworkManager,
         slot: usize,
@@ -41,15 +42,15 @@ impl EffectHandler for ModulationHandler {
         let max = 5.0f32;
         let val = (hz.ln() - min.ln()) / (max.ln() - min.ln());
 
-        network.set_effect_param(slot, 1, val)?;
+        network.set_effect_param(slot, 1, val).await?;
         Ok(())
     }
 
-    fn panic(&self, network: &NetworkManager, slot: usize) -> Result<()> {
+    async fn panic(&self, network: &NetworkManager, slot: usize) -> Result<()> {
         // Set to slow speed (bottom 10%)
-        network.set_effect_param(slot, 1, 0.1)?;
+        network.set_effect_param(slot, 1, 0.1).await?;
         // Reduce depth (Param 2 or 3 usually)
-        network.set_effect_param(slot, 3, 0.0)?;
+        network.set_effect_param(slot, 3, 0.0).await?;
         Ok(())
     }
 }
