@@ -50,8 +50,9 @@ impl ReverbHandler {
     }
 }
 
+#[async_trait::async_trait]
 impl EffectHandler for ReverbHandler {
-    fn update(
+    async fn update(
         &self,
         network: &NetworkManager,
         slot: usize,
@@ -65,7 +66,7 @@ impl EffectHandler for ReverbHandler {
         let pre_ms = MusicCalculator::bpm_to_ms(bpm, pre_sub);
         let pre_ms = pre_ms.clamp(0.0, 200.0);
         let pre_val = pre_ms / 200.0;
-        network.set_effect_param(slot, 1, pre_val)?;
+        network.set_effect_param(slot, 1, pre_val).await?;
 
         // 2. Decay (Param 2)
         let decay_ms = MusicCalculator::bpm_to_ms(bpm, decay_sub);
@@ -82,16 +83,16 @@ impl EffectHandler for ReverbHandler {
             (decay_sec - min) / (max - min)
         };
 
-        network.set_effect_param(slot, 2, decay_val)?;
+        network.set_effect_param(slot, 2, decay_val).await?;
 
         Ok(())
     }
 
-    fn panic(&self, network: &NetworkManager, slot: usize) -> Result<()> {
+    async fn panic(&self, network: &NetworkManager, slot: usize) -> Result<()> {
         // Short decay (bottom 10%)
-        network.set_effect_param(slot, 2, 0.1)?;
+        network.set_effect_param(slot, 2, 0.1).await?;
         // Zero pre-delay
-        network.set_effect_param(slot, 1, 0.0)?;
+        network.set_effect_param(slot, 1, 0.0).await?;
         Ok(())
     }
 }

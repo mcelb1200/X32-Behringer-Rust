@@ -116,7 +116,8 @@ fn parse_channels(s: &str) -> Vec<usize> {
     channels
 }
 
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     let cli = Cli::parse();
 
     if let Some(Commands::ListDevices) = cli.command {
@@ -153,13 +154,16 @@ fn main() -> Result<()> {
 
     // Initialize Network
     let channel_idx = if cli.channel > 0 { cli.channel - 1 } else { 0 };
-    let network = Arc::new(NetworkManager::new(
-        &cli.ip,
-        channel_idx,
-        net_sender,
-        &cli.panic_btn,
-        &cli.preset_enc,
-    )?);
+    let network = Arc::new(
+        NetworkManager::new(
+            &cli.ip,
+            channel_idx,
+            net_sender,
+            &cli.panic_btn,
+            &cli.preset_enc,
+        )
+        .await?,
+    );
 
     network.connect()?;
     network.start_polling(0); // Start polling everything
@@ -251,10 +255,10 @@ fn main() -> Result<()> {
                     // Trigger panic on all slots
                     for (i, handler_opt) in effect_handlers.iter().enumerate() {
                         if let Some(h) = handler_opt {
-                            let _ = h.panic(&network, i + 1);
+                            let _ = h.panic(&network, i + 1).await;
                         }
                     }
-                    let _ = network.set_scribble_text(cli.channel, "PANIC!");
+                    let _ = network.set_scribble_text(cli.channel, "PANIC!").await;
                 }
                 NetworkEvent::EncoderTurned(val) => {
                     let cfg = &mut effect_configs[selected_slot];
@@ -302,7 +306,7 @@ fn main() -> Result<()> {
                     if let Some(h) = handler_opt {
                         let cfg = &effect_configs[i];
                         if cfg.enabled {
-                            let _ = h.update(&network, i + 1, bpm, cfg);
+                            let _ = h.update(&network, i + 1, bpm, cfg).await;
                         }
                     }
                 }
@@ -337,7 +341,7 @@ fn main() -> Result<()> {
                         is_panic = true;
                         for (i, handler_opt) in effect_handlers.iter().enumerate() {
                             if let Some(h) = handler_opt {
-                                let _ = h.panic(&network, i + 1);
+                                let _ = h.panic(&network, i + 1).await;
                             }
                         }
                     }
@@ -403,14 +407,14 @@ fn main() -> Result<()> {
 
                 let cfg = &effect_configs[selected_slot];
                 let text = format!("FX{}:{}", selected_slot + 1, cfg.subdivision);
-                let _ = network.set_scribble_text(cli.channel, &text);
+                let _ = network.set_scribble_text(cli.channel, &text).await;
             }
 
             last_ui_update = Instant::now();
         }
 
         if !audio_received_this_frame {
-            std::thread::sleep(Duration::from_millis(1));
+            tokio::time::sleep(Duration::from_millis(1)).await;
         }
     }
 

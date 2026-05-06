@@ -27,18 +27,16 @@ impl Default for EffectConfig {
 }
 
 /// Trait for Effect Handlers
+#[async_trait::async_trait]
 pub trait EffectHandler {
-    /// Update the effect parameters based on the current BPM and configuration.
-    fn update(
+    async fn update(
         &self,
         network: &NetworkManager,
         slot: usize,
         bpm: f32,
         config: &EffectConfig,
     ) -> Result<()>;
-
-    /// Set effect to a "Safe" conservative state (Panic).
-    fn panic(&self, network: &NetworkManager, slot: usize) -> Result<()>;
+    async fn panic(&self, network: &NetworkManager, slot: usize) -> Result<()>;
 }
 
 pub fn get_handler(fx_type: &str) -> Option<Box<dyn EffectHandler + Send + Sync>> {

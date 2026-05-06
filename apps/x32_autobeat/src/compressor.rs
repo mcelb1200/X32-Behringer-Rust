@@ -21,7 +21,7 @@ impl CompressorHandler {
         }
     }
 
-    pub fn update(&mut self, network: &NetworkManager, bpm: f32) -> Result<()> {
+    pub async fn update(&mut self, network: &NetworkManager, bpm: f32) -> Result<()> {
         if self.target_channels.is_empty() {
             return Ok(());
         }
@@ -53,11 +53,11 @@ impl CompressorHandler {
             if *ch >= 1 && *ch <= 32 {
                 if hold_changed {
                     let hold_path = format!("/ch/{:02}/dyn/hold", ch);
-                    network.send_osc_float(&hold_path, hold_val)?;
+                    network.send_osc_float(&hold_path, hold_val).await?;
                 }
                 if release_changed {
                     let release_path = format!("/ch/{:02}/dyn/release", ch);
-                    network.send_osc_float(&release_path, release_val)?;
+                    network.send_osc_float(&release_path, release_val).await?;
                 }
             }
         }
