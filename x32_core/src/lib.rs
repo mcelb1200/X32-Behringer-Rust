@@ -176,7 +176,7 @@ impl Mixer {
         self.active_meters.retain(|_, expiry| now < *expiry);
 
         // Generate meter blobs for each active subscription
-        for (&(addr, meter_idx), _) in &self.active_meters {
+        for &(addr, meter_idx) in self.active_meters.keys() {
             // Number of floats expected per meter index (based on C code)
             let num_floats = match meter_idx {
                 0 => 70,
