@@ -5,7 +5,7 @@ pub mod delay;
 pub mod modulation;
 pub mod reverb;
 
-use delay::{GenericDelayHandler, TapDelayHandler};
+use delay::{CombinedDelayHandler, GenericDelayHandler, TapDelayHandler};
 use modulation::ModulationHandler;
 use reverb::{ReverbHandler, ReverbType};
 
@@ -62,9 +62,11 @@ pub fn get_handler(fx_type: &str) -> Option<Box<dyn EffectHandler + Send + Sync>
         "FLNG" | "FLANGER" => Some(Box::new(ModulationHandler)),
         "PHAS" | "PHASER" => Some(Box::new(ModulationHandler)),
 
-        // TODO: Combined Effects (DLY+CHO, etc.) often behave like DLY for tempo
-        "DLY+CHO" | "D_CR" => Some(Box::new(GenericDelayHandler)),
-        "DLY+FLG" | "D_FL" => Some(Box::new(GenericDelayHandler)),
+        // Combined Effects (Delay is always Param 1)
+        "DLY+CHO" | "D_CR" => Some(Box::new(CombinedDelayHandler)),
+        "DLY+FLG" | "D_FL" => Some(Box::new(CombinedDelayHandler)),
+        "DLY+REV" | "D_RV" => Some(Box::new(CombinedDelayHandler)),
+        "MODD" | "MODULATION_DELAY" => Some(Box::new(CombinedDelayHandler)),
 
         _ => None,
     }
