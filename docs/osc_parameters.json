@@ -1,0 +1,5779 @@
+[
+  {
+    "effect": "HALL",
+    "name": "Hall Reverb",
+    "type_index": 0,
+    "parameters": {
+      "par/01": {
+        "name": "Pre Delay",
+        "type": "linf",
+        "range": [
+          0,
+          200
+        ],
+        "unit": "ms"
+      },
+      "par/02": {
+        "name": "Decay",
+        "type": "logf",
+        "range": [
+          0.2,
+          5.0
+        ]
+      },
+      "par/03": {
+        "name": "Size",
+        "type": "linf",
+        "range": [
+          2,
+          100
+        ]
+      },
+      "par/04": {
+        "name": "Damping",
+        "type": "logf",
+        "range": [
+          1000.0,
+          20000.0
+        ],
+        "unit": "Hz"
+      },
+      "par/05": {
+        "name": "Diffuse",
+        "type": "linf",
+        "range": [
+          1,
+          30
+        ]
+      },
+      "par/06": {
+        "name": "Level",
+        "type": "linf",
+        "range": [
+          -12.0,
+          12.0
+        ],
+        "unit": "dB"
+      },
+      "par/07": {
+        "name": "Lo Cut",
+        "type": "logf",
+        "range": [
+          10,
+          500
+        ],
+        "unit": "Hz"
+      },
+      "par/08": {
+        "name": "Hi Cut",
+        "type": "logf",
+        "range": [
+          200.0,
+          20000.0
+        ],
+        "unit": "Hz"
+      },
+      "par/09": {
+        "name": "Bass Multi",
+        "type": "logf",
+        "range": [
+          0.5,
+          2.0
+        ]
+      },
+      "par/10": {
+        "name": "Spread",
+        "type": "linf",
+        "range": [
+          0,
+          50
+        ]
+      },
+      "par/11": {
+        "name": "Shape",
+        "type": "linf",
+        "range": [
+          0,
+          250
+        ]
+      },
+      "par/12": {
+        "name": "Mod Speed",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ],
+        "unit": "Hz"
+      }
+    }
+  },
+  {
+    "effect": "PLAT",
+    "name": "Plate Reverb",
+    "type_index": 5,
+    "parameters": {
+      "par/01": {
+        "name": "Pre Delay",
+        "type": "linf",
+        "range": [
+          0,
+          200
+        ],
+        "unit": "ms"
+      },
+      "par/02": {
+        "name": "Decay",
+        "type": "logf",
+        "range": [
+          0.2,
+          10.0
+        ]
+      },
+      "par/03": {
+        "name": "Size",
+        "type": "linf",
+        "range": [
+          2,
+          100
+        ]
+      },
+      "par/04": {
+        "name": "Damping",
+        "type": "logf",
+        "range": [
+          1000.0,
+          20000.0
+        ],
+        "unit": "Hz"
+      },
+      "par/05": {
+        "name": "Diffuse",
+        "type": "linf",
+        "range": [
+          1,
+          30
+        ]
+      },
+      "par/06": {
+        "name": "Level",
+        "type": "linf",
+        "range": [
+          -12.0,
+          12.0
+        ],
+        "unit": "dB"
+      },
+      "par/07": {
+        "name": "Lo Cut",
+        "type": "logf",
+        "range": [
+          10,
+          500
+        ],
+        "unit": "Hz"
+      },
+      "par/08": {
+        "name": "Hi Cut",
+        "type": "logf",
+        "range": [
+          200.0,
+          20000.0
+        ],
+        "unit": "Hz"
+      },
+      "par/09": {
+        "name": "Bass Multi",
+        "type": "logf",
+        "range": [
+          0.5,
+          2.0
+        ]
+      },
+      "par/10": {
+        "name": "Xover",
+        "type": "logf",
+        "range": [
+          10,
+          500
+        ]
+      },
+      "par/11": {
+        "name": "Mod",
+        "type": "linf",
+        "range": [
+          0,
+          50
+        ]
+      },
+      "par/12": {
+        "name": "Mod Speed",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ],
+        "unit": "Hz"
+      }
+    }
+  },
+  {
+    "effect": "AMBI",
+    "name": "Ambiance Reverb",
+    "type_index": 1,
+    "parameters": {
+      "par/01": {
+        "name": "Pre Delay",
+        "type": "linf",
+        "range": [
+          0,
+          200
+        ],
+        "unit": "ms"
+      },
+      "par/02": {
+        "name": "Decay",
+        "type": "logf",
+        "range": [
+          0.2,
+          7.3
+        ]
+      },
+      "par/03": {
+        "name": "Size",
+        "type": "linf",
+        "range": [
+          2,
+          100
+        ]
+      },
+      "par/04": {
+        "name": "Damping",
+        "type": "logf",
+        "range": [
+          1000.0,
+          20000.0
+        ],
+        "unit": "Hz"
+      },
+      "par/05": {
+        "name": "Diffuse",
+        "type": "linf",
+        "range": [
+          1,
+          30
+        ]
+      },
+      "par/06": {
+        "name": "Level",
+        "type": "linf",
+        "range": [
+          -12.0,
+          12.0
+        ],
+        "unit": "dB"
+      },
+      "par/07": {
+        "name": "Lo Cut",
+        "type": "logf",
+        "range": [
+          10,
+          500
+        ],
+        "unit": "Hz"
+      },
+      "par/08": {
+        "name": "Hi Cut",
+        "type": "logf",
+        "range": [
+          200.0,
+          20000.0
+        ],
+        "unit": "Hz"
+      },
+      "par/09": {
+        "name": "Modulate",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      },
+      "par/10": {
+        "name": "Tail Gain",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      }
+    }
+  },
+  {
+    "effect": "RPLT",
+    "name": "Rich Plate Reverb",
+    "type_index": 2,
+    "parameters": {
+      "par/01": {
+        "name": "Pre Delay",
+        "type": "linf",
+        "range": [
+          0,
+          200
+        ],
+        "unit": "ms"
+      },
+      "par/02": {
+        "name": "Decay",
+        "type": "logf",
+        "range": [
+          0.3,
+          29.0
+        ]
+      },
+      "par/03": {
+        "name": "Size",
+        "type": "linf",
+        "range": [
+          4,
+          39
+        ]
+      },
+      "par/04": {
+        "name": "Damping",
+        "type": "logf",
+        "range": [
+          1000.0,
+          20000.0
+        ],
+        "unit": "Hz"
+      },
+      "par/05": {
+        "name": "Diffuse",
+        "type": "linf",
+        "range": [
+          1,
+          30
+        ]
+      },
+      "par/06": {
+        "name": "Level",
+        "type": "linf",
+        "range": [
+          -12.0,
+          12.0
+        ],
+        "unit": "dB"
+      },
+      "par/07": {
+        "name": "Lo Cut",
+        "type": "logf",
+        "range": [
+          10,
+          500
+        ],
+        "unit": "Hz"
+      },
+      "par/08": {
+        "name": "Hi Cut",
+        "type": "logf",
+        "range": [
+          200.0,
+          20000.0
+        ],
+        "unit": "Hz"
+      },
+      "par/09": {
+        "name": "Bass Multi",
+        "type": "logf",
+        "range": [
+          0.25,
+          4.0
+        ]
+      },
+      "par/10": {
+        "name": "Spread",
+        "type": "linf",
+        "range": [
+          0,
+          50
+        ]
+      },
+      "par/11": {
+        "name": "Attack",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      },
+      "par/12": {
+        "name": "Spin",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      },
+      "par/13": {
+        "name": "Echo L",
+        "type": "linf",
+        "range": [
+          0,
+          1200
+        ]
+      },
+      "par/14": {
+        "name": "Echo R",
+        "type": "linf",
+        "range": [
+          0,
+          1200
+        ]
+      },
+      "par/15": {
+        "name": "Echo Feed L",
+        "type": "linf",
+        "range": [
+          -100.0,
+          100.0
+        ]
+      },
+      "par/16": {
+        "name": "Echo Feed L",
+        "type": "linf",
+        "range": [
+          -100.0,
+          100.0
+        ]
+      }
+    }
+  },
+  {
+    "effect": "ROOM",
+    "name": "Room Reverb",
+    "type_index": 3,
+    "parameters": {
+      "par/01": {
+        "name": "Pre Delay",
+        "type": "linf",
+        "range": [
+          0,
+          200
+        ],
+        "unit": "ms"
+      },
+      "par/02": {
+        "name": "Decay",
+        "type": "logf",
+        "range": [
+          0.3,
+          29.0
+        ]
+      },
+      "par/03": {
+        "name": "Size",
+        "type": "linf",
+        "range": [
+          4,
+          72
+        ]
+      },
+      "par/04": {
+        "name": "Damping",
+        "type": "logf",
+        "range": [
+          1000.0,
+          20000.0
+        ],
+        "unit": "Hz"
+      },
+      "par/05": {
+        "name": "Diffuse",
+        "type": "linf",
+        "range": [
+          1,
+          30
+        ]
+      },
+      "par/06": {
+        "name": "Level",
+        "type": "linf",
+        "range": [
+          -12.0,
+          12.0
+        ],
+        "unit": "dB"
+      },
+      "par/07": {
+        "name": "Lo Cut",
+        "type": "logf",
+        "range": [
+          10,
+          500
+        ],
+        "unit": "Hz"
+      },
+      "par/08": {
+        "name": "Hi Cut",
+        "type": "logf",
+        "range": [
+          200.0,
+          20000.0
+        ],
+        "unit": "Hz"
+      },
+      "par/09": {
+        "name": "Bass Multi",
+        "type": "logf",
+        "range": [
+          0.25,
+          4.0
+        ]
+      },
+      "par/10": {
+        "name": "Spread",
+        "type": "linf",
+        "range": [
+          0,
+          50
+        ]
+      },
+      "par/11": {
+        "name": "Shape",
+        "type": "linf",
+        "range": [
+          0,
+          250
+        ]
+      },
+      "par/12": {
+        "name": "Spin",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      },
+      "par/13": {
+        "name": "Echo L",
+        "type": "linf",
+        "range": [
+          0,
+          1200
+        ]
+      },
+      "par/14": {
+        "name": "Echo R",
+        "type": "linf",
+        "range": [
+          0,
+          1200
+        ]
+      },
+      "par/15": {
+        "name": "Echo Feed L",
+        "type": "linf",
+        "range": [
+          -100.0,
+          100.0
+        ]
+      },
+      "par/16": {
+        "name": "Echo Feed L",
+        "type": "linf",
+        "range": [
+          -100.0,
+          100.0
+        ]
+      }
+    }
+  },
+  {
+    "effect": "CHAM",
+    "name": "Chamber Reverb",
+    "type_index": 4,
+    "parameters": {
+      "par/01": {
+        "name": "Pre Delay",
+        "type": "linf",
+        "range": [
+          0,
+          200
+        ],
+        "unit": "ms"
+      },
+      "par/02": {
+        "name": "Decay",
+        "type": "logf",
+        "range": [
+          0.3,
+          29.0
+        ]
+      },
+      "par/03": {
+        "name": "Size",
+        "type": "linf",
+        "range": [
+          4,
+          72
+        ]
+      },
+      "par/04": {
+        "name": "Damping",
+        "type": "logf",
+        "range": [
+          1000.0,
+          20000.0
+        ],
+        "unit": "Hz"
+      },
+      "par/05": {
+        "name": "Diffuse",
+        "type": "linf",
+        "range": [
+          1,
+          30
+        ]
+      },
+      "par/06": {
+        "name": "Level",
+        "type": "linf",
+        "range": [
+          -12.0,
+          12.0
+        ],
+        "unit": "dB"
+      },
+      "par/07": {
+        "name": "Lo Cut",
+        "type": "logf",
+        "range": [
+          10,
+          500
+        ],
+        "unit": "Hz"
+      },
+      "par/08": {
+        "name": "Hi Cut",
+        "type": "logf",
+        "range": [
+          200.0,
+          20000.0
+        ],
+        "unit": "Hz"
+      },
+      "par/09": {
+        "name": "Bass Multi",
+        "type": "logf",
+        "range": [
+          0.25,
+          4.0
+        ]
+      },
+      "par/10": {
+        "name": "Spread",
+        "type": "linf",
+        "range": [
+          0,
+          50
+        ]
+      },
+      "par/11": {
+        "name": "Shape",
+        "type": "linf",
+        "range": [
+          0,
+          250
+        ]
+      },
+      "par/12": {
+        "name": "Spin",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      },
+      "par/13": {
+        "name": "Reflection L",
+        "type": "linf",
+        "range": [
+          0,
+          500
+        ]
+      },
+      "par/14": {
+        "name": "Reflection R",
+        "type": "linf",
+        "range": [
+          0,
+          500
+        ]
+      },
+      "par/15": {
+        "name": "Reflection Gain L",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      },
+      "par/16": {
+        "name": "Reflection Gain L",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      }
+    }
+  },
+  {
+    "effect": "4TAP",
+    "name": "4-Tap Delay",
+    "type_index": 12,
+    "parameters": {
+      "par/01": {
+        "name": "Time",
+        "type": "linf",
+        "range": [
+          1,
+          3000
+        ],
+        "unit": "ms"
+      },
+      "par/02": {
+        "name": "Gain Base",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      },
+      "par/03": {
+        "name": "Feedback",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ],
+        "unit": "%"
+      },
+      "par/04": {
+        "name": "Lo Cut",
+        "type": "logf",
+        "range": [
+          10,
+          500
+        ],
+        "unit": "Hz"
+      },
+      "par/05": {
+        "name": "Hi Cut",
+        "type": "logf",
+        "range": [
+          200.0,
+          20000.0
+        ],
+        "unit": "Hz"
+      },
+      "par/06": {
+        "name": "Spread",
+        "type": "linf",
+        "range": [
+          0,
+          6
+        ]
+      },
+      "par/07": {
+        "name": "Gain A",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      },
+      "par/08": {
+        "name": "Gain B",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      },
+      "par/09": {
+        "name": "Gain C",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      },
+      "par/10": {
+        "name": "Cross Feed",
+        "type": "enum",
+        "range": [
+          "OFF",
+          "ON"
+        ],
+        "unit": "%"
+      },
+      "par/11": {
+        "name": "Mono",
+        "type": "enum",
+        "range": [
+          "OFF",
+          "ON"
+        ]
+      },
+      "par/12": {
+        "name": "Dry",
+        "type": "enum",
+        "range": [
+          "OFF",
+          "ON"
+        ]
+      }
+    }
+  },
+  {
+    "effect": "VREV",
+    "name": "Vintage Reverb",
+    "type_index": 6,
+    "parameters": {
+      "par/01": {
+        "name": "Pre Delay",
+        "type": "linf",
+        "range": [
+          0,
+          120
+        ],
+        "unit": "ms"
+      },
+      "par/02": {
+        "name": "Decay",
+        "type": "logf",
+        "range": [
+          0.3,
+          4.5
+        ]
+      },
+      "par/03": {
+        "name": "Modulate",
+        "type": "linf",
+        "range": [
+          0,
+          10
+        ]
+      },
+      "par/04": {
+        "name": "Vintage",
+        "type": "enum",
+        "range": [
+          "OFF",
+          "ON"
+        ]
+      },
+      "par/05": {
+        "name": "Position",
+        "type": "enum",
+        "range": [
+          "FRONT",
+          "REAR"
+        ]
+      },
+      "par/06": {
+        "name": "Level",
+        "type": "linf",
+        "range": [
+          -12.0,
+          12.0
+        ],
+        "unit": "dB"
+      },
+      "par/07": {
+        "name": "Lo Cut",
+        "type": "logf",
+        "range": [
+          10,
+          500
+        ],
+        "unit": "Hz"
+      },
+      "par/08": {
+        "name": "Hi Cut",
+        "type": "logf",
+        "range": [
+          200.0,
+          20000.0
+        ],
+        "unit": "Hz"
+      },
+      "par/09": {
+        "name": "Lo Multiply",
+        "type": "logf",
+        "range": [
+          0.5,
+          2.0
+        ]
+      },
+      "par/10": {
+        "name": "Hi Multiply",
+        "type": "logf",
+        "range": [
+          0.25,
+          1.0
+        ]
+      }
+    }
+  },
+  {
+    "effect": "VRM",
+    "name": "Vintage Room",
+    "type_index": 7,
+    "parameters": {
+      "par/01": {
+        "name": "Reverb Delay",
+        "type": "linf",
+        "range": [
+          0,
+          20
+        ]
+      },
+      "par/02": {
+        "name": "Decay",
+        "type": "logf",
+        "range": [
+          0.1,
+          20.0
+        ]
+      },
+      "par/03": {
+        "name": "Size",
+        "type": "linf",
+        "range": [
+          0,
+          10
+        ]
+      },
+      "par/04": {
+        "name": "Density",
+        "type": "linf",
+        "range": [
+          1,
+          30
+        ]
+      },
+      "par/05": {
+        "name": "ER Level",
+        "type": "linf",
+        "range": [
+          0,
+          190
+        ]
+      },
+      "par/06": {
+        "name": "Level",
+        "type": "linf",
+        "range": [
+          -12.0,
+          12.0
+        ],
+        "unit": "dB"
+      },
+      "par/07": {
+        "name": "Lo Multiply",
+        "type": "logf",
+        "range": [
+          0.1,
+          10.0
+        ]
+      },
+      "par/08": {
+        "name": "Hi Multiply",
+        "type": "logf",
+        "range": [
+          0.1,
+          10.0
+        ]
+      },
+      "par/09": {
+        "name": "Lo Cut",
+        "type": "logf",
+        "range": [
+          10,
+          500
+        ],
+        "unit": "Hz"
+      },
+      "par/10": {
+        "name": "Hi Cut",
+        "type": "logf",
+        "range": [
+          200.0,
+          20000.0
+        ],
+        "unit": "Hz"
+      },
+      "par/11": {
+        "name": "ER Left",
+        "type": "linf",
+        "range": [
+          0,
+          10
+        ]
+      },
+      "par/12": {
+        "name": "ER Right",
+        "type": "linf",
+        "range": [
+          0,
+          10
+        ]
+      },
+      "par/13": {
+        "name": "Freeze",
+        "type": "enum",
+        "range": [
+          "OFF",
+          "ON"
+        ]
+      }
+    }
+  },
+  {
+    "effect": "GATE",
+    "name": "Gated Reverb",
+    "type_index": 8,
+    "parameters": {
+      "par/01": {
+        "name": "Pre Delay",
+        "type": "linf",
+        "range": [
+          0,
+          200
+        ],
+        "unit": "ms"
+      },
+      "par/02": {
+        "name": "Decay",
+        "type": "logf",
+        "range": [
+          140,
+          1000
+        ]
+      },
+      "par/03": {
+        "name": "Attack",
+        "type": "linf",
+        "range": [
+          0,
+          30
+        ]
+      },
+      "par/04": {
+        "name": "Density",
+        "type": "linf",
+        "range": [
+          1,
+          30
+        ]
+      },
+      "par/05": {
+        "name": "Spread",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      },
+      "par/06": {
+        "name": "Level",
+        "type": "linf",
+        "range": [
+          -12.0,
+          12.0
+        ],
+        "unit": "dB"
+      },
+      "par/07": {
+        "name": "Lo Cut",
+        "type": "logf",
+        "range": [
+          10,
+          500
+        ],
+        "unit": "Hz"
+      },
+      "par/08": {
+        "name": "Hi Cut",
+        "type": "logf",
+        "range": [
+          200.0,
+          20000.0
+        ],
+        "unit": "Hz"
+      },
+      "par/09": {
+        "name": "Hi Shv Gain",
+        "type": "linf",
+        "range": [
+          -30.0,
+          0.0
+        ]
+      },
+      "par/10": {
+        "name": "Diffuse",
+        "type": "linf",
+        "range": [
+          1,
+          30
+        ]
+      }
+    }
+  },
+  {
+    "effect": "RVRS",
+    "name": "Reverse Reverb",
+    "type_index": 9,
+    "parameters": {
+      "par/01": {
+        "name": "Pre Delay",
+        "type": "linf",
+        "range": [
+          0,
+          200
+        ],
+        "unit": "ms"
+      },
+      "par/02": {
+        "name": "Decay",
+        "type": "logf",
+        "range": [
+          140,
+          1000
+        ]
+      },
+      "par/03": {
+        "name": "Rise",
+        "type": "linf",
+        "range": [
+          0,
+          50
+        ]
+      },
+      "par/04": {
+        "name": "Diffuse",
+        "type": "linf",
+        "range": [
+          1,
+          30
+        ]
+      },
+      "par/05": {
+        "name": "Spread",
+        "type": "linf",
+        "range": [
+          1,
+          100
+        ]
+      },
+      "par/06": {
+        "name": "Level",
+        "type": "linf",
+        "range": [
+          -12.0,
+          12.0
+        ],
+        "unit": "dB"
+      },
+      "par/07": {
+        "name": "Lo Cut",
+        "type": "logf",
+        "range": [
+          10,
+          500
+        ],
+        "unit": "Hz"
+      },
+      "par/08": {
+        "name": "Hi Cut",
+        "type": "logf",
+        "range": [
+          200.0,
+          20000.0
+        ],
+        "unit": "Hz"
+      },
+      "par/09": {
+        "name": "Hi Shv Gain",
+        "type": "linf",
+        "range": [
+          -30.0,
+          0.0
+        ]
+      }
+    }
+  },
+  {
+    "effect": "DLY",
+    "name": "Stereo Delay",
+    "type_index": 10,
+    "parameters": {
+      "par/01": {
+        "name": "Mix",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ],
+        "unit": "%"
+      },
+      "par/02": {
+        "name": "Time",
+        "type": "linf",
+        "range": [
+          0,
+          3000
+        ],
+        "unit": "ms"
+      },
+      "par/03": {
+        "name": "Mode",
+        "type": "enum",
+        "range": [
+          "ST",
+          "X",
+          "M"
+        ]
+      },
+      "par/04": {
+        "name": "Offset L/R",
+        "type": "linf",
+        "range": [
+          -100.0,
+          100.0
+        ]
+      },
+      "par/05": {
+        "name": "Lo Cut",
+        "type": "logf",
+        "range": [
+          10,
+          500
+        ],
+        "unit": "Hz"
+      },
+      "par/06": {
+        "name": "Hi Cut",
+        "type": "logf",
+        "range": [
+          200.0,
+          20000.0
+        ],
+        "unit": "Hz"
+      },
+      "par/07": {
+        "name": "Feed Lo Cut",
+        "type": "logf",
+        "range": [
+          10,
+          500
+        ],
+        "unit": "Hz"
+      },
+      "par/08": {
+        "name": "Feed Left",
+        "type": "linf",
+        "range": [
+          1,
+          100
+        ]
+      },
+      "par/09": {
+        "name": "Feed Right",
+        "type": "linf",
+        "range": [
+          1,
+          100
+        ]
+      },
+      "par/10": {
+        "name": "Feed Hi Cut",
+        "type": "logf",
+        "range": [
+          200.0,
+          20000.0
+        ],
+        "unit": "Hz"
+      }
+    }
+  },
+  {
+    "effect": "3TAP",
+    "name": "3-Tap Delay",
+    "type_index": 11,
+    "parameters": {
+      "par/01": {
+        "name": "Dry",
+        "type": "linf",
+        "range": [
+          0,
+          3000
+        ]
+      },
+      "par/02": {
+        "name": "Gain Base",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      },
+      "par/03": {
+        "name": "Pan Base",
+        "type": "linf",
+        "range": [
+          -100.0,
+          100.0
+        ]
+      },
+      "par/04": {
+        "name": "Feedback",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ],
+        "unit": "%"
+      },
+      "par/05": {
+        "name": "Lo Cut",
+        "type": "logf",
+        "range": [
+          10,
+          500
+        ],
+        "unit": "Hz"
+      },
+      "par/06": {
+        "name": "Hi Cut",
+        "type": "logf",
+        "range": [
+          200.0,
+          20000.0
+        ],
+        "unit": "Hz"
+      },
+      "par/07": {
+        "name": "Gain A",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      },
+      "par/08": {
+        "name": "Pan A",
+        "type": "linf",
+        "range": [
+          -100.0,
+          100.0
+        ]
+      },
+      "par/09": {
+        "name": "Gain B",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      },
+      "par/10": {
+        "name": "Pan B",
+        "type": "linf",
+        "range": [
+          -100.0,
+          100.0
+        ]
+      },
+      "par/11": {
+        "name": "Cross Feed",
+        "type": "enum",
+        "range": [
+          "OFF",
+          "ON"
+        ],
+        "unit": "%"
+      },
+      "par/12": {
+        "name": "Mono",
+        "type": "enum",
+        "range": [
+          "OFF",
+          "ON"
+        ]
+      },
+      "par/13": {
+        "name": "Dry",
+        "type": "enum",
+        "range": [
+          "OFF",
+          "ON"
+        ]
+      }
+    }
+  },
+  {
+    "effect": "CRS",
+    "name": "Stereo Chorus",
+    "type_index": 13,
+    "parameters": {
+      "par/01": {
+        "name": "Speed",
+        "type": "logf",
+        "range": [
+          0.05,
+          5.0
+        ],
+        "unit": "Hz"
+      },
+      "par/02": {
+        "name": "Depth L",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      },
+      "par/03": {
+        "name": "Depth R",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      },
+      "par/04": {
+        "name": "Delay L",
+        "type": "logf",
+        "range": [
+          0.5,
+          20.0
+        ]
+      },
+      "par/05": {
+        "name": "Delay R",
+        "type": "logf",
+        "range": [
+          0.5,
+          20.0
+        ]
+      },
+      "par/06": {
+        "name": "Mix",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ],
+        "unit": "%"
+      },
+      "par/07": {
+        "name": "Lo Cut",
+        "type": "logf",
+        "range": [
+          10,
+          500
+        ],
+        "unit": "Hz"
+      },
+      "par/08": {
+        "name": "Hi Cut",
+        "type": "logf",
+        "range": [
+          200.0,
+          20000.0
+        ],
+        "unit": "Hz"
+      },
+      "par/09": {
+        "name": "Phase",
+        "type": "linf",
+        "range": [
+          0,
+          180
+        ],
+        "unit": "deg"
+      },
+      "par/10": {
+        "name": "Wave",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ],
+        "unit": "%"
+      },
+      "par/11": {
+        "name": "Spread",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      }
+    }
+  },
+  {
+    "effect": "FLNG",
+    "name": "Stereo Flanger",
+    "type_index": 14,
+    "parameters": {
+      "par/01": {
+        "name": "Speed",
+        "type": "logf",
+        "range": [
+          0.05,
+          5.0
+        ],
+        "unit": "Hz"
+      },
+      "par/02": {
+        "name": "Depth L",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      },
+      "par/03": {
+        "name": "Depth R",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      },
+      "par/04": {
+        "name": "Delay L",
+        "type": "logf",
+        "range": [
+          0.5,
+          20.0
+        ]
+      },
+      "par/05": {
+        "name": "Delay R",
+        "type": "logf",
+        "range": [
+          0.5,
+          20.0
+        ]
+      },
+      "par/06": {
+        "name": "Mix",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ],
+        "unit": "%"
+      },
+      "par/07": {
+        "name": "Lo Cut",
+        "type": "logf",
+        "range": [
+          10,
+          500
+        ],
+        "unit": "Hz"
+      },
+      "par/08": {
+        "name": "Hi Cut",
+        "type": "logf",
+        "range": [
+          200.0,
+          20000.0
+        ],
+        "unit": "Hz"
+      },
+      "par/09": {
+        "name": "Phase",
+        "type": "linf",
+        "range": [
+          0,
+          180
+        ],
+        "unit": "deg"
+      },
+      "par/10": {
+        "name": "Feed Lo Cut",
+        "type": "logf",
+        "range": [
+          10,
+          500
+        ],
+        "unit": "Hz"
+      },
+      "par/11": {
+        "name": "Feed Hi Cut",
+        "type": "logf",
+        "range": [
+          200.0,
+          20000.0
+        ],
+        "unit": "Hz"
+      },
+      "par/12": {
+        "name": "Feed",
+        "type": "linf",
+        "range": [
+          -90.0,
+          90.0
+        ]
+      }
+    }
+  },
+  {
+    "effect": "PHAS",
+    "name": "Stereo Phaser",
+    "type_index": 15,
+    "parameters": {
+      "par/01": {
+        "name": "Speed",
+        "type": "logf",
+        "range": [
+          0.05,
+          5.0
+        ],
+        "unit": "Hz"
+      },
+      "par/02": {
+        "name": "Depth",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ],
+        "unit": "%"
+      },
+      "par/03": {
+        "name": "Resonance",
+        "type": "linf",
+        "range": [
+          0,
+          80
+        ]
+      },
+      "par/04": {
+        "name": "Base",
+        "type": "linf",
+        "range": [
+          0,
+          50
+        ]
+      },
+      "par/05": {
+        "name": "Stages",
+        "type": "linf",
+        "range": [
+          2,
+          12
+        ]
+      },
+      "par/06": {
+        "name": "Mix",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ],
+        "unit": "%"
+      },
+      "par/07": {
+        "name": "Wave",
+        "type": "linf",
+        "range": [
+          -50.0,
+          50.0
+        ],
+        "unit": "%"
+      },
+      "par/08": {
+        "name": "Phase",
+        "type": "linf",
+        "range": [
+          0,
+          180
+        ],
+        "unit": "deg"
+      },
+      "par/09": {
+        "name": "Env. Modulation",
+        "type": "linf",
+        "range": [
+          -100.0,
+          100.0
+        ]
+      },
+      "par/10": {
+        "name": "Attack",
+        "type": "logf",
+        "range": [
+          10,
+          1000
+        ]
+      },
+      "par/11": {
+        "name": "Hold",
+        "type": "logf",
+        "range": [
+          1,
+          2000
+        ]
+      },
+      "par/12": {
+        "name": "Release",
+        "type": "logf",
+        "range": [
+          10,
+          1000
+        ]
+      }
+    }
+  },
+  {
+    "effect": "DIMC",
+    "name": "Dimensional Chorus",
+    "type_index": 16,
+    "parameters": {
+      "par/01": {
+        "name": "Active",
+        "type": "enum",
+        "range": [
+          "OFF",
+          "ON"
+        ]
+      },
+      "par/02": {
+        "name": "Mode",
+        "type": "enum",
+        "range": [
+          "M",
+          "ST"
+        ]
+      },
+      "par/03": {
+        "name": "Dry",
+        "type": "enum",
+        "range": [
+          "OFF",
+          "ON"
+        ]
+      },
+      "par/04": {
+        "name": "Mode 1",
+        "type": "enum",
+        "range": [
+          "OFF",
+          "ON"
+        ]
+      },
+      "par/05": {
+        "name": "Mode 2",
+        "type": "enum",
+        "range": [
+          "OFF",
+          "ON"
+        ]
+      },
+      "par/06": {
+        "name": "Mode 3",
+        "type": "enum",
+        "range": [
+          "OFF",
+          "ON"
+        ]
+      },
+      "par/07": {
+        "name": "Mode 4",
+        "type": "enum",
+        "range": [
+          "OFF",
+          "ON"
+        ]
+      }
+    }
+  },
+  {
+    "effect": "FILT",
+    "name": "Mood Filter",
+    "type_index": 17,
+    "parameters": {
+      "par/01": {
+        "name": "Speed",
+        "type": "logf",
+        "range": [
+          0.05,
+          20.0
+        ],
+        "unit": "Hz"
+      },
+      "par/02": {
+        "name": "Depth",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ],
+        "unit": "%"
+      },
+      "par/03": {
+        "name": "Resonance",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      },
+      "par/04": {
+        "name": "Base",
+        "type": "logf",
+        "range": [
+          10,
+          15000
+        ]
+      },
+      "par/05": {
+        "name": "Mode",
+        "type": "enum",
+        "range": [
+          "LP",
+          "HP",
+          "BP",
+          "NO"
+        ]
+      },
+      "par/06": {
+        "name": "Mix",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ],
+        "unit": "%"
+      },
+      "par/07": {
+        "name": "Phase",
+        "type": "linf",
+        "range": [
+          0,
+          180
+        ],
+        "unit": "deg"
+      },
+      "par/08": {
+        "name": "Env. Modulation",
+        "type": "linf",
+        "range": [
+          -100.0,
+          100.0
+        ]
+      },
+      "par/09": {
+        "name": "Attack",
+        "type": "logf",
+        "range": [
+          10,
+          250
+        ]
+      },
+      "par/10": {
+        "name": "Release",
+        "type": "logf",
+        "range": [
+          10,
+          500
+        ]
+      },
+      "par/11": {
+        "name": "Drive",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      },
+      "par/12": {
+        "name": "4 Pole",
+        "type": "enum",
+        "range": [
+          "OFF",
+          "ON"
+        ]
+      },
+      "par/13": {
+        "name": "Side Chain",
+        "type": "enum",
+        "range": [
+          "OFF",
+          "ON"
+        ]
+      }
+    }
+  },
+  {
+    "effect": "ROTA",
+    "name": "Rotary Speaker",
+    "type_index": 18,
+    "parameters": {
+      "par/01": {
+        "name": "Lo Speed",
+        "type": "logf",
+        "range": [
+          0.1,
+          4.0
+        ],
+        "unit": "Hz"
+      },
+      "par/02": {
+        "name": "Hi Speed",
+        "type": "logf",
+        "range": [
+          2,
+          10
+        ],
+        "unit": "Hz"
+      },
+      "par/03": {
+        "name": "Accelerate",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      },
+      "par/04": {
+        "name": "Distance",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      },
+      "par/05": {
+        "name": "Balance",
+        "type": "linf",
+        "range": [
+          -100.0,
+          100.0
+        ],
+        "unit": "L/R"
+      },
+      "par/06": {
+        "name": "Mix",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ],
+        "unit": "%"
+      },
+      "par/07": {
+        "name": "Stop",
+        "type": "enum",
+        "range": [
+          "OFF",
+          "ON"
+        ]
+      },
+      "par/08": {
+        "name": "Slow",
+        "type": "enum",
+        "range": [
+          "OFF",
+          "ON/ Panner"
+        ]
+      }
+    }
+  },
+  {
+    "effect": "PAN",
+    "name": "Tremolo + Panner",
+    "type_index": 19,
+    "parameters": {
+      "par/01": {
+        "name": "Speed",
+        "type": "logf",
+        "range": [
+          0.05,
+          4.0
+        ],
+        "unit": "Hz"
+      },
+      "par/02": {
+        "name": "Phase",
+        "type": "linf",
+        "range": [
+          0,
+          180
+        ],
+        "unit": "deg"
+      },
+      "par/03": {
+        "name": "Wave",
+        "type": "linf",
+        "range": [
+          -50.0,
+          50.0
+        ],
+        "unit": "%"
+      },
+      "par/04": {
+        "name": "Depth",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ],
+        "unit": "%"
+      },
+      "par/05": {
+        "name": "Env. Speed",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ],
+        "unit": "Hz"
+      },
+      "par/06": {
+        "name": "Env. Depth",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      },
+      "par/07": {
+        "name": "Attack",
+        "type": "logf",
+        "range": [
+          10,
+          1000
+        ]
+      },
+      "par/08": {
+        "name": "Hold",
+        "type": "logf",
+        "range": [
+          1,
+          2000
+        ]
+      },
+      "par/09": {
+        "name": "Release",
+        "type": "logf",
+        "range": [
+          10,
+          1000
+        ]
+      }
+    }
+  },
+  {
+    "effect": "SUB",
+    "name": "Suboctaver",
+    "type_index": 20,
+    "parameters": {
+      "par/01": {
+        "name": "Active",
+        "type": "enum",
+        "range": [
+          "OFF",
+          "ON"
+        ]
+      },
+      "par/02": {
+        "name": "Range",
+        "type": "enum",
+        "range": [
+          "LO",
+          "MID",
+          "HI"
+        ]
+      },
+      "par/03": {
+        "name": "Dry",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      },
+      "par/04": {
+        "name": "Octave -1",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      },
+      "par/05": {
+        "name": "Octave -2",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      },
+      "par/06": {
+        "name": "Active",
+        "type": "enum",
+        "range": [
+          "OFF",
+          "ON"
+        ]
+      },
+      "par/07": {
+        "name": "Range",
+        "type": "enum",
+        "range": [
+          "LO",
+          "MID",
+          "HI"
+        ]
+      },
+      "par/08": {
+        "name": "Dry",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      },
+      "par/09": {
+        "name": "Octave -1",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      },
+      "par/10": {
+        "name": "Octave -2",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      }
+    }
+  },
+  {
+    "effect": "D/RV",
+    "name": "Delay + Chamber",
+    "type_index": 21,
+    "parameters": {
+      "par/01": {
+        "name": "Time",
+        "type": "linf",
+        "range": [
+          1,
+          3000
+        ],
+        "unit": "ms"
+      },
+      "par/02": {
+        "name": "Feed Hi Cut",
+        "type": "logf",
+        "range": [
+          1000,
+          20000
+        ],
+        "unit": "Hz"
+      },
+      "par/03": {
+        "name": "Feedback",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ],
+        "unit": "%"
+      },
+      "par/04": {
+        "name": "Cross Feed",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ],
+        "unit": "%"
+      },
+      "par/05": {
+        "name": "Balance",
+        "type": "linf",
+        "range": [
+          -100.0,
+          100.0
+        ],
+        "unit": "L/R"
+      },
+      "par/06": {
+        "name": "Pre Delay",
+        "type": "linf",
+        "range": [
+          0,
+          200
+        ],
+        "unit": "ms"
+      },
+      "par/07": {
+        "name": "Decay",
+        "type": "logf",
+        "range": [
+          0.1,
+          5.0
+        ]
+      },
+      "par/08": {
+        "name": "Size",
+        "type": "linf",
+        "range": [
+          2,
+          100
+        ]
+      },
+      "par/09": {
+        "name": "Damping",
+        "type": "logf",
+        "range": [
+          1000,
+          20000
+        ],
+        "unit": "Hz"
+      },
+      "par/10": {
+        "name": "Lo Cut",
+        "type": "logf",
+        "range": [
+          10,
+          500
+        ],
+        "unit": "Hz"
+      },
+      "par/11": {
+        "name": "Mix",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ],
+        "unit": "%"
+      }
+    }
+  },
+  {
+    "effect": "D/CR",
+    "name": "Delay + Chorus",
+    "type_index": 24,
+    "parameters": {
+      "par/01": {
+        "name": "Time",
+        "type": "linf",
+        "range": [
+          1,
+          3000
+        ],
+        "unit": "ms"
+      },
+      "par/02": {
+        "name": "Pattern",
+        "type": "enum",
+        "range": [
+          "1/4",
+          "1/3",
+          "3/8",
+          "1/2",
+          "2/3",
+          "3/4",
+          "1",
+          "1/4X",
+          "1/3X",
+          "3/8X",
+          "1/2X",
+          "2/3X",
+          "3/4X",
+          "1X"
+        ]
+      },
+      "par/03": {
+        "name": "Feed Hi Cut",
+        "type": "logf",
+        "range": [
+          1000,
+          20000
+        ],
+        "unit": "Hz"
+      },
+      "par/04": {
+        "name": "Feedback",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ],
+        "unit": "%"
+      },
+      "par/05": {
+        "name": "Cross Feed",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ],
+        "unit": "%"
+      },
+      "par/06": {
+        "name": "Balance",
+        "type": "linf",
+        "range": [
+          -100.0,
+          100.0
+        ],
+        "unit": "L/R"
+      },
+      "par/07": {
+        "name": "Speed",
+        "type": "logf",
+        "range": [
+          0.05,
+          4.0
+        ],
+        "unit": "Hz"
+      },
+      "par/08": {
+        "name": "Depth",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ],
+        "unit": "%"
+      },
+      "par/09": {
+        "name": "Delay",
+        "type": "logf",
+        "range": [
+          0.5,
+          50.0
+        ],
+        "unit": "ms"
+      },
+      "par/10": {
+        "name": "Phase",
+        "type": "linf",
+        "range": [
+          0,
+          180
+        ],
+        "unit": "deg"
+      },
+      "par/11": {
+        "name": "Wave",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ],
+        "unit": "%"
+      },
+      "par/12": {
+        "name": "Mix",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ],
+        "unit": "%"
+      }
+    }
+  },
+  {
+    "effect": "D/FL",
+    "name": "Delay + Flanger",
+    "type_index": 25,
+    "parameters": {
+      "par/01": {
+        "name": "Time",
+        "type": "linf",
+        "range": [
+          1,
+          3000
+        ],
+        "unit": "ms"
+      },
+      "par/02": {
+        "name": "Feed Hi Cut",
+        "type": "logf",
+        "range": [
+          1000,
+          20000
+        ],
+        "unit": "Hz"
+      },
+      "par/03": {
+        "name": "Feedback",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ],
+        "unit": "%"
+      },
+      "par/04": {
+        "name": "Cross Feed",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ],
+        "unit": "%"
+      },
+      "par/05": {
+        "name": "Balance",
+        "type": "linf",
+        "range": [
+          -100.0,
+          100.0
+        ],
+        "unit": "L/R"
+      },
+      "par/06": {
+        "name": "Speed",
+        "type": "logf",
+        "range": [
+          0.05,
+          4.0
+        ],
+        "unit": "Hz"
+      },
+      "par/07": {
+        "name": "Depth",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ],
+        "unit": "%"
+      },
+      "par/08": {
+        "name": "Delay",
+        "type": "logf",
+        "range": [
+          0.5,
+          20.0
+        ],
+        "unit": "ms"
+      },
+      "par/09": {
+        "name": "Phase",
+        "type": "linf",
+        "range": [
+          0,
+          180
+        ],
+        "unit": "deg"
+      },
+      "par/10": {
+        "name": "Feed",
+        "type": "linf",
+        "range": [
+          -90.0,
+          90.0
+        ]
+      },
+      "par/11": {
+        "name": "Mix",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ],
+        "unit": "%"
+      }
+    }
+  },
+  {
+    "effect": "CR/R",
+    "name": "Chorus + Chamber",
+    "type_index": 22,
+    "parameters": {
+      "par/01": {
+        "name": "Speed",
+        "type": "logf",
+        "range": [
+          0.05,
+          4.0
+        ],
+        "unit": "Hz"
+      },
+      "par/02": {
+        "name": "Depth",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ],
+        "unit": "%"
+      },
+      "par/03": {
+        "name": "Delay",
+        "type": "logf",
+        "range": [
+          0.5,
+          50.0
+        ],
+        "unit": "ms"
+      },
+      "par/04": {
+        "name": "Phase",
+        "type": "linf",
+        "range": [
+          0,
+          180
+        ],
+        "unit": "deg"
+      },
+      "par/05": {
+        "name": "Wave",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ],
+        "unit": "%"
+      },
+      "par/06": {
+        "name": "Balance",
+        "type": "linf",
+        "range": [
+          -100.0,
+          100.0
+        ],
+        "unit": "L/R"
+      },
+      "par/07": {
+        "name": "Pre Delay",
+        "type": "linf",
+        "range": [
+          0,
+          200
+        ],
+        "unit": "ms"
+      },
+      "par/08": {
+        "name": "Decay",
+        "type": "logf",
+        "range": [
+          0.1,
+          5.0
+        ]
+      },
+      "par/09": {
+        "name": "Size",
+        "type": "linf",
+        "range": [
+          2,
+          100
+        ]
+      },
+      "par/10": {
+        "name": "Damping",
+        "type": "logf",
+        "range": [
+          1000.0,
+          20000.0
+        ],
+        "unit": "Hz"
+      },
+      "par/11": {
+        "name": "Lo Cut",
+        "type": "logf",
+        "range": [
+          10,
+          500
+        ],
+        "unit": "Hz"
+      },
+      "par/12": {
+        "name": "Mix",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ],
+        "unit": "%"
+      }
+    }
+  },
+  {
+    "effect": "FL/R",
+    "name": "Flanger + Chamber",
+    "type_index": 23,
+    "parameters": {
+      "par/01": {
+        "name": "Speed",
+        "type": "logf",
+        "range": [
+          0.05,
+          4.0
+        ],
+        "unit": "Hz"
+      },
+      "par/02": {
+        "name": "Depth",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ],
+        "unit": "%"
+      },
+      "par/03": {
+        "name": "Delay",
+        "type": "logf",
+        "range": [
+          0.5,
+          20.0
+        ],
+        "unit": "ms"
+      },
+      "par/04": {
+        "name": "Phase",
+        "type": "linf",
+        "range": [
+          0,
+          180
+        ],
+        "unit": "deg"
+      },
+      "par/05": {
+        "name": "Feed",
+        "type": "linf",
+        "range": [
+          -90.0,
+          90.0
+        ]
+      },
+      "par/06": {
+        "name": "Balance",
+        "type": "linf",
+        "range": [
+          -100.0,
+          100.0
+        ],
+        "unit": "L/R"
+      },
+      "par/07": {
+        "name": "Pre Delay",
+        "type": "linf",
+        "range": [
+          0,
+          200
+        ],
+        "unit": "ms"
+      },
+      "par/08": {
+        "name": "Decay",
+        "type": "logf",
+        "range": [
+          0.1,
+          5.0
+        ]
+      },
+      "par/09": {
+        "name": "Size",
+        "type": "linf",
+        "range": [
+          2,
+          100
+        ]
+      },
+      "par/10": {
+        "name": "Damping",
+        "type": "logf",
+        "range": [
+          1000.0,
+          20000.0
+        ],
+        "unit": "Hz"
+      },
+      "par/11": {
+        "name": "Lo Cut",
+        "type": "logf",
+        "range": [
+          10,
+          500
+        ],
+        "unit": "Hz"
+      },
+      "par/12": {
+        "name": "Mix",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ],
+        "unit": "%"
+      }
+    }
+  },
+  {
+    "effect": "MODD",
+    "name": "Modulation Delay",
+    "type_index": 26,
+    "parameters": {
+      "par/01": {
+        "name": "Time",
+        "type": "linf",
+        "range": [
+          1,
+          3000
+        ],
+        "unit": "ms"
+      },
+      "par/02": {
+        "name": "Delay",
+        "type": "enum",
+        "range": [
+          "1",
+          "1/2",
+          "2/3",
+          "3/2"
+        ]
+      },
+      "par/03": {
+        "name": "Feed",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      },
+      "par/04": {
+        "name": "Lo Cut",
+        "type": "logf",
+        "range": [
+          10,
+          500
+        ],
+        "unit": "Hz"
+      },
+      "par/05": {
+        "name": "Hi Cut",
+        "type": "logf",
+        "range": [
+          200.0,
+          20000.0
+        ],
+        "unit": "Hz"
+      },
+      "par/06": {
+        "name": "Depth Rate",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      },
+      "par/07": {
+        "name": "Rate",
+        "type": "logf",
+        "range": [
+          0.05,
+          10.0
+        ]
+      },
+      "par/08": {
+        "name": "Setup",
+        "type": "enum",
+        "range": [
+          "PAR",
+          "SER"
+        ]
+      },
+      "par/09": {
+        "name": "Type",
+        "type": "enum",
+        "range": [
+          "AMB",
+          "CLUB",
+          "HALL"
+        ]
+      },
+      "par/10": {
+        "name": "Decay",
+        "type": "linf",
+        "range": [
+          1,
+          10
+        ]
+      },
+      "par/11": {
+        "name": "Damping",
+        "type": "logf",
+        "range": [
+          1000.0,
+          20000.0
+        ],
+        "unit": "Hz"
+      },
+      "par/12": {
+        "name": "Balance",
+        "type": "linf",
+        "range": [
+          -100.0,
+          100.0
+        ],
+        "unit": "L/R"
+      },
+      "par/13": {
+        "name": "Mix",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ],
+        "unit": "%"
+      }
+    }
+  },
+  {
+    "effect": "GEQ2",
+    "name": "Dual Graphic Eq",
+    "type_index": 27,
+    "parameters": {
+      "par/01": {
+        "name": "31 x Eq Level A",
+        "type": "linf",
+        "range": [
+          -15.0,
+          15.0
+        ]
+      },
+      "par/02": {
+        "name": "Master Level A",
+        "type": "linf",
+        "range": [
+          -15.0,
+          15.0
+        ]
+      },
+      "par/03": {
+        "name": "31 x Eq Level B",
+        "type": "linf",
+        "range": [
+          -15.0,
+          15.0
+        ]
+      },
+      "par/04": {
+        "name": "Master Level B",
+        "type": "linf",
+        "range": [
+          -15.0,
+          15.0
+        ]
+      }
+    }
+  },
+  {
+    "effect": "GEQ",
+    "name": "Stereo Graphic Eq",
+    "type_index": 28,
+    "parameters": {
+      "par/01": {
+        "name": "31 x Eq Level L/R",
+        "type": "linf",
+        "range": [
+          -15.0,
+          15.0
+        ]
+      },
+      "par/02": {
+        "name": "Master Level L/R",
+        "type": "linf",
+        "range": [
+          -15.0,
+          15.0
+        ]
+      }
+    }
+  },
+  {
+    "effect": "DES",
+    "name": "Stereo Deesser",
+    "type_index": 32,
+    "parameters": {
+      "par/01": {
+        "name": "Lo Band L",
+        "type": "linf",
+        "range": [
+          0,
+          50
+        ]
+      },
+      "par/02": {
+        "name": "Hi Band L",
+        "type": "linf",
+        "range": [
+          0,
+          50
+        ]
+      },
+      "par/03": {
+        "name": "Lo Band R",
+        "type": "linf",
+        "range": [
+          0,
+          50
+        ]
+      },
+      "par/04": {
+        "name": "Hi Band R",
+        "type": "linf",
+        "range": [
+          0,
+          50
+        ]
+      },
+      "par/05": {
+        "name": "Voice",
+        "type": "enum",
+        "range": [
+          "FEM / MALE"
+        ]
+      },
+      "par/06": {
+        "name": "Mode",
+        "type": "enum",
+        "range": [
+          "ST / M/S"
+        ]
+      }
+    }
+  },
+  {
+    "effect": "DES2",
+    "name": "Dual Deesser",
+    "type_index": 31,
+    "parameters": {
+      "par/01": {
+        "name": "Lo Band A",
+        "type": "linf",
+        "range": [
+          0,
+          50
+        ]
+      },
+      "par/02": {
+        "name": "Hi Band A",
+        "type": "linf",
+        "range": [
+          0,
+          50
+        ]
+      },
+      "par/03": {
+        "name": "Lo Band B",
+        "type": "linf",
+        "range": [
+          0,
+          50
+        ]
+      },
+      "par/04": {
+        "name": "Hi Band B",
+        "type": "linf",
+        "range": [
+          0,
+          50
+        ]
+      },
+      "par/05": {
+        "name": "Voice A",
+        "type": "enum",
+        "range": [
+          "FEM / MALE"
+        ]
+      },
+      "par/06": {
+        "name": "Voice B",
+        "type": "enum",
+        "range": [
+          "FEM / MALE"
+        ]
+      }
+    }
+  },
+  {
+    "effect": "LIM",
+    "name": "Precision Limiter",
+    "type_index": 38,
+    "parameters": {
+      "par/01": {
+        "name": "Input Gain",
+        "type": "linf",
+        "range": [
+          0,
+          18
+        ]
+      },
+      "par/02": {
+        "name": "Out Gain",
+        "type": "linf",
+        "range": [
+          -18.0,
+          18.0
+        ]
+      },
+      "par/03": {
+        "name": "Squeeze",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      },
+      "par/04": {
+        "name": "Knee",
+        "type": "linf",
+        "range": [
+          0,
+          10
+        ]
+      },
+      "par/05": {
+        "name": "Release",
+        "type": "logf",
+        "range": [
+          20,
+          2000
+        ]
+      },
+      "par/06": {
+        "name": "Stereo Link",
+        "type": "enum",
+        "range": [
+          "OFF",
+          "ON"
+        ]
+      },
+      "par/07": {
+        "name": "Auto Gain",
+        "type": "enum",
+        "range": [
+          "OFF",
+          "ON/ Dual Program EQ"
+        ]
+      }
+    }
+  },
+  {
+    "effect": "PQ5",
+    "name": "PQ5",
+    "type_index": 35,
+    "parameters": {
+      "par/01": {
+        "name": "Active",
+        "type": "enum",
+        "range": [
+          "OFF",
+          "ON"
+        ]
+      },
+      "par/02": {
+        "name": "Gain",
+        "type": "linf",
+        "range": [
+          -12.0,
+          12.0
+        ],
+        "unit": "dB"
+      },
+      "par/03": {
+        "name": "Lo Freq",
+        "type": "enum",
+        "range": [
+          "200",
+          "300",
+          "500",
+          "700",
+          "1000"
+        ]
+      },
+      "par/04": {
+        "name": "Lo Boost",
+        "type": "linf",
+        "range": [
+          0,
+          10
+        ]
+      },
+      "par/05": {
+        "name": "Mid Boost",
+        "type": "linf",
+        "range": [
+          0,
+          10
+        ]
+      },
+      "par/06": {
+        "name": "Hi Freq",
+        "type": "enum",
+        "range": [
+          "1k5",
+          "2k",
+          "3k",
+          "4k",
+          "5k"
+        ]
+      },
+      "par/07": {
+        "name": "Hi Boost",
+        "type": "linf",
+        "range": [
+          0,
+          10
+        ]
+      },
+      "par/08": {
+        "name": "Transformer",
+        "type": "enum",
+        "range": [
+          "OFF",
+          "ON"
+        ]
+      }
+    }
+  },
+  {
+    "effect": "PQ5S",
+    "name": "Dual Midrange Eq",
+    "type_index": 36,
+    "parameters": {
+      "par/01": {
+        "name": "Active A",
+        "type": "enum",
+        "range": [
+          "OFF",
+          "ON"
+        ]
+      },
+      "par/02": {
+        "name": "Gain A",
+        "type": "linf",
+        "range": [
+          -12.0,
+          12.0
+        ]
+      },
+      "par/03": {
+        "name": "Lo Freq A",
+        "type": "enum",
+        "range": [
+          "200",
+          "300",
+          "500",
+          "700",
+          "1000"
+        ]
+      },
+      "par/04": {
+        "name": "Lo Boost A",
+        "type": "linf",
+        "range": [
+          0,
+          10
+        ]
+      },
+      "par/05": {
+        "name": "Mid Boost A",
+        "type": "linf",
+        "range": [
+          0,
+          10
+        ]
+      },
+      "par/06": {
+        "name": "Hi Freq A",
+        "type": "enum",
+        "range": [
+          "1k5",
+          "2k",
+          "3k",
+          "4k",
+          "5k"
+        ]
+      },
+      "par/07": {
+        "name": "Hi Boost A",
+        "type": "linf",
+        "range": [
+          0,
+          10
+        ]
+      },
+      "par/08": {
+        "name": "Transformer A",
+        "type": "enum",
+        "range": [
+          "OFF",
+          "ON"
+        ]
+      },
+      "par/09": {
+        "name": "Active B",
+        "type": "enum",
+        "range": [
+          "OFF",
+          "ON"
+        ]
+      },
+      "par/10": {
+        "name": "Gain B",
+        "type": "linf",
+        "range": [
+          -12.0,
+          12.0
+        ]
+      },
+      "par/11": {
+        "name": "Lo Freq B",
+        "type": "enum",
+        "range": [
+          "200",
+          "300",
+          "500",
+          "700",
+          "1000"
+        ]
+      },
+      "par/12": {
+        "name": "Lo Boost B",
+        "type": "linf",
+        "range": [
+          0,
+          10
+        ]
+      },
+      "par/13": {
+        "name": "Mid Boost B",
+        "type": "linf",
+        "range": [
+          0,
+          10
+        ]
+      },
+      "par/14": {
+        "name": "Hi Freq B",
+        "type": "enum",
+        "range": [
+          "1k5",
+          "2k",
+          "3k",
+          "4k",
+          "5k"
+        ]
+      },
+      "par/15": {
+        "name": "Hi Boost B",
+        "type": "linf",
+        "range": [
+          0,
+          10
+        ]
+      },
+      "par/16": {
+        "name": "Transformer B",
+        "type": "enum",
+        "range": [
+          "OFF",
+          "ON/ Dual Combinator"
+        ]
+      }
+    }
+  },
+  {
+    "effect": "CMB",
+    "name": "CMB",
+    "type_index": 39,
+    "parameters": {
+      "par/01": {
+        "name": "Active",
+        "type": "enum",
+        "range": [
+          "OFF",
+          "ON"
+        ]
+      },
+      "par/02": {
+        "name": "Mix",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ],
+        "unit": "%"
+      },
+      "par/03": {
+        "name": "Attack",
+        "type": "linf",
+        "range": [
+          0,
+          19
+        ]
+      },
+      "par/04": {
+        "name": "Release",
+        "type": "logf",
+        "range": [
+          20,
+          3000
+        ]
+      },
+      "par/05": {
+        "name": "Autorelease",
+        "type": "enum",
+        "range": [
+          "OFF",
+          "ON"
+        ]
+      },
+      "par/06": {
+        "name": "SBC speed",
+        "type": "linf",
+        "range": [
+          0,
+          10
+        ]
+      },
+      "par/07": {
+        "name": "SBC ON",
+        "type": "enum",
+        "range": [
+          "OFF",
+          "ON"
+        ]
+      },
+      "par/08": {
+        "name": "Xover",
+        "type": "linf",
+        "range": [
+          -50.0,
+          50.0
+        ]
+      },
+      "par/09": {
+        "name": "Xover Slope",
+        "type": "enum",
+        "range": [
+          "12",
+          "48"
+        ]
+      },
+      "par/10": {
+        "name": "Threshold",
+        "type": "linf",
+        "range": [
+          -40.0,
+          0.0
+        ]
+      },
+      "par/11": {
+        "name": "Gain",
+        "type": "linf",
+        "range": [
+          -10.0,
+          10.0
+        ],
+        "unit": "dB"
+      },
+      "par/12": {
+        "name": "Band 1 Threshold",
+        "type": "linf",
+        "range": [
+          -10.0,
+          10.0
+        ]
+      },
+      "par/13": {
+        "name": "Band 1 Gain",
+        "type": "linf",
+        "range": [
+          -10.0,
+          10.0
+        ]
+      },
+      "par/14": {
+        "name": "Band 1 Lock",
+        "type": "enum",
+        "range": [
+          "0",
+          "1"
+        ]
+      },
+      "par/15": {
+        "name": "Band 2 Threshold",
+        "type": "linf",
+        "range": [
+          -10.0,
+          10.0
+        ]
+      },
+      "par/16": {
+        "name": "Band 2 Gain",
+        "type": "linf",
+        "range": [
+          -10.0,
+          10.0
+        ]
+      },
+      "par/17": {
+        "name": "Band 2 Lock",
+        "type": "enum",
+        "range": [
+          "0",
+          "1"
+        ]
+      },
+      "par/18": {
+        "name": "Band 3 Threshold",
+        "type": "linf",
+        "range": [
+          -10.0,
+          10.0
+        ]
+      },
+      "par/19": {
+        "name": "Band 3 Gain",
+        "type": "linf",
+        "range": [
+          -10.0,
+          10.0
+        ]
+      },
+      "par/20": {
+        "name": "Band 3 Lock",
+        "type": "enum",
+        "range": [
+          "0",
+          "1"
+        ]
+      },
+      "par/21": {
+        "name": "Band 4 Threshold",
+        "type": "linf",
+        "range": [
+          -10.0,
+          10.0
+        ]
+      },
+      "par/22": {
+        "name": "Band 4 Gain",
+        "type": "linf",
+        "range": [
+          -10.0,
+          10.0
+        ]
+      },
+      "par/23": {
+        "name": "Band 4 Lock",
+        "type": "enum",
+        "range": [
+          "0",
+          "1"
+        ]
+      },
+      "par/24": {
+        "name": "Band 5 Threshold",
+        "type": "linf",
+        "range": [
+          -10.0,
+          10.0
+        ]
+      },
+      "par/25": {
+        "name": "Band 5 Gain",
+        "type": "linf",
+        "range": [
+          -10.0,
+          10.0
+        ]
+      },
+      "par/26": {
+        "name": "Band 5 Lock",
+        "type": "enum",
+        "range": [
+          "0",
+          "1"
+        ]
+      },
+      "par/27": {
+        "name": "Meter Mode",
+        "type": "enum",
+        "range": [
+          "GR",
+          "SBC",
+          "PEAK"
+        ]
+      }
+    }
+  },
+  {
+    "effect": "CMB2",
+    "name": "Dual Combinator",
+    "type_index": 40,
+    "parameters": {
+      "par/01": {
+        "name": "Active A",
+        "type": "enum",
+        "range": [
+          "OFF",
+          "ON"
+        ]
+      },
+      "par/02": {
+        "name": "Mix A",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      },
+      "par/03": {
+        "name": "Attack A",
+        "type": "linf",
+        "range": [
+          0,
+          19
+        ]
+      },
+      "par/04": {
+        "name": "Release A",
+        "type": "logf",
+        "range": [
+          20,
+          3000
+        ]
+      },
+      "par/05": {
+        "name": "Autorelease A",
+        "type": "enum",
+        "range": [
+          "OFF",
+          "ON"
+        ]
+      },
+      "par/06": {
+        "name": "SBC speed A",
+        "type": "linf",
+        "range": [
+          0,
+          10
+        ]
+      },
+      "par/07": {
+        "name": "SBC ON A",
+        "type": "enum",
+        "range": [
+          "OFF",
+          "ON"
+        ]
+      },
+      "par/08": {
+        "name": "Xover A",
+        "type": "linf",
+        "range": [
+          -50.0,
+          50.0
+        ]
+      },
+      "par/09": {
+        "name": "Xover Slope A",
+        "type": "enum",
+        "range": [
+          "12",
+          "48"
+        ]
+      },
+      "par/10": {
+        "name": "Threshold A",
+        "type": "linf",
+        "range": [
+          -40.0,
+          0.0
+        ]
+      },
+      "par/11": {
+        "name": "Gain A",
+        "type": "linf",
+        "range": [
+          -10.0,
+          10.0
+        ]
+      },
+      "par/12": {
+        "name": "Band 1 Threshold A",
+        "type": "linf",
+        "range": [
+          -10.0,
+          10.0
+        ]
+      },
+      "par/13": {
+        "name": "Band 1 Gain A",
+        "type": "linf",
+        "range": [
+          -10.0,
+          10.0
+        ]
+      },
+      "par/14": {
+        "name": "Band 1 Lock A",
+        "type": "enum",
+        "range": [
+          "0",
+          "1"
+        ]
+      },
+      "par/15": {
+        "name": "Band 2 Threshold A",
+        "type": "linf",
+        "range": [
+          -10.0,
+          10.0
+        ]
+      },
+      "par/16": {
+        "name": "Band 2 Gain A",
+        "type": "linf",
+        "range": [
+          -10.0,
+          10.0
+        ]
+      },
+      "par/17": {
+        "name": "Band 2 Lock A",
+        "type": "enum",
+        "range": [
+          "0",
+          "1"
+        ]
+      },
+      "par/18": {
+        "name": "Band 3 Threshold A",
+        "type": "linf",
+        "range": [
+          -10.0,
+          10.0
+        ]
+      },
+      "par/19": {
+        "name": "Band 3 Gain A",
+        "type": "linf",
+        "range": [
+          -10.0,
+          10.0
+        ]
+      },
+      "par/20": {
+        "name": "Band 3 Lock A",
+        "type": "enum",
+        "range": [
+          "0",
+          "1"
+        ]
+      },
+      "par/21": {
+        "name": "Band 4 Threshold A",
+        "type": "linf",
+        "range": [
+          -10.0,
+          10.0
+        ]
+      },
+      "par/22": {
+        "name": "Band 4 Gain A",
+        "type": "linf",
+        "range": [
+          -10.0,
+          10.0
+        ]
+      },
+      "par/23": {
+        "name": "Band 4 Lock A",
+        "type": "enum",
+        "range": [
+          "0",
+          "1"
+        ]
+      },
+      "par/24": {
+        "name": "Band 5 Threshold A",
+        "type": "linf",
+        "range": [
+          -10.0,
+          10.0
+        ]
+      },
+      "par/25": {
+        "name": "Band 5 Gain A",
+        "type": "linf",
+        "range": [
+          -10.0,
+          10.0
+        ]
+      },
+      "par/26": {
+        "name": "Band 5 Lock A",
+        "type": "enum",
+        "range": [
+          "0",
+          "1"
+        ]
+      },
+      "par/27": {
+        "name": "Meter Mode A",
+        "type": "enum",
+        "range": [
+          "GR",
+          "SBC",
+          "PEAK"
+        ]
+      },
+      "par/28": {
+        "name": "Active B",
+        "type": "enum",
+        "range": [
+          "OFF",
+          "ON"
+        ]
+      },
+      "par/29": {
+        "name": "Mix B",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      },
+      "par/30": {
+        "name": "Attack B",
+        "type": "linf",
+        "range": [
+          0,
+          19
+        ]
+      },
+      "par/31": {
+        "name": "Release B",
+        "type": "logf",
+        "range": [
+          20,
+          3000
+        ]
+      },
+      "par/32": {
+        "name": "Autorelease B",
+        "type": "enum",
+        "range": [
+          "OFF",
+          "ON"
+        ]
+      },
+      "par/33": {
+        "name": "SBC speed B",
+        "type": "linf",
+        "range": [
+          0,
+          10
+        ]
+      },
+      "par/34": {
+        "name": "SBC ON B",
+        "type": "enum",
+        "range": [
+          "OFF",
+          "ON"
+        ]
+      },
+      "par/35": {
+        "name": "Xover B",
+        "type": "linf",
+        "range": [
+          -50.0,
+          50.0
+        ]
+      },
+      "par/36": {
+        "name": "Xover Slope B",
+        "type": "enum",
+        "range": [
+          "12",
+          "48"
+        ]
+      },
+      "par/37": {
+        "name": "Threshold B",
+        "type": "linf",
+        "range": [
+          -40.0,
+          0.0
+        ]
+      },
+      "par/38": {
+        "name": "Gain B",
+        "type": "linf",
+        "range": [
+          -10.0,
+          10.0
+        ]
+      },
+      "par/39": {
+        "name": "Band 1 Threshold B",
+        "type": "linf",
+        "range": [
+          -10.0,
+          10.0
+        ]
+      },
+      "par/40": {
+        "name": "Band 1 Gain B",
+        "type": "linf",
+        "range": [
+          -10.0,
+          10.0
+        ]
+      },
+      "par/41": {
+        "name": "Band 1 Lock B",
+        "type": "enum",
+        "range": [
+          "0",
+          "1"
+        ]
+      },
+      "par/42": {
+        "name": "Band 2 Threshold B",
+        "type": "linf",
+        "range": [
+          -10.0,
+          10.0
+        ]
+      },
+      "par/43": {
+        "name": "Band 2 Gain B",
+        "type": "linf",
+        "range": [
+          -10.0,
+          10.0
+        ]
+      },
+      "par/44": {
+        "name": "Band 2 Lock B",
+        "type": "enum",
+        "range": [
+          "0",
+          "1"
+        ]
+      },
+      "par/45": {
+        "name": "Band 3 Threshold B",
+        "type": "linf",
+        "range": [
+          -10.0,
+          10.0
+        ]
+      },
+      "par/46": {
+        "name": "Band 3 Gain B",
+        "type": "linf",
+        "range": [
+          -10.0,
+          10.0
+        ]
+      },
+      "par/47": {
+        "name": "Band 3 Lock B",
+        "type": "enum",
+        "range": [
+          "0",
+          "1"
+        ]
+      },
+      "par/48": {
+        "name": "Band 4 Threshold B",
+        "type": "linf",
+        "range": [
+          -10.0,
+          10.0
+        ]
+      },
+      "par/49": {
+        "name": "Band 4 Gain B",
+        "type": "linf",
+        "range": [
+          -10.0,
+          10.0
+        ]
+      },
+      "par/50": {
+        "name": "Band 4 Lock B",
+        "type": "enum",
+        "range": [
+          "0",
+          "1"
+        ]
+      },
+      "par/51": {
+        "name": "Band 5 Threshold B",
+        "type": "linf",
+        "range": [
+          -10.0,
+          10.0
+        ]
+      },
+      "par/52": {
+        "name": "Band 5 Gain B",
+        "type": "linf",
+        "range": [
+          -10.0,
+          10.0
+        ]
+      },
+      "par/53": {
+        "name": "Band 5 Lock B",
+        "type": "enum",
+        "range": [
+          "0",
+          "1"
+        ]
+      },
+      "par/54": {
+        "name": "Meter Mode B",
+        "type": "enum",
+        "range": [
+          "GR",
+          "SBC",
+          "PEAK/ Dual Fair Compressor"
+        ]
+      }
+    }
+  },
+  {
+    "effect": "FAC",
+    "name": "FAC",
+    "type_index": 41,
+    "parameters": {
+      "par/01": {
+        "name": "Active",
+        "type": "enum",
+        "range": [
+          "OFF",
+          "ON"
+        ]
+      },
+      "par/02": {
+        "name": "Input Gain",
+        "type": "linf",
+        "range": [
+          -20.0,
+          20.0
+        ]
+      },
+      "par/03": {
+        "name": "Threshold",
+        "type": "linf",
+        "range": [
+          0,
+          10
+        ]
+      },
+      "par/04": {
+        "name": "Time",
+        "type": "linf",
+        "range": [
+          0,
+          6
+        ]
+      },
+      "par/05": {
+        "name": "Bias",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      },
+      "par/06": {
+        "name": "Gain",
+        "type": "linf",
+        "range": [
+          -18.0,
+          6.0
+        ],
+        "unit": "dB"
+      },
+      "par/07": {
+        "name": "Balance",
+        "type": "linf",
+        "range": [
+          -100.0,
+          100.0
+        ],
+        "unit": "L/R"
+      }
+    }
+  },
+  {
+    "effect": "FAC2",
+    "name": "FAC2",
+    "type_index": 43,
+    "parameters": {
+      "par/01": {
+        "name": "Active",
+        "type": "enum",
+        "range": [
+          "OFF",
+          "ON"
+        ]
+      },
+      "par/02": {
+        "name": "Input Gain",
+        "type": "linf",
+        "range": [
+          -20.0,
+          20.0
+        ]
+      },
+      "par/03": {
+        "name": "Threshold",
+        "type": "linf",
+        "range": [
+          0,
+          10
+        ]
+      },
+      "par/04": {
+        "name": "Time",
+        "type": "linf",
+        "range": [
+          0,
+          6
+        ]
+      },
+      "par/05": {
+        "name": "Bias",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      },
+      "par/06": {
+        "name": "Gain",
+        "type": "linf",
+        "range": [
+          -18.0,
+          6.0
+        ],
+        "unit": "dB"
+      },
+      "par/07": {
+        "name": "Balance",
+        "type": "linf",
+        "range": [
+          -100.0,
+          100.0
+        ],
+        "unit": "L/R"
+      },
+      "par/08": {
+        "name": "Active",
+        "type": "enum",
+        "range": [
+          "OFF",
+          "ON"
+        ]
+      },
+      "par/09": {
+        "name": "Input Gain",
+        "type": "linf",
+        "range": [
+          -20.0,
+          20.0
+        ]
+      },
+      "par/10": {
+        "name": "Threshold",
+        "type": "linf",
+        "range": [
+          0,
+          10
+        ]
+      },
+      "par/11": {
+        "name": "Time",
+        "type": "linf",
+        "range": [
+          0,
+          6
+        ]
+      },
+      "par/12": {
+        "name": "Bias",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      },
+      "par/13": {
+        "name": "Gain",
+        "type": "linf",
+        "range": [
+          -18.0,
+          6.0
+        ],
+        "unit": "dB"
+      },
+      "par/14": {
+        "name": "Balance",
+        "type": "linf",
+        "range": [
+          -100.0,
+          100.0
+        ],
+        "unit": "L/R"
+      }
+    }
+  },
+  {
+    "effect": "LEC",
+    "name": "LEC",
+    "type_index": 44,
+    "parameters": {
+      "par/01": {
+        "name": "Active",
+        "type": "enum",
+        "range": [
+          "OFF",
+          "ON"
+        ]
+      },
+      "par/02": {
+        "name": "Gain",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ],
+        "unit": "dB"
+      },
+      "par/03": {
+        "name": "Peak",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      },
+      "par/04": {
+        "name": "Mode",
+        "type": "enum",
+        "range": [
+          "COMP",
+          "LIM"
+        ]
+      },
+      "par/05": {
+        "name": "Gain",
+        "type": "linf",
+        "range": [
+          -18.0,
+          6.0
+        ],
+        "unit": "dB"
+      }
+    }
+  },
+  {
+    "effect": "LEC2",
+    "name": "LEC2",
+    "type_index": 45,
+    "parameters": {
+      "par/01": {
+        "name": "Active A",
+        "type": "enum",
+        "range": [
+          "OFF",
+          "ON"
+        ]
+      },
+      "par/02": {
+        "name": "Gain A",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      },
+      "par/03": {
+        "name": "Peak A",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      },
+      "par/04": {
+        "name": "Mode A",
+        "type": "enum",
+        "range": [
+          "COMP",
+          "LIM"
+        ]
+      },
+      "par/05": {
+        "name": "Gain A",
+        "type": "linf",
+        "range": [
+          -18.0,
+          6.0
+        ]
+      },
+      "par/06": {
+        "name": "Active B",
+        "type": "enum",
+        "range": [
+          "OFF",
+          "ON"
+        ]
+      },
+      "par/07": {
+        "name": "Gain B",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      },
+      "par/08": {
+        "name": "Peak B",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      },
+      "par/09": {
+        "name": "Mode B",
+        "type": "enum",
+        "range": [
+          "COMP",
+          "LIM"
+        ]
+      },
+      "par/10": {
+        "name": "Gain B",
+        "type": "linf",
+        "range": [
+          -18.0,
+          6.0
+        ]
+      }
+    }
+  },
+  {
+    "effect": "EDI",
+    "name": "Edison Ex1",
+    "type_index": 53,
+    "parameters": {
+      "par/01": {
+        "name": "Active",
+        "type": "enum",
+        "range": [
+          "OFF",
+          "ON"
+        ]
+      },
+      "par/02": {
+        "name": "Stereo Input",
+        "type": "enum",
+        "range": [
+          "ST / M/S"
+        ]
+      },
+      "par/03": {
+        "name": "Stereo Output",
+        "type": "enum",
+        "range": [
+          "ST / M/S"
+        ]
+      },
+      "par/04": {
+        "name": "ST Spread",
+        "type": "linf",
+        "range": [
+          -50.0,
+          50.0
+        ]
+      },
+      "par/05": {
+        "name": "LMF Spread",
+        "type": "linf",
+        "range": [
+          -50.0,
+          50.0
+        ]
+      },
+      "par/06": {
+        "name": "Balance",
+        "type": "linf",
+        "range": [
+          -50.0,
+          50.0
+        ],
+        "unit": "L/R"
+      },
+      "par/07": {
+        "name": "Center Distance",
+        "type": "linf",
+        "range": [
+          -50.0,
+          50.0
+        ]
+      },
+      "par/08": {
+        "name": "Out Gain",
+        "type": "linf",
+        "range": [
+          -12.0,
+          12.0
+        ]
+      }
+    }
+  },
+  {
+    "effect": "ULC",
+    "name": "ULC",
+    "type_index": 46,
+    "parameters": {
+      "par/01": {
+        "name": "Active",
+        "type": "enum",
+        "range": [
+          "OFF",
+          "ON"
+        ]
+      },
+      "par/02": {
+        "name": "Input Gain",
+        "type": "linf",
+        "range": [
+          -48.0,
+          0.0
+        ]
+      },
+      "par/03": {
+        "name": "Out Gain",
+        "type": "linf",
+        "range": [
+          -48.0,
+          0.0
+        ]
+      },
+      "par/04": {
+        "name": "Attack",
+        "type": "linf",
+        "range": [
+          1,
+          7
+        ]
+      },
+      "par/05": {
+        "name": "Release",
+        "type": "linf",
+        "range": [
+          1,
+          7
+        ]
+      },
+      "par/06": {
+        "name": "Ratio",
+        "type": "enum",
+        "range": [
+          "4",
+          "8",
+          "12",
+          "20",
+          "ALL"
+        ]
+      }
+    }
+  },
+  {
+    "effect": "ULC2",
+    "name": "ULC2",
+    "type_index": 47,
+    "parameters": {
+      "par/01": {
+        "name": "Active A",
+        "type": "enum",
+        "range": [
+          "OFF",
+          "ON"
+        ]
+      },
+      "par/02": {
+        "name": "Input Gain A",
+        "type": "linf",
+        "range": [
+          -48.0,
+          0.0
+        ]
+      },
+      "par/03": {
+        "name": "Out Gain A",
+        "type": "linf",
+        "range": [
+          -48.0,
+          0.0
+        ]
+      },
+      "par/04": {
+        "name": "Attack A",
+        "type": "linf",
+        "range": [
+          1,
+          7
+        ]
+      },
+      "par/05": {
+        "name": "Release A",
+        "type": "linf",
+        "range": [
+          1,
+          7
+        ]
+      },
+      "par/06": {
+        "name": "Ratio A",
+        "type": "enum",
+        "range": [
+          "4",
+          "8",
+          "12",
+          "20",
+          "ALL"
+        ]
+      },
+      "par/07": {
+        "name": "Active B",
+        "type": "enum",
+        "range": [
+          "OFF",
+          "ON"
+        ]
+      },
+      "par/08": {
+        "name": "Input Gain B",
+        "type": "linf",
+        "range": [
+          -48.0,
+          0.0
+        ]
+      },
+      "par/09": {
+        "name": "Out Gain B",
+        "type": "linf",
+        "range": [
+          -48.0,
+          0.0
+        ]
+      },
+      "par/10": {
+        "name": "Attack B",
+        "type": "linf",
+        "range": [
+          1,
+          7
+        ]
+      },
+      "par/11": {
+        "name": "Release B",
+        "type": "linf",
+        "range": [
+          1,
+          7
+        ]
+      },
+      "par/12": {
+        "name": "Ratio B",
+        "type": "enum",
+        "range": [
+          "4",
+          "8",
+          "12",
+          "20",
+          "ALL"
+        ]
+      }
+    }
+  },
+  {
+    "effect": "SON",
+    "name": "Sound Maxer",
+    "type_index": 54,
+    "parameters": {
+      "par/01": {
+        "name": "Active A",
+        "type": "enum",
+        "range": [
+          "OFF",
+          "ON"
+        ]
+      },
+      "par/02": {
+        "name": "Lo Contour A",
+        "type": "linf",
+        "range": [
+          0,
+          10
+        ]
+      },
+      "par/03": {
+        "name": "Process A",
+        "type": "linf",
+        "range": [
+          0,
+          10
+        ]
+      },
+      "par/04": {
+        "name": "Out Gain A",
+        "type": "linf",
+        "range": [
+          -12.0,
+          12.0
+        ]
+      },
+      "par/05": {
+        "name": "Active B",
+        "type": "enum",
+        "range": [
+          "OFF",
+          "ON"
+        ]
+      },
+      "par/06": {
+        "name": "Lo Contour B",
+        "type": "linf",
+        "range": [
+          0,
+          10
+        ]
+      },
+      "par/07": {
+        "name": "Process B",
+        "type": "linf",
+        "range": [
+          0,
+          10
+        ]
+      },
+      "par/08": {
+        "name": "Out Gain B",
+        "type": "linf",
+        "range": [
+          -12.0,
+          12.0
+        ]
+      }
+    }
+  },
+  {
+    "effect": "ENH",
+    "name": "Stereo Enhancer",
+    "type_index": 49,
+    "parameters": {
+      "par/01": {
+        "name": "Out Gain",
+        "type": "linf",
+        "range": [
+          -12.0,
+          12.0
+        ]
+      },
+      "par/02": {
+        "name": "Speed",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ],
+        "unit": "Hz"
+      },
+      "par/03": {
+        "name": "Bass Gain",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      },
+      "par/04": {
+        "name": "Bass Freq",
+        "type": "linf",
+        "range": [
+          1,
+          50
+        ]
+      },
+      "par/05": {
+        "name": "Mid Gain",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      },
+      "par/06": {
+        "name": "Mid Freq",
+        "type": "linf",
+        "range": [
+          1,
+          50
+        ]
+      },
+      "par/07": {
+        "name": "Hi Gain",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      },
+      "par/08": {
+        "name": "Hi Freq",
+        "type": "linf",
+        "range": [
+          1,
+          50
+        ]
+      },
+      "par/09": {
+        "name": "Solo",
+        "type": "enum",
+        "range": [
+          "OFF",
+          "ON"
+        ]
+      }
+    }
+  },
+  {
+    "effect": "ENH2",
+    "name": "Dual Enhancer",
+    "type_index": 48,
+    "parameters": {
+      "par/01": {
+        "name": "Out Gain A",
+        "type": "linf",
+        "range": [
+          -12.0,
+          12.0
+        ]
+      },
+      "par/02": {
+        "name": "Speed A",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ],
+        "unit": "Hz"
+      },
+      "par/03": {
+        "name": "Bass Gain A",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      },
+      "par/04": {
+        "name": "Bass Freq A",
+        "type": "linf",
+        "range": [
+          1,
+          50
+        ]
+      },
+      "par/05": {
+        "name": "Mid Gain A",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      },
+      "par/06": {
+        "name": "Mid Freq A",
+        "type": "linf",
+        "range": [
+          1,
+          50
+        ]
+      },
+      "par/07": {
+        "name": "Hi Gain A",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      },
+      "par/08": {
+        "name": "Hi Freq A",
+        "type": "linf",
+        "range": [
+          1,
+          50
+        ]
+      },
+      "par/09": {
+        "name": "Solo A",
+        "type": "enum",
+        "range": [
+          "OFF",
+          "ON"
+        ]
+      },
+      "par/10": {
+        "name": "Out Gain B",
+        "type": "linf",
+        "range": [
+          -12.0,
+          12.0
+        ]
+      },
+      "par/11": {
+        "name": "Speed B",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ],
+        "unit": "Hz"
+      },
+      "par/12": {
+        "name": "Bass Gain B",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      },
+      "par/13": {
+        "name": "Bass Freq B",
+        "type": "linf",
+        "range": [
+          1,
+          50
+        ]
+      },
+      "par/14": {
+        "name": "Mid Gain B",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      },
+      "par/15": {
+        "name": "Mid Freq B",
+        "type": "linf",
+        "range": [
+          1,
+          50
+        ]
+      },
+      "par/16": {
+        "name": "Hi Gain B",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      },
+      "par/17": {
+        "name": "Hi Freq B",
+        "type": "linf",
+        "range": [
+          1,
+          50
+        ]
+      },
+      "par/18": {
+        "name": "Solo B",
+        "type": "enum",
+        "range": [
+          "OFF",
+          "ON/ Dual Exciter"
+        ]
+      }
+    }
+  },
+  {
+    "effect": "EXC",
+    "name": "Stereo Exciter",
+    "type_index": 51,
+    "parameters": {
+      "par/01": {
+        "name": "Peak",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      },
+      "par/02": {
+        "name": "Zero Fill",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      },
+      "par/03": {
+        "name": "Timbre",
+        "type": "linf",
+        "range": [
+          -50.0,
+          50.0
+        ]
+      },
+      "par/04": {
+        "name": "Harmonics",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      },
+      "par/05": {
+        "name": "Mix",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ],
+        "unit": "%"
+      },
+      "par/06": {
+        "name": "Solo",
+        "type": "enum",
+        "range": [
+          "OFF",
+          "ON"
+        ]
+      }
+    }
+  },
+  {
+    "effect": "EXC2",
+    "name": "Dual Exciter",
+    "type_index": 50,
+    "parameters": {
+      "par/01": {
+        "name": "Peak A",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      },
+      "par/02": {
+        "name": "Zero Fill A",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      },
+      "par/03": {
+        "name": "Timbre A",
+        "type": "linf",
+        "range": [
+          -50.0,
+          50.0
+        ]
+      },
+      "par/04": {
+        "name": "Harmonics A",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      },
+      "par/05": {
+        "name": "Mix A",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      },
+      "par/06": {
+        "name": "Solo A",
+        "type": "enum",
+        "range": [
+          "OFF",
+          "ON Tune B           logf 1k\u202610k"
+        ]
+      },
+      "par/07": {
+        "name": "Peak B",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      },
+      "par/08": {
+        "name": "Zero Fill B",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      },
+      "par/09": {
+        "name": "Timbre B",
+        "type": "linf",
+        "range": [
+          -50.0,
+          50.0
+        ]
+      },
+      "par/10": {
+        "name": "Harmonics B",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      },
+      "par/11": {
+        "name": "Mix B",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      },
+      "par/12": {
+        "name": "Solo B",
+        "type": "enum",
+        "range": [
+          "OFF",
+          "ON"
+        ]
+      }
+    }
+  },
+  {
+    "effect": "IMG",
+    "name": "Stereo Imager",
+    "type_index": 52,
+    "parameters": {
+      "par/01": {
+        "name": "Balance",
+        "type": "linf",
+        "range": [
+          -100.0,
+          100.0
+        ],
+        "unit": "L/R"
+      },
+      "par/02": {
+        "name": "Mono Pan",
+        "type": "linf",
+        "range": [
+          -100.0,
+          100.0
+        ]
+      },
+      "par/03": {
+        "name": "Stereo Pan",
+        "type": "linf",
+        "range": [
+          -100.0,
+          100.0
+        ]
+      },
+      "par/04": {
+        "name": "Shv Gain",
+        "type": "linf",
+        "range": [
+          0,
+          12
+        ]
+      },
+      "par/05": {
+        "name": "Shv Freq",
+        "type": "logf",
+        "range": [
+          100,
+          1000
+        ]
+      },
+      "par/06": {
+        "name": "Shv Q",
+        "type": "logf",
+        "range": [
+          1,
+          10
+        ]
+      },
+      "par/07": {
+        "name": "Out Gain",
+        "type": "linf",
+        "range": [
+          -12.0,
+          12.0
+        ]
+      }
+    }
+  },
+  {
+    "effect": "AMP",
+    "name": "Stereo Guitar Amp",
+    "type_index": 56,
+    "parameters": {
+      "par/01": {
+        "name": "Preamp",
+        "type": "linf",
+        "range": [
+          0,
+          10
+        ]
+      },
+      "par/02": {
+        "name": "Buzz",
+        "type": "linf",
+        "range": [
+          0,
+          10
+        ]
+      },
+      "par/03": {
+        "name": "Punch",
+        "type": "linf",
+        "range": [
+          0,
+          10
+        ]
+      },
+      "par/04": {
+        "name": "Crunch",
+        "type": "linf",
+        "range": [
+          0,
+          10
+        ]
+      },
+      "par/05": {
+        "name": "Drive",
+        "type": "linf",
+        "range": [
+          0,
+          10
+        ]
+      },
+      "par/06": {
+        "name": "Low",
+        "type": "linf",
+        "range": [
+          0,
+          10
+        ]
+      },
+      "par/07": {
+        "name": "High",
+        "type": "linf",
+        "range": [
+          0,
+          10
+        ]
+      },
+      "par/08": {
+        "name": "Level",
+        "type": "linf",
+        "range": [
+          0,
+          10
+        ],
+        "unit": "dB"
+      },
+      "par/09": {
+        "name": "Cabinet",
+        "type": "enum",
+        "range": [
+          "OFF",
+          "ON"
+        ]
+      }
+    }
+  },
+  {
+    "effect": "AMP2",
+    "name": "Dual Guitar Amp",
+    "type_index": 55,
+    "parameters": {
+      "par/01": {
+        "name": "Preamp A",
+        "type": "linf",
+        "range": [
+          0,
+          10
+        ]
+      },
+      "par/02": {
+        "name": "Buzz A",
+        "type": "linf",
+        "range": [
+          0,
+          10
+        ]
+      },
+      "par/03": {
+        "name": "Punch A",
+        "type": "linf",
+        "range": [
+          0,
+          10
+        ]
+      },
+      "par/04": {
+        "name": "Crunch A",
+        "type": "linf",
+        "range": [
+          0,
+          10
+        ]
+      },
+      "par/05": {
+        "name": "Drive A",
+        "type": "linf",
+        "range": [
+          0,
+          10
+        ]
+      },
+      "par/06": {
+        "name": "Low A",
+        "type": "linf",
+        "range": [
+          0,
+          10
+        ]
+      },
+      "par/07": {
+        "name": "High A",
+        "type": "linf",
+        "range": [
+          0,
+          10
+        ]
+      },
+      "par/08": {
+        "name": "Level A",
+        "type": "linf",
+        "range": [
+          0,
+          10
+        ]
+      },
+      "par/09": {
+        "name": "Cabinet A",
+        "type": "enum",
+        "range": [
+          "OFF",
+          "ON"
+        ]
+      },
+      "par/10": {
+        "name": "Preamp B",
+        "type": "linf",
+        "range": [
+          0,
+          10
+        ]
+      },
+      "par/11": {
+        "name": "Buzz B",
+        "type": "linf",
+        "range": [
+          0,
+          10
+        ]
+      },
+      "par/12": {
+        "name": "Punch B",
+        "type": "linf",
+        "range": [
+          0,
+          10
+        ]
+      },
+      "par/13": {
+        "name": "Crunch B",
+        "type": "linf",
+        "range": [
+          0,
+          10
+        ]
+      },
+      "par/14": {
+        "name": "Drive B",
+        "type": "linf",
+        "range": [
+          0,
+          10
+        ]
+      },
+      "par/15": {
+        "name": "Low B",
+        "type": "linf",
+        "range": [
+          0,
+          10
+        ]
+      },
+      "par/16": {
+        "name": "High B",
+        "type": "linf",
+        "range": [
+          0,
+          10
+        ]
+      },
+      "par/17": {
+        "name": "Level B",
+        "type": "linf",
+        "range": [
+          0,
+          10
+        ]
+      },
+      "par/18": {
+        "name": "Cabinet B",
+        "type": "enum",
+        "range": [
+          "OFF",
+          "ON/ Dual Tube Stage"
+        ]
+      }
+    }
+  },
+  {
+    "effect": "DRV",
+    "name": "Stereo Tube Stage",
+    "type_index": 58,
+    "parameters": {
+      "par/01": {
+        "name": "Drive",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      },
+      "par/02": {
+        "name": "Even Ear",
+        "type": "linf",
+        "range": [
+          0,
+          50
+        ]
+      },
+      "par/03": {
+        "name": "Odd Ear",
+        "type": "linf",
+        "range": [
+          0,
+          50
+        ]
+      },
+      "par/04": {
+        "name": "Gain",
+        "type": "linf",
+        "range": [
+          -12.0,
+          12.0
+        ],
+        "unit": "dB"
+      },
+      "par/05": {
+        "name": "Lo Cut",
+        "type": "logf",
+        "range": [
+          20,
+          200
+        ],
+        "unit": "Hz"
+      },
+      "par/06": {
+        "name": "Hi Cut",
+        "type": "logf",
+        "range": [
+          4000.0,
+          20000.0
+        ],
+        "unit": "Hz"
+      },
+      "par/07": {
+        "name": "Lo Gain",
+        "type": "linf",
+        "range": [
+          -12.0,
+          12.0
+        ]
+      },
+      "par/08": {
+        "name": "Lo Freq",
+        "type": "logf",
+        "range": [
+          50,
+          400
+        ]
+      },
+      "par/09": {
+        "name": "Hi Gain",
+        "type": "linf",
+        "range": [
+          -12.0,
+          12.0
+        ]
+      },
+      "par/10": {
+        "name": "Hi Freq",
+        "type": "logf",
+        "range": [
+          1000.0,
+          10000.0
+        ]
+      }
+    }
+  },
+  {
+    "effect": "DRV2",
+    "name": "Dual Tube Stage",
+    "type_index": 57,
+    "parameters": {
+      "par/01": {
+        "name": "Drive A",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      },
+      "par/02": {
+        "name": "Even Ear A",
+        "type": "linf",
+        "range": [
+          0,
+          50
+        ]
+      },
+      "par/03": {
+        "name": "Odd Ear A",
+        "type": "linf",
+        "range": [
+          0,
+          50
+        ]
+      },
+      "par/04": {
+        "name": "Gain A",
+        "type": "linf",
+        "range": [
+          -12.0,
+          12.0
+        ]
+      },
+      "par/05": {
+        "name": "Lo Cut A",
+        "type": "logf",
+        "range": [
+          20,
+          200
+        ],
+        "unit": "Hz"
+      },
+      "par/06": {
+        "name": "Hi Cut A",
+        "type": "logf",
+        "range": [
+          4000.0,
+          20000.0
+        ],
+        "unit": "Hz"
+      },
+      "par/07": {
+        "name": "Lo Gain A",
+        "type": "linf",
+        "range": [
+          -12.0,
+          12.0
+        ]
+      },
+      "par/08": {
+        "name": "Lo Freq A",
+        "type": "logf",
+        "range": [
+          50,
+          400
+        ]
+      },
+      "par/09": {
+        "name": "Hi Gain A",
+        "type": "linf",
+        "range": [
+          -12.0,
+          12.0
+        ]
+      },
+      "par/10": {
+        "name": "Hi Freq A",
+        "type": "logf",
+        "range": [
+          1000.0,
+          10000.0
+        ]
+      },
+      "par/11": {
+        "name": "Drive B",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      },
+      "par/12": {
+        "name": "Even Ear B",
+        "type": "linf",
+        "range": [
+          0,
+          50
+        ]
+      },
+      "par/13": {
+        "name": "Odd Ear B",
+        "type": "linf",
+        "range": [
+          0,
+          50
+        ]
+      },
+      "par/14": {
+        "name": "Gain B",
+        "type": "linf",
+        "range": [
+          -12.0,
+          12.0
+        ]
+      },
+      "par/15": {
+        "name": "Lo Cut B",
+        "type": "logf",
+        "range": [
+          20,
+          200
+        ],
+        "unit": "Hz"
+      },
+      "par/16": {
+        "name": "Hi Cut B",
+        "type": "logf",
+        "range": [
+          4000.0,
+          20000.0
+        ],
+        "unit": "Hz"
+      },
+      "par/17": {
+        "name": "Lo Gain B",
+        "type": "linf",
+        "range": [
+          -12.0,
+          12.0
+        ]
+      },
+      "par/18": {
+        "name": "Lo Freq B",
+        "type": "logf",
+        "range": [
+          50,
+          400
+        ]
+      },
+      "par/19": {
+        "name": "Hi Gain B",
+        "type": "linf",
+        "range": [
+          -12.0,
+          12.0
+        ]
+      },
+      "par/20": {
+        "name": "Hi Freq B",
+        "type": "logf",
+        "range": [
+          1000.0,
+          10000.0
+        ]
+      }
+    }
+  },
+  {
+    "effect": "PIT",
+    "name": "Stereo Pitch",
+    "type_index": 60,
+    "parameters": {
+      "par/01": {
+        "name": "Semitone",
+        "type": "linf",
+        "range": [
+          -12.0,
+          12.0
+        ]
+      },
+      "par/02": {
+        "name": "Cent",
+        "type": "linf",
+        "range": [
+          -50.0,
+          50.0
+        ]
+      },
+      "par/03": {
+        "name": "Delay",
+        "type": "logf",
+        "range": [
+          1,
+          100
+        ],
+        "unit": "ms"
+      },
+      "par/04": {
+        "name": "Lo Cut",
+        "type": "logf",
+        "range": [
+          10,
+          500
+        ],
+        "unit": "Hz"
+      },
+      "par/05": {
+        "name": "Hi Cut",
+        "type": "logf",
+        "range": [
+          2000.0,
+          20000.0
+        ],
+        "unit": "Hz"
+      },
+      "par/06": {
+        "name": "Mix",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ],
+        "unit": "%"
+      }
+    }
+  },
+  {
+    "effect": "PIT2",
+    "name": "Dual Pitch",
+    "type_index": 59,
+    "parameters": {
+      "par/01": {
+        "name": "Semitone A",
+        "type": "linf",
+        "range": [
+          -12.0,
+          12.0
+        ]
+      },
+      "par/02": {
+        "name": "Cent A",
+        "type": "linf",
+        "range": [
+          -50.0,
+          50.0
+        ]
+      },
+      "par/03": {
+        "name": "Delay A",
+        "type": "logf",
+        "range": [
+          1,
+          100
+        ]
+      },
+      "par/04": {
+        "name": "Lo Cut A",
+        "type": "logf",
+        "range": [
+          10,
+          500
+        ],
+        "unit": "Hz"
+      },
+      "par/05": {
+        "name": "Hi Cut A",
+        "type": "logf",
+        "range": [
+          2000.0,
+          20000.0
+        ],
+        "unit": "Hz"
+      },
+      "par/06": {
+        "name": "Mix A",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      },
+      "par/07": {
+        "name": "Semitone B",
+        "type": "linf",
+        "range": [
+          -12.0,
+          12.0
+        ]
+      },
+      "par/08": {
+        "name": "Cent B",
+        "type": "linf",
+        "range": [
+          -50.0,
+          50.0
+        ]
+      },
+      "par/09": {
+        "name": "Delay B",
+        "type": "logf",
+        "range": [
+          1,
+          100
+        ]
+      },
+      "par/10": {
+        "name": "Lo Cut B",
+        "type": "logf",
+        "range": [
+          10,
+          500
+        ],
+        "unit": "Hz"
+      },
+      "par/11": {
+        "name": "Hi Cut B",
+        "type": "logf",
+        "range": [
+          2000.0,
+          20000.0
+        ],
+        "unit": "Hz"
+      },
+      "par/12": {
+        "name": "Mix B",
+        "type": "linf",
+        "range": [
+          0,
+          100
+        ]
+      }
+    }
+  },
+  {
+    "effect": "WAV",
+    "name": "Wave Designer",
+    "type_index": 37,
+    "parameters": {
+      "par/01": {
+        "name": "Attack A",
+        "type": "linf",
+        "range": [
+          -100.0,
+          100.0
+        ]
+      },
+      "par/02": {
+        "name": "Sustain A",
+        "type": "linf",
+        "range": [
+          -100.0,
+          100.0
+        ]
+      },
+      "par/03": {
+        "name": "Gain A",
+        "type": "linf",
+        "range": [
+          -24.0,
+          24.0
+        ]
+      },
+      "par/04": {
+        "name": "Attack B",
+        "type": "linf",
+        "range": [
+          -100.0,
+          100.0
+        ]
+      },
+      "par/05": {
+        "name": "Sustain B",
+        "type": "linf",
+        "range": [
+          -100.0,
+          100.0
+        ]
+      },
+      "par/06": {
+        "name": "Gain B",
+        "type": "linf",
+        "range": [
+          -24.0,
+          24.0
+        ]
+      }
+    }
+  }
+]
