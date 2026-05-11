@@ -533,7 +533,53 @@ impl Mixer {
             return Ok(responses);
         }
 
-        if osc_msg.path == "/add" || osc_msg.path == "/load" || osc_msg.path == "/delete" {
+        if osc_msg.path == "/delete" {
+            let mut success = false;
+            if osc_msg.args.len() >= 2 {
+                if let (OscArg::String(item_type), OscArg::Int(idx)) = (&osc_msg.args[0], &osc_msg.args[1]) {
+                    if item_type == "scene" || item_type == "snippet" {
+                        let name_path = format!("/-show/showfile/{}/{:03}/name", item_type, idx);
+                        let note_path = format!("/-show/showfile/{}/{:03}/note", item_type, idx);
+
+                        self.state.set(&name_path, OscArg::String("".to_string()));
+                        self.state.set(&note_path, OscArg::String("".to_string()));
+
+                        if let Ok(b) = OscMessage::serialize_to_bytes(
+                            &name_path,
+                            [&OscArg::String("".to_string())],
+                        ) {
+                            let arc_b: Arc<[u8]> = b.into();
+                            for client in &self.clients {
+                                responses.push((client.0, arc_b.clone()));
+                            }
+                        }
+                        if let Ok(b) = OscMessage::serialize_to_bytes(
+                            &note_path,
+                            [&OscArg::String("".to_string())],
+                        ) {
+                            let arc_b: Arc<[u8]> = b.into();
+                            for client in &self.clients {
+                                responses.push((client.0, arc_b.clone()));
+                            }
+                        }
+                        success = true;
+                    } else if item_type == "libchan" {
+                        success = true;
+                    }
+                }
+            }
+            let arg_type = osc_msg
+                .args
+                .first()
+                .cloned()
+                .unwrap_or(OscArg::String("scene".to_string()));
+            let arg_res = OscArg::Int(if success { 1 } else { 0 });
+            let bytes = OscMessage::serialize_to_bytes(&osc_msg.path, [&arg_type, &arg_res])?;
+            responses.push((remote_addr, bytes.into()));
+            return Ok(responses);
+        }
+
+        if osc_msg.path == "/add" || osc_msg.path == "/load" {
             if let Some(OscArg::String(ref item_type)) = osc_msg.args.first() {
                 let arg1 = OscArg::String(item_type.clone());
                 let arg2 = OscArg::Int(1);
