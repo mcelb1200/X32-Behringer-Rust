@@ -560,19 +560,15 @@ impl Mixer {
                             self.state.set(&name_path, empty_str.clone());
                             self.state.set(&note_path, empty_str.clone());
 
-                            if let Ok(b) = OscMessage::serialize_to_bytes(
-                                &name_path,
-                                [&empty_str],
-                            ) {
+                            if let Ok(b) = OscMessage::serialize_to_bytes(&name_path, [&empty_str])
+                            {
                                 let arc_b: Arc<[u8]> = b.into();
                                 for client in &self.clients {
                                     responses.push((client.0, arc_b.clone()));
                                 }
                             }
-                            if let Ok(b) = OscMessage::serialize_to_bytes(
-                                &note_path,
-                                [&empty_str],
-                            ) {
+                            if let Ok(b) = OscMessage::serialize_to_bytes(&note_path, [&empty_str])
+                            {
                                 let arc_b: Arc<[u8]> = b.into();
                                 for client in &self.clients {
                                     responses.push((client.0, arc_b.clone()));

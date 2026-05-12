@@ -261,18 +261,27 @@ mod tests {
         let mut mixer = Mixer::new();
 
         // Set some initial data
-        mixer.state.set("/-show/showfile/scene/005/name", OscArg::String("My Scene".to_string()));
-        mixer.state.set("/-show/showfile/scene/005/note", OscArg::String("My Note".to_string()));
-        mixer.state.set("/-show/showfile/snippet/010/name", OscArg::String("My Snippet".to_string()));
-        mixer.state.set("/-show/showfile/snippet/010/note", OscArg::String("Snip Note".to_string())); // Note doesn't exist for snippets per original code but doesn't hurt to test
+        mixer.state.set(
+            "/-show/showfile/scene/005/name",
+            OscArg::String("My Scene".to_string()),
+        );
+        mixer.state.set(
+            "/-show/showfile/scene/005/note",
+            OscArg::String("My Note".to_string()),
+        );
+        mixer.state.set(
+            "/-show/showfile/snippet/010/name",
+            OscArg::String("My Snippet".to_string()),
+        );
+        mixer.state.set(
+            "/-show/showfile/snippet/010/note",
+            OscArg::String("Snip Note".to_string()),
+        ); // Note doesn't exist for snippets per original code but doesn't hurt to test
 
         // 1. Delete scene
         let msg = OscMessage {
             path: "/delete".to_string(),
-            args: vec![
-                OscArg::String("scene".to_string()),
-                OscArg::Int(5),
-            ],
+            args: vec![OscArg::String("scene".to_string()), OscArg::Int(5)],
         };
         let bytes = msg.to_bytes().unwrap();
         let responses = mixer.dispatch(&bytes, test_addr(1234)).unwrap();
@@ -296,10 +305,7 @@ mod tests {
         // 2. Delete snippet
         let msg = OscMessage {
             path: "/delete".to_string(),
-            args: vec![
-                OscArg::String("snippet".to_string()),
-                OscArg::Int(10),
-            ],
+            args: vec![OscArg::String("snippet".to_string()), OscArg::Int(10)],
         };
         let bytes = msg.to_bytes().unwrap();
         let responses = mixer.dispatch(&bytes, test_addr(1234)).unwrap();
@@ -323,10 +329,7 @@ mod tests {
         // 3. Delete libchan
         let msg = OscMessage {
             path: "/delete".to_string(),
-            args: vec![
-                OscArg::String("libchan".to_string()),
-                OscArg::Int(15),
-            ],
+            args: vec![OscArg::String("libchan".to_string()), OscArg::Int(15)],
         };
         let bytes = msg.to_bytes().unwrap();
         let responses = mixer.dispatch(&bytes, test_addr(1234)).unwrap();
@@ -341,10 +344,7 @@ mod tests {
         // 4. Delete unknown type
         let msg = OscMessage {
             path: "/delete".to_string(),
-            args: vec![
-                OscArg::String("unknown".to_string()),
-                OscArg::Int(20),
-            ],
+            args: vec![OscArg::String("unknown".to_string()), OscArg::Int(20)],
         };
         let bytes = msg.to_bytes().unwrap();
         let responses = mixer.dispatch(&bytes, test_addr(1234)).unwrap();
