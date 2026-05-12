@@ -227,7 +227,7 @@ mod tests {
     fn test_mixer_dispatch_system_admin_commands() {
         let mut mixer = Mixer::new();
 
-        let commands = vec!["/copy", "/add", "/load", "/save", "/delete"];
+        let commands = vec!["/copy", "/add", "/load", "/save"];
         let item_type = "libchan".to_string();
 
         for cmd in commands {
@@ -254,6 +254,107 @@ mod tests {
             assert_eq!(response_msg.args[0], OscArg::String(item_type.clone()));
             assert_eq!(response_msg.args[1], OscArg::Int(1));
         }
+    }
+
+    #[test]
+    fn test_mixer_dispatch_delete() {
+        let mut mixer = Mixer::new();
+
+        // Set some initial data
+        mixer.state.set("/-show/showfile/scene/005/name", OscArg::String("My Scene".to_string()));
+        mixer.state.set("/-show/showfile/scene/005/note", OscArg::String("My Note".to_string()));
+        mixer.state.set("/-show/showfile/snippet/010/name", OscArg::String("My Snippet".to_string()));
+        mixer.state.set("/-show/showfile/snippet/010/note", OscArg::String("Snip Note".to_string())); // Note doesn't exist for snippets per original code but doesn't hurt to test
+
+        // 1. Delete scene
+        let msg = OscMessage {
+            path: "/delete".to_string(),
+            args: vec![
+                OscArg::String("scene".to_string()),
+                OscArg::Int(5),
+            ],
+        };
+        let bytes = msg.to_bytes().unwrap();
+        let responses = mixer.dispatch(&bytes, test_addr(1234)).unwrap();
+
+        assert_eq!(
+            mixer.state.get("/-show/showfile/scene/005/name"),
+            Some(&OscArg::String("".to_string()))
+        );
+        assert_eq!(
+            mixer.state.get("/-show/showfile/scene/005/note"),
+            Some(&OscArg::String("".to_string()))
+        );
+
+        assert_eq!(responses.len(), 1);
+        let response_msg = OscMessage::from_bytes(&responses[0].1).unwrap();
+        assert_eq!(response_msg.path, "/delete");
+        assert_eq!(response_msg.args.len(), 2);
+        assert_eq!(response_msg.args[0], OscArg::String("scene".to_string()));
+        assert_eq!(response_msg.args[1], OscArg::Int(1));
+
+        // 2. Delete snippet
+        let msg = OscMessage {
+            path: "/delete".to_string(),
+            args: vec![
+                OscArg::String("snippet".to_string()),
+                OscArg::Int(10),
+            ],
+        };
+        let bytes = msg.to_bytes().unwrap();
+        let responses = mixer.dispatch(&bytes, test_addr(1234)).unwrap();
+
+        assert_eq!(
+            mixer.state.get("/-show/showfile/snippet/010/name"),
+            Some(&OscArg::String("".to_string()))
+        );
+        assert_eq!(
+            mixer.state.get("/-show/showfile/snippet/010/note"),
+            Some(&OscArg::String("".to_string()))
+        );
+
+        assert_eq!(responses.len(), 1);
+        let response_msg = OscMessage::from_bytes(&responses[0].1).unwrap();
+        assert_eq!(response_msg.path, "/delete");
+        assert_eq!(response_msg.args.len(), 2);
+        assert_eq!(response_msg.args[0], OscArg::String("snippet".to_string()));
+        assert_eq!(response_msg.args[1], OscArg::Int(1));
+
+        // 3. Delete libchan
+        let msg = OscMessage {
+            path: "/delete".to_string(),
+            args: vec![
+                OscArg::String("libchan".to_string()),
+                OscArg::Int(15),
+            ],
+        };
+        let bytes = msg.to_bytes().unwrap();
+        let responses = mixer.dispatch(&bytes, test_addr(1234)).unwrap();
+
+        assert_eq!(responses.len(), 1);
+        let response_msg = OscMessage::from_bytes(&responses[0].1).unwrap();
+        assert_eq!(response_msg.path, "/delete");
+        assert_eq!(response_msg.args.len(), 2);
+        assert_eq!(response_msg.args[0], OscArg::String("libchan".to_string()));
+        assert_eq!(response_msg.args[1], OscArg::Int(1));
+
+        // 4. Delete unknown type
+        let msg = OscMessage {
+            path: "/delete".to_string(),
+            args: vec![
+                OscArg::String("unknown".to_string()),
+                OscArg::Int(20),
+            ],
+        };
+        let bytes = msg.to_bytes().unwrap();
+        let responses = mixer.dispatch(&bytes, test_addr(1234)).unwrap();
+
+        assert_eq!(responses.len(), 1);
+        let response_msg = OscMessage::from_bytes(&responses[0].1).unwrap();
+        assert_eq!(response_msg.path, "/delete");
+        assert_eq!(response_msg.args.len(), 2);
+        assert_eq!(response_msg.args[0], OscArg::String("unknown".to_string()));
+        assert_eq!(response_msg.args[1], OscArg::Int(0));
     }
 
     #[test]
