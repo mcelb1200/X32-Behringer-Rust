@@ -536,7 +536,9 @@ impl Mixer {
         if osc_msg.path == "/delete" {
             let mut success = false;
             if osc_msg.args.len() >= 2 {
-                if let (OscArg::String(item_type), OscArg::Int(idx)) = (&osc_msg.args[0], &osc_msg.args[1]) {
+                if let (OscArg::String(item_type), OscArg::Int(idx)) =
+                    (&osc_msg.args[0], &osc_msg.args[1])
+                {
                     if item_type == "scene" || item_type == "snippet" {
                         let name_path = format!("/-show/showfile/{}/{:03}/name", item_type, idx);
                         let note_path = format!("/-show/showfile/{}/{:03}/note", item_type, idx);

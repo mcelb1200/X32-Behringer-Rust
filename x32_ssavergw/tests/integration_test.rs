@@ -9,7 +9,13 @@ struct EmulatorGuard {
 impl EmulatorGuard {
     fn start() -> Self {
         let child = StdCommand::new("cargo")
-            .args(["run", "--manifest-path", "../x32_emulator/Cargo.toml", "--bin", "x32_emulator"])
+            .args([
+                "run",
+                "--manifest-path",
+                "../x32_emulator/Cargo.toml",
+                "--bin",
+                "x32_emulator",
+            ])
             .spawn()
             .expect("Failed to start x32_emulator");
 
