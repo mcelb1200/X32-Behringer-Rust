@@ -428,10 +428,7 @@ impl FromStr for OscMessage {
             }
             Ok(OscMessage { path, args })
         } else {
-            Ok(OscMessage {
-                path,
-                args: Vec::new(),
-            })
+            Ok(OscMessage { path, args: Vec::new() })
         }
     }
 }
