@@ -8,6 +8,17 @@ struct EmulatorGuard {
 
 impl EmulatorGuard {
     fn start() -> Self {
+        // Pre-build synchronously to prevent cargo build times from eating into our sleep duration
+        let _ = StdCommand::new("cargo")
+            .args([
+                "build",
+                "--manifest-path",
+                "../x32_emulator/Cargo.toml",
+                "--bin",
+                "x32_emulator",
+            ])
+            .status();
+
         let child = StdCommand::new("cargo")
             .args([
                 "run",
