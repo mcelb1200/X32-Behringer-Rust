@@ -282,7 +282,10 @@ fn write_se_log_bin(
         }
 
         let mut s = String::new();
-        std::io::Read::take(f, 1024 * 1024).read_to_string(&mut s)?;
+        std::io::Read::take(f, 1024 * 1024 + 1).read_to_string(&mut s)?;
+        if s.len() > 1024 * 1024 {
+            return Err(anyhow::anyhow!("Marker file too large to load (max 1MB)"));
+        }
         for line in s.lines() {
             if let Ok(marker) = line.trim().parse::<f32>() {
                 markers.push(marker);
