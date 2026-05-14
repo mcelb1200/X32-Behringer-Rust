@@ -347,14 +347,15 @@ impl FromStr for OscMessage {
             .next()
             .ok_or(OscError::ParseError("Empty command string".to_string()))?
             .to_string();
-        let mut args = Vec::new(); // Capacity will be reserved later
 
         if let Some(type_tags) = it.next() {
             if !type_tags.starts_with(',') {
                 return Err(OscError::InvalidTypeTag);
             }
 
-            args.reserve_exact(type_tags.len().saturating_sub(1));
+            // OPTIMIZATION: Pre-allocate vector capacity to avoid Vec::new() followed by
+            // dynamic reallocations when adding arguments.
+            let mut args = Vec::with_capacity(type_tags.len().saturating_sub(1));
 
             // OPTIMIZATION: Use .bytes() instead of .chars() to bypass UTF-8 decoding
             // overhead since OSC type tags are guaranteed to be ASCII.
@@ -425,9 +426,13 @@ impl FromStr for OscMessage {
                     "Extra arguments at end of command string".to_string(),
                 ));
             }
+            Ok(OscMessage { path, args })
+        } else {
+            Ok(OscMessage {
+                path,
+                args: Vec::new(),
+            })
         }
-
-        Ok(OscMessage { path, args })
     }
 }
 
