@@ -73,7 +73,7 @@ fn main() -> Result<()> {
 
     for i in 1..=nbmarker {
         let marker = file.read_u32::<LittleEndian>()?;
-        let xmk = marker as f32 / samprate as f32;
+        let xmk = marker as f64 / samprate as f64;
 
         match args.format {
             Format::Reaper => {
@@ -82,9 +82,9 @@ fn main() -> Result<()> {
             Format::Audition => {
                 let xmk_int = xmk as i32;
                 let xmkh = xmk_int / 3600;
-                let xmkm = (xmk_int / 60) % 60; // Fixed bug from original C code
+                let xmkm = (xmk_int / 60) % 60;
                 let xmks = xmk_int % 60;
-                let xmkt = ((xmk - xmk_int as f32) * 100.0 / 4.0) as i32; // conversion for 25fps
+                let xmkt = ((xmk - xmk_int as f64) * 100.0 / 4.0) as i32; // conversion for 25fps
 
                 println!(
                     "{}{}, {:02}:{:02}:{:02}:{:02}, 00:00:00:00, 25fps, Cue, -",

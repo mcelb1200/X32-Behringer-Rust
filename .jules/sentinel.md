@@ -60,3 +60,7 @@
 **Vulnerability:** In `x32_punch_control`, opening an `.xpc` file using `tokio::fs::File` and directly wrapping it in a `tokio::io::BufReader` without enforcing size limits creates an Out-Of-Memory (OOM) / Denial of Service risk.
 **Learning:** `tokio::io::AsyncReadExt` provides a `.take(LIMIT)` method that works exactly like the standard library's `std::io::Read::take(LIMIT)`, producing a `tokio::io::Take<File>`. Failing to use this on untrusted inputs means a large or infinite file (like `/dev/zero`) will cause continuous memory allocation in loops that read dynamically sized records.
 **Prevention:** When using `tokio::fs::File` for asynchronous file reading, prevent Out-of-Memory (OOM) DoS vulnerabilities by checking `f.metadata().await?.len()` and explicitly wrapping the file handle in `.take(LIMIT)` using `tokio::io::AsyncReadExt` (resulting in a `tokio::io::Take<File>`) before passing it to a `BufReader`.
+## 2026-05-12 - Prevent Silent File Truncation Data Execution
+**Vulnerability:** Pseudo-files (like `/dev/zero`) reporting 0 size bypass metadata length checks. When streamed via bounded readers (e.g., `.take(LIMIT)`), they are silently truncated.
+**Learning:** For config or scripting engines, parsing a silently truncated stream can cause partial execution (e.g., executing commands without mandatory teardown logic).
+**Prevention:** Always read with bounds `.take(LIMIT + 1)` into memory, then explicitly fail if the final buffer length strictly exceeds `LIMIT`, effectively preventing partial parsing.

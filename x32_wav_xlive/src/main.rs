@@ -189,8 +189,8 @@ fn write_wav_takes(
     let num_channels = input_files.len();
     let mut readers: Vec<_> = input_files
         .iter()
-        .map(|path| WavReader::open(path).unwrap())
-        .collect();
+        .map(|path| WavReader::open(path))
+        .collect::<Result<Vec<_>, _>>()?;
 
     for (i, take_size_samples) in take_sizes.iter().enumerate() {
         let filename = if args.uppercase {
@@ -212,7 +212,10 @@ fn write_wav_takes(
 
         for _ in 0..samples_to_write {
             for reader in &mut readers {
-                let sample = reader.samples::<i32>().next().unwrap()?;
+                let sample = reader
+                    .samples::<i32>()
+                    .next()
+                    .ok_or_else(|| anyhow!("Unexpected end of file in input WAV file"))??;
                 writer.write_sample(sample)?;
             }
         }
@@ -279,14 +282,17 @@ fn write_se_log_bin(
         }
 
         let mut s = String::new();
-        std::io::Read::take(f, 1024 * 1024).read_to_string(&mut s)?;
+        std::io::Read::take(f, 1024 * 1024 + 1).read_to_string(&mut s)?;
+        if s.len() > 1024 * 1024 {
+            return Err(anyhow::anyhow!("Marker file too large to load (max 1MB)"));
+        }
         for line in s.lines() {
             if let Ok(marker) = line.trim().parse::<f32>() {
                 markers.push(marker);
             }
         }
     }
-    markers.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    markers.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
 
     let num_markers = markers.len() as u32;
     let total_length = duration_samples;
