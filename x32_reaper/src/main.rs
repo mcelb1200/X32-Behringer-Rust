@@ -1282,7 +1282,8 @@ fn parse_osc_packet(data: &[u8]) -> Result<OscMessage> {
     // allocating a String with from_utf8_lossy, avoiding UTF-8 overhead.
     let type_tags = &data[type_tag_start..type_tag_end];
 
-    let mut args = Vec::new();
+    let mut args = Vec::with_capacity(type_tags.len().saturating_sub(1));
+    // ⚡ Bolt: Pre-allocated vector capacity using Vec::with_capacity instead of Vec::new() to avoid dynamic reallocations when parsing OSC arguments.
     let mut arg_idx = (type_tag_end + 4) & !3;
 
     if type_tags.starts_with(b",") {
