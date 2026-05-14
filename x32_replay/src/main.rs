@@ -142,7 +142,7 @@ async fn run_logic(state: Arc<Mutex<AppState>>, socket: Arc<UdpSocket>, default_
     let mut buf = [0u8; 2048];
     let mut last_xremote = Instant::now();
     let mut file_writer: Option<BufWriter<File>> = None;
-    let mut file_reader: Option<BufReader<File>> = None;
+    let mut file_reader: Option<BufReader<tokio::io::Take<File>>> = None;
 
     // Subscribe
     // Use proper OSC message construction or explicit bytes.
@@ -202,6 +202,17 @@ async fn run_logic(state: Arc<Mutex<AppState>>, socket: Arc<UdpSocket>, default_
                 if file_reader.is_none() {
                     match File::open(&default_file).await {
                         Ok(f) => {
+                            // Check file size to prevent OOM / DoS from reading huge invalid files
+                            if let Ok(metadata) = f.metadata().await {
+                                if metadata.len() > 10 * 1024 * 1024 {
+                                    eprintln!("File too large to replay (max 10MB)");
+                                    if let Ok(mut s) = state.lock() {
+                                        s.mode = Mode::Idle;
+                                    }
+                                    continue;
+                                }
+                            }
+                            let f = f.take(10 * 1024 * 1024);
                             file_reader = Some(BufReader::new(f));
                             if let Ok(mut s) = state.lock() {
                                 s.start_time = None; // Reset timing
