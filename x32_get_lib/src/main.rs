@@ -194,68 +194,141 @@ fn process_lib_slot(
     }
 
     // 2. Read Params
-    // Define list of params per type (from C PComList etc.)
-    // Writing to file format: /address argument
+    // The C code expects a specific header format, using #2.1# + name + flags (flags are available in the node response)
+    // We didn't parse flags from node resp properly above, but the existing code wrote #2.1# "name" %000000000 1
+    // We'll write the raw node response data after the #2.1# to be identical to C.
 
-    writeln!(file, "#2.1# \"{}\" %000000000 1", name)?; // Simplified header
+    // Get the name string and flags from the node response
+    let mut flags = String::from("%000000000 1");
+    if let Some(OscArg::String(s)) = resp.args.get(3) {
+        // usually flag
+        if let Some(OscArg::Int(i)) = resp.args.get(4) {
+            flags = format!("{} {}", s, i);
+        }
+    }
 
-    let params = match t {
-        LibType::Channel => vec![
-            "/ch/01/config",
-            "/ch/01/preamp",
-            "/ch/01/gate",
-            "/ch/01/dyn",
-            "/ch/01/eq",
-            "/ch/01/mix", // Add more details if needed, or recursive /node traversal
+    writeln!(file, "#2.1# \"{}\" {}", name, flags)?;
+
+    let params: Vec<String> = match t {
+        LibType::Channel => {
+            let mut p = vec![
+                "ch/01/config".to_string(),
+                "ch/01/delay".to_string(),
+                "ch/01/preamp".to_string(),
+                "ch/01/gate".to_string(),
+                "ch/01/gate/filter".to_string(),
+                "ch/01/dyn".to_string(),
+                "ch/01/dyn/filter".to_string(),
+                "ch/01/eq".to_string(),
+            ];
+            p.extend((1..=4).map(|i| format!("ch/01/eq/{}", i)));
+            p.push("ch/01/mix".to_string());
+            p.extend((1..=16).map(|i| format!("ch/01/mix/{:02}", i)));
+            p
+        }
+        LibType::Effects => vec![
+            "fx/1/type".to_string(),
+            "fx/1/source".to_string(),
+            "fx/1/par".to_string(),
         ],
-        LibType::Effects => vec!["/fx/1/type", "/fx/1/source", "/fx/1/par"],
-        LibType::Routing => vec!["/config/routing", "/outputs"],
+        LibType::Routing => {
+            let mut p = vec![
+                "config/routing/IN".to_string(),
+                "config/routing/AES50A".to_string(),
+                "config/routing/AES50B".to_string(),
+                "config/routing/CARD".to_string(),
+                "config/routing/OUT".to_string(),
+                "config/routing/PLAY".to_string(),
+            ];
+            p.extend((1..=16).flat_map(|i| {
+                vec![
+                    format!("outputs/main/{:02}", i),
+                    format!("outputs/main/{:02}/delay", i),
+                ]
+            }));
+            p.extend((1..=6).map(|i| format!("outputs/aux/{:02}", i)));
+            p.extend((1..=16).flat_map(|i| {
+                vec![
+                    format!("outputs/p16/{:02}", i),
+                    format!("outputs/p16/{:02}/iQ", i),
+                ]
+            }));
+            p.extend((1..=2).map(|i| format!("outputs/aes/{:02}", i)));
+            p
+        }
         _ => vec![],
     };
 
-    for p in params {
-        // We can use /node to get values recursively if we implement that,
-        // or just query specific paths.
-        // The C code iterates a static list.
-        // For simplicity/robustness, we query the path.
-        // But /ch/01/config returns multiple values.
-        // We need to query it.
-        let msg = OscMessage::new(p.to_string(), vec![]);
+    socket.set_read_timeout(Some(Duration::from_millis(500)))?;
+
+    for (i, p) in params.iter().enumerate() {
+        let msg = OscMessage::new("/node".to_string(), vec![OscArg::String(p.to_string())]);
         socket.send(&msg.to_bytes()?)?;
 
-        // Wait for response(s)
-        // X32 might send multiple messages if we query a node?
-        // Usually /ch/01/config returns one message with multiple args.
         if let Ok(len) = socket.recv(&mut buf) {
-            let resp = OscMessage::from_bytes(&buf[..len])?;
-            // Format: /path arg1 arg2 ...
-            // But in file, we want relative paths?
-            // C code writes: "config ...", "preamp ..." (stripping /ch/01/ prefix)
+            if let Ok(resp) = OscMessage::from_bytes(&buf[..len]) {
+                if resp.path == "node" {
+                    if let Some(OscArg::String(val)) = resp.args.first() {
+                        let mut output = val.clone();
 
-            let suffix = match t {
-                LibType::Channel => p.strip_prefix("/ch/01").unwrap_or(p),
-                LibType::Effects => p.strip_prefix("/fx/1").unwrap_or(p),
-                LibType::Routing => p.strip_prefix("/").unwrap_or(p), // Routing keeps full path usually? C: "/config/..."
-                _ => p,
-            };
+                        match t {
+                            LibType::Channel => {
+                                // Strip "/ch/01" from the beginning
+                                if let Some(stripped) = output.strip_prefix("ch/01") {
+                                    output = stripped.to_string();
+                                }
 
-            // Reconstruct line
-            file.write_all(suffix.as_bytes())?;
-            for arg in resp.args {
-                match arg {
-                    OscArg::Int(i) => write!(file, " {}", i)?,
-                    OscArg::Float(f) => write!(file, " {:.4}", f)?,
-                    OscArg::String(s) => {
-                        file.write_all(b" \"")?;
-                        file.write_all(s.as_bytes())?;
-                        file.write_all(b"\"")?;
+                                // Remove the "source" element of /config
+                                if i == 0 {
+                                    if let Some(last_space) = output.rfind(' ') {
+                                        output.truncate(last_space);
+                                    }
+                                }
+                                writeln!(file, "{}", output.trim_start())?;
+                            }
+                            LibType::Effects => {
+                                // Strip "/fx/1/" from the beginning
+                                if let Some(stripped) = output.strip_prefix("fx/1/") {
+                                    output = stripped.to_string();
+                                }
+                                writeln!(file, "{}", output.trim_start())?;
+                            }
+                            LibType::Routing => {
+                                // The C code writes: r_buf + 12 which strips "/node...,s~~" meaning it keeps the leading '/' or just writes the value.
+                                // Actually C code for routing sends: /node ,s config/routing/IN
+                                // Returns: node ,s "/config/routing/IN ~~~"
+                                // The C code writes it directly.
+                                writeln!(file, "{}", output.trim_start())?;
+                            }
+                            _ => {}
+                        }
                     }
-                    _ => {}
                 }
             }
-            file.write_all(b"\n")?;
+        } else {
+            eprintln!("  Error or timeout on command: /node ,s {}", p);
         }
     }
+
+    if t == LibType::Channel {
+        let msg = OscMessage::new(
+            "/node".to_string(),
+            vec![OscArg::String("headamp/000".to_string())],
+        );
+        socket.send(&msg.to_bytes()?)?;
+        if let Ok(len) = socket.recv(&mut buf) {
+            if let Ok(resp) = OscMessage::from_bytes(&buf[..len]) {
+                if resp.path == "node" {
+                    if let Some(OscArg::String(val)) = resp.args.first() {
+                        writeln!(file, "{}", val)?;
+                    }
+                }
+            }
+        } else {
+            eprintln!("  Error or timeout on command: /node ,s headamp/000");
+        }
+    }
+
     file.flush()?;
 
     Ok(())

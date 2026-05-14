@@ -12,13 +12,13 @@ pub struct PunchRecord {
 
 /// A reader for `.xpc` files.
 pub struct PunchReader {
-    reader: BufReader<File>,
+    reader: BufReader<tokio::io::Take<File>>,
 }
 
 impl PunchReader {
     pub fn new(file: File) -> Self {
         Self {
-            reader: BufReader::new(file),
+            reader: BufReader::new(file.take(10 * 1024 * 1024)),
         }
     }
 

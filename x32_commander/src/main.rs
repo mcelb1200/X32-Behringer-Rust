@@ -157,13 +157,47 @@ fn parse_command_file(path: &str) -> io::Result<Vec<Command>> {
 ///
 /// A `Result` containing the parsed byte array.
 fn parse_midi_hex(hex_str: &str) -> std::result::Result<Vec<u8>, anyhow::Error> {
-    hex_str
-        .split_whitespace()
-        .map(|s| {
-            u8::from_str_radix(s, 16)
-                .map_err(|e| anyhow::anyhow!("Invalid hex byte '{}': {}", s, e))
-        })
-        .collect()
+    // ⚡ Bolt: Manually parse hex bytes instead of using `u8::from_str_radix`.
+    // This avoids overhead of slice creation, generic parsing, and utf8 checks,
+    // which improves configuration loading speed for a better UX.
+    let mut result = Vec::new();
+    let bytes = hex_str.as_bytes();
+    let mut i = 0;
+    while i < bytes.len() {
+        while i < bytes.len() && bytes[i].is_ascii_whitespace() {
+            i += 1;
+        }
+        if i >= bytes.len() {
+            break;
+        }
+
+        let mut val = 0u8;
+        let mut count = 0;
+        while i < bytes.len() && !bytes[i].is_ascii_whitespace() {
+            let b = bytes[i];
+            let v = match b {
+                b'0'..=b'9' => b - b'0',
+                b'a'..=b'f' => b - b'a' + 10,
+                b'A'..=b'F' => b - b'A' + 10,
+                _ => {
+                    return Err(anyhow::anyhow!(
+                        "Invalid hex character in byte '{}'",
+                        b as char
+                    ));
+                }
+            };
+            val = (val << 4) | v;
+            count += 1;
+            i += 1;
+        }
+        if count > 2 {
+            return Err(anyhow::anyhow!(
+                "Invalid hex byte length: expected at most 2 hex chars per byte"
+            ));
+        }
+        result.push(val);
+    }
+    Ok(result)
 }
 
 /// Runs the main application logic.
