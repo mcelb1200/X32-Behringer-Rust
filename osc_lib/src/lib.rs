@@ -231,35 +231,26 @@ impl OscMessage {
     where
         I: IntoIterator<Item = &'a OscArg> + Clone,
     {
-        // First pass: Calculate the total size required and collect type tags
+        // First pass: Calculate the total size required.
         let path_size = padded_size(path.len() + 1);
 
-        let mut type_tags = Vec::with_capacity(8);
-        type_tags.push(b',');
-
         let mut args_size = 0;
+        let mut args_count = 0;
         for arg in args.clone() {
+            args_count += 1;
             match arg {
-                OscArg::Int(_) => {
+                OscArg::Int(_) | OscArg::Float(_) => {
                     args_size += 4;
-                    type_tags.push(b'i');
-                }
-                OscArg::Float(_) => {
-                    args_size += 4;
-                    type_tags.push(b'f');
                 }
                 OscArg::String(s) => {
                     args_size += padded_size(s.len() + 1);
-                    type_tags.push(b's');
                 }
                 OscArg::Blob(b) => {
                     args_size += 4 + padded_size(b.len());
-                    type_tags.push(b'b');
                 }
             }
         }
-        type_tags.push(0); // Null terminator
-        let type_tags_size = padded_size(type_tags.len());
+        let type_tags_size = padded_size(args_count + 2); // comma + tags + null
 
         let total_size = path_size + type_tags_size + args_size;
         let mut bytes = Vec::with_capacity(total_size);
@@ -267,8 +258,19 @@ impl OscMessage {
         // Write path
         write_osc_string(&mut bytes, path)?;
 
-        // Write type tags
-        bytes.extend_from_slice(&type_tags);
+        // OPTIMIZATION: Write type tags directly to the final dynamically-sized payload memory
+        // in a second pass over the args iterator. This avoids intermediate heap allocations
+        // and subsequent extensions for the type_tags vector on the hot serialization path.
+        bytes.push(b',');
+        for arg in args.clone() {
+            match arg {
+                OscArg::Int(_) => bytes.push(b'i'),
+                OscArg::Float(_) => bytes.push(b'f'),
+                OscArg::String(_) => bytes.push(b's'),
+                OscArg::Blob(_) => bytes.push(b'b'),
+            }
+        }
+        bytes.push(0); // Null terminator
 
         // OPTIMIZATION: Calculate exact padding required instead of a while loop.
         let rem = bytes.len() % 4;
@@ -277,7 +279,7 @@ impl OscMessage {
             bytes.extend_from_slice(&[0, 0, 0][..pad_len]);
         }
 
-        // Second pass: Write args
+        // Third pass: Write args
         for arg in args {
             match arg {
                 OscArg::Int(val) => bytes.extend_from_slice(&val.to_be_bytes()),
