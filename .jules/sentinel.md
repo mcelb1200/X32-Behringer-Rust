@@ -64,3 +64,8 @@
 **Vulnerability:** Pseudo-files (like `/dev/zero`) reporting 0 size bypass metadata length checks. When streamed via bounded readers (e.g., `.take(LIMIT)`), they are silently truncated.
 **Learning:** For config or scripting engines, parsing a silently truncated stream can cause partial execution (e.g., executing commands without mandatory teardown logic).
 **Prevention:** Always read with bounds `.take(LIMIT + 1)` into memory, then explicitly fail if the final buffer length strictly exceeds `LIMIT`, effectively preventing partial parsing.
+
+## 2024-06-27 - [DoS via Unbounded Loops based on user-supplied scalars]
+**Vulnerability:** A file parsing script (`x32_cpxlivemarkers/src/main.rs`) verified the total file size was small (< 1MB) but failed to bound an internal scalar (`nbmarker`) read from the binary format. The script subsequently looped `for i in 1..=nbmarker`, performing IO and calculations on every iteration. An attacker could set `nbmarker` to `u32::MAX`, causing an infinite loop that exhausts CPU and delays program completion indefinitely, a Denial of Service.
+**Learning:** Checking the total length of a file does not protect against malicious scalars *within* that file being used to drive resource-intensive loops or allocations.
+**Prevention:** When parsing files, explicitly bound user-supplied scalar values used for loops or allocations against a safe maximum (e.g., 500) to prevent CPU and memory exhaustion (DoS) attacks, even if the overall file size is already validated.
