@@ -321,6 +321,39 @@ impl Mixer {
             return Ok(responses);
         }
 
+        // Handle the /node command
+        if osc_msg.path == "/node" {
+            if let Some(OscArg::String(node_path)) = osc_msg.args.first() {
+                let search_path = format!("/{}", node_path);
+
+                // Collect and sort matching keys
+                let mut matches: Vec<(&String, &OscArg)> = self
+                    .state
+                    .values
+                    .iter()
+                    .filter(|(k, _)| **k == search_path || k.starts_with(&format!("{}/", search_path)))
+                    .collect();
+
+                matches.sort_by_key(|(k, _)| *k);
+
+                if !matches.is_empty() {
+                    let mut result = node_path.clone();
+                    for (_, v) in matches {
+                        match v {
+                            OscArg::Int(i) => result.push_str(&format!(" {}", i)),
+                            OscArg::Float(f) => result.push_str(&format!(" {}", f)),
+                            OscArg::String(s) => result.push_str(&format!(" \"{}\"", s)),
+                            OscArg::Blob(_) => result.push_str(" ~blob~"),
+                        }
+                    }
+                    if let Ok(bytes) = OscMessage::serialize_to_bytes("node", [&OscArg::String(result)]) {
+                        responses.push((remote_addr, bytes.into()));
+                    }
+                }
+            }
+            return Ok(responses);
+        }
+
         // Handle system administration commands: /copy, /add, /load, /save, /delete
         if osc_msg.path == "/copy" {
             let mut success = false;
@@ -607,6 +640,35 @@ impl Mixer {
                     let arc_bytes: Arc<[u8]> = bytes.into();
                     for client in &self.clients {
                         responses.push((client.0, arc_bytes.clone()));
+                    }
+                }
+
+                // If a solosw was changed, update the global solo indicator
+                if osc_msg.path.starts_with("/-stat/solosw/") {
+                    let mut any_solo = 0;
+                    // Bounded check of the 80 solosw switches to avoid O(N) map iteration
+                    for i in 1..=80 {
+                        let key = format!("/-stat/solosw/{:02}", i);
+                        if let Some(v) = self.state.get(&key) {
+                            match v {
+                                OscArg::Int(val) if *val != 0 => {
+                                    any_solo = 1;
+                                    break;
+                                }
+                                OscArg::Float(f) if *f > 0.0 => {
+                                    any_solo = 1;
+                                    break;
+                                }
+                                _ => {}
+                            }
+                        }
+                    }
+                    self.state.set("/-stat/solo", OscArg::Int(any_solo));
+                    if let Ok(bytes) = OscMessage::serialize_to_bytes("/-stat/solo", [&OscArg::Int(any_solo)]) {
+                        let arc_bytes: Arc<[u8]> = bytes.into();
+                        for client in &self.clients {
+                            responses.push((client.0, arc_bytes.clone()));
+                        }
                     }
                 }
             }
