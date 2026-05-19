@@ -723,7 +723,9 @@ mod tests {
         let mut mixer = Mixer::new();
 
         mixer.state.set("/ch/01/config/color", OscArg::Int(3));
-        mixer.state.set("/ch/01/config/name", OscArg::String("MyName".to_string()));
+        mixer
+            .state
+            .set("/ch/01/config/name", OscArg::String("MyName".to_string()));
 
         let msg = OscMessage {
             path: "/node".to_string(),
@@ -737,7 +739,10 @@ mod tests {
 
         assert_eq!(response_msg.path, "node");
         assert_eq!(response_msg.args.len(), 1);
-        assert_eq!(response_msg.args[0], OscArg::String("ch/01/config 3 \"MyName\"".to_string()));
+        assert_eq!(
+            response_msg.args[0],
+            OscArg::String("ch/01/config 3 \"MyName\"".to_string())
+        );
     }
 
     #[test]
@@ -745,7 +750,9 @@ mod tests {
         let mut mixer = Mixer::new();
 
         // Connect a client to receive broadcast messages
-        let msg_xremote = OscMessage::new("/xremote".to_string(), vec![]).to_bytes().unwrap();
+        let msg_xremote = OscMessage::new("/xremote".to_string(), vec![])
+            .to_bytes()
+            .unwrap();
         mixer.dispatch(&msg_xremote, test_addr(1234)).unwrap();
 
         // Set solosw 01 to 1

@@ -331,7 +331,9 @@ impl Mixer {
                     .state
                     .values
                     .iter()
-                    .filter(|(k, _)| **k == search_path || k.starts_with(&format!("{}/", search_path)))
+                    .filter(|(k, _)| {
+                        **k == search_path || k.starts_with(&format!("{}/", search_path))
+                    })
                     .collect();
 
                 matches.sort_by_key(|(k, _)| *k);
@@ -346,7 +348,9 @@ impl Mixer {
                             OscArg::Blob(_) => result.push_str(" ~blob~"),
                         }
                     }
-                    if let Ok(bytes) = OscMessage::serialize_to_bytes("node", [&OscArg::String(result)]) {
+                    if let Ok(bytes) =
+                        OscMessage::serialize_to_bytes("node", [&OscArg::String(result)])
+                    {
                         responses.push((remote_addr, bytes.into()));
                     }
                 }
@@ -664,7 +668,9 @@ impl Mixer {
                         }
                     }
                     self.state.set("/-stat/solo", OscArg::Int(any_solo));
-                    if let Ok(bytes) = OscMessage::serialize_to_bytes("/-stat/solo", [&OscArg::Int(any_solo)]) {
+                    if let Ok(bytes) =
+                        OscMessage::serialize_to_bytes("/-stat/solo", [&OscArg::Int(any_solo)])
+                    {
                         let arc_bytes: Arc<[u8]> = bytes.into();
                         for client in &self.clients {
                             responses.push((client.0, arc_bytes.clone()));
