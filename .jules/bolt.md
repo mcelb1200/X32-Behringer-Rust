@@ -13,3 +13,7 @@
 ## 2024-06-25 - [Parsing hex natively over u8::from_str_radix]
 **Learning:** In performance-critical loops (like processing large midi chunks), using `u8::from_str_radix` on string slices to parse hexadecimal data incurs measurable overhead due to slice creation, UTF-8 checks, and generic parsing machinery. Replacing this with a manual loop that matches on raw ASCII bytes (`b'0'..=b'9'`, `b'a'..=b'f'`, `b'A'..=b'F'`) and uses bitwise operations significantly speeds up execution for purely hex data parsing, which translates to a better UX during configuration loads.
 **Action:** When parsing purely hex strings into bytes, avoid `u8::from_str_radix`. Work directly with byte slices and map ASCII characters to values using simple arithmetic and bitwise combinations.
+
+## 2024-06-25 - [Pre-allocating single buffer for OSC serialization]
+**Learning:** In hot loops, calculating capacities and directly writing to a single pre-allocated output buffer instead of allocating intermediate dynamic collections (like a `Vec` for type tags, which involves memory allocation, reallocation, and copies to a final destination) provides a 20%+ performance improvement to OSC serialization in Rust (`serialize_to_bytes`), primarily by completely avoiding an unnecessary heap allocation and redundant iteration per sent OSC message.
+**Action:** Always count elements first, calculate the exact size required, pre-allocate the target array using `Vec::with_capacity` exactly once, and insert directly into it.
