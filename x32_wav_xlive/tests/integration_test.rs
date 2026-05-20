@@ -91,14 +91,12 @@ fn test_single_take_se_log_bin() {
         .path();
 
     let log_path = session_dir.join("SE_LOG.BIN");
-    let file = File::open(log_path).unwrap();
+    let mut file = File::open(log_path).unwrap();
     if file.metadata().unwrap().len() > 1024 * 1024 {
         panic!("SE_LOG.BIN file too large");
     }
     let mut buffer = Vec::new();
-    std::io::Read::take(file, 2048 * 2)
-        .read_to_end(&mut buffer)
-        .unwrap();
+    file.read_to_end(&mut buffer).unwrap();
 
     let mut cursor = Cursor::new(&buffer);
     cursor.set_position(28); // Skip to the take sizes array

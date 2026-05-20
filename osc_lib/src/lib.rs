@@ -234,11 +234,9 @@ impl OscMessage {
         // First pass: Calculate the total size required
         let path_size = padded_size(path.len() + 1);
 
-        let mut num_args = 0;
+        let num_args = args.clone().into_iter().count();
         let mut args_size = 0;
-        let mut num_args = 0;
         for arg in args.clone() {
-            num_args += 1;
             match arg {
                 OscArg::Int(_) => {
                     args_size += 4;
@@ -254,21 +252,15 @@ impl OscMessage {
                 }
             }
         }
-
-        // type tags size: ',' + tags + null terminator
         let type_tags_size = padded_size(num_args + 2);
 
         let total_size = path_size + type_tags_size + args_size;
-
-        // OPTIMIZATION: Pre-allocate exact buffer size and write directly to it.
-        // This avoids allocating an intermediate vector for type tags and avoids
-        // a redundant copy, saving an allocation per OSC message sent.
         let mut bytes = Vec::with_capacity(total_size);
 
         // Write path
         write_osc_string(&mut bytes, path)?;
 
-        // Write type tags directly to buffer
+        // Write type tags
         bytes.push(b',');
         for arg in args.clone() {
             match arg {
