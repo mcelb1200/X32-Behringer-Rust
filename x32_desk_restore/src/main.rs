@@ -5,13 +5,13 @@
 //! # Credits
 //!
 //! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
-//! *   **Additional concepts by:** [User]
-//! *   **Rust implementation by:** [User]
+//! *   **Additional concepts by:** mcelb1200
+//! *   **Rust implementation by:** mcelb1200
 
 use clap::Parser;
 use osc_lib::OscMessage;
 use std::fs::File;
-use std::io::{self, BufRead};
+use std::io::{self, Read};
 use std::net::UdpSocket;
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -19,6 +19,8 @@ use x32_lib::{
     create_socket,
     error::{Result, X32Error},
 };
+
+mod parse;
 
 /// A Rust implementation of the X32DeskRestore tool.
 #[derive(Parser, Debug)]
@@ -50,19 +52,29 @@ struct Args {
 fn send_commands(socket: &UdpSocket, commands: &[String]) -> Result<()> {
     let mut buf = [0; 512];
     for cmd_str in commands {
-        // Prepend "/" to the command string if it doesn't start with it
-        let command = if cmd_str.starts_with('/') {
-            cmd_str.to_string()
+        let msg = if cmd_str.starts_with("/-") {
+            // Attempt to parse `/-...` lines using XDS_parse logic.
+            // If it fails to parse (or unsupported), skip it or log it (C code skipped unsupported nodes).
+            if let Some(parsed_msg) = parse::parse_node_line(cmd_str) {
+                parsed_msg
+            } else {
+                continue;
+            }
         } else {
-            format!("/{}", cmd_str)
-        };
+            // Prepend "/" to the command string if it doesn't start with it
+            let command = if cmd_str.starts_with('/') {
+                cmd_str.to_string()
+            } else {
+                format!("/{}", cmd_str)
+            };
 
-        // Attempt to parse with OscMessage::from_str first
-        let msg = match OscMessage::from_str(&command) {
-            Ok(msg) => msg,
-            Err(_) => {
-                // If parsing fails, treat the line as a simple command with no arguments
-                OscMessage::new(command, vec![])
+            // Attempt to parse with OscMessage::from_str first
+            match OscMessage::from_str(&command) {
+                Ok(msg) => msg,
+                Err(_) => {
+                    // If parsing fails, treat the line as a simple command with no arguments
+                    OscMessage::new(command, vec![])
+                }
             }
         };
 
@@ -102,10 +114,19 @@ fn main() -> Result<()> {
         )));
     }
 
-    let commands: Vec<String> = io::BufReader::new(file)
+    let mut content = String::new();
+    file.take(1024 * 1024 + 1).read_to_string(&mut content)?;
+    if content.len() > 1024 * 1024 {
+        return Err(X32Error::Io(io::Error::new(
+            io::ErrorKind::InvalidData,
+            "File too large",
+        )));
+    }
+
+    let commands: Vec<String> = content
         .lines()
-        .map_while(std::result::Result::ok)
         .filter(|line| !line.starts_with('#') && !line.trim().is_empty())
+        .map(|s| s.to_string())
         .collect();
 
     if commands.is_empty() {

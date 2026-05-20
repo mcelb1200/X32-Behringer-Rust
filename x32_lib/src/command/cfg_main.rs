@@ -120,7 +120,7 @@ impl fmt::Display for CommandValue {
         match self {
             CommandValue::Int(i) => write!(f, "{}", i),
             CommandValue::Float(fl) => write!(f, "{}", fl),
-            CommandValue::String(s) => write!(f, "{}", s),
+            CommandValue::String(s) => f.write_str(s),
             CommandValue::Data(d) => write!(f, "{:?}", d),
         }
     }

@@ -7,8 +7,8 @@
 //! # Credits
 //!
 //! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
-//! *   **Additional concepts by:** [User]
-//! *   **Rust implementation by:** [User]
+//! *   **Additional concepts by:** mcelb1200
+//! *   **Rust implementation by:** mcelb1200
 
 use anyhow::{Context, Result, anyhow};
 use clap::Parser;
@@ -86,6 +86,7 @@ async fn main() -> Result<()> {
     let mut fx_type = 0;
 
     // Read response with timeout
+    #[allow(clippy::collapsible_match)]
     if let Ok(res) =
         tokio::time::timeout(std::time::Duration::from_millis(500), socket.recv(&mut buf)).await
     {

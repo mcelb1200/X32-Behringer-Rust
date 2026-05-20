@@ -1,6 +1,6 @@
 use anyhow::{Context, Result};
 use std::fs::File;
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, Read};
 use std::path::Path;
 
 #[derive(Debug, Clone)]
@@ -43,7 +43,12 @@ pub struct Config {
 impl Config {
     pub fn load<P: AsRef<Path>>(path: P) -> Result<Self> {
         let file = File::open(path).context("Failed to open config file")?;
-        let reader = BufReader::new(file);
+
+        if file.metadata()?.len() > 1024 * 1024 {
+            anyhow::bail!("Config file too large to load (max 1MB)");
+        }
+
+        let reader = BufReader::new(file.take(1024 * 1024));
         let mut lines = reader.lines();
 
         // helper to get next line and parse

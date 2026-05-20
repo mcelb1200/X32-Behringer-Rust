@@ -7,14 +7,14 @@
 //! # Credits
 //!
 //! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
-//! *   **Additional concepts by:** [User]
-//! *   **Rust implementation by:** [User]
+//! *   **Additional concepts by:** mcelb1200
+//! *   **Rust implementation by:** mcelb1200
 
 use anyhow::Result;
 use clap::Parser;
 use osc_lib::{OscArg, OscMessage};
 use std::fs::File;
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, Read};
 use std::path::PathBuf;
 use std::time::Duration;
 use x32_lib::create_socket;
@@ -44,7 +44,12 @@ fn main() -> Result<()> {
     for path in args.files {
         println!("Processing file: {:?}", path);
         let file = File::open(&path)?;
-        let reader = BufReader::new(file);
+
+        if file.metadata()?.len() > 1024 * 1024 {
+            anyhow::bail!("Preset file too large to load (max 1MB)");
+        }
+
+        let reader = BufReader::new(file.take(1024 * 1024));
 
         // Detect type from extension
         let ext = path.extension().and_then(|s| s.to_str()).unwrap_or("");

@@ -5,8 +5,8 @@
 # Credits
 #
 # *   Original concept and work on the C library: Patrick-Gilles Maillot
-# *   Additional concepts by: [User]
-# *   Rust implementation by: [User]
+# *   Additional concepts by: mcelb1200
+# *   Rust implementation by: mcelb1200
 
 # Helper function to generate a minimal, valid, 32-bit mono WAV file using Python.
 # Using Python for this is simpler and more reliable than trying to construct binary data in pure Bash.

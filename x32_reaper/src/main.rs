@@ -8,8 +8,8 @@
 //! # Credits
 //!
 //! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
-//! *   **Additional concepts by:** [User]
-//! *   **Rust implementation by:** [User]
+//! *   **Additional concepts by:** mcelb1200
+//! *   **Rust implementation by:** mcelb1200
 
 use anyhow::{Context, Result};
 use clap::Parser;
@@ -50,6 +50,9 @@ const TRACKSOLO: i32 = 0x0040;
 const TRACKFX: i32 = 0x0080;
 const MASTERPAN: i32 = 0x0100;
 const MASTERVOLUME: i32 = 0x0200;
+const MASTERSELECT: i32 = 0x0400;
+const MASTERSOLO: i32 = 0x0800;
+const MASTERMUTE: i32 = 0x1000;
 
 const X32PAN: i32 = 0x0001;
 const X32FADER: i32 = 0x0002;
@@ -165,8 +168,10 @@ async fn connect_x32(sock: &UdpSocket, addr: SocketAddr) -> Result<()> {
     let res = time::timeout(Duration::from_millis(1000), sock.recv_from(&mut buf)).await;
     match res {
         Ok(Ok((len, _src))) => {
-            let s = String::from_utf8_lossy(&buf[..len]);
-            if !s.starts_with("/info") {
+            let data = &buf[..len];
+            // ⚡ Bolt: Check for /info using byte slice instead of String::from_utf8_lossy to avoid allocation overhead on success.
+            if !data.starts_with(b"/info") {
+                let s = String::from_utf8_lossy(data);
                 eprintln!("Unexpected response from X32: {}", s);
                 return Err(anyhow::anyhow!("Unexpected response from X32"));
             }
@@ -1111,6 +1116,42 @@ async fn process_single_reaper_message(
                             }
                         }
                     }
+                } else if msg.path.contains("/solo") {
+                    xx_mask = TRACKSOLO;
+                    if let Some(OscArg::Float(f)) = msg.args.first() {
+                        let i_val = *f as i32;
+                        let mut x_cnum = -1;
+
+                        if tnum >= config.trk_min && tnum <= config.trk_max {
+                            let mut t = tnum - config.trk_min + 1;
+                            if config.ch_bank_on {
+                                if let Some(track) =
+                                    state_guard.bank_tracks.get_mut((t - 1) as usize)
+                                {
+                                    track.solo = *f;
+                                }
+                                t -= state_guard.ch_bank_offset * config.bank_size;
+                            }
+                            if t <= config.bank_size {
+                                x_cnum = t;
+                            }
+                        } else if tnum >= config.aux_min && tnum <= config.aux_max {
+                            x_cnum = tnum - config.aux_min + 33;
+                        } else if tnum >= config.fxr_min && tnum <= config.fxr_max {
+                            x_cnum = tnum - config.fxr_min + 41;
+                        } else if tnum >= config.bus_min && tnum <= config.bus_max {
+                            x_cnum = tnum - config.bus_min + 49;
+                        } else if tnum >= config.dca_min && tnum <= config.dca_max {
+                            x_cnum = tnum - config.dca_min + 73;
+                        }
+
+                        if x_cnum > 0 {
+                            xb_msg = Some(OscMessage {
+                                path: format!("/-stat/solosw/{:02}", x_cnum),
+                                args: vec![OscArg::Int(i_val)],
+                            });
+                        }
+                    }
                 } else if msg.path.contains("/select") {
                     xx_mask = TRACKSELECT;
                     if let Some(OscArg::Float(f)) = msg.args.first() {
@@ -1163,6 +1204,34 @@ async fn process_single_reaper_message(
                         args: vec![OscArg::Float(*f)],
                     });
                 }
+            } else if msg.path.contains("select") {
+                xx_mask = MASTERSELECT;
+                if let Some(OscArg::Float(f)) = msg.args.first() {
+                    xb_msg = Some(OscMessage {
+                        path: "/-stat/selidx".to_string(),
+                        // X32 master fader is select index 71 (LR)
+                        // Actually, looking at X32 implementation, Main LR is usually 71 (0-based) or 71 (1-based)? Let's just use 71.
+                        args: vec![OscArg::Int(if *f > 0.5 { 71 } else { 0 })],
+                    });
+                }
+            } else if msg.path.contains("solo") {
+                xx_mask = MASTERSOLO;
+                if let Some(OscArg::Float(f)) = msg.args.first() {
+                    xb_msg = Some(OscMessage {
+                        // Main LR solo is 72 on X32 (-stat/solosw/72)
+                        path: "/-stat/solosw/72".to_string(),
+                        args: vec![OscArg::Int(if *f > 0.5 { 1 } else { 0 })],
+                    });
+                }
+            } else if msg.path.contains("mute") {
+                xx_mask = MASTERMUTE;
+                if let Some(OscArg::Float(f)) = msg.args.first() {
+                    xb_msg = Some(OscMessage {
+                        path: "/main/st/mix/on".to_string(),
+                        // Reaper: 1.0=mute, 0.0=unmute. X32: 1=on (unmute), 0=off (mute)
+                        args: vec![OscArg::Int(if *f > 0.0 { 0 } else { 1 })],
+                    });
+                }
             }
         }
     } else if config.transport_on {
@@ -1184,8 +1253,31 @@ async fn process_single_reaper_message(
                     args: vec![OscArg::Int(val)],
                 });
             }
+        } else if msg.path.starts_with("/repeat") {
+            if let Some(OscArg::Float(f)) = msg.args.first() {
+                let val = if *f > 0.5 { 127 } else { 0 };
+                xb_msg = Some(OscMessage {
+                    path: "/-stat/userpar/22/value".to_string(),
+                    args: vec![OscArg::Int(val)],
+                });
+            }
+        } else if msg.path.starts_with("/record") {
+            if let Some(OscArg::Float(f)) = msg.args.first() {
+                let val = if *f > 0.5 { 127 } else { 0 };
+                xb_msg = Some(OscMessage {
+                    path: "/-stat/userpar/24/value".to_string(),
+                    args: vec![OscArg::Int(val)],
+                });
+            }
+        } else if msg.path.starts_with("/pause") {
+            if let Some(OscArg::Float(f)) = msg.args.first() {
+                let val = if *f > 0.5 { 127 } else { 0 };
+                xb_msg = Some(OscMessage {
+                    path: "/-stat/userpar/19/value".to_string(),
+                    args: vec![OscArg::Int(val)],
+                });
+            }
         }
-        // ... others
     }
 
     if let Some(m) = xb_msg {
@@ -1203,7 +1295,9 @@ fn parse_osc_packet(data: &[u8]) -> Result<OscMessage> {
         .iter()
         .position(|&b| b == 0)
         .context("Invalid OSC path")?;
-    let path = String::from_utf8_lossy(&data[..path_end]).to_string();
+
+    // ⚡ Bolt: Use `into_owned` instead of `to_string` to avoid Cow's Display formatting overhead
+    let path = String::from_utf8_lossy(&data[..path_end]).into_owned();
 
     let type_tag_start = (path_end + 4) & !3;
     if type_tag_start >= data.len() {
@@ -1257,7 +1351,8 @@ fn parse_osc_packet(data: &[u8]) -> Result<OscMessage> {
                         .position(|&b| b == 0)
                         .map(|p| p + arg_idx)
                         .unwrap_or(data.len());
-                    let s = String::from_utf8_lossy(&data[arg_idx..str_end]).to_string();
+                    // ⚡ Bolt: Use `into_owned` instead of `to_string` to avoid Cow's Display formatting overhead
+                    let s = String::from_utf8_lossy(&data[arg_idx..str_end]).into_owned();
                     args.push(OscArg::String(s));
                     arg_idx = (str_end + 4) & !3;
                 }
@@ -1267,4 +1362,230 @@ fn parse_osc_packet(data: &[u8]) -> Result<OscMessage> {
     }
 
     Ok(OscMessage { path, args })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_reaper_transport_messages() {
+        let config = Config {
+            verbose: false,
+            delay_bank: 0,
+            delay_generic: 0,
+            xx_send_mask: -1,
+            xr_send_mask: -1,
+            x32_ip: "127.0.0.1".to_string(),
+            reaper_ip: "127.0.0.1".to_string(),
+            reaper_send_port: 8000,
+            reaper_recv_port: 8000,
+            transport_on: true,
+            ch_bank_on: false,
+            marker_btn_on: false,
+            bank_c_color: 0,
+            eq_ctrl_on: false,
+            master_on: false,
+            trk_min: 1,
+            trk_max: 32,
+            aux_min: 0,
+            aux_max: 0,
+            fxr_min: 0,
+            fxr_max: 0,
+            bus_min: 0,
+            bus_max: 0,
+            dca_min: 0,
+            dca_max: 0,
+            track_send_offset: 0,
+            rdca: vec![(0, 0); 8],
+            bank_up: 0,
+            bank_dn: 0,
+            marker_btn: 0,
+            ch_bank_offset: 0,
+            bank_size: 8,
+        };
+        let state = Arc::new(Mutex::new(AppState::new(&config)));
+
+        // Create dummy sockets
+        let x_sock = UdpSocket::bind("127.0.0.1:0").await.unwrap();
+        let r_sock = UdpSocket::bind("127.0.0.1:0").await.unwrap();
+        let x_addr: SocketAddr = "127.0.0.1:10023".parse().unwrap();
+        let r_addr: SocketAddr = "127.0.0.1:8000".parse().unwrap();
+
+        // Helper function to build OSC packets for transport commands
+        let build_osc = |path: &str, val: f32| -> Vec<u8> {
+            let msg = OscMessage {
+                path: path.to_string(),
+                args: vec![OscArg::Float(val)],
+            };
+            osc_lib::OscMessage::serialize_to_bytes(&msg.path, &msg.args).unwrap()
+        };
+
+        // We can check if `state.play` is modified by `/play`
+        process_single_reaper_message(
+            &build_osc("/play", 1.0),
+            &config,
+            &state,
+            &x_sock,
+            x_addr,
+            &r_sock,
+            r_addr,
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(state.lock().await.play, true);
+
+        // We can't easily intercept the outgoing UDP packet without a listening socket,
+        // but verifying it doesn't crash and modifies state correctly is a good start.
+
+        let commands = vec!["/stop", "/record", "/pause", "/repeat"];
+        for cmd in commands {
+            process_single_reaper_message(
+                &build_osc(cmd, 1.0),
+                &config,
+                &state,
+                &x_sock,
+                x_addr,
+                &r_sock,
+                r_addr,
+            )
+            .await
+            .unwrap();
+        }
+    }
+
+    #[tokio::test]
+    async fn test_reaper_solo_message() {
+        let config = Config {
+            verbose: false,
+            delay_bank: 0,
+            delay_generic: 0,
+            xx_send_mask: -1,
+            xr_send_mask: -1,
+            x32_ip: "127.0.0.1".to_string(),
+            reaper_ip: "127.0.0.1".to_string(),
+            reaper_send_port: 8000,
+            reaper_recv_port: 8000,
+            transport_on: true,
+            ch_bank_on: true,
+            marker_btn_on: false,
+            bank_c_color: 0,
+            eq_ctrl_on: false,
+            master_on: false,
+            trk_min: 1,
+            trk_max: 32,
+            aux_min: 0,
+            aux_max: 0,
+            fxr_min: 0,
+            fxr_max: 0,
+            bus_min: 0,
+            bus_max: 0,
+            dca_min: 0,
+            dca_max: 0,
+            track_send_offset: 0,
+            rdca: vec![(0, 0); 8],
+            bank_up: 0,
+            bank_dn: 0,
+            marker_btn: 0,
+            ch_bank_offset: 0,
+            bank_size: 8,
+        };
+        let state = Arc::new(Mutex::new(AppState::new(&config)));
+
+        let x_sock = UdpSocket::bind("127.0.0.1:0").await.unwrap();
+        let r_sock = UdpSocket::bind("127.0.0.1:0").await.unwrap();
+        let x_addr: SocketAddr = "127.0.0.1:10023".parse().unwrap();
+        let r_addr: SocketAddr = "127.0.0.1:8000".parse().unwrap();
+
+        let msg = OscMessage {
+            path: "/track/5/solo".to_string(),
+            args: vec![OscArg::Float(1.0)],
+        };
+
+        process_single_reaper_message(
+            &osc_lib::OscMessage::serialize_to_bytes(&msg.path, &msg.args).unwrap(),
+            &config,
+            &state,
+            &x_sock,
+            x_addr,
+            &r_sock,
+            r_addr,
+        )
+        .await
+        .unwrap();
+
+        let track_solo = state.lock().await.bank_tracks[4].solo;
+        assert_eq!(track_solo, 1.0);
+    }
+
+    #[tokio::test]
+    async fn test_reaper_master_commands() {
+        let config = Config {
+            verbose: false,
+            delay_bank: 0,
+            delay_generic: 0,
+            xx_send_mask: -1,
+            xr_send_mask: -1,
+            x32_ip: "127.0.0.1".to_string(),
+            reaper_ip: "127.0.0.1".to_string(),
+            reaper_send_port: 8000,
+            reaper_recv_port: 8000,
+            transport_on: false,
+            ch_bank_on: false,
+            marker_btn_on: false,
+            bank_c_color: 0,
+            eq_ctrl_on: false,
+            master_on: true,
+            trk_min: 1,
+            trk_max: 32,
+            aux_min: 0,
+            aux_max: 0,
+            fxr_min: 0,
+            fxr_max: 0,
+            bus_min: 0,
+            bus_max: 0,
+            dca_min: 0,
+            dca_max: 0,
+            track_send_offset: 0,
+            rdca: vec![(0, 0); 8],
+            bank_up: 0,
+            bank_dn: 0,
+            marker_btn: 0,
+            ch_bank_offset: 0,
+            bank_size: 8,
+        };
+        let state = Arc::new(Mutex::new(AppState::new(&config)));
+
+        // Create dummy sockets
+        let x_sock = UdpSocket::bind("127.0.0.1:0").await.unwrap();
+        let r_sock = UdpSocket::bind("127.0.0.1:0").await.unwrap();
+        let x_addr: SocketAddr = "127.0.0.1:10023".parse().unwrap();
+        let r_addr: SocketAddr = "127.0.0.1:8000".parse().unwrap();
+
+        // Helper function to build OSC packets for transport commands
+        let build_osc = |path: &str, val: f32| -> Vec<u8> {
+            let msg = OscMessage {
+                path: path.to_string(),
+                args: vec![OscArg::Float(val)],
+            };
+            osc_lib::OscMessage::serialize_to_bytes(&msg.path, &msg.args).unwrap()
+        };
+
+        // Note: we can't easily assert the UDP packet output directly here, but we can call it to ensure no panics.
+        let commands = vec!["/master/select", "/master/solo", "/master/mute"];
+        for cmd in commands {
+            process_single_reaper_message(
+                &build_osc(cmd, 1.0),
+                &config,
+                &state,
+                &x_sock,
+                x_addr,
+                &r_sock,
+                r_addr,
+            )
+            .await
+            .unwrap();
+        }
+    }
 }

@@ -8,8 +8,8 @@
 //!
 //! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
 //! *   **Original C code for XAir version:** Ken Mitchell
-//! *   **Additional concepts by:** [User]
-//! *   **Rust implementation by:** [User]
+//! *   **Additional concepts by:** mcelb1200
+//! *   **Rust implementation by:** mcelb1200
 
 use clap::Parser;
 use osc_lib::{OscArg, OscMessage};

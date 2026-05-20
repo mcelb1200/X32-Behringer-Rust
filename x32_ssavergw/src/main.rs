@@ -8,7 +8,7 @@
 //! # Credits
 //!
 //! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
-//! *   **Rust implementation by:** [User]
+//! *   **Rust implementation by:** mcelb1200
 
 use anyhow::Result;
 use clap::Parser;
@@ -72,8 +72,9 @@ async fn main() -> Result<()> {
         if let Ok(Ok((len, _))) =
             time::timeout(Duration::from_millis(100), socket.recv_from(&mut buf)).await
         {
-            let s = String::from_utf8_lossy(&buf[..len]);
-            if s.starts_with("/info") {
+            let data = &buf[..len];
+            // ⚡ Bolt: Check for /info using byte slice instead of String::from_utf8_lossy to avoid string allocation.
+            if data.starts_with(b"/info") {
                 state.lock().await.is_connected = true;
                 connected = true;
                 println!("Connected!");
@@ -128,7 +129,7 @@ async fn main() -> Result<()> {
                 if st.should_dim() {
                     // Enter screen saver
                     if !st.is_dimmed {
-                        if let Err(e) = save_and_dim(&socket_clone, x32_addr, &mut *st).await {
+                        if let Err(e) = save_and_dim(&socket_clone, x32_addr, &mut st).await {
                             eprintln!("Error saving/dimming: {}", e);
                         } else {
                             println!("Entered Low Light mode.");
@@ -137,7 +138,7 @@ async fn main() -> Result<()> {
                 } else if st.should_restore() {
                     // Restore screen saver
                     if st.is_dimmed {
-                        if let Err(e) = restore_brightness(&socket_clone, x32_addr, &*st).await {
+                        if let Err(e) = restore_brightness(&socket_clone, x32_addr, &st).await {
                             eprintln!("Error restoring brightness: {}", e);
                         } else {
                             println!("Restored normal brightness.");
@@ -149,7 +150,6 @@ async fn main() -> Result<()> {
 
             Ok((len, _addr)) = socket_clone.recv_from(&mut buf) => {
                 let data = &buf[..len];
-                let s = String::from_utf8_lossy(data);
 
                 // If the message is not just a response to our own /xremote or screen dimming
                 // Note: /xremote responses are actually just state changes from the desk.
@@ -158,7 +158,8 @@ async fn main() -> Result<()> {
                 // The C code resets the timer on ANY receive EXCEPT the responses to its own requests
                 // during dimming.
 
-                let is_bright_resp = s.starts_with("/-prefs/bright") || s.starts_with("/-prefs/ledbright");
+                // ⚡ Bolt: Checking prefixes via byte slice matching instead of string allocation.
+                let is_bright_resp = data.starts_with(b"/-prefs/bright") || data.starts_with(b"/-prefs/ledbright");
                 if !is_bright_resp {
                     let mut st = state.lock().await;
                     st.mark_activity();

@@ -108,6 +108,44 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_name() {
+        assert_eq!(name(1), "/mtx/01/config/name");
+        assert_eq!(name(6), "/mtx/06/config/name");
+    }
+
+    #[test]
+    fn test_color() {
+        assert_eq!(color(1), "/mtx/01/config/color");
+        assert_eq!(color(6), "/mtx/06/config/color");
+    }
+
+    #[test]
+    fn test_fader_level() {
+        assert_eq!(fader_level(1), "/mtx/01/mix/fader");
+        assert_eq!(fader_level(6), "/mtx/06/mix/fader");
+    }
+
+    #[test]
+    fn test_on() {
+        assert_eq!(on(1), "/mtx/01/mix/on");
+        assert_eq!(on(6), "/mtx/06/mix/on");
+    }
+
+    #[test]
+    fn test_set_name() {
+        let (address, args) = set_name(1, "Test");
+        assert_eq!(address, "/mtx/01/config/name");
+        assert_eq!(args, vec![OscArg::String("Test".to_string())]);
+    }
+
+    #[test]
+    fn test_set_color() {
+        let (address, args) = set_color(1, 2);
+        assert_eq!(address, "/mtx/01/config/color");
+        assert_eq!(args, vec![OscArg::Int(2)]);
+    }
+
+    #[test]
     fn test_set_fader() {
         let (address, args) = set_fader(1, 0.5);
         assert_eq!(address, "/mtx/01/mix/fader");

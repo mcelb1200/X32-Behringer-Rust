@@ -7,8 +7,8 @@
 //! # Credits
 //!
 //! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
-//! *   **Additional concepts by:** [User]
-//! *   **Rust implementation by:** [User]
+//! *   **Additional concepts by:** mcelb1200
+//! *   **Rust implementation by:** mcelb1200
 //!
 //! # Examples
 //!
@@ -53,6 +53,7 @@ pub enum OscError {
     Io(io::Error),
     /// A string was not valid UTF-8.
     Utf8(FromUtf8Error),
+    StrUtf8(std::str::Utf8Error),
     /// The OSC type tag string was invalid (e.g., did not start with ',').
     InvalidTypeTag,
     /// An unsupported OSC type tag was encountered.
@@ -68,9 +69,13 @@ impl std::fmt::Display for OscError {
         match self {
             OscError::Io(e) => write!(f, "I/O error: {}", e),
             OscError::Utf8(e) => write!(f, "UTF-8 conversion error: {}", e),
+            OscError::StrUtf8(e) => write!(f, "UTF-8 conversion error: {}", e),
             OscError::InvalidTypeTag => f.write_str("Invalid OSC type tag string"),
             OscError::UnsupportedTypeTag(c) => write!(f, "Unsupported OSC type tag: {}", c),
-            OscError::ParseError(s) => write!(f, "Parse error: {}", s),
+            OscError::ParseError(s) => {
+                f.write_str("Parse error: ")?;
+                f.write_str(s)
+            }
             OscError::UnexpectedResponse => f.write_str("Unexpected response from mixer"),
         }
     }
@@ -81,6 +86,12 @@ impl std::error::Error for OscError {}
 impl From<io::Error> for OscError {
     fn from(err: io::Error) -> Self {
         OscError::Io(err)
+    }
+}
+
+impl From<std::str::Utf8Error> for OscError {
+    fn from(err: std::str::Utf8Error) -> Self {
+        OscError::StrUtf8(err)
     }
 }
 
@@ -220,30 +231,42 @@ impl OscMessage {
     where
         I: IntoIterator<Item = &'a OscArg> + Clone,
     {
-        // Calculate the total size required
+        // First pass: Calculate the total size required
         let path_size = padded_size(path.len() + 1);
-        let mut type_tags_len = 2; // ',' + null
 
         let mut args_size = 0;
-        for arg in args.clone().into_iter() {
-            type_tags_len += 1;
+        let mut num_args = 0;
+        for arg in args.clone() {
+            num_args += 1;
             match arg {
-                OscArg::Int(_) | OscArg::Float(_) => args_size += 4,
-                OscArg::String(s) => args_size += padded_size(s.len() + 1),
-                OscArg::Blob(b) => args_size += 4 + padded_size(b.len()),
+                OscArg::Int(_) | OscArg::Float(_) => {
+                    args_size += 4;
+                }
+                OscArg::String(s) => {
+                    args_size += padded_size(s.len() + 1);
+                }
+                OscArg::Blob(b) => {
+                    args_size += 4 + padded_size(b.len());
+                }
             }
         }
-        let type_tags_size = padded_size(type_tags_len);
+
+        // type tags size: ',' + tags + null terminator
+        let type_tags_size = padded_size(num_args + 2);
 
         let total_size = path_size + type_tags_size + args_size;
+
+        // OPTIMIZATION: Pre-allocate exact buffer size and write directly to it.
+        // This avoids allocating an intermediate vector for type tags and avoids
+        // a redundant copy, saving an allocation per OSC message sent.
         let mut bytes = Vec::with_capacity(total_size);
 
         // Write path
         write_osc_string(&mut bytes, path)?;
 
-        // Write type tags
+        // Write type tags directly to buffer
         bytes.push(b',');
-        for arg in args.clone().into_iter() {
+        for arg in args.clone() {
             match arg {
                 OscArg::Int(_) => bytes.push(b'i'),
                 OscArg::Float(_) => bytes.push(b'f'),
@@ -251,7 +274,7 @@ impl OscMessage {
                 OscArg::Blob(_) => bytes.push(b'b'),
             }
         }
-        bytes.push(0); // Null terminator
+        bytes.push(0);
 
         // OPTIMIZATION: Calculate exact padding required instead of a while loop.
         let rem = bytes.len() % 4;
@@ -260,8 +283,8 @@ impl OscMessage {
             bytes.extend_from_slice(&[0, 0, 0][..pad_len]);
         }
 
-        // Write args
-        for arg in args.into_iter() {
+        // Second pass: Write args
+        for arg in args {
             match arg {
                 OscArg::Int(val) => bytes.extend_from_slice(&val.to_be_bytes()),
                 OscArg::Float(val) => bytes.extend_from_slice(&val.to_be_bytes()),
@@ -330,14 +353,15 @@ impl FromStr for OscMessage {
             .next()
             .ok_or(OscError::ParseError("Empty command string".to_string()))?
             .to_string();
-        let mut args = Vec::new(); // Capacity will be reserved later
 
         if let Some(type_tags) = it.next() {
             if !type_tags.starts_with(',') {
                 return Err(OscError::InvalidTypeTag);
             }
 
-            args.reserve_exact(type_tags.len().saturating_sub(1));
+            // OPTIMIZATION: Pre-allocate vector capacity to avoid Vec::new() followed by
+            // dynamic reallocations when adding arguments.
+            let mut args = Vec::with_capacity(type_tags.len().saturating_sub(1));
 
             // OPTIMIZATION: Use .bytes() instead of .chars() to bypass UTF-8 decoding
             // overhead since OSC type tags are guaranteed to be ASCII.
@@ -368,10 +392,35 @@ impl FromStr for OscMessage {
                             )));
                         }
                         let mut blob = Vec::with_capacity(val_str.len() / 2);
-                        for i in (0..val_str.len()).step_by(2) {
-                            let byte = u8::from_str_radix(&val_str[i..i + 2], 16)
-                                .map_err(|e| OscError::ParseError(e.to_string()))?;
-                            blob.push(byte);
+                        let bytes = val_str.as_bytes();
+
+                        // OPTIMIZATION: Manually parse hex bytes instead of using `u8::from_str_radix`
+                        // on string slices. This bypasses the string slice parsing overhead and is
+                        // significantly faster in hot loops.
+                        for i in (0..bytes.len()).step_by(2) {
+                            let high = match bytes[i] {
+                                b'0'..=b'9' => bytes[i] - b'0',
+                                b'a'..=b'f' => bytes[i] - b'a' + 10,
+                                b'A'..=b'F' => bytes[i] - b'A' + 10,
+                                _ => {
+                                    return Err(OscError::ParseError(format!(
+                                        "Invalid hex character in blob: {}",
+                                        bytes[i] as char
+                                    )));
+                                }
+                            };
+                            let low = match bytes[i + 1] {
+                                b'0'..=b'9' => bytes[i + 1] - b'0',
+                                b'a'..=b'f' => bytes[i + 1] - b'a' + 10,
+                                b'A'..=b'F' => bytes[i + 1] - b'A' + 10,
+                                _ => {
+                                    return Err(OscError::ParseError(format!(
+                                        "Invalid hex character in blob: {}",
+                                        bytes[i + 1] as char
+                                    )));
+                                }
+                            };
+                            blob.push((high << 4) | low);
                         }
                         args.push(OscArg::Blob(blob));
                     }
@@ -383,9 +432,13 @@ impl FromStr for OscMessage {
                     "Extra arguments at end of command string".to_string(),
                 ));
             }
+            Ok(OscMessage { path, args })
+        } else {
+            Ok(OscMessage {
+                path,
+                args: Vec::new(),
+            })
         }
-
-        Ok(OscMessage { path, args })
     }
 }
 
@@ -569,7 +622,7 @@ fn read_osc_string_bytes<'a>(cursor: &mut Cursor<&'a [u8]>) -> Result<&'a [u8]> 
 fn read_osc_string(cursor: &mut Cursor<&[u8]>) -> Result<String> {
     let string_bytes = read_osc_string_bytes(cursor)?;
     // Extract the string bytes and convert to String
-    let string = String::from_utf8(string_bytes.to_vec())?;
+    let string = std::str::from_utf8(string_bytes)?.to_owned();
     Ok(string)
 }
 

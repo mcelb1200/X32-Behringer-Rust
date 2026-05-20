@@ -16,6 +16,7 @@ pub fn log2float(val: f32, min: f32, range_log: f32) -> f32 {
 ///
 /// Formula: `y = (x - min) / range`
 /// where `range = max - min`
+#[allow(dead_code)]
 pub fn afine2float(val: f32, min: f32, range: f32) -> f32 {
     let res = (val - min) / range;
     res.clamp(0.0, 1.0)
@@ -26,6 +27,7 @@ pub fn afine2float(val: f32, min: f32, range: f32) -> f32 {
 ///
 /// Formula: `y = x / max`
 /// Assumes min is 0.
+#[allow(dead_code)]
 pub fn ratio2float(val: f32, max: f32) -> f32 {
     let res = val / max;
     res.clamp(0.0, 1.0)

@@ -10,13 +10,13 @@
 //! # Credits
 //!
 //! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
-//! *   **Additional concepts by:** [User]
-//! *   **Rust implementation by:** [User]
+//! *   **Additional concepts by:** mcelb1200
+//! *   **Rust implementation by:** mcelb1200
 
 use clap::{Parser, Subcommand};
 use osc_lib::{OscArg, OscMessage};
 use std::fs::File;
-use std::io::{BufRead, BufReader, Read, Write};
+use std::io::{BufRead, BufReader, BufWriter, Read, Write};
 use std::net::UdpSocket;
 use std::str::FromStr;
 use x32_lib::{
@@ -343,7 +343,8 @@ fn handle_set_command(ip: &str, assignments_str: &[String]) -> Result<()> {
 /// Handles the 'save' command to save the current configuration to a file.
 fn handle_save_command(ip: &str, file_path: &str) -> Result<()> {
     let socket = create_socket(ip, 200)?;
-    let mut file = File::create(file_path)?;
+    let file = File::create(file_path)?;
+    let mut file = BufWriter::new(file);
     file.write_all(SNIP_HEAD.as_bytes())?;
 
     println!("Saving configuration to {}...", file_path);
@@ -367,6 +368,7 @@ fn handle_save_command(ip: &str, file_path: &str) -> Result<()> {
             }
         }
     }
+    file.flush()?;
 
     println!("Save complete.");
     Ok(())
@@ -396,8 +398,10 @@ fn format_node_state(args: &[OscArg]) -> Result<String> {
             OscArg::String(val) => {
                 if val.contains(' ') || val.is_empty() {
                     // OPTIMIZATION: Prevent allocation from `format!()` by writing directly
-                    // into the pre-existing buffer.
-                    write!(&mut s, "\"{}\"", val).unwrap();
+                    // into the pre-existing buffer without using std::fmt machinery.
+                    s.push('"');
+                    s.push_str(val);
+                    s.push('"');
                 } else {
                     s.push_str(val);
                 }
@@ -459,7 +463,13 @@ fn get_node_state(socket: &UdpSocket, node: &str) -> Result<String> {
 fn handle_restore_command(ip: &str, file_path: &str) -> Result<()> {
     let socket = create_socket(ip, 200)?;
     let file = File::open(file_path)?;
-    let mut reader = BufReader::new(file);
+
+    // Sentinel: Prevent OOM from maliciously large or corrupted configuration files
+    if file.metadata()?.len() > 1024 * 1024 {
+        return Err(X32Error::Custom("File too large".to_string()));
+    }
+
+    let mut reader = BufReader::new(file.take(1024 * 1024));
 
     println!("Restoring configuration from {}...", file_path);
 

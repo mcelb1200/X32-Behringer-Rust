@@ -11,8 +11,8 @@
 //! # Credits
 //!
 //! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
-//! *   **Additional concepts by:** [User]
-//! *   **Rust implementation by:** [User]
+//! *   **Additional concepts by:** mcelb1200
+//! *   **Rust implementation by:** mcelb1200
 
 use clap::Parser;
 use std::fs::File;
@@ -84,7 +84,17 @@ struct Command {
 /// A `Result` containing a vector of parsed `Command` structs or an I/O error.
 fn parse_command_file(path: &str) -> io::Result<Vec<Command>> {
     let file = File::open(path)?;
-    let mut reader = io::BufReader::new(file);
+
+    // Sentinel: Prevent OOM from maliciously large or corrupted configuration files
+    if file.metadata()?.len() > 1024 * 1024 {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidData,
+            "Configuration file too large (max 1MB)",
+        ));
+    }
+
+    let mut file = file.take(1024 * 1024);
+    let mut reader = io::BufReader::new(&mut file);
     let mut commands = Vec::new();
 
     loop {
@@ -92,6 +102,13 @@ fn parse_command_file(path: &str) -> io::Result<Vec<Command>> {
         // Limit reading to 4096 bytes to prevent DoS via extremely long lines
         let len = reader.by_ref().take(4096).read_line(&mut line)?;
         if len == 0 {
+            // Check if we hit the limit without reaching EOF on the underlying stream
+            if file.limit() == 0 {
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    "Configuration file exceeded the maximum length of 1MB during processing",
+                ));
+            }
             break;
         }
 
@@ -140,13 +157,47 @@ fn parse_command_file(path: &str) -> io::Result<Vec<Command>> {
 ///
 /// A `Result` containing the parsed byte array.
 fn parse_midi_hex(hex_str: &str) -> std::result::Result<Vec<u8>, anyhow::Error> {
-    hex_str
-        .split_whitespace()
-        .map(|s| {
-            u8::from_str_radix(s, 16)
-                .map_err(|e| anyhow::anyhow!("Invalid hex byte '{}': {}", s, e))
-        })
-        .collect()
+    // ⚡ Bolt: Manually parse hex bytes instead of using `u8::from_str_radix`.
+    // This avoids overhead of slice creation, generic parsing, and utf8 checks,
+    // which improves configuration loading speed for a better UX.
+    let mut result = Vec::new();
+    let bytes = hex_str.as_bytes();
+    let mut i = 0;
+    while i < bytes.len() {
+        while i < bytes.len() && bytes[i].is_ascii_whitespace() {
+            i += 1;
+        }
+        if i >= bytes.len() {
+            break;
+        }
+
+        let mut val = 0u8;
+        let mut count = 0;
+        while i < bytes.len() && !bytes[i].is_ascii_whitespace() {
+            let b = bytes[i];
+            let v = match b {
+                b'0'..=b'9' => b - b'0',
+                b'a'..=b'f' => b - b'a' + 10,
+                b'A'..=b'F' => b - b'A' + 10,
+                _ => {
+                    return Err(anyhow::anyhow!(
+                        "Invalid hex character in byte '{}'",
+                        b as char
+                    ));
+                }
+            };
+            val = (val << 4) | v;
+            count += 1;
+            i += 1;
+        }
+        if count > 2 {
+            return Err(anyhow::anyhow!(
+                "Invalid hex byte length: expected at most 2 hex chars per byte"
+            ));
+        }
+        result.push(val);
+    }
+    Ok(result)
 }
 
 /// Runs the main application logic.
@@ -315,18 +366,22 @@ mod tests {
     use super::*;
     use std::io::Write;
 
-    fn create_test_file(content: &str) -> (tempfile::NamedTempFile, String) {
-        let mut file = tempfile::NamedTempFile::new().unwrap();
-        writeln!(file, "{}", content).unwrap();
-        let path = file.path().to_str().unwrap().to_string();
-        (file, path)
+    fn create_test_file(content: &str) -> anyhow::Result<(tempfile::NamedTempFile, String)> {
+        let mut file = tempfile::NamedTempFile::new()?;
+        writeln!(file, "{}", content)?;
+        let path = file
+            .path()
+            .to_str()
+            .ok_or_else(|| anyhow::anyhow!("Failed to convert temp file path to string"))?
+            .to_string();
+        Ok((file, path))
     }
 
     #[test]
-    fn test_parse_valid_osc_command() {
+    fn test_parse_valid_osc_command() -> anyhow::Result<()> {
         let content = "O~~~/ch/01/mix/fader|/ch/02/mix/fader ,f 0.5";
-        let (_file, path) = create_test_file(content);
-        let commands = parse_command_file(&path).unwrap();
+        let (_file, path) = create_test_file(content)?;
+        let commands = parse_command_file(&path)?;
         assert_eq!(commands.len(), 1);
         assert_eq!(
             commands[0],
@@ -336,46 +391,53 @@ mod tests {
                 outgoing_command: "/ch/02/mix/fader ,f 0.5".to_string(),
             }
         );
+        Ok(())
     }
 
     #[test]
-    fn test_parse_valid_midi_command() {
+    fn test_parse_valid_midi_command() -> anyhow::Result<()> {
         let content = "M~~~/ch/01/mix/fader|F0 00 20 32 32 2F 63 68 2F 30 31 2F 6D 69 78 2F 66 61 64 65 72 20 2C 66 20 30 2E 35 F7";
-        let (_file, path) = create_test_file(content);
-        let commands = parse_command_file(&path).unwrap();
+        let (_file, path) = create_test_file(content)?;
+        let commands = parse_command_file(&path)?;
         assert_eq!(commands.len(), 1);
-        assert_eq!(commands[0], Command {
-            command_type: CommandType::Midi,
-            incoming_address: "/ch/01/mix/fader".to_string(),
-            outgoing_command: "F0 00 20 32 32 2F 63 68 2F 30 31 2F 6D 69 78 2F 66 61 64 65 72 20 2C 66 20 30 2E 35 F7".to_string(),
-        });
+        assert_eq!(
+            commands[0],
+            Command {
+                command_type: CommandType::Midi,
+                incoming_address: "/ch/01/mix/fader".to_string(),
+                outgoing_command: "F0 00 20 32 32 2F 63 68 2F 30 31 2F 6D 69 78 2F 66 61 64 65 72 20 2C 66 20 30 2E 35 F7".to_string(),
+            }
+        );
+        Ok(())
     }
 
     #[test]
-    fn test_parse_empty_lines_and_comments() {
+    fn test_parse_empty_lines_and_comments() -> anyhow::Result<()> {
         let content = "
 # This is a comment
 O~~~/ch/01/mix/fader|/ch/02/mix/fader ,f 0.5
 
 M~~~/ch/02/mix/fader|/ch/03/mix/fader ,f 0.75
 ";
-        let (_file, path) = create_test_file(content);
-        let commands = parse_command_file(&path).unwrap();
+        let (_file, path) = create_test_file(content)?;
+        let commands = parse_command_file(&path)?;
         assert_eq!(commands.len(), 2);
+        Ok(())
     }
 
     #[test]
-    fn test_parse_invalid_format() {
+    fn test_parse_invalid_format() -> anyhow::Result<()> {
         let content = "invalid line";
-        let (_file, path) = create_test_file(content);
-        let commands = parse_command_file(&path).unwrap();
+        let (_file, path) = create_test_file(content)?;
+        let commands = parse_command_file(&path)?;
         assert_eq!(commands.len(), 0);
+        Ok(())
     }
 
     #[test]
-    fn test_parse_midi_hex() {
+    fn test_parse_midi_hex() -> anyhow::Result<()> {
         let hex_str = "F0 00 20 32 32 2F 63 68 2F 30 31 2F 6D 69 78 2F 66 61 64 65 72 20 2C 66 20 30 2E 35 F7";
-        let parsed = parse_midi_hex(hex_str).unwrap();
+        let parsed = parse_midi_hex(hex_str)?;
         assert_eq!(
             parsed,
             vec![
@@ -387,5 +449,6 @@ M~~~/ch/02/mix/fader|/ch/03/mix/fader ,f 0.75
 
         let invalid = "F0 00 20 32 32 XX F7";
         assert!(parse_midi_hex(invalid).is_err());
+        Ok(())
     }
 }

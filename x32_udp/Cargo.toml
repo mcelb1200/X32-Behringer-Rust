@@ -1,0 +1,14 @@
+[package]
+name = "x32_udp"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+osc_lib = { path = "../osc_lib" }
+x32_lib = { path = "../x32_lib" }
+anyhow = "1.0"
+clap = { version = "4.4", features = ["derive"] }
+tokio = { version = "1", features = ["full"] }
+
+[dev-dependencies]
+assert_cmd = "2.0"

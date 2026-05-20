@@ -51,8 +51,8 @@
 //! # Credits
 //!
 //! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
-//! *   **Additional concepts by:** [User]
-//! *   **Rust implementation by:** [User]
+//! *   **Additional concepts by:** mcelb1200
+//! *   **Rust implementation by:** mcelb1200
 //!
 #[cfg(test)]
 mod tests;
@@ -61,6 +61,7 @@ pub mod command;
 pub mod common;
 pub mod error;
 pub mod main_bus;
+pub mod scene_parse;
 
 use std::net::{SocketAddr, UdpSocket};
 use std::time::Duration;

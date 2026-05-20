@@ -4,8 +4,8 @@
 //! # Credits
 //!
 //! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
-//! *   **Additional concepts by:** [User]
-//! *   **Rust implementation by:** [User]
+//! *   **Additional concepts by:** mcelb1200
+//! *   **Rust implementation by:** mcelb1200
 
 pub mod server {
     use anyhow::Result;
@@ -34,7 +34,7 @@ pub mod server {
     pub fn run(bind_addr: &str, seeder: Seeder, shutdown: Option<Receiver<()>>) -> Result<()> {
         let addr: SocketAddr = bind_addr.parse()?;
         let socket = UdpSocket::bind(addr)?;
-        socket.set_nonblocking(true)?;
+        socket.set_read_timeout(Some(std::time::Duration::from_millis(10)))?;
         let mut mixer = Mixer::new();
 
         if let Some(seeder) = seeder {
@@ -52,16 +52,20 @@ pub mod server {
             }
 
             match socket.recv_from(&mut buf) {
-                Ok((len, remote_addr)) => match mixer.dispatch(&buf[..len]) {
-                    Ok(Some(response)) => {
-                        socket.send_to(&response, remote_addr)?;
+                Ok((len, remote_addr)) => match mixer.dispatch(&buf[..len], remote_addr) {
+                    Ok(responses) => {
+                        for (addr, response) in responses {
+                            socket.send_to(&response, addr)?;
+                        }
                     }
-                    Ok(None) => {}
                     Err(e) => {
                         eprintln!("Error handling message: {}", e);
                     }
                 },
-                Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {
+                Err(ref e)
+                    if e.kind() == std::io::ErrorKind::WouldBlock
+                        || e.kind() == std::io::ErrorKind::TimedOut =>
+                {
                     // No data received, continue
                 }
                 Err(e) => {
@@ -69,7 +73,6 @@ pub mod server {
                     break;
                 }
             }
-            std::thread::sleep(std::time::Duration::from_millis(10));
         }
         Ok(())
     }

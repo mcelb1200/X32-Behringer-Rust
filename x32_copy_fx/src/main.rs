@@ -10,8 +10,8 @@
 //! # Credits
 //!
 //! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
-//! *   **Additional concepts by:** [User]
-//! *   **Rust implementation by:** [User]
+//! *   **Additional concepts by:** mcelb1200
+//! *   **Rust implementation by:** mcelb1200
 
 mod fx_defaults;
 
@@ -19,7 +19,7 @@ use clap::Parser;
 use osc_lib::{OscArg, OscMessage};
 use std::collections::HashMap;
 use std::fs::File;
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, Read};
 use std::net::UdpSocket;
 use std::path::PathBuf;
 use x32_lib::{create_socket, error::X32Error};
@@ -114,7 +114,14 @@ fn main() -> Result<(), X32Error> {
 /// A `Result` containing a HashMap of FX names to parameter strings.
 fn load_user_defaults(path: PathBuf) -> Result<HashMap<String, String>, X32Error> {
     let file = File::open(path)?;
-    let reader = BufReader::new(file);
+
+    if file.metadata()?.len() > 1024 * 1024 {
+        return Err(X32Error::from(
+            "Defaults file too large to load (max 1MB)".to_string(),
+        ));
+    }
+
+    let reader = BufReader::new(file.take(1024 * 1024));
     let mut user_defaults = HashMap::new();
     let mut lines = reader.lines();
 

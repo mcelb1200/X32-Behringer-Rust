@@ -9,8 +9,8 @@
 //! # Credits
 //!
 //! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
-//! *   **Additional concepts by:** [User]
-//! *   **Rust implementation by:** [User]
+//! *   **Additional concepts by:** mcelb1200
+//! *   **Rust implementation by:** mcelb1200
 
 use anyhow::Result;
 use clap::Parser;
@@ -142,7 +142,7 @@ async fn run_logic(state: Arc<Mutex<AppState>>, socket: Arc<UdpSocket>, default_
     let mut buf = [0u8; 2048];
     let mut last_xremote = Instant::now();
     let mut file_writer: Option<BufWriter<File>> = None;
-    let mut file_reader: Option<BufReader<File>> = None;
+    let mut file_reader: Option<BufReader<tokio::io::Take<File>>> = None;
 
     // Subscribe
     // Use proper OSC message construction or explicit bytes.
@@ -192,7 +192,8 @@ async fn run_logic(state: Arc<Mutex<AppState>>, socket: Arc<UdpSocket>, default_
                         let _ = w.write_u32_le(now.subsec_micros()).await;
                         let _ = w.write_u32_le(len as u32).await;
                         let _ = w.write_all(&buf[..len]).await;
-                        let _ = w.flush().await;
+                        // OPTIMIZATION: Removed `.flush().await` in this hot loop to allow `BufWriter` to
+                        // actually buffer writes, significantly reducing I/O syscall overhead during recording.
                     }
                 }
             }
@@ -201,6 +202,17 @@ async fn run_logic(state: Arc<Mutex<AppState>>, socket: Arc<UdpSocket>, default_
                 if file_reader.is_none() {
                     match File::open(&default_file).await {
                         Ok(f) => {
+                            // Check file size to prevent OOM / DoS from reading huge invalid files
+                            if let Ok(metadata) = f.metadata().await {
+                                if metadata.len() > 10 * 1024 * 1024 {
+                                    eprintln!("File too large to replay (max 10MB)");
+                                    if let Ok(mut s) = state.lock() {
+                                        s.mode = Mode::Idle;
+                                    }
+                                    continue;
+                                }
+                            }
+                            let f = f.take(10 * 1024 * 1024);
                             file_reader = Some(BufReader::new(f));
                             if let Ok(mut s) = state.lock() {
                                 s.start_time = None; // Reset timing
@@ -288,7 +300,9 @@ async fn run_logic(state: Arc<Mutex<AppState>>, socket: Arc<UdpSocket>, default_
                 }
             }
             Mode::Idle | Mode::Paused => {
-                file_writer = None;
+                if let Some(mut w) = file_writer.take() {
+                    let _ = w.flush().await;
+                }
                 file_reader = None;
                 time::sleep(Duration::from_millis(100)).await;
             }

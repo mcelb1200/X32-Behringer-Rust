@@ -3,8 +3,8 @@
 # Credits
 #
 # *   Original concept and work on the C library: Patrick-Gilles Maillot
-# *   Additional concepts by: [User]
-# *   Rust implementation by: [User]
+# *   Additional concepts by: mcelb1200
+# *   Rust implementation by: mcelb1200
 
 function Test-X32Tcp {
     Log-Message "--- Running x32_tcp tests ---"

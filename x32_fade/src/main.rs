@@ -4,8 +4,8 @@
 //! # Credits
 //!
 //! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
-//! *   **Additional concepts by:** [User]
-//! *   **Rust implementation by:** [User]
+//! *   **Additional concepts by:** mcelb1200
+//! *   **Rust implementation by:** mcelb1200
 
 use anyhow::Result;
 use clap::Parser;
@@ -83,8 +83,17 @@ fn main() -> Result<()> {
     // Load configuration from a file if specified.
     if let Some(path) = &args.load_config {
         let f = std::fs::File::open(path)?;
+
+        // Sentinel: Prevent OOM from maliciously large or corrupted config files
+        if f.metadata()?.len() > 1024 * 1024 {
+            return Err(anyhow::anyhow!("Config file too large to load (max 1MB)"));
+        }
+
         let mut data = String::new();
-        f.take(1024 * 1024).read_to_string(&mut data)?;
+        f.take(1024 * 1024 + 1).read_to_string(&mut data)?;
+        if data.len() > 1024 * 1024 {
+            return Err(anyhow::anyhow!("Config file too large to load (max 1MB)"));
+        }
         config = serde_json::from_str(&data)?;
         if args.debug {
             println!("Loaded config from {:?}: {:?}", path, config);
