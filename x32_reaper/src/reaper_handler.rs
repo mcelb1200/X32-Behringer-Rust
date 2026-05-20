@@ -90,12 +90,12 @@ async fn process_single_message(
 
     if msg.path.starts_with("/track/") {
         // /track/<tnum>/...
-        let parts: Vec<&str> = msg.path.split('/').collect();
-        if parts.len() < 3 {
+        let tnum_str = msg.path.split('/').nth(2).unwrap_or("");
+        if tnum_str.is_empty() {
             return Ok(());
         }
 
-        let tnum: i32 = parts[2].parse().unwrap_or(-1);
+        let tnum: i32 = tnum_str.parse().unwrap_or(-1);
         if tnum < 0 {
             return Ok(());
         }
