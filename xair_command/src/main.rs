@@ -226,10 +226,14 @@ async fn main() -> Result<()> {
                 Err(e) => {
                     eprintln!("Error reading input: {}", e);
                     break;
-                },
+                }
                 Ok(len) => {
-                    if len == 4096 && !byte_buf.ends_with(b"
-") {
+                    if len == 4096
+                        && !byte_buf.ends_with(
+                            b"
+",
+                        )
+                    {
                         let mut discard = Vec::with_capacity(1024);
                         loop {
                             discard.clear();
@@ -237,8 +241,10 @@ async fn main() -> Result<()> {
                             match chunk_handle.read_until(b'\n', &mut discard) {
                                 Ok(0) | Err(_) => break,
                                 Ok(_) => {
-                                    if discard.ends_with(b"
-") {
+                                    if discard.ends_with(
+                                        b"
+",
+                                    ) {
                                         break;
                                     }
                                 }

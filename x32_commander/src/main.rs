@@ -108,7 +108,7 @@ fn parse_command_file(path: &str) -> io::Result<Vec<Command>> {
                     ));
                 }
                 break;
-            },
+            }
             Err(e) => return Err(e),
             Ok(len) => {
                 if len == 4096 && !byte_buf.ends_with(b"\n") {

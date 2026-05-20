@@ -476,11 +476,15 @@ fn handle_restore_command(ip: &str, file_path: &str) -> Result<()> {
     loop {
         let mut byte_buf = Vec::new();
         match reader.by_ref().take(4096).read_until(b'\n', &mut byte_buf) {
-            Ok(0) => break, // EOF
+            Ok(0) => break,                 // EOF
             Err(e) => return Err(e.into()), // Propagate I/O errors properly
             Ok(len) => {
-                if len == 4096 && !byte_buf.ends_with(b"
-") {
+                if len == 4096
+                    && !byte_buf.ends_with(
+                        b"
+",
+                    )
+                {
                     // Line too long, discard remainder
                     let mut discard = Vec::with_capacity(1024);
                     loop {
@@ -490,8 +494,10 @@ fn handle_restore_command(ip: &str, file_path: &str) -> Result<()> {
                             Ok(0) => break,
                             Err(e) => return Err(e.into()),
                             Ok(_) => {
-                                if discard.ends_with(b"
-") {
+                                if discard.ends_with(
+                                    b"
+",
+                                ) {
                                     break;
                                 }
                             }

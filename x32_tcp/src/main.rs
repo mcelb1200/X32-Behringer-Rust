@@ -101,11 +101,12 @@ fn handle_client(mut stream: TcpStream, args: Args) -> Result<()> {
     loop {
         let mut byte_buf = Vec::new();
         match reader.by_ref().take(4096).read_until(b'\n', &mut byte_buf) {
-            Ok(0) => break, // Connection closed
+            Ok(0) => break,  // Connection closed
             Err(_) => break, // Connection error
             Ok(len) => {
                 if len == 4096 && !byte_buf.ends_with(b"\n") {
-                    let error_msg = "Error: Input line too long (exceeds 4096 bytes). Connection closed.\n";
+                    let error_msg =
+                        "Error: Input line too long (exceeds 4096 bytes). Connection closed.\n";
                     eprintln!("{}", error_msg.trim());
                     stream.write_all(error_msg.as_bytes())?;
                     break;
