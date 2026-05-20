@@ -101,7 +101,10 @@ fn handle_client(mut stream: TcpStream, args: Args) -> Result<()> {
     loop {
         let mut line_buf = Vec::new();
         // Limit reading to 4096 bytes to prevent DoS via extremely long lines
-        let len = reader.by_ref().take(4096).read_until(b'\n', &mut line_buf)?;
+        let len = reader
+            .by_ref()
+            .take(4096)
+            .read_until(b'\n', &mut line_buf)?;
         if len == 0 {
             break; // Connection closed
         }
