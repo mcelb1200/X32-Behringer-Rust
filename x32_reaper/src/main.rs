@@ -398,9 +398,8 @@ async fn process_x32_message(
     let mut cnum1 = -1;
 
     if msg.path.starts_with("/ch/") {
-        let parts: Vec<&str> = msg.path.split('/').collect();
-        if parts.len() >= 3 {
-            if let Ok(raw) = parts[2].parse::<i32>() {
+        if let Some(part) = msg.path.split('/').nth(2) {
+            if let Ok(raw) = part.parse::<i32>() {
                 cnum = raw;
                 if cnum <= config.bank_size && config.ch_bank_on {
                     cnum += state_guard.ch_bank_offset * config.bank_size;
@@ -409,33 +408,29 @@ async fn process_x32_message(
             }
         }
     } else if msg.path.starts_with("/auxin/") {
-        let parts: Vec<&str> = msg.path.split('/').collect();
-        if parts.len() >= 3 {
-            if let Ok(raw) = parts[2].parse::<i32>() {
+        if let Some(part) = msg.path.split('/').nth(2) {
+            if let Ok(raw) = part.parse::<i32>() {
                 cnum = raw; // Used for state indexing? Auxin doesn't use XMbanktracks in C code
                 cnum1 = raw + config.aux_min - 1;
             }
         }
     } else if msg.path.starts_with("/fxrtn/") {
-        let parts: Vec<&str> = msg.path.split('/').collect();
-        if parts.len() >= 3 {
-            if let Ok(raw) = parts[2].parse::<i32>() {
+        if let Some(part) = msg.path.split('/').nth(2) {
+            if let Ok(raw) = part.parse::<i32>() {
                 cnum = raw;
                 cnum1 = raw + config.fxr_min - 1;
             }
         }
     } else if msg.path.starts_with("/bus/") {
-        let parts: Vec<&str> = msg.path.split('/').collect();
-        if parts.len() >= 3 {
-            if let Ok(raw) = parts[2].parse::<i32>() {
+        if let Some(part) = msg.path.split('/').nth(2) {
+            if let Ok(raw) = part.parse::<i32>() {
                 cnum = raw;
                 cnum1 = raw + config.bus_min - 1;
             }
         }
     } else if msg.path.starts_with("/dca/") {
-        let parts: Vec<&str> = msg.path.split('/').collect();
-        if parts.len() >= 3 {
-            if let Ok(raw) = parts[2].parse::<i32>() {
+        if let Some(part) = msg.path.split('/').nth(2) {
+            if let Ok(raw) = part.parse::<i32>() {
                 cnum = raw;
                 cnum1 = raw + config.dca_min - 1;
             }
@@ -539,9 +534,8 @@ async fn process_x32_message(
         if msg.path.contains("/level") {
             xr_mask = X32SEND;
             // /ch/%02d/mix/%02d/level
-            let parts: Vec<&str> = msg.path.split('/').collect();
-            if parts.len() >= 5 {
-                if let Ok(bus) = parts[4].parse::<i32>() {
+            if let Some(part) = msg.path.split('/').nth(4) {
+                if let Ok(bus) = part.parse::<i32>() {
                     let reaper_bus = bus + config.track_send_offset;
                     if let Some(OscArg::Float(f)) = msg.args.first() {
                         if config.ch_bank_on && msg.path.starts_with("/ch/") {
@@ -669,9 +663,8 @@ async fn process_x32_message(
             }
         } else if msg.path.contains("solosw") {
             xr_mask = X32SOLO;
-            let parts: Vec<&str> = msg.path.split('/').collect();
-            if parts.len() >= 4 {
-                if let Ok(sw_idx) = parts[3].parse::<i32>() {
+            if let Some(part) = msg.path.split('/').nth(3) {
+                if let Ok(sw_idx) = part.parse::<i32>() {
                     if let Some(OscArg::Int(val)) = msg.args.first() {
                         let fval = if *val == 1 { 1.0 } else { 0.0 };
                         // Map back to reaper track
@@ -707,9 +700,8 @@ async fn process_x32_message(
                 }
             }
         } else if msg.path.contains("userpar") {
-            let parts: Vec<&str> = msg.path.split('/').collect();
-            if parts.len() >= 4 {
-                if let Ok(par_idx) = parts[3].parse::<i32>() {
+            if let Some(part) = msg.path.split('/').nth(3) {
+                if let Ok(par_idx) = part.parse::<i32>() {
                     if let Some(OscArg::Int(val)) = msg.args.first() {
                         let sockets = Sockets {
                             x_sock,
@@ -993,9 +985,8 @@ async fn process_single_reaper_message(
     let mut state_guard = state.lock().await;
 
     if msg.path.starts_with("/track/") {
-        let parts: Vec<&str> = msg.path.split('/').collect();
-        if parts.len() >= 3 {
-            if let Ok(tnum) = parts[2].parse::<i32>() {
+        if let Some(part) = msg.path.split('/').nth(2) {
+            if let Ok(tnum) = part.parse::<i32>() {
                 if msg.path.contains("/volume") {
                     xx_mask = TRACKFADER;
                     if let Some(OscArg::Float(f)) = msg.args.first() {
