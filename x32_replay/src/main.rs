@@ -92,14 +92,47 @@ async fn main() -> Result<()> {
     // Stdin loop
     let stdin = std::io::stdin();
     let mut stdin_lock = stdin.lock();
-    let mut line = String::new();
     loop {
-        line.clear();
         use std::io::{BufRead, Read};
-        if stdin_lock.by_ref().take(4096).read_line(&mut line).is_err() || line.is_empty() {
-            break;
+        let mut byte_buf = Vec::new();
+        match stdin_lock
+            .by_ref()
+            .take(4096)
+            .read_until(b'\n', &mut byte_buf)
+        {
+            Ok(0) | Err(_) => break,
+            Ok(len) => {
+                if len == 4096 && !byte_buf.ends_with(b"\n") {
+                    let mut discard = Vec::with_capacity(1024);
+                    loop {
+                        discard.clear();
+                        match stdin_lock
+                            .by_ref()
+                            .take(1024)
+                            .read_until(b'\n', &mut discard)
+                        {
+                            Ok(0) | Err(_) => break,
+                            Ok(_) => {
+                                if discard.ends_with(b"\n") {
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    eprintln!("Input line too long, discarded.");
+                    continue;
+                }
+            }
         }
-        let cmd = line.trim();
+
+        let line_str = match std::str::from_utf8(&byte_buf) {
+            Ok(s) => s,
+            Err(_) => {
+                eprintln!("Invalid UTF-8 sequence in input, discarded.");
+                continue;
+            }
+        };
+        let cmd = line_str.trim();
 
         let mut s = match state.lock() {
             Ok(guard) => guard,
