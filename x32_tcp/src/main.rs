@@ -99,20 +99,21 @@ fn handle_client(mut stream: TcpStream, args: Args) -> Result<()> {
     let mut reader = BufReader::new(stream.try_clone()?);
 
     loop {
-        let mut line = String::new();
+        let mut line_buf = Vec::new();
         // Limit reading to 4096 bytes to prevent DoS via extremely long lines
-        let len = reader.by_ref().take(4096).read_line(&mut line)?;
+        let len = reader.by_ref().take(4096).read_until(b'\n', &mut line_buf)?;
         if len == 0 {
             break; // Connection closed
         }
 
-        if len == 4096 && !line.ends_with('\n') {
+        if len == 4096 && !line_buf.ends_with(b"\n") {
             let error_msg = "Error: Input line too long (exceeds 4096 bytes). Connection closed.\n";
             eprintln!("{}", error_msg.trim());
-            stream.write_all(error_msg.as_bytes())?;
+            let _ = stream.write_all(error_msg.as_bytes());
             break;
         }
 
+        let line = String::from_utf8_lossy(&line_buf);
         let trimmed_line = line.trim();
         if trimmed_line.is_empty() {
             continue;
