@@ -1,41 +1,43 @@
 [workspace]
 resolver = "2"
 members = [
-    "osc_lib",
-    "x32_lib",
-    "x32_core",
-    "x32_emulator",
-    "x32_autobeat",
-    "x32_automix",
-    "x32_commander",
-    "x32_copy_fx",
-    "x32_custom_layer",
-    "x32_desk_restore",
-    "x32_desk_save",
-    "x32_fade",
-    "x32_geq2_cpy",
-    "x32_get_lib",
-    "x32_get_scene",
-    "x32_get_scene_name",
-    "x32_reaper",
-    "x32_replay",
-    "x32_set_lib",
-    "x32_set_preset",
-    "x32_set_scene",
-    "x32_tap",
-    "x32_tcp",
-    "x32_usb",
-    "x32_wav_xlive",
-    "x32_ssavergw",
-    "x32_jog4xlive",
-    "x32_punch_control",
-    "x32_midi2osc",
-    "x32_xlive_wav",
-    "xair_get_scene",
-    "xair_set_scene",
-    "xair_command",
-    "x32_cpxlivemarkers",
-    "x32_udp",
-    "x32_tapw",
-    "x32_command",
+    "libs/*",
+    "apps/*",
+    "tools/*",
 ]
+
+[workspace.dependencies]
+# Core Runtime
+tokio = { version = "1.36", features = ["full"] }
+anyhow = "1.0"
+crossbeam-channel = "0.5"
+async-trait = "0.1"
+
+# CLI & UX
+clap = { version = "4.5", features = ["derive"] }
+ratatui = "0.24"
+crossterm = "0.27"
+indicatif = "0.17"
+
+# Serialization & Logic
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+regex = "1.10"
+lazy_static = "1.4"
+byteorder = "1.5"
+
+# System & Audio
+cpal = "0.15"
+hound = "3.5"
+midir = "0.10"
+alsa = "0.9"
+
+# Workspace Internal (Path Aliases)
+osc_lib = { path = "libs/osc_lib" }
+x32_lib = { path = "libs/x32_lib" }
+x32_core = { path = "libs/x32_core" }
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+missing_docs = "warn"
+unused_imports = "warn"

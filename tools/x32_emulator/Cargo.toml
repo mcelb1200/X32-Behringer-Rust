@@ -1,0 +1,15 @@
+[package]
+name = "x32_emulator"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = { workspace = true }
+clap = { workspace = true }
+x32_core = { workspace = true }
+osc_lib = { workspace = true }
+x32_lib = { workspace = true }
+
+[lib]
+name = "x32_emulator"
+path = "src/lib.rs"

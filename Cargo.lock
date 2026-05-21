@@ -120,6 +120,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "async-trait"
+version = "0.1.89"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9035ad2d096bed7955a320ee7e2230574d28fd3c3a0f186cbea1ff3c7eed5dbb"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "autocfg"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2235,6 +2246,7 @@ name = "x32_autobeat"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "async-trait",
  "clap",
  "cpal",
  "crossbeam-channel",
@@ -2255,6 +2267,7 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "osc_lib",
+ "tokio",
  "x32_lib",
 ]
 
@@ -2281,6 +2294,7 @@ dependencies = [
  "midir",
  "osc_lib",
  "tempfile",
+ "tokio",
  "x32_lib",
 ]
 
@@ -2395,6 +2409,7 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "osc_lib",
+ "tokio",
  "x32_lib",
 ]
 
@@ -2425,10 +2440,12 @@ dependencies = [
 name = "x32_lib"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "bitflags 2.10.0",
  "lazy_static",
  "osc_lib",
  "regex",
+ "tokio",
  "x32_emulator",
 ]
 
@@ -2567,6 +2584,7 @@ dependencies = [
  "escargot",
  "osc_lib",
  "predicates",
+ "tokio",
  "x32_lib",
 ]
 
@@ -2591,6 +2609,7 @@ dependencies = [
  "clap",
  "osc_lib",
  "predicates",
+ "tokio",
  "x32_emulator",
  "x32_lib",
 ]
@@ -2634,17 +2653,20 @@ dependencies = [
  "predicates",
  "tempfile",
  "tokio",
+ "x32_lib",
 ]
 
 [[package]]
 name = "xair_get_scene"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "assert_cmd",
  "clap",
  "escargot",
  "osc_lib",
  "predicates",
+ "tokio",
  "x32_lib",
 ]
 
@@ -2652,10 +2674,12 @@ dependencies = [
 name = "xair_set_scene"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "assert_cmd",
  "clap",
  "escargot",
  "osc_lib",
  "predicates",
+ "tokio",
  "x32_lib",
 ]

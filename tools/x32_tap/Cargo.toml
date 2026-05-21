@@ -1,0 +1,16 @@
+[package]
+name = "x32_tap"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+clap = { workspace = true }
+anyhow = { workspace = true }
+x32_lib = { workspace = true }
+osc_lib = { workspace = true }
+tokio = { version = "1.0", features = ["full", "macros"] }
+byteorder = "1.5"
+
+[dev-dependencies]
+assert_cmd = "2.0"
+predicates = "3.0"
