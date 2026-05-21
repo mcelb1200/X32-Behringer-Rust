@@ -138,6 +138,102 @@ async fn main() -> Result<()> {
             }
         }
     }
+
+    #[tokio::test]
+    async fn test_reaper_select_mappings() {
+        let config = Config {
+            verbose: false,
+            delay_bank: 0,
+            delay_generic: 0,
+            xx_send_mask: -1,
+            xr_send_mask: -1,
+            x32_ip: "127.0.0.1".to_string(),
+            reaper_ip: "127.0.0.1".to_string(),
+            reaper_send_port: 8000,
+            reaper_recv_port: 8000,
+            transport_on: false,
+            ch_bank_on: false,
+            marker_btn_on: false,
+            bank_c_color: 0,
+            eq_ctrl_on: false,
+            master_on: false,
+            trk_min: 1,
+            trk_max: 32,
+            aux_min: 33,
+            aux_max: 40,
+            fxr_min: 41,
+            fxr_max: 48,
+            bus_min: 49,
+            bus_max: 64,
+            dca_min: 65,
+            dca_max: 72,
+            track_send_offset: 0,
+            rdca: vec![(0, 0); 8],
+            bank_up: 0,
+            bank_dn: 0,
+            marker_btn: 0,
+            ch_bank_offset: 0,
+            bank_size: 8,
+        };
+        let state = Arc::new(Mutex::new(AppState::new(&config)));
+
+        // Create dummy sockets
+        let x_sock = UdpSocket::bind("127.0.0.1:0").await.unwrap();
+        let r_sock = UdpSocket::bind("127.0.0.1:0").await.unwrap();
+        let x_addr: SocketAddr = "127.0.0.1:10023".parse().unwrap();
+        let r_addr: SocketAddr = "127.0.0.1:8000".parse().unwrap();
+
+        // Helper function to build OSC packets for select commands
+        let build_osc = |path: &str, val: f32| -> Vec<u8> {
+            let msg = OscMessage {
+                path: path.to_string(),
+                args: vec![OscArg::Float(val)],
+            };
+            msg.to_bytes().unwrap()
+        };
+
+        // Test fxr mapping
+        process_single_reaper_message(
+            &build_osc("/track/41/select", 1.0),
+            &config,
+            &state,
+            &x_sock,
+            x_addr,
+            &r_sock,
+            r_addr,
+        )
+        .await
+        .unwrap();
+        assert_eq!(state.lock().await.x_selected, 40);
+
+        // Test bus mapping
+        process_single_reaper_message(
+            &build_osc("/track/49/select", 1.0),
+            &config,
+            &state,
+            &x_sock,
+            x_addr,
+            &r_sock,
+            r_addr,
+        )
+        .await
+        .unwrap();
+        assert_eq!(state.lock().await.x_selected, 48);
+
+        // Test dca mapping
+        process_single_reaper_message(
+            &build_osc("/track/65/select", 1.0),
+            &config,
+            &state,
+            &x_sock,
+            x_addr,
+            &r_sock,
+            r_addr,
+        )
+        .await
+        .unwrap();
+        assert_eq!(state.lock().await.x_selected, 72);
+    }
 }
 
 /// Sends an OSC message to the X32, optionally with a delay.
@@ -1375,102 +1471,6 @@ mod tests {
     use super::*;
 
     #[tokio::test]
-    async fn test_reaper_select_mappings() {
-        let config = Config {
-            verbose: false,
-            delay_bank: 0,
-            delay_generic: 0,
-            xx_send_mask: -1,
-            xr_send_mask: -1,
-            x32_ip: "127.0.0.1".to_string(),
-            reaper_ip: "127.0.0.1".to_string(),
-            reaper_send_port: 8000,
-            reaper_recv_port: 8000,
-            transport_on: false,
-            ch_bank_on: false,
-            marker_btn_on: false,
-            bank_c_color: 0,
-            eq_ctrl_on: false,
-            master_on: false,
-            trk_min: 1,
-            trk_max: 32,
-            aux_min: 33,
-            aux_max: 40,
-            fxr_min: 41,
-            fxr_max: 48,
-            bus_min: 49,
-            bus_max: 64,
-            dca_min: 65,
-            dca_max: 72,
-            track_send_offset: 0,
-            rdca: vec![(0, 0); 8],
-            bank_up: 0,
-            bank_dn: 0,
-            marker_btn: 0,
-            ch_bank_offset: 0,
-            bank_size: 8,
-        };
-        let state = Arc::new(Mutex::new(AppState::new(&config)));
-
-        // Create dummy sockets
-        let x_sock = UdpSocket::bind("127.0.0.1:0").await.unwrap();
-        let r_sock = UdpSocket::bind("127.0.0.1:0").await.unwrap();
-        let x_addr: SocketAddr = "127.0.0.1:10023".parse().unwrap();
-        let r_addr: SocketAddr = "127.0.0.1:8000".parse().unwrap();
-
-        // Helper function to build OSC packets for select commands
-        let build_osc = |path: &str, val: f32| -> Vec<u8> {
-            let msg = OscMessage {
-                path: path.to_string(),
-                args: vec![OscArg::Float(val)],
-            };
-            osc_lib::OscMessage::serialize_to_bytes(&msg.path, &msg.args).unwrap()
-        };
-
-        // Test fxr mapping
-        process_single_reaper_message(
-            &build_osc("/track/41/select", 1.0),
-            &config,
-            &state,
-            &x_sock,
-            x_addr,
-            &r_sock,
-            r_addr,
-        )
-        .await
-        .unwrap();
-        assert_eq!(state.lock().await.x_selected, 40);
-
-        // Test bus mapping
-        process_single_reaper_message(
-            &build_osc("/track/49/select", 1.0),
-            &config,
-            &state,
-            &x_sock,
-            x_addr,
-            &r_sock,
-            r_addr,
-        )
-        .await
-        .unwrap();
-        assert_eq!(state.lock().await.x_selected, 48);
-
-        // Test dca mapping
-        process_single_reaper_message(
-            &build_osc("/track/65/select", 1.0),
-            &config,
-            &state,
-            &x_sock,
-            x_addr,
-            &r_sock,
-            r_addr,
-        )
-        .await
-        .unwrap();
-        assert_eq!(state.lock().await.x_selected, 72);
-    }
-
-    #[tokio::test]
     async fn test_reaper_transport_messages() {
         let config = Config {
             verbose: false,
@@ -1520,7 +1520,7 @@ mod tests {
                 path: path.to_string(),
                 args: vec![OscArg::Float(val)],
             };
-            osc_lib::OscMessage::serialize_to_bytes(&msg.path, &msg.args).unwrap()
+            msg.to_bytes().unwrap()
         };
 
         // We can check if `state.play` is modified by `/play`
@@ -1606,7 +1606,7 @@ mod tests {
         };
 
         process_single_reaper_message(
-            &osc_lib::OscMessage::serialize_to_bytes(&msg.path, &msg.args).unwrap(),
+            &msg.to_bytes().unwrap(),
             &config,
             &state,
             &x_sock,
@@ -1671,7 +1671,7 @@ mod tests {
                 path: path.to_string(),
                 args: vec![OscArg::Float(val)],
             };
-            osc_lib::OscMessage::serialize_to_bytes(&msg.path, &msg.args).unwrap()
+            msg.to_bytes().unwrap()
         };
 
         // Note: we can't easily assert the UDP packet output directly here, but we can call it to ensure no panics.
