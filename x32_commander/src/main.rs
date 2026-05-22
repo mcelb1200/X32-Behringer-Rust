@@ -6,8 +6,6 @@
 //! that is not natively supported by the mixer, such as controlling one channel based
 //! on the state of another, or creating macro-like functionality.
 //!
-//! Currently, only OSC-to-OSC mapping is fully implemented.
-//!
 //! # Credits
 //!
 //! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
@@ -22,7 +20,9 @@ use std::str::FromStr;
 use std::time::{Duration, Instant};
 
 use midir::MidiOutput;
-use osc_lib::OscMessage;
+use osc_lib::{OscArg, OscMessage};
+mod rpn;
+use rpn::RpnCalculator;
 use x32_lib::{create_socket, error::X32Error};
 
 /// A Rust implementation of the X32Commander utility.
@@ -207,8 +207,51 @@ fn parse_midi_hex(hex_str: &str) -> std::result::Result<Vec<u8>, anyhow::Error> 
 /// * `args` - The parsed command-line arguments.
 ///
 /// # Returns
+/// Expands RPN parameter template blocks within an outgoing command string.
 ///
-/// A `Result` indicating success or failure.
+/// Looks for blocks starting with `[` and ending with `]`. It parses the inner text
+/// as an RPN expression and evaluates it using `RpnCalculator`.
+/// For OSC formats, it outputs a standard float. For MIDI formats, it outputs hex.
+fn expand_template(
+    template: &str,
+    mparam: &[f64],
+    calc: &mut RpnCalculator,
+) -> Result<String, anyhow::Error> {
+    let mut result = String::with_capacity(template.len());
+    let mut chars = template.chars().peekable();
+
+    while let Some(c) = chars.next() {
+        if c == '[' {
+            let mut expr = String::new();
+            while let Some(&nc) = chars.peek() {
+                if nc == ']' {
+                    chars.next(); // consume ']'
+                    break;
+                }
+                expr.push(chars.next().unwrap());
+            }
+
+            let val = calc.calculate(&expr, mparam)?;
+
+            // Determine formatting based on the template structure heuristically.
+            // If the template looks like a hex string block (e.g. MIDI), we format as hex.
+            // Otherwise, we format as float (e.g., OSC argument).
+            let is_midi = template.len() > 5 && (template.starts_with("F0") || template.starts_with("B0"));
+            if is_midi {
+                use std::fmt::Write;
+                write!(&mut result, "{:02X}", val as u8)?;
+            } else {
+                use std::fmt::Write;
+                write!(&mut result, "{}", val)?;
+            }
+        } else {
+            result.push(c);
+        }
+    }
+
+    Ok(result)
+}
+
 fn run(args: Args) -> Result<(), anyhow::Error> {
     let commands = parse_command_file(&args.file)
         .map_err(|e| anyhow::anyhow!("Failed to parse command file: {}", e))?;
@@ -279,35 +322,50 @@ fn run(args: Args) -> Result<(), anyhow::Error> {
                     if let Ok(incoming_msg) = OscMessage::from_bytes(&buf[..len]) {
                         for command in &commands {
                             if command.incoming_address == incoming_msg.path {
+                                let mut mparam = Vec::with_capacity(incoming_msg.args.len());
+                                for arg in &incoming_msg.args {
+                                    match arg {
+                                        OscArg::Int(i) => mparam.push(*i as f64),
+                                        OscArg::Float(f) => mparam.push(*f as f64),
+                                        _ => mparam.push(0.0), // Non-numeric args default to 0.0
+                                    }
+                                }
+                                let mut calc = RpnCalculator::new();
+
                                 match command.command_type {
                                     CommandType::Osc => {
                                         println!(
                                             "Match found for: {}. Triggering: {}",
                                             incoming_msg.path, command.outgoing_command
                                         );
-                                        match OscMessage::from_str(&command.outgoing_command) {
-                                            Ok(outgoing_msg) => {
-                                                let target_socket =
-                                                    out_socket.as_ref().unwrap_or(&x32_socket);
-                                                match outgoing_msg.to_bytes() {
-                                                    Ok(bytes) => {
-                                                        if let Err(e) = target_socket.send(&bytes) {
-                                                            eprintln!(
-                                                                "Failed to send OSC message: {}",
+                                        match expand_template(&command.outgoing_command, &mparam, &mut calc) {
+                                            Ok(expanded) => {
+                                                match OscMessage::from_str(&expanded) {
+                                                    Ok(outgoing_msg) => {
+                                                        let target_socket =
+                                                            out_socket.as_ref().unwrap_or(&x32_socket);
+                                                        match outgoing_msg.to_bytes() {
+                                                            Ok(bytes) => {
+                                                                if let Err(e) = target_socket.send(&bytes) {
+                                                                    eprintln!(
+                                                                        "Failed to send OSC message: {}",
+                                                                        e
+                                                                    );
+                                                                }
+                                                            }
+                                                            Err(e) => eprintln!(
+                                                                "Failed to serialize outgoing OSC message: {}",
                                                                 e
-                                                            );
+                                                            ),
                                                         }
                                                     }
                                                     Err(e) => eprintln!(
-                                                        "Failed to serialize outgoing OSC message: {}",
-                                                        e
+                                                        "Failed to parse outgoing command '{}': {}",
+                                                        expanded, e
                                                     ),
                                                 }
                                             }
-                                            Err(e) => eprintln!(
-                                                "Failed to parse outgoing command '{}': {}",
-                                                command.outgoing_command, e
-                                            ),
+                                            Err(e) => eprintln!("Failed to expand template: {}", e),
                                         }
                                     }
                                     CommandType::Midi => {
@@ -315,27 +373,32 @@ fn run(args: Args) -> Result<(), anyhow::Error> {
                                             "Match found for: {}. Triggering MIDI: {}",
                                             incoming_msg.path, command.outgoing_command
                                         );
-                                        match parse_midi_hex(&command.outgoing_command) {
-                                            Ok(bytes) => {
-                                                if let Some(ref mut conn) = midi_conn {
-                                                    if let Err(e) = conn.send(&bytes) {
+                                        match expand_template(&command.outgoing_command, &mparam, &mut calc) {
+                                            Ok(expanded) => {
+                                                match parse_midi_hex(&expanded) {
+                                                    Ok(bytes) => {
+                                                        if let Some(ref mut conn) = midi_conn {
+                                                            if let Err(e) = conn.send(&bytes) {
+                                                                eprintln!(
+                                                                    "Failed to send MIDI message: {}",
+                                                                    e
+                                                                );
+                                                            }
+                                                        } else {
+                                                            eprintln!(
+                                                                "Cannot send MIDI command: No MIDI output connected."
+                                                            );
+                                                        }
+                                                    }
+                                                    Err(e) => {
                                                         eprintln!(
-                                                            "Failed to send MIDI message: {}",
-                                                            e
+                                                            "Failed to parse outgoing MIDI command '{}': {}",
+                                                            expanded, e
                                                         );
                                                     }
-                                                } else {
-                                                    eprintln!(
-                                                        "Cannot send MIDI command: No MIDI output connected."
-                                                    );
                                                 }
                                             }
-                                            Err(e) => {
-                                                eprintln!(
-                                                    "Failed to parse outgoing MIDI command '{}': {}",
-                                                    command.outgoing_command, e
-                                                );
-                                            }
+                                            Err(e) => eprintln!("Failed to expand template: {}", e),
                                         }
                                     }
                                 }
@@ -449,6 +512,41 @@ M~~~/ch/02/mix/fader|/ch/03/mix/fader ,f 0.75
 
         let invalid = "F0 00 20 32 32 XX F7";
         assert!(parse_midi_hex(invalid).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn test_expand_template_osc() -> anyhow::Result<()> {
+        let mut calc = RpnCalculator::new();
+        let mparam = vec![0.5];
+        let template = "/ch/02/mix/fader ,f [$0 0.5 *]";
+        let result = expand_template(template, &mparam, &mut calc)?;
+        assert_eq!(result, "/ch/02/mix/fader ,f 0.25");
+
+        let mparam2 = vec![1.0, 2.0];
+        let template2 = "/ch/02/mix/fader ,f [$1 $0 +]";
+        let result2 = expand_template(template2, &mparam2, &mut calc)?;
+        assert_eq!(result2, "/ch/02/mix/fader ,f 3");
+        Ok(())
+    }
+
+    #[test]
+    fn test_expand_template_midi() -> anyhow::Result<()> {
+        let mut calc = RpnCalculator::new();
+        let mparam = vec![0.5];
+        let template = "F0 00 [$0 127 *] F7";
+        let result = expand_template(template, &mparam, &mut calc)?;
+        assert_eq!(result, "F0 00 3F F7"); // 0.5 * 127 = 63.5 -> 63 -> 3F in hex
+        Ok(())
+    }
+
+    #[test]
+    fn test_expand_template_no_expression() -> anyhow::Result<()> {
+        let mut calc = RpnCalculator::new();
+        let mparam = vec![];
+        let template = "/ch/02/mix/fader ,f 0.5";
+        let result = expand_template(template, &mparam, &mut calc)?;
+        assert_eq!(result, "/ch/02/mix/fader ,f 0.5");
         Ok(())
     }
 }
