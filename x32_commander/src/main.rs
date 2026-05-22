@@ -236,7 +236,8 @@ fn expand_template(
             // Determine formatting based on the template structure heuristically.
             // If the template looks like a hex string block (e.g. MIDI), we format as hex.
             // Otherwise, we format as float (e.g., OSC argument).
-            let is_midi = template.len() > 5 && (template.starts_with("F0") || template.starts_with("B0"));
+            let is_midi =
+                template.len() > 5 && (template.starts_with("F0") || template.starts_with("B0"));
             if is_midi {
                 use std::fmt::Write;
                 write!(&mut result, "{:02X}", val as u8)?;
@@ -338,33 +339,37 @@ fn run(args: Args) -> Result<(), anyhow::Error> {
                                             "Match found for: {}. Triggering: {}",
                                             incoming_msg.path, command.outgoing_command
                                         );
-                                        match expand_template(&command.outgoing_command, &mparam, &mut calc) {
-                                            Ok(expanded) => {
-                                                match OscMessage::from_str(&expanded) {
-                                                    Ok(outgoing_msg) => {
-                                                        let target_socket =
-                                                            out_socket.as_ref().unwrap_or(&x32_socket);
-                                                        match outgoing_msg.to_bytes() {
-                                                            Ok(bytes) => {
-                                                                if let Err(e) = target_socket.send(&bytes) {
-                                                                    eprintln!(
-                                                                        "Failed to send OSC message: {}",
-                                                                        e
-                                                                    );
-                                                                }
+                                        match expand_template(
+                                            &command.outgoing_command,
+                                            &mparam,
+                                            &mut calc,
+                                        ) {
+                                            Ok(expanded) => match OscMessage::from_str(&expanded) {
+                                                Ok(outgoing_msg) => {
+                                                    let target_socket =
+                                                        out_socket.as_ref().unwrap_or(&x32_socket);
+                                                    match outgoing_msg.to_bytes() {
+                                                        Ok(bytes) => {
+                                                            if let Err(e) =
+                                                                target_socket.send(&bytes)
+                                                            {
+                                                                eprintln!(
+                                                                    "Failed to send OSC message: {}",
+                                                                    e
+                                                                );
                                                             }
-                                                            Err(e) => eprintln!(
-                                                                "Failed to serialize outgoing OSC message: {}",
-                                                                e
-                                                            ),
                                                         }
+                                                        Err(e) => eprintln!(
+                                                            "Failed to serialize outgoing OSC message: {}",
+                                                            e
+                                                        ),
                                                     }
-                                                    Err(e) => eprintln!(
-                                                        "Failed to parse outgoing command '{}': {}",
-                                                        expanded, e
-                                                    ),
                                                 }
-                                            }
+                                                Err(e) => eprintln!(
+                                                    "Failed to parse outgoing command '{}': {}",
+                                                    expanded, e
+                                                ),
+                                            },
                                             Err(e) => eprintln!("Failed to expand template: {}", e),
                                         }
                                     }
@@ -373,31 +378,33 @@ fn run(args: Args) -> Result<(), anyhow::Error> {
                                             "Match found for: {}. Triggering MIDI: {}",
                                             incoming_msg.path, command.outgoing_command
                                         );
-                                        match expand_template(&command.outgoing_command, &mparam, &mut calc) {
-                                            Ok(expanded) => {
-                                                match parse_midi_hex(&expanded) {
-                                                    Ok(bytes) => {
-                                                        if let Some(ref mut conn) = midi_conn {
-                                                            if let Err(e) = conn.send(&bytes) {
-                                                                eprintln!(
-                                                                    "Failed to send MIDI message: {}",
-                                                                    e
-                                                                );
-                                                            }
-                                                        } else {
+                                        match expand_template(
+                                            &command.outgoing_command,
+                                            &mparam,
+                                            &mut calc,
+                                        ) {
+                                            Ok(expanded) => match parse_midi_hex(&expanded) {
+                                                Ok(bytes) => {
+                                                    if let Some(ref mut conn) = midi_conn {
+                                                        if let Err(e) = conn.send(&bytes) {
                                                             eprintln!(
-                                                                "Cannot send MIDI command: No MIDI output connected."
+                                                                "Failed to send MIDI message: {}",
+                                                                e
                                                             );
                                                         }
-                                                    }
-                                                    Err(e) => {
+                                                    } else {
                                                         eprintln!(
-                                                            "Failed to parse outgoing MIDI command '{}': {}",
-                                                            expanded, e
+                                                            "Cannot send MIDI command: No MIDI output connected."
                                                         );
                                                     }
                                                 }
-                                            }
+                                                Err(e) => {
+                                                    eprintln!(
+                                                        "Failed to parse outgoing MIDI command '{}': {}",
+                                                        expanded, e
+                                                    );
+                                                }
+                                            },
                                             Err(e) => eprintln!("Failed to expand template: {}", e),
                                         }
                                     }
