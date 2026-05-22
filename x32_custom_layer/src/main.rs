@@ -476,8 +476,26 @@ fn handle_restore_command(ip: &str, file_path: &str) -> Result<()> {
     let mut line = String::new();
     loop {
         line.clear();
-        if reader.by_ref().take(4096).read_line(&mut line).is_err() || line.is_empty() {
+        let mut handle = reader.by_ref().take(4096);
+        if handle.read_line(&mut line).is_err() || line.is_empty() {
             break;
+        }
+        if !line.ends_with('\n') && line.len() == 4096 {
+            let mut discard = Vec::with_capacity(1024);
+            loop {
+                discard.clear();
+                let mut chunk_handle = reader.by_ref().take(1024);
+                match chunk_handle.read_until(b'\n', &mut discard) {
+                    Ok(0) | Err(_) => break,
+                    Ok(_) => {
+                        if discard.ends_with(b"\n") {
+                            break;
+                        }
+                    }
+                }
+            }
+            eprintln!("Input line too long, discarded.");
+            continue;
         }
         let trimmed_line = line.trim();
         if trimmed_line.is_empty() || trimmed_line.starts_with('#') {

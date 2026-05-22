@@ -96,8 +96,26 @@ async fn main() -> Result<()> {
     loop {
         line.clear();
         use std::io::{BufRead, Read};
-        if stdin_lock.by_ref().take(4096).read_line(&mut line).is_err() || line.is_empty() {
+        let mut handle = stdin_lock.by_ref().take(4096);
+        if handle.read_line(&mut line).is_err() || line.is_empty() {
             break;
+        }
+        if !line.ends_with('\n') && line.len() == 4096 {
+            let mut discard = Vec::with_capacity(1024);
+            loop {
+                discard.clear();
+                let mut chunk_handle = stdin_lock.by_ref().take(1024);
+                match chunk_handle.read_until(b'\n', &mut discard) {
+                    Ok(0) | Err(_) => break,
+                    Ok(_) => {
+                        if discard.ends_with(b"\n") {
+                            break;
+                        }
+                    }
+                }
+            }
+            eprintln!("Input line too long, discarded.");
+            continue;
         }
         let cmd = line.trim();
 

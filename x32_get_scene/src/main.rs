@@ -43,7 +43,23 @@ fn main() -> Result<()> {
         None => {
             println!("Please enter scene name: ");
             let mut name = String::new();
-            io::stdin().lock().take(4096).read_line(&mut name)?;
+            let mut handle = io::stdin().lock().take(4096);
+            handle.read_line(&mut name)?;
+            if !name.ends_with('\n') && name.len() == 4096 {
+                let mut discard = Vec::with_capacity(1024);
+                loop {
+                    discard.clear();
+                    let mut chunk_handle = io::stdin().lock().take(1024);
+                    match chunk_handle.read_until(b'\n', &mut discard) {
+                        Ok(0) | Err(_) => break,
+                        Ok(_) => {
+                            if discard.ends_with(b"\n") {
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
             name.trim().to_string()
         }
     };
@@ -53,7 +69,23 @@ fn main() -> Result<()> {
         None => {
             println!("Please enter note data: ");
             let mut note = String::new();
-            io::stdin().lock().take(4096).read_line(&mut note)?;
+            let mut handle = io::stdin().lock().take(4096);
+            handle.read_line(&mut note)?;
+            if !note.ends_with('\n') && note.len() == 4096 {
+                let mut discard = Vec::with_capacity(1024);
+                loop {
+                    discard.clear();
+                    let mut chunk_handle = io::stdin().lock().take(1024);
+                    match chunk_handle.read_until(b'\n', &mut discard) {
+                        Ok(0) | Err(_) => break,
+                        Ok(_) => {
+                            if discard.ends_with(b"\n") {
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
             note.trim().to_string()
         }
     };
@@ -67,9 +99,27 @@ fn main() -> Result<()> {
     let mut stdin_lock = stdin.lock();
     loop {
         let mut line = String::new();
-        let len = stdin_lock.by_ref().take(4096).read_line(&mut line)?;
+        let mut handle = stdin_lock.by_ref().take(4096);
+        let len = handle.read_line(&mut line)?;
         if len == 0 {
             break;
+        }
+        if !line.ends_with('\n') && len == 4096 {
+            let mut discard = Vec::with_capacity(1024);
+            loop {
+                discard.clear();
+                let mut chunk_handle = stdin_lock.by_ref().take(1024);
+                match chunk_handle.read_until(b'\n', &mut discard) {
+                    Ok(0) | Err(_) => break,
+                    Ok(_) => {
+                        if discard.ends_with(b"\n") {
+                            break;
+                        }
+                    }
+                }
+            }
+            eprintln!("Input line too long, discarded.");
+            continue;
         }
         let line = line.trim();
         if line.starts_with('/') {
