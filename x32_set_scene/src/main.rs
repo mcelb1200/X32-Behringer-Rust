@@ -38,6 +38,8 @@ fn main() -> Result<()> {
 
     let stdin = io::stdin();
     let mut stdin_lock = stdin.lock();
+    let mut parser = x32_lib::scene_parse::SceneParser::new();
+
     loop {
         let mut line = String::new();
         let len = stdin_lock.by_ref().take(4096).read_line(&mut line)?;
@@ -47,7 +49,7 @@ fn main() -> Result<()> {
         let line = line.trim();
         if line.starts_with('/') {
             // First try to parse it as a scene line
-            let mut messages = x32_lib::scene_parse::parse_scene_line(line);
+            let mut messages = parser.parse_scene_line(line);
 
             // If it returns empty, it might be a fully formed raw OSC line, fall back to from_str
             if messages.is_empty() {

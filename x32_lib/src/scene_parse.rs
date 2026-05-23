@@ -1,5 +1,52 @@
 use osc_lib::{OscArg, OscMessage};
 
+// --- FX Type and Source Arrays from C ---
+pub const XFXTYP4: &[&str] = &[
+    "HALL", "AMBI", "RPLT", "ROOM", "CHAM", "PLAT", "VREV", "VRM", "GATE", "RVRS", "DLY", "3TAP",
+    "4TAP", "CRS", "FLNG", "PHAS", "DIMC", "FILT", "ROTA", "PAN", "SUB", "D/RV", "CR/R", "FL/R",
+    "D/CR", "D/FL", "MODD", "GEQ2", "GEQ", "TEQ2", "TEQ", "DES2", "DES", "P1A", "P1A2", "PQ5",
+    "PQ5S", "WAVD", "LIM", "CMB", "CMB2", "FAC", "FAC1M", "FAC2", "LEC", "LEC2", "ULC", "ULC2",
+    "ENH2", "ENH", "EXC2", "EXC", "IMG", "EDI", "SON", "AMP2", "AMP", "DRV2", "DRV", "PIT2", "PIT",
+];
+
+pub const XFXTYP5: &[&str] = &[
+    "GEQ2", "GEQ", "TEQ2", "TEQ", "DES2", "DES", "P1A", "P1A2", "PQ5", "PQ5S", "WAVD", "LIM",
+    "FAC", "FAC1M", "FAC2", "LEC", "LEC2", "ULC", "ULC2", "ENH2", "ENH", "EXC2", "EXC", "IMG",
+    "EDI", "SON", "AMP2", "AMP", "DRV2", "DRV", "PHAS", "FILT", "PAN", "SUB",
+];
+
+pub const XFXSRC4: &[&str] = &[
+    "INS", "MIX1", "MIX2", "MIX3", "MIX4", "MIX5", "MIX6", "MIX7", "MIX8", "MIX9", "MIX10",
+    "MIX11", "MIX12", "MIX13", "MIX14", "MIX15", "MIX16", "M/C",
+];
+
+/// A stateful parser for X32/XAir scene files.
+/// Maintains internal state, such as currently loaded FX types, to correctly parse
+/// effect parameters which have context-dependent types and scales.
+#[derive(Debug, Clone)]
+pub struct SceneParser {
+    /// Tracks the current FX type for slots 1-8. Default initialized to 0 (HALL/GEQ2).
+    pub fx_types: [i32; 8],
+}
+
+impl Default for SceneParser {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl SceneParser {
+    pub fn new() -> Self {
+        Self { fx_types: [0; 8] }
+    }
+
+    /// Parses a line from an X32/XAir scene file into one or more OSC messages.
+    /// Returns an empty vector if the line cannot be parsed.
+    pub fn parse_scene_line(&mut self, line: &str) -> Vec<OscMessage> {
+        parse_scene_line_internal(self, line)
+    }
+}
+
 /// Parses a line from an X32/XAir scene file into one or more OSC messages.
 ///
 /// Scene files contain commands like `/ch/01/config/name "MyName"` or `/config/chlink 1-2`.
@@ -8,7 +55,13 @@ use osc_lib::{OscArg, OscMessage};
 ///
 /// If a line cannot be parsed as a known scene command, it returns an empty vector,
 /// allowing the caller to attempt parsing it as a raw OSC message.
+#[deprecated(note = "Use SceneParser instead for proper FX parameter state tracking")]
 pub fn parse_scene_line(line: &str) -> Vec<OscMessage> {
+    let mut parser = SceneParser::new();
+    parser.parse_scene_line(line)
+}
+
+fn parse_scene_line_internal(parser: &mut SceneParser, line: &str) -> Vec<OscMessage> {
     let line = line.trim();
     if line.is_empty() || line.starts_with('#') {
         return vec![];
@@ -29,6 +82,49 @@ pub fn parse_scene_line(line: &str) -> Vec<OscMessage> {
     }
 
     match parts.as_slice() {
+        // --- FX Types and Sources ---
+        ["fx", slot, "type"] => {
+            if let Ok(s) = slot.parse::<usize>() {
+                if (1..=8).contains(&s) {
+                    let type_val = if s <= 4 {
+                        parse_list(arg_str, XFXTYP4)
+                    } else {
+                        parse_list(arg_str, XFXTYP5)
+                    };
+
+                    if let Some(OscArg::Int(t)) = type_val {
+                        parser.fx_types[s - 1] = t;
+                        messages.push(OscMessage::new(
+                            format!("/fx/{}/type", slot),
+                            vec![OscArg::Int(t)],
+                        ));
+                    }
+                }
+            }
+        }
+        ["fx", slot, "source", side] => {
+            if let Ok(s) = slot.parse::<usize>() {
+                if (1..=4).contains(&s) {
+                    if let Some(arg) = parse_list(arg_str, XFXSRC4) {
+                        messages.push(OscMessage::new(
+                            format!("/fx/{}/source/{}", slot, side),
+                            vec![arg],
+                        ));
+                    }
+                }
+            }
+        }
+        ["fx", slot, "par"] => {
+            if let Ok(s) = slot.parse::<usize>() {
+                if (1..=8).contains(&s) {
+                    let fx_type = parser.fx_types[s - 1];
+                    if let Some(msg) = parse_fx_par(slot, fx_type, arg_str) {
+                        messages.push(msg);
+                    }
+                }
+            }
+        }
+
         // --- Config ---
         ["config", "chlink"] => {
             for ch in (1..32).step_by(2) {
@@ -382,4 +478,171 @@ mod tests {
         assert_eq!(msgs[0].path, "/ch/01/eq/1/f");
         assert!(matches!(msgs[0].args[0], OscArg::Float(_)));
     }
+}
+/// Parses space-separated string arguments into proper OscArgs for a given FX slot and type.
+pub(crate) fn parse_fx_par(slot: &str, fx_type: i32, args_str: &str) -> Option<OscMessage> {
+    let args: Vec<&str> = args_str.split_whitespace().collect();
+    let mut osc_args = Vec::new();
+
+    // Helper functions for inline scaling
+    let parse_ratio = |val: &str, a: f32| -> OscArg {
+        if let Some(mut f) = parse_float_raw(val) {
+            f /= a;
+            OscArg::Float(f.clamp(0.0, 1.0))
+        } else {
+            OscArg::Float(0.0)
+        }
+    };
+
+    let parse_afine = |val: &str, a: f32, b: f32| -> OscArg {
+        if let Some(mut f) = parse_float_raw(val) {
+            f = (f - a) / b;
+            OscArg::Float(f.clamp(0.0, 1.0))
+        } else {
+            OscArg::Float(0.0)
+        }
+    };
+
+    let parse_log = |val: &str, a: f32, b: f32| -> OscArg {
+        if let Some(mut f) = parse_float_raw(val) {
+            f = (f / a).ln() / b;
+            OscArg::Float(f.clamp(0.0, 1.0))
+        } else {
+            OscArg::Float(0.0)
+        }
+    };
+
+    #[allow(dead_code)]
+    let _parse_toggle = |val: &str, off_val: &str| -> OscArg {
+        if val == off_val {
+            OscArg::Int(0)
+        } else {
+            OscArg::Int(1)
+        }
+    };
+
+    let parse_list_idx = |val: &str, list: &[&str]| -> OscArg {
+        if let Some(idx) = list.iter().position(|&s| s == val) {
+            OscArg::Int(idx as i32)
+        } else {
+            OscArg::Int(0)
+        }
+    };
+
+    let is_slot_1_4 = if let Ok(s) = slot.parse::<usize>() { s <= 4 } else { true };
+
+    if is_slot_1_4 {
+        match fx_type {
+            0 | 5 => { // HALL, PLAT
+                if args.len() >= 12 {
+                    osc_args.push(parse_ratio(args[0], 200.0)); // pre delay
+                    if fx_type == 0 {
+                        osc_args.push(parse_log(args[1], 0.1, 3.912_023)); // decay
+                    } else {
+                        osc_args.push(parse_log(args[1], 0.5, 2.995_732_3)); // decay
+                    }
+                    osc_args.push(parse_afine(args[2], 2.0, 98.0)); // size
+                    osc_args.push(parse_log(args[3], 1000.0, 2.995_732_3)); // damping
+                    osc_args.push(parse_afine(args[4], 1.0, 29.0)); // diffuse
+                    osc_args.push(parse_afine(args[5], -12.0, 24.0)); // level
+                    osc_args.push(parse_log(args[6], 10.0, 3.912_023)); // lo cut
+                    osc_args.push(parse_log(args[7], 200.0, 4.605_170_2)); // hi cut
+                    osc_args.push(parse_log(args[8], 0.5, 1.386_294_4)); // bass multi
+                    if fx_type == 0 {
+                        osc_args.push(parse_ratio(args[9], 50.0)); // spread
+                    } else {
+                        osc_args.push(parse_log(args[9], 10.0, 3.912_023)); // xover
+                    }
+                    if fx_type == 0 {
+                        osc_args.push(parse_ratio(args[10], 250.0)); // shape
+                    } else {
+                        osc_args.push(parse_ratio(args[10], 50.0)); // mod
+                    }
+                    osc_args.push(parse_ratio(args[11], 100.0)); // modspeed
+                }
+            }
+            1 => { // AMBI
+                if args.len() >= 10 {
+                    osc_args.push(parse_ratio(args[0], 200.0)); // pre delay
+                    osc_args.push(parse_log(args[1], 0.1, 3.912_023)); // decay
+                    osc_args.push(parse_afine(args[2], 2.0, 98.0)); // size
+                    osc_args.push(parse_log(args[3], 1000.0, 2.995_732_3)); // damping
+                    osc_args.push(parse_afine(args[4], 1.0, 29.0)); // diffuse
+                    osc_args.push(parse_afine(args[5], -12.0, 24.0)); // level
+                    osc_args.push(parse_log(args[6], 10.0, 3.912_023)); // lo cut
+                    osc_args.push(parse_log(args[7], 200.0, 4.605_170_2)); // hi cut
+                    osc_args.push(parse_ratio(args[8], 50.0)); // mod
+                    osc_args.push(parse_ratio(args[9], 100.0)); // modspeed
+                }
+            }
+            2..=4 => { // RPLT, ROOM, CHAM
+                if args.len() >= 16 {
+                    osc_args.push(parse_ratio(args[0], 200.0)); // pre delay
+                    osc_args.push(parse_log(args[1], 0.1, 3.912_023)); // decay
+                    if fx_type == 2 {
+                        osc_args.push(parse_afine(args[2], 4.0, 35.0)); // size
+                    } else {
+                        osc_args.push(parse_afine(args[2], 4.0, 72.0)); // size
+                    }
+                    osc_args.push(parse_log(args[3], 1000.0, 2.995_732_3)); // damping
+                    osc_args.push(parse_afine(args[4], 1.0, 29.0)); // diffuse
+                    osc_args.push(parse_afine(args[5], -12.0, 24.0)); // level
+                    osc_args.push(parse_log(args[6], 10.0, 3.912_023)); // lo cut
+                    osc_args.push(parse_log(args[7], 200.0, 4.605_170_2)); // hi cut
+                    osc_args.push(parse_log(args[8], 0.25, 2.772_588_7)); // bass multi
+                    osc_args.push(parse_ratio(args[9], 50.0)); // spread
+                    if fx_type == 2 {
+                        osc_args.push(parse_ratio(args[10], 100.0)); // attack
+                    } else {
+                        osc_args.push(parse_ratio(args[10], 250.0)); // shape
+                    }
+                    osc_args.push(parse_ratio(args[11], 100.0)); // spin
+                    if fx_type == 4 {
+                        osc_args.push(parse_ratio(args[12], 500.0)); // refl. L
+                        osc_args.push(parse_ratio(args[13], 500.0)); // refl. R
+                        osc_args.push(parse_ratio(args[14], 100.0)); // refl. gain L
+                        osc_args.push(parse_ratio(args[15], 100.0)); // refl. gain R
+                    } else {
+                        osc_args.push(parse_ratio(args[12], 1200.0)); // echo L
+                        osc_args.push(parse_ratio(args[13], 1200.0)); // echo R
+                        osc_args.push(parse_afine(args[14], -100.0, 200.0)); // echo feed L
+                        osc_args.push(parse_afine(args[15], -100.0, 200.0)); // echo feed R
+                    }
+                }
+            }
+            10 => { // DLY
+                if args.len() >= 12 {
+                    osc_args.push(parse_ratio(args[0], 100.0)); // mix
+                    osc_args.push(parse_afine(args[1], 1.0, 2999.0)); // time
+                    osc_args.push(parse_list_idx(args[2], &["ST", "X", "M"])); // mode
+                    osc_args.push(parse_list_idx(args[3], &["1/4", "3/8", "1/2", "2/3", "1", "4/3", "3/2", "2", "3"])); // factor L
+                    osc_args.push(parse_list_idx(args[4], &["1/4", "3/8", "1/2", "2/3", "1", "4/3", "3/2", "2", "3"])); // factor R
+                    osc_args.push(parse_ratio(args[5], 100.0)); // offset L
+                    osc_args.push(parse_ratio(args[6], 100.0)); // offset R
+                    osc_args.push(parse_log(args[7], 10.0, 3.912_023)); // lo cut
+                    osc_args.push(parse_log(args[8], 200.0, 4.605_170_2)); // hi cut
+                    osc_args.push(parse_log(args[9], 10.0, 3.912_023)); // feed lo cut
+                    osc_args.push(parse_ratio(args[10], 100.0)); // feed left
+                    osc_args.push(parse_ratio(args[11], 100.0)); // feed right
+                    // feed hi cut omitted if len is 12, wait, DLY has 13 params in C if you count feed hi cut
+                    if args.len() >= 13 {
+                        osc_args.push(parse_log(args[12], 200.0, 4.605_170_2)); // feed hi cut
+                    }
+                }
+            }
+            _ => {
+                // For safety, we do not fallback to unscaled floats/ints for unmapped effects,
+                // as sending unscaled values (e.g., 500.0 instead of 0.5) to the X32 can peg
+                // parameters to their maximum limits and cause dangerous volume spikes or feedback.
+                // Additional effects from `fxparse1.c` and `fxparse.c` must be explicitly ported.
+                return None;
+            }
+        }
+    } else {
+        // Slot 5-8 FX types (GEQ, TEQ, etc.)
+        // For safety, do not fallback to unscaled floats.
+        return None;
+    }
+
+    Some(OscMessage::new(format!("/fx/{}/par", slot), osc_args))
 }
