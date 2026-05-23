@@ -529,16 +529,11 @@ pub(crate) fn parse_fx_par(slot: &str, fx_type: i32, args_str: &str) -> Option<O
         }
     };
 
-    let is_slot_1_4 = if let Ok(s) = slot.parse::<usize>() {
-        s <= 4
-    } else {
-        true
-    };
+    let is_slot_1_4 = if let Ok(s) = slot.parse::<usize>() { s <= 4 } else { true };
 
     if is_slot_1_4 {
         match fx_type {
-            0 | 5 => {
-                // HALL, PLAT
+            0 | 5 => { // HALL, PLAT
                 if args.len() >= 12 {
                     osc_args.push(parse_ratio(args[0], 200.0)); // pre delay
                     if fx_type == 0 {
@@ -566,8 +561,7 @@ pub(crate) fn parse_fx_par(slot: &str, fx_type: i32, args_str: &str) -> Option<O
                     osc_args.push(parse_ratio(args[11], 100.0)); // modspeed
                 }
             }
-            1 => {
-                // AMBI
+            1 => { // AMBI
                 if args.len() >= 10 {
                     osc_args.push(parse_ratio(args[0], 200.0)); // pre delay
                     osc_args.push(parse_log(args[1], 0.1, 3.912_023)); // decay
@@ -581,8 +575,7 @@ pub(crate) fn parse_fx_par(slot: &str, fx_type: i32, args_str: &str) -> Option<O
                     osc_args.push(parse_ratio(args[9], 100.0)); // modspeed
                 }
             }
-            2..=4 => {
-                // RPLT, ROOM, CHAM
+            2..=4 => { // RPLT, ROOM, CHAM
                 if args.len() >= 16 {
                     osc_args.push(parse_ratio(args[0], 200.0)); // pre delay
                     osc_args.push(parse_log(args[1], 0.1, 3.912_023)); // decay
@@ -617,20 +610,13 @@ pub(crate) fn parse_fx_par(slot: &str, fx_type: i32, args_str: &str) -> Option<O
                     }
                 }
             }
-            10 => {
-                // DLY
+            10 => { // DLY
                 if args.len() >= 12 {
                     osc_args.push(parse_ratio(args[0], 100.0)); // mix
                     osc_args.push(parse_afine(args[1], 1.0, 2999.0)); // time
                     osc_args.push(parse_list_idx(args[2], &["ST", "X", "M"])); // mode
-                    osc_args.push(parse_list_idx(
-                        args[3],
-                        &["1/4", "3/8", "1/2", "2/3", "1", "4/3", "3/2", "2", "3"],
-                    )); // factor L
-                    osc_args.push(parse_list_idx(
-                        args[4],
-                        &["1/4", "3/8", "1/2", "2/3", "1", "4/3", "3/2", "2", "3"],
-                    )); // factor R
+                    osc_args.push(parse_list_idx(args[3], &["1/4", "3/8", "1/2", "2/3", "1", "4/3", "3/2", "2", "3"])); // factor L
+                    osc_args.push(parse_list_idx(args[4], &["1/4", "3/8", "1/2", "2/3", "1", "4/3", "3/2", "2", "3"])); // factor R
                     osc_args.push(parse_ratio(args[5], 100.0)); // offset L
                     osc_args.push(parse_ratio(args[6], 100.0)); // offset R
                     osc_args.push(parse_log(args[7], 10.0, 3.912_023)); // lo cut
