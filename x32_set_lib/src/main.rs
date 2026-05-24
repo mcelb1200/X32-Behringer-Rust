@@ -14,7 +14,7 @@ use anyhow::Result;
 use clap::Parser;
 use osc_lib::{OscArg, OscMessage};
 use std::fs::File;
-use std::io::{BufRead, BufReader, Read};
+use std::io::{BufRead, Read};
 use std::path::PathBuf;
 use std::time::Duration;
 use x32_lib::create_socket;
@@ -49,7 +49,12 @@ fn main() -> Result<()> {
             anyhow::bail!("Preset file too large to load (max 1MB)");
         }
 
-        let reader = BufReader::new(file.take(1024 * 1024));
+        let mut content = String::new();
+        file.take(1024 * 1024 + 1).read_to_string(&mut content)?;
+        if content.len() > 1024 * 1024 {
+            anyhow::bail!("Preset file too large to load (max 1MB)");
+        }
+        let reader = std::io::Cursor::new(content);
 
         // Detect type from extension
         let ext = path.extension().and_then(|s| s.to_str()).unwrap_or("");

@@ -66,6 +66,12 @@ fn main() -> Result<()> {
         return Ok(());
     }
 
+    // Security: Prevent OOM/DoS by bounding the number of markers to 500
+    // (a realistic max for a 2048-byte SE_LOG.BIN where markers start at 1052)
+    if nbmarker > 500 {
+        bail!("Too many markers declared (max 500)");
+    }
+
     // Markers start at offset 1052
     file.seek(SeekFrom::Start(1052))?;
 

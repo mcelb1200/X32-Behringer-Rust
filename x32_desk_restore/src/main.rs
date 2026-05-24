@@ -11,7 +11,7 @@
 use clap::Parser;
 use osc_lib::OscMessage;
 use std::fs::File;
-use std::io::{self, BufRead, Read};
+use std::io::{self, Read};
 use std::net::UdpSocket;
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -114,10 +114,19 @@ fn main() -> Result<()> {
         )));
     }
 
-    let commands: Vec<String> = io::BufReader::new(file.take(1024 * 1024))
+    let mut content = String::new();
+    file.take(1024 * 1024 + 1).read_to_string(&mut content)?;
+    if content.len() > 1024 * 1024 {
+        return Err(X32Error::Io(io::Error::new(
+            io::ErrorKind::InvalidData,
+            "File too large",
+        )));
+    }
+
+    let commands: Vec<String> = content
         .lines()
-        .map_while(std::result::Result::ok)
         .filter(|line| !line.starts_with('#') && !line.trim().is_empty())
+        .map(|s| s.to_string())
         .collect();
 
     if commands.is_empty() {
