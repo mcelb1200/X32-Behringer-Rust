@@ -66,12 +66,51 @@ fn main() -> Result<()> {
     let stdin = io::stdin();
     let mut stdin_lock = stdin.lock();
     loop {
-        let mut line = String::new();
-        let len = stdin_lock.by_ref().take(4096).read_line(&mut line)?;
-        if len == 0 {
-            break;
+        let mut byte_buf = Vec::new();
+        let mut handle = stdin_lock.by_ref().take(4096);
+        match handle.read_until(b'\n', &mut byte_buf) {
+            Ok(0) => break,                 // EOF
+            Err(e) => return Err(e.into()), // Propagate I/O errors properly
+            Ok(len) => {
+                if len == 4096
+                    && !byte_buf.ends_with(
+                        b"
+",
+                    )
+                {
+                    // Line too long, discard remainder
+                    let mut discard = Vec::with_capacity(1024);
+                    loop {
+                        discard.clear();
+                        let mut chunk_handle = stdin_lock.by_ref().take(1024);
+                        match chunk_handle.read_until(b'\n', &mut discard) {
+                            Ok(0) => break,
+                            Err(e) => return Err(e.into()),
+                            Ok(_) => {
+                                if discard.ends_with(
+                                    b"
+",
+                                ) {
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    eprintln!("Input line too long, discarded.");
+                    continue;
+                }
+            }
         }
-        let line = line.trim();
+
+        let line_str = match std::str::from_utf8(&byte_buf) {
+            Ok(s) => s,
+            Err(_) => {
+                eprintln!("Invalid UTF-8 sequence in input, discarded.");
+                continue;
+            }
+        };
+
+        let line = line_str.trim();
         if line.starts_with('/') {
             let msg = OscMessage::new("/node".to_string(), vec![OscArg::String(line.to_string())]);
             socket.send(&msg.to_bytes()?)?;
