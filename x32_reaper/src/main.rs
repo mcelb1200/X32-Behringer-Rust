@@ -398,9 +398,8 @@ async fn process_x32_message(
     let mut cnum1 = -1;
 
     if msg.path.starts_with("/ch/") {
-        let parts: Vec<&str> = msg.path.split('/').collect();
-        if parts.len() >= 3 {
-            if let Ok(raw) = parts[2].parse::<i32>() {
+        if let Some(part) = msg.path.split('/').nth(2) {
+            if let Ok(raw) = part.parse::<i32>() {
                 cnum = raw;
                 if cnum <= config.bank_size && config.ch_bank_on {
                     cnum += state_guard.ch_bank_offset * config.bank_size;
@@ -409,33 +408,29 @@ async fn process_x32_message(
             }
         }
     } else if msg.path.starts_with("/auxin/") {
-        let parts: Vec<&str> = msg.path.split('/').collect();
-        if parts.len() >= 3 {
-            if let Ok(raw) = parts[2].parse::<i32>() {
+        if let Some(part) = msg.path.split('/').nth(2) {
+            if let Ok(raw) = part.parse::<i32>() {
                 cnum = raw; // Used for state indexing? Auxin doesn't use XMbanktracks in C code
                 cnum1 = raw + config.aux_min - 1;
             }
         }
     } else if msg.path.starts_with("/fxrtn/") {
-        let parts: Vec<&str> = msg.path.split('/').collect();
-        if parts.len() >= 3 {
-            if let Ok(raw) = parts[2].parse::<i32>() {
+        if let Some(part) = msg.path.split('/').nth(2) {
+            if let Ok(raw) = part.parse::<i32>() {
                 cnum = raw;
                 cnum1 = raw + config.fxr_min - 1;
             }
         }
     } else if msg.path.starts_with("/bus/") {
-        let parts: Vec<&str> = msg.path.split('/').collect();
-        if parts.len() >= 3 {
-            if let Ok(raw) = parts[2].parse::<i32>() {
+        if let Some(part) = msg.path.split('/').nth(2) {
+            if let Ok(raw) = part.parse::<i32>() {
                 cnum = raw;
                 cnum1 = raw + config.bus_min - 1;
             }
         }
     } else if msg.path.starts_with("/dca/") {
-        let parts: Vec<&str> = msg.path.split('/').collect();
-        if parts.len() >= 3 {
-            if let Ok(raw) = parts[2].parse::<i32>() {
+        if let Some(part) = msg.path.split('/').nth(2) {
+            if let Ok(raw) = part.parse::<i32>() {
                 cnum = raw;
                 cnum1 = raw + config.dca_min - 1;
             }
@@ -539,9 +534,8 @@ async fn process_x32_message(
         if msg.path.contains("/level") {
             xr_mask = X32SEND;
             // /ch/%02d/mix/%02d/level
-            let parts: Vec<&str> = msg.path.split('/').collect();
-            if parts.len() >= 5 {
-                if let Ok(bus) = parts[4].parse::<i32>() {
+            if let Some(part) = msg.path.split('/').nth(4) {
+                if let Ok(bus) = part.parse::<i32>() {
                     let reaper_bus = bus + config.track_send_offset;
                     if let Some(OscArg::Float(f)) = msg.args.first() {
                         if config.ch_bank_on && msg.path.starts_with("/ch/") {
@@ -669,9 +663,8 @@ async fn process_x32_message(
             }
         } else if msg.path.contains("solosw") {
             xr_mask = X32SOLO;
-            let parts: Vec<&str> = msg.path.split('/').collect();
-            if parts.len() >= 4 {
-                if let Ok(sw_idx) = parts[3].parse::<i32>() {
+            if let Some(part) = msg.path.split('/').nth(3) {
+                if let Ok(sw_idx) = part.parse::<i32>() {
                     if let Some(OscArg::Int(val)) = msg.args.first() {
                         let fval = if *val == 1 { 1.0 } else { 0.0 };
                         // Map back to reaper track
@@ -707,9 +700,8 @@ async fn process_x32_message(
                 }
             }
         } else if msg.path.contains("userpar") {
-            let parts: Vec<&str> = msg.path.split('/').collect();
-            if parts.len() >= 4 {
-                if let Ok(par_idx) = parts[3].parse::<i32>() {
+            if let Some(part) = msg.path.split('/').nth(3) {
+                if let Ok(par_idx) = part.parse::<i32>() {
                     if let Some(OscArg::Int(val)) = msg.args.first() {
                         let sockets = Sockets {
                             x_sock,
@@ -993,9 +985,8 @@ async fn process_single_reaper_message(
     let mut state_guard = state.lock().await;
 
     if msg.path.starts_with("/track/") {
-        let parts: Vec<&str> = msg.path.split('/').collect();
-        if parts.len() >= 3 {
-            if let Ok(tnum) = parts[2].parse::<i32>() {
+        if let Some(part) = msg.path.split('/').nth(2) {
+            if let Ok(tnum) = part.parse::<i32>() {
                 if msg.path.contains("/volume") {
                     xx_mask = TRACKFADER;
                     if let Some(OscArg::Float(f)) = msg.args.first() {
@@ -1171,8 +1162,13 @@ async fn process_single_reaper_message(
                                 }
                             } else if tnum >= config.aux_min && tnum <= config.aux_max {
                                 x_sel = tnum - config.aux_min + 32;
+                            } else if tnum >= config.fxr_min && tnum <= config.fxr_max {
+                                x_sel = tnum - config.fxr_min + 40;
+                            } else if tnum >= config.bus_min && tnum <= config.bus_max {
+                                x_sel = tnum - config.bus_min + 48;
+                            } else if tnum >= config.dca_min && tnum <= config.dca_max {
+                                x_sel = tnum - config.dca_min + 72;
                             }
-                            // ... mappings
 
                             if x_sel >= 0 {
                                 state_guard.x_selected = x_sel; // Store 0-based internally?
@@ -1518,6 +1514,101 @@ mod tests {
 
         let track_solo = state.lock().await.bank_tracks[4].solo;
         assert_eq!(track_solo, 1.0);
+    }
+
+    #[tokio::test]
+    async fn test_reaper_select_mappings() {
+        let config = Config {
+            verbose: false,
+            delay_bank: 0,
+            delay_generic: 0,
+            xx_send_mask: -1,
+            xr_send_mask: -1,
+            x32_ip: "127.0.0.1".to_string(),
+            reaper_ip: "127.0.0.1".to_string(),
+            reaper_send_port: 8000,
+            reaper_recv_port: 8000,
+            transport_on: false,
+            ch_bank_on: false,
+            marker_btn_on: false,
+            bank_c_color: 0,
+            eq_ctrl_on: false,
+            master_on: false,
+            trk_min: 0,
+            trk_max: 0,
+            aux_min: 0,
+            aux_max: 0,
+            fxr_min: 1,
+            fxr_max: 8,
+            bus_min: 9,
+            bus_max: 16,
+            dca_min: 17,
+            dca_max: 24,
+            track_send_offset: 0,
+            rdca: vec![(0, 0); 8],
+            bank_up: 0,
+            bank_dn: 0,
+            marker_btn: 0,
+            ch_bank_offset: 0,
+            bank_size: 8,
+        };
+        let state = Arc::new(Mutex::new(AppState::new(&config)));
+
+        // Create dummy sockets
+        let x_sock = UdpSocket::bind("127.0.0.1:0").await.unwrap();
+        let r_sock = UdpSocket::bind("127.0.0.1:0").await.unwrap();
+        let x_addr: SocketAddr = "127.0.0.1:10023".parse().unwrap();
+        let r_addr: SocketAddr = "127.0.0.1:8000".parse().unwrap();
+
+        let build_osc = |path: &str, val: f32| -> Vec<u8> {
+            let msg = OscMessage {
+                path: path.to_string(),
+                args: vec![OscArg::Float(val)],
+            };
+            osc_lib::OscMessage::serialize_to_bytes(&msg.path, &msg.args).unwrap()
+        };
+
+        // Test FXR mapping (offset 40)
+        process_single_reaper_message(
+            &build_osc("/track/1/select", 1.0),
+            &config,
+            &state,
+            &x_sock,
+            x_addr,
+            &r_sock,
+            r_addr,
+        )
+        .await
+        .unwrap();
+        assert_eq!(state.lock().await.x_selected, 40); // 1 - 1 + 40
+
+        // Test Bus mapping (offset 48)
+        process_single_reaper_message(
+            &build_osc("/track/9/select", 1.0),
+            &config,
+            &state,
+            &x_sock,
+            x_addr,
+            &r_sock,
+            r_addr,
+        )
+        .await
+        .unwrap();
+        assert_eq!(state.lock().await.x_selected, 48); // 9 - 9 + 48
+
+        // Test DCA mapping (offset 72)
+        process_single_reaper_message(
+            &build_osc("/track/17/select", 1.0),
+            &config,
+            &state,
+            &x_sock,
+            x_addr,
+            &r_sock,
+            r_addr,
+        )
+        .await
+        .unwrap();
+        assert_eq!(state.lock().await.x_selected, 72); // 17 - 17 + 72
     }
 
     #[tokio::test]

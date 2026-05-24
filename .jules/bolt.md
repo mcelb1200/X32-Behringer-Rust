@@ -16,6 +16,13 @@
 ## 2024-06-25 - [Parsing hex natively over u8::from_str_radix]
 **Learning:** In performance-critical loops (like processing large midi chunks), using `u8::from_str_radix` on string slices to parse hexadecimal data incurs measurable overhead due to slice creation, UTF-8 checks, and generic parsing machinery. Replacing this with a manual loop that matches on raw ASCII bytes (`b'0'..=b'9'`, `b'a'..=b'f'`, `b'A'..=b'F'`) and uses bitwise operations significantly speeds up execution for purely hex data parsing, which translates to a better UX during configuration loads.
 **Action:** When parsing purely hex strings into bytes, avoid `u8::from_str_radix`. Work directly with byte slices and map ASCII characters to values using simple arithmetic and bitwise combinations.
+## 2024-06-25 - [Replacing Vec::new() with exact pre-allocation or inline slice mapping]
+**Learning:** In highly called serialization pathways (like `osc_lib::serialize_to_bytes`), repeatedly allocating dynamically sized vectors for intermediate tracking structures (like type tags strings) has measurable performance costs compared to pushing directly into the pre-calculated final payload vector in subsequent iterator passes.
+**Action:** Identify intermediate heap allocations in serialization functions. Avoid allocating a new  to map intermediate state if the final state can be resolved inline by advancing iterator loops over the same struct slice twice.
+
+## 2024-06-25 - [Replacing intermediate Vec allocations in serializers]
+**Learning:** In highly called serialization pathways (like `osc_lib::serialize_to_bytes`), repeatedly allocating dynamically sized vectors for intermediate tracking structures (like type tags strings) has measurable performance costs. We can often eliminate these allocations if the input iterators implement Clone by counting the target size in a first pass, allocating the exact needed capacity, and mapping the intermediate state directly into the final vector sequentially.
+**Action:** Identify intermediate heap allocations in serialization functions. Avoid allocating a new `Vec` to map intermediate state if the final state can be resolved inline by advancing iterator loops over the same struct slice twice.
 
 ## 2024-06-25 - [Vector allocation in OSC parsing]
 **Learning:** In performance-critical hot loops like OSC packet parsing, using `Vec::new()` for the arguments vector causes dynamic heap reallocations as elements are pushed. This allocation overhead can be completely eliminated by calculating the maximum number of arguments in advance (e.g. from the length of type tags) and using `Vec::with_capacity()`.
