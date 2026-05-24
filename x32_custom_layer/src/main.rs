@@ -16,7 +16,7 @@
 use clap::{Parser, Subcommand};
 use osc_lib::{OscArg, OscMessage};
 use std::fs::File;
-use std::io::{BufRead, BufReader, BufWriter, Read, Write};
+use std::io::{BufRead, BufWriter, Read, Write};
 use std::net::UdpSocket;
 use std::str::FromStr;
 use x32_lib::{
@@ -469,7 +469,12 @@ fn handle_restore_command(ip: &str, file_path: &str) -> Result<()> {
         return Err(X32Error::Custom("File too large".to_string()));
     }
 
-    let mut reader = BufReader::new(file.take(1024 * 1024));
+    let mut content = String::new();
+    file.take(1024 * 1024 + 1).read_to_string(&mut content)?;
+    if content.len() > 1024 * 1024 {
+        return Err(X32Error::Custom("File too large".to_string()));
+    }
+    let mut reader = std::io::Cursor::new(content);
 
     println!("Restoring configuration from {}...", file_path);
 

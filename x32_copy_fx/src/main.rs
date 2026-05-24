@@ -19,7 +19,7 @@ use clap::Parser;
 use osc_lib::{OscArg, OscMessage};
 use std::collections::HashMap;
 use std::fs::File;
-use std::io::{BufRead, BufReader, Read};
+use std::io::{BufRead, Read};
 use std::net::UdpSocket;
 use std::path::PathBuf;
 use x32_lib::{create_socket, error::X32Error};
@@ -121,9 +121,17 @@ fn load_user_defaults(path: PathBuf) -> Result<HashMap<String, String>, X32Error
         ));
     }
 
-    let reader = BufReader::new(file.take(1024 * 1024));
+    let mut content = String::new();
+    file.take(1024 * 1024 + 1).read_to_string(&mut content)?;
+    if content.len() > 1024 * 1024 {
+        return Err(X32Error::from(
+            "Defaults file too large to load (max 1MB)".to_string(),
+        ));
+    }
+
     let mut user_defaults = HashMap::new();
-    let mut lines = reader.lines();
+    let cursor = std::io::Cursor::new(content);
+    let mut lines = cursor.lines();
 
     while let Some(Ok(name_line)) = lines.next() {
         if let Some(Ok(params_line)) = lines.next() {

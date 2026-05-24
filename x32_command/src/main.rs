@@ -157,7 +157,7 @@ async fn main() -> Result<()> {
 
     for (file_path, is_snippet) in files_to_process.into_iter().flatten() {
         use std::fs::File;
-        use std::io::{BufRead, BufReader};
+        use std::io::BufRead;
 
         let file = File::open(file_path).context(format!("Cannot read file: {}", file_path))?;
 
@@ -169,7 +169,12 @@ async fn main() -> Result<()> {
             return Err(anyhow::anyhow!("File too large"));
         }
         use std::io::Read;
-        let reader = BufReader::new(file.take(1024 * 1024));
+        let mut content = String::new();
+        file.take(1024 * 1024 + 1).read_to_string(&mut content)?;
+        if content.len() > 1024 * 1024 {
+            return Err(anyhow::anyhow!("File too large"));
+        }
+        let reader = std::io::Cursor::new(content);
 
         for line_res in reader.lines() {
             if !keep_on {
