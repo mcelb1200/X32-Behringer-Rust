@@ -691,11 +691,20 @@ async fn process_x32_message(
                             i = sw_idx + config.bus_min - 49;
                         } else if sw_idx > 72 && sw_idx < 81 && config.dca_max > 0 {
                             i = sw_idx + config.dca_min - 73;
+                        } else if sw_idx == 72 {
+                            // Master track solo
+                            rb_msg = Some(OscMessage {
+                                path: "/master/solo".to_string(),
+                                args: vec![OscArg::Float(fval)],
+                            });
                         }
-                        rb_msg = Some(OscMessage {
-                            path: format!("/track/{}/solo", i),
-                            args: vec![OscArg::Float(fval)],
-                        });
+
+                        if rb_msg.is_none() {
+                            rb_msg = Some(OscMessage {
+                                path: format!("/track/{}/solo", i),
+                                args: vec![OscArg::Float(fval)],
+                            });
+                        }
                     }
                 }
             }
@@ -1431,7 +1440,7 @@ mod tests {
         .await
         .unwrap();
 
-        assert_eq!(state.lock().await.play, true);
+        assert!(state.lock().await.play);
 
         // We can't easily intercept the outgoing UDP packet without a listening socket,
         // but verifying it doesn't crash and modifies state correctly is a good start.
@@ -1450,6 +1459,63 @@ mod tests {
             .await
             .unwrap();
         }
+    }
+
+    #[tokio::test]
+    async fn test_x32_master_solo() {
+        let config = Config {
+            verbose: false,
+            delay_bank: 0,
+            delay_generic: 0,
+            xx_send_mask: -1,
+            xr_send_mask: -1,
+            x32_ip: "127.0.0.1".to_string(),
+            reaper_ip: "127.0.0.1".to_string(),
+            reaper_send_port: 8000,
+            reaper_recv_port: 8000,
+            transport_on: true,
+            ch_bank_on: true,
+            marker_btn_on: false,
+            bank_c_color: 0,
+            eq_ctrl_on: false,
+            master_on: true,
+            trk_min: 1,
+            trk_max: 32,
+            aux_min: 0,
+            aux_max: 0,
+            fxr_min: 0,
+            fxr_max: 0,
+            bus_min: 0,
+            bus_max: 0,
+            dca_min: 0,
+            dca_max: 0,
+            track_send_offset: 0,
+            rdca: vec![(0, 0); 8],
+            bank_up: 0,
+            bank_dn: 0,
+            marker_btn: 0,
+            ch_bank_offset: 0,
+            bank_size: 8,
+        };
+        let state = Arc::new(Mutex::new(AppState::new(&config)));
+
+        let x_sock = UdpSocket::bind("127.0.0.1:0").await.unwrap();
+        let r_sock = UdpSocket::bind("127.0.0.1:0").await.unwrap();
+        let x_addr: SocketAddr = "127.0.0.1:10023".parse().unwrap();
+        let r_addr: SocketAddr = "127.0.0.1:8000".parse().unwrap();
+
+        let msg = OscMessage {
+            path: "/-stat/solosw/72".to_string(),
+            args: vec![OscArg::Int(1)],
+        };
+        let bytes = osc_lib::OscMessage::serialize_to_bytes(&msg.path, &msg.args).unwrap();
+
+        process_x32_message(&bytes, &config, &state, &r_sock, r_addr, &x_sock, x_addr)
+            .await
+            .unwrap();
+
+        // As there is no mock server, we just test it successfully executes and ignores without panic.
+        // It successfully covers the branch.
     }
 
     #[tokio::test]

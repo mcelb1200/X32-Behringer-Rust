@@ -618,6 +618,10 @@ impl Mixer {
             return Ok(responses);
         }
 
+        // Note: The `/add` and `/load` commands are intentionally implemented as dummy stubs.
+        // They return an OSC success value (`1`) with the requested item type to satisfy
+        // remote clients that expect a response, but they do not modify the emulator's state.
+        // This formalizes the legacy "TODO: do a proper implementation" behavior from C.
         if osc_msg.path == "/add" || osc_msg.path == "/load" {
             if let Some(OscArg::String(ref item_type)) = osc_msg.args.first() {
                 let arg1 = OscArg::String(item_type.clone());
