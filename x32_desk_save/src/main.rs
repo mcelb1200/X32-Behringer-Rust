@@ -102,17 +102,8 @@ fn main() -> Result<(), X32Error> {
             )));
         }
 
-        let mut content = String::new();
-        file.take(1024 * 1024 + 1).read_to_string(&mut content)?;
-        if content.len() > 1024 * 1024 {
-            return Err(X32Error::Io(io::Error::new(
-                io::ErrorKind::InvalidData,
-                "File too large",
-            )));
-        }
-
         let mut commands = Vec::new();
-        for line in io::Cursor::new(content).lines() {
+        for line in io::BufReader::new(file.take(1024 * 1024)).lines() {
             let line = line?;
             if !line.starts_with('#') {
                 if let Some(command) = line.split_whitespace().next() {

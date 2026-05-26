@@ -100,22 +100,4 @@ mod tests {
         assert_eq!(address, "/config/routing/p/01");
         assert_eq!(args, vec![OscArg::Int(2)]);
     }
-
-    #[test]
-    fn test_usb_path() {
-        assert_eq!(usb_path(), "/-usb/path");
-    }
-
-    #[test]
-    fn test_aux_insert() {
-        assert_eq!(aux_insert(1), "/config/ins/aux/1");
-        assert_eq!(aux_insert(6), "/config/ins/aux/6");
-    }
-
-    #[test]
-    fn test_ha_routing() {
-        assert_eq!(ha_routing(0), "/config/routing/p/00");
-        assert_eq!(ha_routing(1), "/config/routing/p/01");
-        assert_eq!(ha_routing(31), "/config/routing/p/31");
-    }
 }

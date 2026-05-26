@@ -12,11 +12,11 @@
 //! *   **Additional concepts by:** mcelb1200
 //! *   **Rust implementation by:** mcelb1200
 
-use anyhow::{Context, Result, anyhow};
+use anyhow::{anyhow, Context, Result};
 use clap::Parser;
 use osc_lib::{OscArg, OscMessage};
 use std::fs::File;
-use std::io::{BufRead, Read};
+use std::io::{BufRead, BufReader, Read};
 use std::path::PathBuf;
 use x32_lib::create_socket;
 
@@ -130,12 +130,7 @@ fn main() -> Result<()> {
         return Err(anyhow!("Preset file too large to load (max 1MB)"));
     }
 
-    let mut content = String::new();
-    file.take(1024 * 1024 + 1).read_to_string(&mut content)?;
-    if content.len() > 1024 * 1024 {
-        return Err(anyhow!("Preset file too large to load (max 1MB)"));
-    }
-    let reader = std::io::Cursor::new(content);
+    let reader = BufReader::new(file.take(1024 * 1024));
 
     for line in reader.lines() {
         let line = line?;
@@ -255,13 +250,10 @@ fn map_channel_address(prefix: &str, addr: &str) -> String {
         // This follows the C code logic assuming 1:1 mapping.
         if prefix.starts_with("/ch/") {
             let ch_str = &prefix[4..6]; // "01"
-            let mut parts = addr.split('/');
-            let _ = parts.next(); // ""
-            let _ = parts.next(); // "headamp"
-            let _ = parts.next(); // "000"
-            if let Some(part3) = parts.next() {
+            let parts: Vec<&str> = addr.split('/').collect();
+            if parts.len() >= 4 {
                 // "", "headamp", "000", "gain"
-                return format!("/headamp/{}/{}", ch_str, part3);
+                return format!("/headamp/{}/{}", ch_str, parts[3]);
             }
         }
         return String::new(); // Skip headamp for non-physical channels or if parsing fails

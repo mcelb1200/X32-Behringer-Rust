@@ -90,7 +90,7 @@ async fn process_single_message(
 
     if msg.path.starts_with("/track/") {
         // /track/<tnum>/...
-        let tnum_str = extract_nth_segment(&msg.path, 2).unwrap_or("");
+        let tnum_str = msg.path.split('/').nth(2).unwrap_or("");
         if tnum_str.is_empty() {
             return Ok(());
         }
@@ -169,29 +169,5 @@ async fn map_track_to_x32(tnum: i32, suffix: &str, state: &SharedState) -> Optio
     }
     // ... aux, fxr, bus logic ...
 
-    None
-}
-
-#[inline(always)]
-fn extract_nth_segment(path: &str, n: usize) -> Option<&str> {
-    let iter = path.as_bytes().iter().enumerate();
-    let mut slashes = 0;
-    let mut start_idx = 0;
-
-    for (i, &b) in iter {
-        if b == b'/' {
-            if slashes == n {
-                return Some(&path[start_idx..i]);
-            }
-            slashes += 1;
-            if slashes == n {
-                start_idx = i + 1;
-            }
-        }
-    }
-
-    if slashes == n && start_idx < path.len() {
-        return Some(&path[start_idx..]);
-    }
     None
 }
