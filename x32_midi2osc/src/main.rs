@@ -148,7 +148,6 @@ fn execute_template(
         .map_err(|e| anyhow::anyhow!("Failed to serialize OscMessage: {}", e))
 }
 
-
 #[tokio::main]
 async fn main() -> Result<()> {
     let args = Args::parse();

@@ -212,7 +212,6 @@ async fn query_osc(socket: &UdpSocket, path: &str) -> Result<()> {
     Ok(())
 }
 
-
 async fn send_osc_int(socket: &UdpSocket, path: &str, i: i32) -> Result<()> {
     let msg = osc_lib::OscMessage::new(path.to_string(), vec![osc_lib::OscArg::Int(i)]);
     let buf = msg.to_bytes().map_err(|e| anyhow::anyhow!(e))?;
