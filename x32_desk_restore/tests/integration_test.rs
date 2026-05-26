@@ -54,7 +54,7 @@ fn test_desk_restore_command() {
         .run()
         .unwrap();
     let mut cmd = bin.command();
-    cmd.args(&["--ip", &server_addr, "test_restore.txt"]);
+    cmd.args(["--ip", &server_addr, "test_restore.txt"]);
 
     let output = cmd.output().unwrap();
     assert!(output.status.success());

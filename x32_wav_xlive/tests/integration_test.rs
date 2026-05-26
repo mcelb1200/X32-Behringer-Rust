@@ -9,7 +9,7 @@ use tempfile::tempdir;
 fn create_test_wav(dir: &Path, name: &str, spec: WavSpec, duration_ms: u32) {
     let path = dir.join(name);
     let mut writer = WavWriter::create(&path, spec).unwrap();
-    let num_samples = (spec.sample_rate as u32 * duration_ms) / 1000;
+    let num_samples = (spec.sample_rate * duration_ms) / 1000;
     for _ in 0..num_samples {
         writer.write_sample(0i32).unwrap();
     }
@@ -53,7 +53,7 @@ fn test_cli_e2e() {
             let path = entry.unwrap().path();
             if path
                 .extension()
-                .map_or(false, |ext| ext == "wav" || ext == "WAV")
+                .is_some_and(|ext| ext == "wav" || ext == "WAV")
             {
                 Some(path)
             } else {

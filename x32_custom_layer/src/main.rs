@@ -783,6 +783,7 @@ mod tests {
         let args_int = vec![OscArg::String("/test/int".to_string()), OscArg::Int(42)];
         assert_eq!(format_node_state(&args_int).unwrap(), "/test/int 42");
 
+        #[allow(clippy::approx_constant)]
         let args_float = vec![
             OscArg::String("/test/float".to_string()),
             OscArg::Float(3.14),

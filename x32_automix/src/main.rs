@@ -344,7 +344,7 @@ mod tests {
 
     #[test]
     fn test_meters_parsing_safety() {
-        let data = vec![0u8; 8];
+        let data = [0u8; 8];
         let status = vec![(false, Instant::now()); 32];
         let mut count = 0;
 
