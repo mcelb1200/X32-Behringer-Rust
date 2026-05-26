@@ -1,5 +1,4 @@
 #[cfg(test)]
-#[allow(clippy::module_inception)]
 mod tests {
     use crate::{Mixer, MixerState};
     use osc_lib::{OscArg, OscMessage};
