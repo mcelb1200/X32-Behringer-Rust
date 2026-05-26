@@ -255,10 +255,13 @@ fn map_channel_address(prefix: &str, addr: &str) -> String {
         // This follows the C code logic assuming 1:1 mapping.
         if prefix.starts_with("/ch/") {
             let ch_str = &prefix[4..6]; // "01"
-            let parts: Vec<&str> = addr.split('/').collect();
-            if parts.len() >= 4 {
+            let mut parts = addr.split('/');
+            let _ = parts.next(); // ""
+            let _ = parts.next(); // "headamp"
+            let _ = parts.next(); // "000"
+            if let Some(part3) = parts.next() {
                 // "", "headamp", "000", "gain"
-                return format!("/headamp/{}/{}", ch_str, parts[3]);
+                return format!("/headamp/{}/{}", ch_str, part3);
             }
         }
         return String::new(); // Skip headamp for non-physical channels or if parsing fails

@@ -76,8 +76,17 @@ fn parse_scene_line_internal(parser: &mut SceneParser, line: &str) -> Vec<OscMes
     }
 
     let mut messages = Vec::new();
-    let parts: Vec<&str> = path.trim_start_matches('/').split('/').collect();
-    if parts.is_empty() {
+    let mut parts = [""; 8];
+    let mut num_parts = 0;
+    for part in path.trim_start_matches('/').split('/') {
+        if num_parts < 8 {
+            parts[num_parts] = part;
+            num_parts += 1;
+        } else {
+            break;
+        }
+    }
+    if num_parts == 0 {
         return messages;
     }
 
