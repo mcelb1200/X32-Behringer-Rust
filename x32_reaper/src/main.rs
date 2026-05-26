@@ -398,7 +398,7 @@ async fn process_x32_message(
     let mut cnum1 = -1;
 
     if msg.path.starts_with("/ch/") {
-        if let Some(part) = msg.path.split('/').nth(2) {
+        if let Some(part) = extract_nth_segment(&msg.path, 2) {
             if let Ok(raw) = part.parse::<i32>() {
                 cnum = raw;
                 if cnum <= config.bank_size && config.ch_bank_on {
@@ -408,28 +408,28 @@ async fn process_x32_message(
             }
         }
     } else if msg.path.starts_with("/auxin/") {
-        if let Some(part) = msg.path.split('/').nth(2) {
+        if let Some(part) = extract_nth_segment(&msg.path, 2) {
             if let Ok(raw) = part.parse::<i32>() {
                 cnum = raw; // Used for state indexing? Auxin doesn't use XMbanktracks in C code
                 cnum1 = raw + config.aux_min - 1;
             }
         }
     } else if msg.path.starts_with("/fxrtn/") {
-        if let Some(part) = msg.path.split('/').nth(2) {
+        if let Some(part) = extract_nth_segment(&msg.path, 2) {
             if let Ok(raw) = part.parse::<i32>() {
                 cnum = raw;
                 cnum1 = raw + config.fxr_min - 1;
             }
         }
     } else if msg.path.starts_with("/bus/") {
-        if let Some(part) = msg.path.split('/').nth(2) {
+        if let Some(part) = extract_nth_segment(&msg.path, 2) {
             if let Ok(raw) = part.parse::<i32>() {
                 cnum = raw;
                 cnum1 = raw + config.bus_min - 1;
             }
         }
     } else if msg.path.starts_with("/dca/") {
-        if let Some(part) = msg.path.split('/').nth(2) {
+        if let Some(part) = extract_nth_segment(&msg.path, 2) {
             if let Ok(raw) = part.parse::<i32>() {
                 cnum = raw;
                 cnum1 = raw + config.dca_min - 1;
@@ -534,7 +534,7 @@ async fn process_x32_message(
         if msg.path.contains("/level") {
             xr_mask = X32SEND;
             // /ch/%02d/mix/%02d/level
-            if let Some(part) = msg.path.split('/').nth(4) {
+            if let Some(part) = extract_nth_segment(&msg.path, 4) {
                 if let Ok(bus) = part.parse::<i32>() {
                     let reaper_bus = bus + config.track_send_offset;
                     if let Some(OscArg::Float(f)) = msg.args.first() {
@@ -663,7 +663,7 @@ async fn process_x32_message(
             }
         } else if msg.path.contains("solosw") {
             xr_mask = X32SOLO;
-            if let Some(part) = msg.path.split('/').nth(3) {
+            if let Some(part) = extract_nth_segment(&msg.path, 3) {
                 if let Ok(sw_idx) = part.parse::<i32>() {
                     if let Some(OscArg::Int(val)) = msg.args.first() {
                         let fval = if *val == 1 { 1.0 } else { 0.0 };
@@ -709,7 +709,7 @@ async fn process_x32_message(
                 }
             }
         } else if msg.path.contains("userpar") {
-            if let Some(part) = msg.path.split('/').nth(3) {
+            if let Some(part) = extract_nth_segment(&msg.path, 3) {
                 if let Ok(par_idx) = part.parse::<i32>() {
                     if let Some(OscArg::Int(val)) = msg.args.first() {
                         let sockets = Sockets {
@@ -994,7 +994,7 @@ async fn process_single_reaper_message(
     let mut state_guard = state.lock().await;
 
     if msg.path.starts_with("/track/") {
-        if let Some(part) = msg.path.split('/').nth(2) {
+        if let Some(part) = extract_nth_segment(&msg.path, 2) {
             if let Ok(tnum) = part.parse::<i32>() {
                 if msg.path.contains("/volume") {
                     xx_mask = TRACKFADER;
@@ -1746,4 +1746,28 @@ mod tests {
             .unwrap();
         }
     }
+}
+
+#[inline(always)]
+fn extract_nth_segment(path: &str, n: usize) -> Option<&str> {
+    let iter = path.as_bytes().iter().enumerate();
+    let mut slashes = 0;
+    let mut start_idx = 0;
+
+    for (i, &b) in iter {
+        if b == b'/' {
+            if slashes == n {
+                return Some(&path[start_idx..i]);
+            }
+            slashes += 1;
+            if slashes == n {
+                start_idx = i + 1;
+            }
+        }
+    }
+
+    if slashes == n && start_idx < path.len() {
+        return Some(&path[start_idx..]);
+    }
+    None
 }
