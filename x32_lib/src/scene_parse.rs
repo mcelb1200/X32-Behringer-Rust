@@ -430,64 +430,10 @@ pub(crate) fn parse_level(val: &str, nsteps: f32) -> Option<OscArg> {
     Some(OscArg::Float(fval))
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    #[allow(deprecated)]
-    fn test_parse_scene_line_string() {
-        let mut parser = SceneParser::new();
-        let msgs = parser.parse_scene_line("/ch/01/config/name \"Lead Vox\"");
-        assert_eq!(msgs.len(), 1);
-        assert_eq!(msgs[0].path, "/ch/01/config/name");
-        assert_eq!(msgs[0].args, vec![OscArg::String("Lead Vox".to_string())]);
-    }
-
-    #[test]
-    #[allow(deprecated)]
-    fn test_parse_scene_line_level() {
-        let mut parser = SceneParser::new();
-        let msgs = parser.parse_scene_line("/ch/01/mix/fader 0.5");
-        assert_eq!(msgs.len(), 1);
-        assert_eq!(msgs[0].path, "/ch/01/mix/fader");
-        assert!(matches!(msgs[0].args[0], OscArg::Float(_)));
-
-        let msgs_oo = parser.parse_scene_line("/ch/01/mix/fader -oo");
-        assert_eq!(msgs_oo.len(), 1);
-        assert_eq!(msgs_oo[0].args, vec![OscArg::Float(0.0)]);
-    }
-
-    #[test]
-    #[allow(deprecated)]
-    fn test_parse_scene_line_onoff() {
-        let mut parser = SceneParser::new();
-        let msgs = parser.parse_scene_line("/ch/01/mix/on ON");
-        assert_eq!(msgs.len(), 1);
-        assert_eq!(msgs[0].path, "/ch/01/mix/on");
-        assert_eq!(msgs[0].args, vec![OscArg::Int(1)]);
-    }
-
-    #[test]
-    #[allow(deprecated)]
-    fn test_parse_scene_line_chlink() {
-        let mut parser = SceneParser::new();
-        let msgs = parser.parse_scene_line("/config/chlink ON");
-        assert_eq!(msgs.len(), 16);
-        assert_eq!(msgs[0].path, "/config/chlink/1-2");
-        assert_eq!(msgs[0].args, vec![OscArg::Int(1)]);
-        assert_eq!(msgs[15].path, "/config/chlink/31-32");
-    }
-
-    #[test]
-    #[allow(deprecated)]
-    fn test_parse_scene_line_frequency() {
-        let mut parser = SceneParser::new();
-        let msgs = parser.parse_scene_line("/ch/01/eq/1/f 1k2");
-        assert_eq!(msgs.len(), 1);
-        assert_eq!(msgs[0].path, "/ch/01/eq/1/f");
-        assert!(matches!(msgs[0].args[0], OscArg::Float(_)));
-    }
+/// Parses space-separated string arguments into proper OscArgs for a given FX slot and type.
+pub(crate) fn parse_fx_par(slot: &str, fx_type: i32, args_str: &str) -> Option<OscMessage> {
+    let args: Vec<&str> = args_str.split_whitespace().collect();
+    let mut osc_args = Vec::new();
 
     #[test]
     fn test_parse_fx_par_hall() {
@@ -963,4 +909,59 @@ pub(crate) fn parse_fx_par(slot: &str, fx_type: i32, args_str: &str) -> Option<O
         path,
         args: osc_args,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    #[allow(deprecated)]
+    fn test_parse_scene_line_string() {
+        let msgs = parse_scene_line("/ch/01/config/name \"Lead Vox\"");
+        assert_eq!(msgs.len(), 1);
+        assert_eq!(msgs[0].path, "/ch/01/config/name");
+        assert_eq!(msgs[0].args, vec![OscArg::String("Lead Vox".to_string())]);
+    }
+
+    #[test]
+    #[allow(deprecated)]
+    fn test_parse_scene_line_level() {
+        let msgs = parse_scene_line("/ch/01/mix/fader 0.5");
+        assert_eq!(msgs.len(), 1);
+        assert_eq!(msgs[0].path, "/ch/01/mix/fader");
+        assert!(matches!(msgs[0].args[0], OscArg::Float(_)));
+
+        let msgs_oo = parse_scene_line("/ch/01/mix/fader -oo");
+        assert_eq!(msgs_oo.len(), 1);
+        assert_eq!(msgs_oo[0].args, vec![OscArg::Float(0.0)]);
+    }
+
+    #[test]
+    #[allow(deprecated)]
+    fn test_parse_scene_line_onoff() {
+        let msgs = parse_scene_line("/ch/01/mix/on ON");
+        assert_eq!(msgs.len(), 1);
+        assert_eq!(msgs[0].path, "/ch/01/mix/on");
+        assert_eq!(msgs[0].args, vec![OscArg::Int(1)]);
+    }
+
+    #[test]
+    #[allow(deprecated)]
+    fn test_parse_scene_line_chlink() {
+        let msgs = parse_scene_line("/config/chlink ON");
+        assert_eq!(msgs.len(), 16);
+        assert_eq!(msgs[0].path, "/config/chlink/1-2");
+        assert_eq!(msgs[0].args, vec![OscArg::Int(1)]);
+        assert_eq!(msgs[15].path, "/config/chlink/31-32");
+    }
+
+    #[test]
+    #[allow(deprecated)]
+    fn test_parse_scene_line_frequency() {
+        let msgs = parse_scene_line("/ch/01/eq/1/f 1k2");
+        assert_eq!(msgs.len(), 1);
+        assert_eq!(msgs[0].path, "/ch/01/eq/1/f");
+        assert!(matches!(msgs[0].args[0], OscArg::Float(_)));
+    }
 }

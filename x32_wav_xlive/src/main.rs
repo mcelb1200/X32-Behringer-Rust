@@ -403,7 +403,7 @@ mod tests {
     fn create_test_wav(dir: &Path, name: &str, spec: WavSpec, duration_ms: u32) {
         let path = dir.join(name);
         let mut writer = WavWriter::create(&path, spec).unwrap();
-        let num_samples = (spec.sample_rate as u32 * duration_ms) / 1000;
+        let num_samples = (spec.sample_rate * duration_ms) / 1000;
         for _ in 0..num_samples {
             // Write a 24-bit sample
             writer.write_sample(0i32).unwrap();
@@ -541,7 +541,7 @@ mod tests {
             .unwrap()
             .filter_map(|entry| {
                 let path = entry.unwrap().path();
-                if path.extension().map_or(false, |ext| ext == "wav") {
+                if path.extension().is_some_and(|ext| ext == "wav") {
                     Some(path)
                 } else {
                     None
