@@ -86,7 +86,11 @@ impl AppState {
     pub fn parse_meter_blob(data: &[u8]) -> Option<f32> {
         if data.len() >= 16 {
             let mut f_bytes = [0u8; 4];
-            f_bytes.copy_from_slice(&data[12..16]);
+            if let Some(slice) = data.get(12..16) {
+                f_bytes.copy_from_slice(slice);
+            } else {
+                return None;
+            }
             Some(f32::from_le_bytes(f_bytes))
         } else {
             None
@@ -181,7 +185,7 @@ mod tests {
         let fval = app.process_meter_data(0.8, start + Duration::from_millis(1000));
         assert!(app.was_above_threshold);
         assert!(fval.is_some());
-        let val = fval.unwrap();
+        let val = fval.unwrap_or(0.0);
         assert!((val - 0.3333333).abs() < 0.0001);
         assert_eq!(app.current_delay_ms, Some(1000));
 
