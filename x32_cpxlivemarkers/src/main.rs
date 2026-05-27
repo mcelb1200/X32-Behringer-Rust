@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use byteorder::{LittleEndian, ReadBytesExt};
 use clap::{Parser, ValueEnum};
 use std::fs::File;
@@ -42,10 +42,7 @@ pub fn format_marker(
     let pos = marker_pos_samples as f64 / samprate as f64;
 
     match format {
-        Format::Reaper => Ok(format!(
-            "{} {:.6} {}{} 0 -1.0 0",
-            index, pos, prefix, index
-        )),
+        Format::Reaper => Ok(format!("{} {:.6} {}{} 0 -1.0 0", index, pos, prefix, index)),
         Format::Audition => {
             let hh = (pos / 3600.0) as u32;
             let mm = ((pos % 3600.0) / 60.0) as u32;
