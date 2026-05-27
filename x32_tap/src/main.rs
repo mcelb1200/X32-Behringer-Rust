@@ -232,7 +232,7 @@ async fn main() -> Result<()> {
         let mut last_tap: Option<Instant> = None;
         let mut stdin = tokio::io::BufReader::new(tokio::io::stdin());
         use tokio::io::{AsyncBufReadExt, AsyncReadExt};
-        let mut input_buffer = String::new();
+        let mut input_buffer = Vec::new();
 
         loop {
             print!("> ");
@@ -241,13 +241,42 @@ async fn main() -> Result<()> {
 
             // Limit the amount of bytes read to 4096 to prevent memory DoS on large inputs
             let mut take_reader = (&mut stdin).take(4096);
-            let bytes_read = take_reader.read_line(&mut input_buffer).await?;
+            let bytes_read = take_reader.read_until(b'\n', &mut input_buffer).await?;
+
             if bytes_read == 0 && input_buffer.is_empty() {
                 // EOF reached
                 break;
             }
 
-            let input = input_buffer.trim();
+            if bytes_read == 4096 && !input_buffer.ends_with(b"\n") {
+                // Line too long, discard remainder
+                let mut discard = Vec::with_capacity(1024);
+                loop {
+                    discard.clear();
+                    let mut chunk_handle = (&mut stdin).take(1024);
+                    match chunk_handle.read_until(b'\n', &mut discard).await {
+                        Ok(0) => break,
+                        Err(_) => break,
+                        Ok(_) => {
+                            if discard.ends_with(b"\n") {
+                                break;
+                            }
+                        }
+                    }
+                }
+                eprintln!("Input line too long, discarded.");
+                continue;
+            }
+
+            let input_str = match std::str::from_utf8(&input_buffer) {
+                Ok(s) => s,
+                Err(_) => {
+                    eprintln!("Invalid UTF-8 sequence in input, discarded.");
+                    continue;
+                }
+            };
+
+            let input = input_str.trim();
 
             if input.eq_ignore_ascii_case("q") {
                 break;
