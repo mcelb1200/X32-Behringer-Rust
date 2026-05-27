@@ -33,6 +33,47 @@ struct Args {
     note: Option<String>,
 }
 
+fn read_stdin_line() -> Result<String> {
+    let stdin = io::stdin();
+    let mut stdin_lock = stdin.lock();
+    loop {
+        let mut byte_buf = Vec::new();
+        let mut handle = stdin_lock.by_ref().take(4096);
+        match handle.read_until(b'\n', &mut byte_buf) {
+            Ok(0) => return Ok(String::new()),
+            Err(e) => return Err(e.into()),
+            Ok(len) => {
+                if len == 4096 && !byte_buf.ends_with(b"\n") {
+                    let mut discard = Vec::with_capacity(1024);
+                    loop {
+                        discard.clear();
+                        let mut chunk_handle = stdin_lock.by_ref().take(1024);
+                        match chunk_handle.read_until(b'\n', &mut discard) {
+                            Ok(0) => break,
+                            Err(e) => return Err(e.into()),
+                            Ok(_) => {
+                                if discard.ends_with(b"\n") {
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    eprintln!("Input line too long, discarded. Please try again.");
+                    continue;
+                }
+            }
+        }
+
+        match std::str::from_utf8(&byte_buf) {
+            Ok(s) => return Ok(s.trim().to_string()),
+            Err(_) => {
+                eprintln!("Invalid UTF-8 sequence in input, discarded. Please try again.");
+                continue;
+            }
+        }
+    }
+}
+
 /// The main entry point for the application.
 fn main() -> Result<()> {
     let args = Args::parse();
@@ -42,9 +83,7 @@ fn main() -> Result<()> {
         Some(name) => name,
         None => {
             println!("Please enter scene name: ");
-            let mut name = String::new();
-            io::stdin().lock().take(4096).read_line(&mut name)?;
-            name.trim().to_string()
+            read_stdin_line()?
         }
     };
 
@@ -52,9 +91,7 @@ fn main() -> Result<()> {
         Some(note) => note,
         None => {
             println!("Please enter note data: ");
-            let mut note = String::new();
-            io::stdin().lock().take(4096).read_line(&mut note)?;
-            note.trim().to_string()
+            read_stdin_line()?
         }
     };
 
