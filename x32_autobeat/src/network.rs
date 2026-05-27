@@ -163,12 +163,11 @@ impl NetworkManager {
                 }
             }
         } else if msg.path.starts_with("/fx/") && msg.path.ends_with("/type") {
-            // ⚡ Bolt: Prevent Vec<char> heap allocation in hot network loop by using
-            // direct byte indexing, since the OSC path is guaranteed to be ASCII and
-            // the digit is predictably at index 4 (e.g. "/fx/1/type").
-            if let Some(b) = msg.path.as_bytes().get(4) {
-                if b.is_ascii_digit() {
-                    let slot = (b - b'0') as usize;
+            // Path is /fx/n/type
+            let chars: Vec<char> = msg.path.chars().collect();
+            if chars.len() >= 5 {
+                if let Some(digit) = chars[4].to_digit(10) {
+                    let slot = digit as usize;
                     if let Some(osc_lib::OscArg::String(s)) = msg.args.first() {
                         let _ = sender.send(NetworkEvent::EffectLoaded(slot, s.clone()));
                     }
