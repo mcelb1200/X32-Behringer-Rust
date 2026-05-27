@@ -80,7 +80,7 @@ async fn run_network(app: Arc<Mutex<AppState>>, mut rx: mpsc::Receiver<OscMessag
 
     loop {
         let (ip, is_auto, channel) = {
-            let state = app.lock().unwrap();
+            let state = app.lock().unwrap_or_else(|e| e.into_inner());
             (state.ip_input.clone(), state.is_auto, state.channel)
         };
 
@@ -139,13 +139,13 @@ async fn run_network(app: Arc<Mutex<AppState>>, mut rx: mpsc::Receiver<OscMessag
                     if let Ok(Ok((len, _))) = result {
                         if let Ok(msg) = OscMessage::from_bytes(&buf[..len]) {
                             if msg.path == "/info" {
-                                app.lock().unwrap().is_connected = true;
-                                app.lock().unwrap().log("Connected!".to_string());
+                                app.lock().unwrap_or_else(|e| e.into_inner()).is_connected = true;
+                                app.lock().unwrap_or_else(|e| e.into_inner()).log("Connected!".to_string());
                             } else if msg.path == "/meters/6" {
                                 if let Some(OscArg::Blob(data)) = msg.args.first() {
                                     if let Some(level) = AppState::parse_meter_blob(data) {
                                         let maybe_msg = {
-                                            let mut state = app.lock().unwrap();
+                                            let mut state = app.lock().unwrap_or_else(|e| e.into_inner());
                                             if state.is_auto {
                                                 let now = Instant::now();
                                                 if let Some(f_val) = state.process_meter_data(level, now) {
@@ -171,7 +171,7 @@ async fn run_network(app: Arc<Mutex<AppState>>, mut rx: mpsc::Receiver<OscMessag
                                 }
                             } else if msg.path.starts_with("/fx/") && msg.path.ends_with("/type") {
                                 if let Some(OscArg::Int(t)) = msg.args.first() {
-                                    app.lock().unwrap().delay_type = format!("Type ID: {}", t);
+                                    app.lock().unwrap_or_else(|e| e.into_inner()).delay_type = format!("Type ID: {}", t);
                                 }
                             }
                         }
@@ -195,7 +195,7 @@ async fn run_app<B: Backend>(
     let tick_rate = Duration::from_millis(250);
 
     loop {
-        let mut app_state = app.lock().unwrap();
+        let mut app_state = app.lock().unwrap_or_else(|e| e.into_inner());
         terminal.draw(|f| ui(f, &app_state))?;
 
         let timeout = tick_rate

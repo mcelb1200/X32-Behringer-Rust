@@ -171,7 +171,11 @@ async fn main() -> Result<()> {
                             if data.len() >= 16 {
                                 let mut f_bytes = [0u8; 4];
                                 // Rust OSC blobs usually come out as raw bytes. The float at offset 12:
-                                f_bytes.copy_from_slice(&data[12..16]);
+                                if let Some(slice) = data.get(12..16) {
+                                    f_bytes.copy_from_slice(slice);
+                                } else {
+                                    continue;
+                                }
                                 // X32 sends floats in Little Endian in blobs.
                                 let level = f32::from_le_bytes(f_bytes);
 
