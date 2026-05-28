@@ -1,8 +1,8 @@
 use anyhow::{Context, Result};
 use byteorder::ReadBytesExt;
 use clap::Parser;
-use std::io::{self, Cursor, Read, Write};
 use std::fs::File;
+use std::io::{self, Cursor, Read, Write};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -122,7 +122,10 @@ fn dump_osc_buffer(buf: &[u8], debug: bool, out: &mut impl Write) -> Result<()> 
                             if data + 4 <= len {
                                 let mut inner_cursor = Cursor::new(&buf[data..data + 4]);
                                 // Next 4 bytes read forwards into `c1[k++]`. So LittleEndian.
-                                let n_elements = inner_cursor.read_i32::<byteorder::LittleEndian>().unwrap_or(0) as usize;
+                                let n_elements = inner_cursor
+                                    .read_i32::<byteorder::LittleEndian>()
+                                    .unwrap_or(0)
+                                    as usize;
                                 data += 4;
 
                                 if n == n_elements {
@@ -144,7 +147,9 @@ fn dump_osc_buffer(buf: &[u8], debug: bool, out: &mut impl Write) -> Result<()> 
                                         for j in 0..elements {
                                             if data + 2 <= len {
                                                 let mut cur2 = Cursor::new(&buf[data..data + 2]);
-                                                let val = cur2.read_i16::<byteorder::LittleEndian>().unwrap_or(0);
+                                                let val = cur2
+                                                    .read_i16::<byteorder::LittleEndian>()
+                                                    .unwrap_or(0);
                                                 let f1 = (val as f32) / 256.0;
                                                 write!(out, "[{}] {:07.2} ", j, f1)?;
                                                 data += 2;
@@ -158,7 +163,9 @@ fn dump_osc_buffer(buf: &[u8], debug: bool, out: &mut impl Write) -> Result<()> 
                                         for j in 0..elements {
                                             if data + 2 <= len {
                                                 let mut cur2 = Cursor::new(&buf[data..data + 2]);
-                                                let val = cur2.read_i16::<byteorder::LittleEndian>().unwrap_or(0);
+                                                let val = cur2
+                                                    .read_i16::<byteorder::LittleEndian>()
+                                                    .unwrap_or(0);
                                                 if j < 32 {
                                                     let f1 = (val as f32) / 32767.0;
                                                     write!(out, "[{}: G {:07.2}] ", j, f1)?;
@@ -193,7 +200,9 @@ fn dump_osc_buffer(buf: &[u8], debug: bool, out: &mut impl Write) -> Result<()> 
                                         for _ in 0..elements {
                                             if data + 4 <= len {
                                                 let mut cur2 = Cursor::new(&buf[data..data + 4]);
-                                                let val = cur2.read_f32::<byteorder::LittleEndian>().unwrap_or(0.0);
+                                                let val = cur2
+                                                    .read_f32::<byteorder::LittleEndian>()
+                                                    .unwrap_or(0.0);
                                                 write!(out, "{:06.2} ", val)?;
                                                 data += 4;
                                             } else {
@@ -235,8 +244,9 @@ fn main() -> Result<()> {
         let file = File::open(path).context("Failed to open file")?;
         // Protect against unbounded reads
         let metadata = file.metadata()?;
-        if metadata.len() > 1024 * 1024 * 10 { // 10 MB limit for raw dumps
-             return Err(anyhow::anyhow!("File too large"));
+        if metadata.len() > 1024 * 1024 * 10 {
+            // 10 MB limit for raw dumps
+            return Err(anyhow::anyhow!("File too large"));
         }
         file.take(1024 * 1024 * 10 + 1).read_to_end(&mut buf)?;
         if buf.len() > 1024 * 1024 * 10 {
@@ -244,7 +254,9 @@ fn main() -> Result<()> {
         }
     } else {
         // Read from stdin
-        io::stdin().read_to_end(&mut buf).context("Failed to read from standard input")?;
+        io::stdin()
+            .read_to_end(&mut buf)
+            .context("Failed to read from standard input")?;
     }
 
     process_buffer(&buf, args.debug)?;
@@ -281,7 +293,10 @@ mod tests {
         dump_osc_buffer(&buf, false, &mut out).unwrap();
 
         let out_str = String::from_utf8_lossy(&out).into_owned();
-        assert_eq!(out_str, "/meters/15~~,b~~  2 rta: \n[0] 0001.00 [1] -001.00 \n");
+        assert_eq!(
+            out_str,
+            "/meters/15~~,b~~  2 rta: \n[0] 0001.00 [1] -001.00 \n"
+        );
     }
 
     #[test]
@@ -310,6 +325,9 @@ mod tests {
         dump_osc_buffer(&buf, false, &mut out).unwrap();
 
         let out_str = String::from_utf8_lossy(&out).into_owned();
-        assert_eq!(out_str, "/meters/16~~,b~~M/16: 2 shorts\n[0: G 0001.00] [1: G -001.00] \n\n");
+        assert_eq!(
+            out_str,
+            "/meters/16~~,b~~M/16: 2 shorts\n[0: G 0001.00] [1: G -001.00] \n\n"
+        );
     }
 }
