@@ -2347,6 +2347,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "x32_dump"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "assert_cmd",
+ "byteorder",
+ "clap",
+ "osc_lib",
+ "tempfile",
+]
+
+[[package]]
 name = "x32_emulator"
 version = "0.1.0"
 dependencies = [
