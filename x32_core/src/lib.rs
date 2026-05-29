@@ -655,8 +655,21 @@ impl Mixer {
                 if osc_msg.path.starts_with("/-stat/solosw/") {
                     let mut any_solo = 0;
                     // Bounded check of the 80 solosw switches to avoid O(N) map iteration
-                    for i in 1..=80 {
-                        let key = format!("/-stat/solosw/{:02}", i);
+
+                    // Pre-allocate and reuse a string buffer for generating keys
+                    // Avoids 80 String allocations for hot solo updates
+                    let mut key = String::with_capacity(18);
+                    key.push_str("/-stat/solosw/");
+
+                    for i in 1..=80_u8 {
+                        key.truncate(14);
+                        if i < 10 {
+                            key.push('0');
+                            key.push((b'0' + i) as char);
+                        } else {
+                            key.push((b'0' + (i / 10)) as char);
+                            key.push((b'0' + (i % 10)) as char);
+                        }
                         if let Some(v) = self.state.get(&key) {
                             match v {
                                 OscArg::Int(val) if *val != 0 => {
