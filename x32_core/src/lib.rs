@@ -334,9 +334,7 @@ impl Mixer {
                     .state
                     .values
                     .iter()
-                    .filter(|(k, _)| {
-                        **k == search_path || k.starts_with(&search_path_slash)
-                    })
+                    .filter(|(k, _)| **k == search_path || k.starts_with(&search_path_slash))
                     .collect();
 
                 matches.sort_by_key(|(k, _)| *k);
