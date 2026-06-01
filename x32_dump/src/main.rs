@@ -1,9 +1,9 @@
 use anyhow::Result;
+use byteorder::{LittleEndian, ReadBytesExt};
 use clap::Parser;
+use osc_lib::{OscArg, OscMessage};
 use std::fs::File;
 use std::io::{self, Read};
-use osc_lib::{OscMessage, OscArg};
-use byteorder::{ReadBytesExt, LittleEndian};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -16,7 +16,13 @@ struct Args {
 fn dump_osc_message(msg: &OscMessage) {
     let mut out = String::new();
     // format like Xdump.c:
-    out.push_str(&format!("{}, {:4} B: ", msg.path, OscMessage::serialize_to_bytes(&msg.path, &msg.args).unwrap_or_default().len()));
+    out.push_str(&format!(
+        "{}, {:4} B: ",
+        msg.path,
+        OscMessage::serialize_to_bytes(&msg.path, &msg.args)
+            .unwrap_or_default()
+            .len()
+    ));
 
     // We emulate Xdump.c printing logic:
     // It prints comma
@@ -72,12 +78,19 @@ fn dump_osc_message(msg: &OscMessage) {
                         for j in 0..(n - 8) {
                             if let Ok(s) = cursor.read_i16::<LittleEndian>() {
                                 let f = (s as f32) / 32767.0;
-                                if j < 32 { out.push_str(&format!("[{}: G {:07.2}] ", j, f)); }
-                                else if j < 64 { out.push_str(&format!("[{}: C {:07.2}] ", j, f)); }
-                                else if j < 80 { out.push_str(&format!("[{}: B {:07.2}] ", j, f)); }
-                                else if j < 86 { out.push_str(&format!("[{}: M {:07.2}] ", j, f)); }
-                                else if j == 86 { out.push_str(&format!("[{}:LR {:07.2}] ", j, f)); }
-                                else if j == 87 { out.push_str(&format!("[{}:MC {:07.2}] ", j, f)); }
+                                if j < 32 {
+                                    out.push_str(&format!("[{}: G {:07.2}] ", j, f));
+                                } else if j < 64 {
+                                    out.push_str(&format!("[{}: C {:07.2}] ", j, f));
+                                } else if j < 80 {
+                                    out.push_str(&format!("[{}: B {:07.2}] ", j, f));
+                                } else if j < 86 {
+                                    out.push_str(&format!("[{}: M {:07.2}] ", j, f));
+                                } else if j == 86 {
+                                    out.push_str(&format!("[{}:LR {:07.2}] ", j, f));
+                                } else if j == 87 {
+                                    out.push_str(&format!("[{}:MC {:07.2}] ", j, f));
+                                }
                             } else {
                                 break;
                             }

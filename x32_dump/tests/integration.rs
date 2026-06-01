@@ -1,7 +1,7 @@
-use std::io::Write;
-use tempfile::NamedTempFile;
-use std::process::Command;
 use assert_cmd::prelude::*;
+use std::io::Write;
+use std::process::Command;
+use tempfile::NamedTempFile;
 
 #[test]
 fn test_x32_dump_consecutive_messages() {
@@ -24,6 +24,5 @@ fn test_x32_dump_consecutive_messages() {
     let mut cmd = Command::cargo_bin("x32_dump").unwrap();
     cmd.arg(file.path());
 
-    cmd.assert()
-        .success();
+    cmd.assert().success();
 }
