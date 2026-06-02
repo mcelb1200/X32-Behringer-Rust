@@ -14,8 +14,8 @@
 use anyhow::{Context, Result};
 use clap::Parser;
 use osc_lib::{OscArg, OscMessage};
-use std::net::SocketAddr;
 use std::fmt::Write;
+use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::net::UdpSocket;
 use tokio::sync::Mutex;
