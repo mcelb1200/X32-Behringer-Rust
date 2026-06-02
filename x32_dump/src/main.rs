@@ -130,9 +130,14 @@ fn dump_osc_message(msg: &OscMessage) {
     println!("{}", out);
 }
 
-fn process_stream<R: Read>(mut reader: R) -> Result<()> {
+fn process_stream<R: Read>(reader: R) -> Result<()> {
     let mut buffer = Vec::new();
-    reader.read_to_end(&mut buffer)?;
+    let limit = 10 * 1024 * 1024; // 10MB limit to prevent OOM DoS
+    reader.take(limit + 1).read_to_end(&mut buffer)?;
+
+    if buffer.len() > limit as usize {
+        anyhow::bail!("Input exceeds maximum allowed size (10MB)");
+    }
 
     let mut offset = 0;
     while offset < buffer.len() {
