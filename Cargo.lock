@@ -2384,6 +2384,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "x32_fxparse"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "osc_lib",
+]
+
+[[package]]
 name = "x32_geq2_cpy"
 version = "0.1.0"
 dependencies = [
