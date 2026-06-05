@@ -304,11 +304,7 @@ async fn main() -> anyhow::Result<()> {
                             "Match found for: {}. Triggering: {}",
                             incoming_msg.path, command.outgoing_command
                         );
-                        match expand_template(
-                            &command.outgoing_command,
-                            &mparam,
-                            &mut calc,
-                        ) {
+                        match expand_template(&command.outgoing_command, &mparam, &mut calc) {
                             Ok(expanded) => {
                                 if let Ok(outgoing_msg) = OscMessage::from_str(&expanded) {
                                     if let Some(ref target_socket) = out_socket {
@@ -330,11 +326,7 @@ async fn main() -> anyhow::Result<()> {
                             "Match found for: {}. Triggering MIDI: {}",
                             incoming_msg.path, command.outgoing_command
                         );
-                        match expand_template(
-                            &command.outgoing_command,
-                            &mparam,
-                            &mut calc,
-                        ) {
+                        match expand_template(&command.outgoing_command, &mparam, &mut calc) {
                             Ok(expanded) => {
                                 if let Ok(bytes) = parse_midi_hex(&expanded) {
                                     if let Some(ref mut conn) = midi_conn {

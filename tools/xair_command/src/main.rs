@@ -44,9 +44,7 @@ async fn main() -> Result<()> {
 
     let port = std::env::var("XAIR_PORT").unwrap_or_else(|_| "10024".to_string());
     let target_addr = format!("{}:{}", args.ip, port);
-    let _addr: SocketAddr = target_addr
-        .parse()
-        .context("Invalid IP address")?;
+    let _addr: SocketAddr = target_addr.parse().context("Invalid IP address")?;
 
     let client = MixerClient::connect(&target_addr, true).await?;
 

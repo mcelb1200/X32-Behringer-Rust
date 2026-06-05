@@ -18,13 +18,13 @@ struct Args {
 #[tokio::main]
 async fn main() -> Result<()> {
     let args = Args::parse();
-    
+
     let ip = if args.ip.contains(':') {
         args.ip.clone()
     } else {
         format!("{}:10024", args.ip)
     };
-    
+
     let client = MixerClient::connect(&ip, false).await?;
 
     let stdin = io::stdin();
