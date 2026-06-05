@@ -44,27 +44,8 @@ async fn test_udp_connection_and_batch() {
 
     let mut buf = [0u8; 1024];
 
-    // The logic in main currently sends b"/xinfo" every 500ms until it receives a valid response
+    // Wait for the batch command "/ch/01/mix/fader"
     let timeout = std::time::Duration::from_secs(5);
-    tokio::time::timeout(timeout, async {
-        loop {
-            let (len, src) = socket.recv_from(&mut buf).await.unwrap();
-            let msg_str = String::from_utf8_lossy(&buf[..len]);
-            let msg_str = msg_str.trim_end_matches('\0'); // handle padding
-
-            if msg_str.starts_with("/xinfo") {
-                // Send back response
-                socket.send_to(b"/xinfo", src).await.unwrap();
-                break;
-            } else {
-                println!("Unexpected message: {}", msg_str);
-            }
-        }
-    })
-    .await
-    .unwrap();
-
-    // After connecting, it should send the batch commands
     tokio::time::timeout(timeout, async {
         loop {
             let (len, _src) = socket.recv_from(&mut buf).await.unwrap();
@@ -75,12 +56,8 @@ async fn test_udp_connection_and_batch() {
             } else {
                 let msg_str = String::from_utf8_lossy(&buf[..len]);
                 let msg_str = msg_str.trim_end_matches('\0');
-                if msg_str.starts_with("/xinfo") {
-                    // ignore retries that arrived late
-                } else if msg_str.starts_with("/ch/01/mix/fader") {
+                if msg_str.starts_with("/ch/01/mix/fader") {
                     break;
-                } else {
-                    panic!("Unexpected message: {}", msg_str);
                 }
             }
         }

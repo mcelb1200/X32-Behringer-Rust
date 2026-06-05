@@ -326,14 +326,15 @@ impl Mixer {
             if let Some(OscArg::String(node_path)) = osc_msg.args.first() {
                 let search_path = format!("/{}", node_path);
 
+                // ⚡ Bolt: Hoist string formatting outside the filter loop to prevent O(N) allocations
+                let search_path_slash = format!("{}/", search_path);
+
                 // Collect and sort matching keys
                 let mut matches: Vec<(&String, &OscArg)> = self
                     .state
                     .values
                     .iter()
-                    .filter(|(k, _)| {
-                        **k == search_path || k.starts_with(&format!("{}/", search_path))
-                    })
+                    .filter(|(k, _)| **k == search_path || k.starts_with(&search_path_slash))
                     .collect();
 
                 matches.sort_by_key(|(k, _)| *k);
@@ -341,10 +342,12 @@ impl Mixer {
                 if !matches.is_empty() {
                     let mut result = node_path.clone();
                     for (_, v) in matches {
+                        use std::fmt::Write;
+                        // ⚡ Bolt: Use write! to append values to result string directly without intermediate string allocations
                         match v {
-                            OscArg::Int(i) => result.push_str(&format!(" {}", i)),
-                            OscArg::Float(f) => result.push_str(&format!(" {}", f)),
-                            OscArg::String(s) => result.push_str(&format!(" \"{}\"", s)),
+                            OscArg::Int(i) => write!(result, " {}", i).unwrap(),
+                            OscArg::Float(f) => write!(result, " {}", f).unwrap(),
+                            OscArg::String(s) => write!(result, " \"{}\"", s).unwrap(),
                             OscArg::Blob(_) => result.push_str(" ~blob~"),
                         }
                     }
@@ -618,6 +621,10 @@ impl Mixer {
             return Ok(responses);
         }
 
+        // Note: The `/add` and `/load` commands are intentionally implemented as dummy stubs.
+        // They return an OSC success value (`1`) with the requested item type to satisfy
+        // remote clients that expect a response, but they do not modify the emulator's state.
+        // This formalizes the legacy "TODO: do a proper implementation" behavior from C.
         if osc_msg.path == "/add" || osc_msg.path == "/load" {
             if let Some(OscArg::String(ref item_type)) = osc_msg.args.first() {
                 let arg1 = OscArg::String(item_type.clone());
@@ -650,9 +657,23 @@ impl Mixer {
                 // If a solosw was changed, update the global solo indicator
                 if osc_msg.path.starts_with("/-stat/solosw/") {
                     let mut any_solo = 0;
+
+                    // ⚡ Bolt: Pre-allocate a string and mutate it in-place to avoid 80 heap allocations per solosw change
+                    let mut key = String::with_capacity(32);
+                    key.push_str("/-stat/solosw/");
+                    let base_len = key.len();
+
                     // Bounded check of the 80 solosw switches to avoid O(N) map iteration
                     for i in 1..=80 {
-                        let key = format!("/-stat/solosw/{:02}", i);
+                        key.truncate(base_len);
+                        if i < 10 {
+                            key.push('0');
+                            key.push((b'0' + i as u8) as char);
+                        } else {
+                            key.push((b'0' + (i / 10) as u8) as char);
+                            key.push((b'0' + (i % 10) as u8) as char);
+                        }
+
                         if let Some(v) = self.state.get(&key) {
                             match v {
                                 OscArg::Int(val) if *val != 0 => {

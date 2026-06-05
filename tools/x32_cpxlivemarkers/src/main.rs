@@ -1,104 +1,163 @@
-use anyhow::{Context, Result, bail};
+use anyhow::{Result, anyhow};
 use byteorder::{LittleEndian, ReadBytesExt};
 use clap::{Parser, ValueEnum};
 use std::fs::File;
-use std::io::{Seek, SeekFrom};
+use std::io::{Read, Seek, SeekFrom};
 use std::path::PathBuf;
+use std::process;
 
-/// Formats for marker output
-#[derive(Clone, Debug, ValueEnum, PartialEq)]
-enum Format {
-    /// REAPER format
+#[derive(Parser)]
+#[command(author, version, about = "Reads markers from an XLive! session/SE_LOG.BIN file", long_about = None)]
+pub struct Cli {
+    /// The path to the SE_LOG.BIN file
+    #[arg(value_name = "FILE")]
+    pub file: PathBuf,
+
+    /// Output format (reaper or audition)
+    #[arg(short, long, value_enum, default_value_t = Format::Reaper)]
+    pub format: Format,
+
+    /// Prefix to use for marker names
+    #[arg(short, long, default_value = "")]
+    pub prefix: String,
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
+pub enum Format {
     Reaper,
-    /// Audition format
     Audition,
 }
 
-/// Reads markers from an X-Live! session/SE_LOG.BIN file and prints data to stdout.
-#[derive(Parser, Debug)]
-#[command(author, version, about, long_about = None)]
-struct Args {
-    /// Path to the SE_LOG.BIN file.
-    input: PathBuf,
-
-    /// Output format.
-    #[arg(short, long, value_enum, default_value_t = Format::Reaper)]
+pub fn format_marker(
     format: Format,
+    index: u32,
+    marker_pos_samples: u32,
+    samprate: u32,
+    prefix: &str,
+) -> Result<String> {
+    if samprate == 0 {
+        return Err(anyhow!("Invalid sample rate (0)"));
+    }
 
-    /// Marker prefix.
-    #[arg(short, long, default_value = "")]
-    prefix: String,
+    let pos = marker_pos_samples as f64 / samprate as f64;
+
+    match format {
+        Format::Reaper => Ok(format!("{} {:.6} {}{} 0 -1.0 0", index, pos, prefix, index)),
+        Format::Audition => {
+            let hh = (pos / 3600.0) as u32;
+            let mm = ((pos % 3600.0) / 60.0) as u32;
+            let ss = (pos % 60.0) as u32;
+            let ff = ((pos - pos.floor()) * 100.0 / 4.0) as u32;
+            Ok(format!(
+                "{}{}, {:02}:{:02}:{:02}:{:02}, 00:00:00:00, 25fps, Cue, -",
+                prefix, index, hh, mm, ss, ff
+            ))
+        }
+    }
 }
 
-fn main() -> Result<()> {
-    let args = Args::parse();
-
-    let mut file = File::open(&args.input)
-        .with_context(|| format!("Failed to open file: {}", args.input.display()))?;
-
-    // Check file size to prevent OOM / DoS from reading huge invalid files
-    let metadata = file.metadata()?;
-    let len = metadata.len();
-
-    // SE_LOG.BIN is expected to be around 2048 bytes
-    if len < 2048 {
-        bail!("File is too small to be a valid SE_LOG.BIN file");
-    }
-
-    if len > 1024 * 1024 {
-        bail!("File is too large to be a valid SE_LOG.BIN file");
-    }
-
-    // Offset 8: sample rate
+pub fn process_file<R: Read + Seek>(mut file: R, cli: &Cli) -> Result<Vec<String>> {
     file.seek(SeekFrom::Start(8))?;
     let samprate = file.read_u32::<LittleEndian>()?;
 
     if samprate == 0 {
-        bail!("Invalid sample rate (0) in SE_LOG.BIN file");
+        return Err(anyhow!("Invalid sample rate (0)"));
     }
 
-    // Offset 20: number of markers
     file.seek(SeekFrom::Start(20))?;
-    let nbmarker = file.read_u32::<LittleEndian>()?;
+    let mut nbmarker = file.read_u32::<LittleEndian>()?;
 
     if nbmarker == 0 {
-        println!("No Markers");
-        return Ok(());
+        return Ok(vec![]);
     }
 
-    // Security: Prevent OOM/DoS by bounding the number of markers to 500
-    // (a realistic max for a 2048-byte SE_LOG.BIN where markers start at 1052)
     if nbmarker > 500 {
-        bail!("Too many markers declared (max 500)");
+        nbmarker = 500; // Bound to prevent DoS
     }
 
-    // Markers start at offset 1052
     file.seek(SeekFrom::Start(1052))?;
 
-    let prefix = args.prefix.chars().take(5).collect::<String>();
-
+    let mut output = Vec::new();
     for i in 1..=nbmarker {
         let marker = file.read_u32::<LittleEndian>()?;
-        let xmk = marker as f64 / samprate as f64;
+        let formatted = format_marker(cli.format, i, marker, samprate, &cli.prefix)?;
+        output.push(formatted);
+    }
 
-        match args.format {
-            Format::Reaper => {
-                println!("{} {:.6} {}{} 0 -1.0 0", i, xmk, prefix, i);
-            }
-            Format::Audition => {
-                let xmk_int = xmk as i32;
-                let xmkh = xmk_int / 3600;
-                let xmkm = (xmk_int / 60) % 60;
-                let xmks = xmk_int % 60;
-                let xmkt = ((xmk - xmk_int as f64) * 100.0 / 4.0) as i32; // conversion for 25fps
+    Ok(output)
+}
 
-                println!(
-                    "{}{}, {:02}:{:02}:{:02}:{:02}, 00:00:00:00, 25fps, Cue, -",
-                    prefix, i, xmkh, xmkm, xmks, xmkt
-                );
-            }
+fn main() -> Result<()> {
+    let cli = Cli::parse();
+
+    let mut file = match File::open(&cli.file) {
+        Ok(file) => file,
+        Err(_) => {
+            eprintln!("Failed to open file: {}", cli.file.display());
+            process::exit(1);
+        }
+    };
+
+    let metadata = match file.metadata() {
+        Ok(m) => m,
+        Err(_) => {
+            eprintln!("Failed to open file: {}", cli.file.display());
+            process::exit(1);
+        }
+    };
+
+    if metadata.len() < 2048 {
+        eprintln!("File is too small to be a valid SE_LOG.BIN file");
+        process::exit(1);
+    }
+
+    let markers = match process_file(&mut file, &cli) {
+        Ok(m) => m,
+        Err(e) => {
+            eprintln!("Error processing file: {}", e);
+            process::exit(1);
+        }
+    };
+
+    if markers.is_empty() {
+        println!("No Markers");
+    } else {
+        for marker in markers {
+            println!("{}", marker);
         }
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_format_reaper() {
+        let res = format_marker(Format::Reaper, 1, 48000, 48000, "M").unwrap();
+        assert_eq!(res, "1 1.000000 M1 0 -1.0 0");
+
+        let res2 = format_marker(Format::Reaper, 2, 96000, 48000, "M").unwrap();
+        assert_eq!(res2, "2 2.000000 M2 0 -1.0 0");
+    }
+
+    #[test]
+    fn test_format_audition() {
+        let res = format_marker(Format::Audition, 1, 48000 * 3661, 48000, "C").unwrap();
+        assert_eq!(res, "C1, 01:01:01:00, 00:00:00:00, 25fps, Cue, -");
+
+        let frames = 48000 / 2; // 0.5 seconds = 12.5 frames? No, the math is (pos - pos.floor()) * 100 / 4
+        // pos = 0.5. 0.5 * 100 = 50. 50 / 4 = 12.
+        let res2 = format_marker(Format::Audition, 2, frames, 48000, "C").unwrap();
+        assert_eq!(res2, "C2, 00:00:00:12, 00:00:00:00, 25fps, Cue, -");
+    }
+
+    #[test]
+    fn test_zero_samprate() {
+        let res = format_marker(Format::Reaper, 1, 48000, 0, "M");
+        assert!(res.is_err());
+        assert_eq!(res.unwrap_err().to_string(), "Invalid sample rate (0)");
+    }
 }

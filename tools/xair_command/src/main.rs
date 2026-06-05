@@ -43,11 +43,12 @@ async fn main() -> Result<()> {
     print!("Connecting to XR18.");
 
     let port = std::env::var("XAIR_PORT").unwrap_or_else(|_| "10024".to_string());
-    let _addr: SocketAddr = format!("{}:{}", args.ip, port)
+    let target_addr = format!("{}:{}", args.ip, port);
+    let _addr: SocketAddr = target_addr
         .parse()
         .context("Invalid IP address")?;
 
-    let client = MixerClient::connect(&args.ip, true).await?;
+    let client = MixerClient::connect(&target_addr, true).await?;
 
     let mut do_keyboard = args.keyboard != 0;
     let s_delay = Arc::new(Mutex::new(args.time));
@@ -69,7 +70,7 @@ async fn main() -> Result<()> {
 
     if let Some(file_path) = &args.file {
         use std::fs::File;
-        use std::io::{BufRead, BufReader};
+        use std::io::BufRead;
 
         let file = File::open(file_path).context(format!("Cannot read file: {}", file_path))?;
 
@@ -81,7 +82,12 @@ async fn main() -> Result<()> {
             return Err(anyhow::anyhow!("File too large"));
         }
         use std::io::Read;
-        let reader = BufReader::new(file.take(1024 * 1024));
+        let mut content = String::new();
+        file.take(1024 * 1024 + 1).read_to_string(&mut content)?;
+        if content.len() > 1024 * 1024 {
+            return Err(anyhow::anyhow!("File too large"));
+        }
+        let reader = std::io::Cursor::new(content);
 
         for line_res in reader.lines() {
             if !keep_on {
@@ -148,31 +154,52 @@ async fn main() -> Result<()> {
                 break;
             }
 
-            let mut line_buf = String::new();
+            let mut byte_buf = Vec::new();
             let mut handle = stdin_lock.by_ref().take(4096);
-            if handle.read_line(&mut line_buf).is_err() || line_buf.is_empty() {
-                break;
-            }
-            if !line_buf.ends_with('\n') && line_buf.len() == 4096 {
-                // If it doesn't end with a newline and hit the length limit, the line was too long.
-                // Clear the rest of the line from stdin to avoid processing partial commands.
-                let mut discard = Vec::with_capacity(1024);
-                loop {
-                    discard.clear();
-                    let mut chunk_handle = stdin_lock.by_ref().take(1024);
-                    match chunk_handle.read_until(b'\n', &mut discard) {
-                        Ok(0) | Err(_) => break,
-                        Ok(_) => {
-                            if discard.ends_with(b"\n") {
-                                break;
+            match handle.read_until(b'\n', &mut byte_buf) {
+                Ok(0) => break, // EOF
+                Err(e) => {
+                    eprintln!("Error reading input: {}", e);
+                    break;
+                }
+                Ok(len) => {
+                    if len == 4096
+                        && !byte_buf.ends_with(
+                            b"
+",
+                        )
+                    {
+                        let mut discard = Vec::with_capacity(1024);
+                        loop {
+                            discard.clear();
+                            let mut chunk_handle = stdin_lock.by_ref().take(1024);
+                            match chunk_handle.read_until(b'\n', &mut discard) {
+                                Ok(0) | Err(_) => break,
+                                Ok(_) => {
+                                    if discard.ends_with(
+                                        b"
+",
+                                    ) {
+                                        break;
+                                    }
+                                }
                             }
                         }
+                        eprintln!("Input line too long, discarded.");
+                        continue;
                     }
                 }
-                eprintln!("Input line too long, discarded.");
-                continue;
             }
-            let line = line_buf.trim();
+
+            let line_str = match std::str::from_utf8(&byte_buf) {
+                Ok(s) => s,
+                Err(_) => {
+                    eprintln!("Invalid UTF-8 sequence in input, discarded.");
+                    continue;
+                }
+            };
+
+            let line = line_str.trim();
 
             if line.starts_with('#') {
                 println!("---comment: {}", line);

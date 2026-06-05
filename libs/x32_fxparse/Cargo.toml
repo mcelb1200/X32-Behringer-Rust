@@ -1,0 +1,8 @@
+[package]
+name = "x32_fxparse"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+osc_lib = { workspace = true }
+anyhow = { workspace = true }

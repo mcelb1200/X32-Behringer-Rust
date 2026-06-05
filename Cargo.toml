@@ -36,6 +36,8 @@ alsa = "0.9"
 osc_lib = { path = "libs/osc_lib" }
 x32_lib = { path = "libs/x32_lib" }
 x32_core = { path = "libs/x32_core" }
+x32_fxparse = { path = "libs/x32_fxparse" }
+x32_dump = { path = "tools/x32_dump" }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

@@ -99,21 +99,31 @@ async fn handle_client(mut stream: TcpStream, args: Args) -> Result<()> {
     let mut reader = BufReader::new(stream.try_clone()?);
 
     loop {
-        let mut line = String::new();
-        // Limit reading to 4096 bytes to prevent DoS via extremely long lines
-        let len = reader.by_ref().take(4096).read_line(&mut line)?;
-        if len == 0 {
-            break; // Connection closed
+        let mut byte_buf = Vec::new();
+        match reader.by_ref().take(4096).read_until(b'\n', &mut byte_buf) {
+            Ok(0) => break,  // Connection closed
+            Err(_) => break, // Connection error
+            Ok(len) => {
+                if len == 4096 && !byte_buf.ends_with(b"\n") {
+                    let error_msg =
+                        "Error: Input line too long (exceeds 4096 bytes). Connection closed.\n";
+                    eprintln!("{}", error_msg.trim());
+                    stream.write_all(error_msg.as_bytes())?;
+                    break;
+                }
+            }
         }
 
-        if len == 4096 && !line.ends_with('\n') {
-            let error_msg = "Error: Input line too long (exceeds 4096 bytes). Connection closed.\n";
-            eprintln!("{}", error_msg.trim());
-            stream.write_all(error_msg.as_bytes())?;
-            break;
-        }
+        let line_str = match std::str::from_utf8(&byte_buf) {
+            Ok(s) => s,
+            Err(_) => {
+                let error_msg = "Error: Invalid UTF-8 sequence.\n";
+                stream.write_all(error_msg.as_bytes())?;
+                continue;
+            }
+        };
 
-        let trimmed_line = line.trim();
+        let trimmed_line = line_str.trim();
         if trimmed_line.is_empty() {
             continue;
         }

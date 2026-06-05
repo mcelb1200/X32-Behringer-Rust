@@ -16,7 +16,7 @@
 use clap::{Parser, Subcommand};
 use osc_lib::{OscArg, OscMessage};
 use std::fs::File;
-use std::io::{BufRead, BufReader, BufWriter, Read, Write};
+use std::io::{BufRead, BufWriter, Read, Write};
 use std::net::UdpSocket;
 use std::str::FromStr;
 use x32_lib::{
@@ -469,17 +469,60 @@ fn handle_restore_command(ip: &str, file_path: &str) -> Result<()> {
         return Err(X32Error::Custom("File too large".to_string()));
     }
 
-    let mut reader = BufReader::new(file.take(1024 * 1024));
+    let mut content = String::new();
+    file.take(1024 * 1024 + 1).read_to_string(&mut content)?;
+    if content.len() > 1024 * 1024 {
+        return Err(X32Error::Custom("File too large".to_string()));
+    }
+    let mut reader = std::io::Cursor::new(content);
 
     println!("Restoring configuration from {}...", file_path);
 
-    let mut line = String::new();
     loop {
-        line.clear();
-        if reader.by_ref().take(4096).read_line(&mut line).is_err() || line.is_empty() {
-            break;
+        let mut byte_buf = Vec::new();
+        match reader.by_ref().take(4096).read_until(b'\n', &mut byte_buf) {
+            Ok(0) => break,                 // EOF
+            Err(e) => return Err(e.into()), // Propagate I/O errors properly
+            Ok(len) => {
+                if len == 4096
+                    && !byte_buf.ends_with(
+                        b"
+",
+                    )
+                {
+                    // Line too long, discard remainder
+                    let mut discard = Vec::with_capacity(1024);
+                    loop {
+                        discard.clear();
+                        let mut chunk_handle = reader.by_ref().take(1024);
+                        match chunk_handle.read_until(b'\n', &mut discard) {
+                            Ok(0) => break,
+                            Err(e) => return Err(e.into()),
+                            Ok(_) => {
+                                if discard.ends_with(
+                                    b"
+",
+                                ) {
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    eprintln!("Input line too long, discarded.");
+                    continue;
+                }
+            }
         }
-        let trimmed_line = line.trim();
+
+        let line_str = match std::str::from_utf8(&byte_buf) {
+            Ok(s) => s,
+            Err(_) => {
+                eprintln!("Invalid UTF-8 sequence in input, discarded.");
+                continue;
+            }
+        };
+
+        let trimmed_line = line_str.trim();
         if trimmed_line.is_empty() || trimmed_line.starts_with('#') {
             continue;
         }
