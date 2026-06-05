@@ -2355,7 +2355,9 @@ dependencies = [
  "byteorder",
  "clap",
  "osc_lib",
+ "predicates",
  "tempfile",
+ "x32_lib",
 ]
 
 [[package]]
@@ -2379,6 +2381,14 @@ dependencies = [
  "serde",
  "serde_json",
  "x32_lib",
+]
+
+[[package]]
+name = "x32_fxparse"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "osc_lib",
 ]
 
 [[package]]

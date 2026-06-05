@@ -14,6 +14,7 @@
 use anyhow::{Context, Result};
 use clap::Parser;
 use osc_lib::{OscArg, OscMessage};
+use std::fmt::Write;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::net::UdpSocket;
@@ -317,6 +318,9 @@ async fn update_bk_ch(
         send_to_r(r_sock, r_addr, &msg_sel).await?;
     }
 
+    // ⚡ Bolt: Pre-allocate a String and reuse it via `write!` to avoid multiple heap allocations per channel
+    let mut path_buf = String::with_capacity(64);
+
     for i in 1..=config.bank_size {
         let src_idx = (i - 1 + state.ch_bank_offset * config.bank_size) as usize;
         if src_idx >= state.bank_tracks.len() {
@@ -324,48 +328,60 @@ async fn update_bk_ch(
         }
         let track = &state.bank_tracks[src_idx];
 
-        let prefix = format!("/ch/{:02}/", i);
-
+        path_buf.clear();
+        write!(&mut path_buf, "/ch/{:02}/mix/fader", i).unwrap();
         let msg = OscMessage {
-            path: format!("{}mix/fader", prefix),
+            path: path_buf.clone(),
             args: vec![OscArg::Float(track.fader)],
         };
         send_to_x(sock, addr, &msg, config.delay_bank).await?;
 
+        path_buf.clear();
+        write!(&mut path_buf, "/ch/{:02}/mix/pan", i).unwrap();
         let msg = OscMessage {
-            path: format!("{}mix/pan", prefix),
+            path: path_buf.clone(),
             args: vec![OscArg::Float(track.pan)],
         };
         send_to_x(sock, addr, &msg, config.delay_bank).await?;
 
+        path_buf.clear();
+        write!(&mut path_buf, "/ch/{:02}/mix/on", i).unwrap();
         let msg = OscMessage {
-            path: format!("{}mix/on", prefix),
+            path: path_buf.clone(),
             args: vec![OscArg::Int(if track.mute > 0.5 { 0 } else { 1 })],
         };
         send_to_x(sock, addr, &msg, config.delay_bank).await?;
 
         for j in 1..=16 {
+            path_buf.clear();
+            write!(&mut path_buf, "/ch/{:02}/mix/{:02}/level", i, j).unwrap();
             let msg = OscMessage {
-                path: format!("{}mix/{:02}/level", prefix, j),
+                path: path_buf.clone(),
                 args: vec![OscArg::Float(track.mixbus[j as usize - 1])],
             };
             send_to_x(sock, addr, &msg, config.delay_bank).await?;
         }
 
+        path_buf.clear();
+        write!(&mut path_buf, "/ch/{:02}/config/name", i).unwrap();
         let msg = OscMessage {
-            path: format!("{}config/name", prefix),
+            path: path_buf.clone(),
             args: vec![OscArg::String(track.scribble.clone())],
         };
         send_to_x(sock, addr, &msg, config.delay_bank).await?;
 
+        path_buf.clear();
+        write!(&mut path_buf, "/ch/{:02}/config/color", i).unwrap();
         let msg = OscMessage {
-            path: format!("{}config/color", prefix),
+            path: path_buf.clone(),
             args: vec![OscArg::Int(track.color)],
         };
         send_to_x(sock, addr, &msg, config.delay_bank).await?;
 
+        path_buf.clear();
+        write!(&mut path_buf, "/ch/{:02}/config/icon", i).unwrap();
         let msg = OscMessage {
-            path: format!("{}config/icon", prefix),
+            path: path_buf.clone(),
             args: vec![OscArg::Int(track.icon)],
         };
         send_to_x(sock, addr, &msg, config.delay_bank).await?;
