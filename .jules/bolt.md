@@ -37,3 +37,7 @@
 ## 2024-06-25 - [Pre-allocate String buffer for dynamic formatting in hot loops]
 **Learning:** Using `format!` inside hot loops (e.g., repeatedly generating strings like `/ch/{:02}/mix/fader`) causes repeated heap allocations, which degrades performance. Pre-allocating a single `String` buffer using `String::with_capacity()` outside the loop and reusing it via `.clear()` and the `write!` macro (`std::fmt::Write`) avoids these repeated heap allocations, significantly improving throughput for repeated string operations.
 **Action:** When dynamically generating strings inside a hot loop, avoid using the `format!` macro. Instead, pre-allocate a `String` buffer using `String::with_capacity()` outside the loop and reuse it using `.clear()` and the `write!` macro.
+
+## 2024-11-20 - [Use write! macro to prevent intermediate String allocations]
+**Learning:** Using `out.push_str(&format!(...))` allocates a new `String` on the heap every time it executes, which is a major performance anti-pattern inside loops or hot paths.
+**Action:** Replace `push_str(&format!(...))` with the `write!` macro (from `std::fmt::Write`). `write!(&mut out, ...)` formats the string directly into the existing buffer without generating intermediate heap allocations.
