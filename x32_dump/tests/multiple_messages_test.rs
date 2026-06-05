@@ -19,7 +19,7 @@ fn test_multiple_messages_parsing() {
     file.write_all(&msg2.to_bytes().unwrap()).unwrap();
 
     let mut cmd = Command::cargo_bin("x32_dump").unwrap();
-    cmd.arg("--file").arg(file.path());
+    cmd.arg(file.path());
     let assert = cmd.assert();
 
     let output = String::from_utf8_lossy(&assert.get_output().stdout);

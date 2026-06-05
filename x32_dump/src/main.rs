@@ -10,7 +10,7 @@ use std::path::PathBuf;
 #[command(author, version, about = "X32 OSC diagnostic dumper", long_about = None)]
 struct Args {
     /// File to read OSC data from (defaults to stdin)
-    #[arg(short, long)]
+    #[arg(index = 1)]
     file: Option<PathBuf>,
 }
 
