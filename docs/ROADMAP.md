@@ -59,7 +59,7 @@ The following advanced features are planned for future development. Detailed spe
 *   **Status**: ✅ COMPLETED (Crates moved to libs/, apps/, tools/).
 
 ### 3. `MixerClient` Abstraction (Est: 1-2 days)
-*   **Status**: 🏗️ IN_PROGRESS (Delegated to Jules AI).
+*   **Status**: ✅ COMPLETED (Consolidated boilerplate, heartbeat, and transport fallback into `x32_lib`).
 
 ### 4. Unified `x32-cli` (Est: 3-5 days)
 *   **Status**: BACKLOG.

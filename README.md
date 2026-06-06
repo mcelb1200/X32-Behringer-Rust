@@ -6,6 +6,8 @@ This project is a high-performance, secure rewrite of the X32 command-line tools
 
 *   **⚡ Bolt Optimized:** High-frequency serialization paths have been hand-optimized to eliminate unnecessary allocations and macro overhead, ensuring minimal latency in live audio environments.
 *   **🛡️ Sentinel Hardened:** Built with safety in mind. All file and network inputs are bounded to prevent memory exhaustion (OOM) and Denial-of-Service attacks.
+*   **📡 MixerClient Multi-Transport:** A unified, asynchronous connection manager that supports Ethernet UDP, AES50 Tunneled UDP, and USB MIDI Sysex with auto-fallback and built-in keep-alive heartbeats.
+*   **🧬 Model Specification Inheritance:** Zero-allocation parameter parsing dynamically generated along a model inheritance chain (X32 -> XR18 -> XR16 -> XR12) via compile-time JSON specifications.
 *   **🧩 Modular Architecture:** A collection of 30+ specialized tools built on a shared, stateful emulator and OSC library.
 *   **🎹 Creative Extensions:** Includes advanced tools like `x32_autobeat` for BPM-syncing effects and `x32_tapw` for interactive TUI-based tempo control.
 

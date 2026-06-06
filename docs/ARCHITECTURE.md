@@ -9,18 +9,24 @@ This document provides a deep dive into the technical design, networking model, 
 The project is designed as a **decoupled workspace**. Logic is strictly separated into three layers:
 
 1.  **Transport & Protocol (`osc_lib`):** Handles the raw byte serialization and deserialization of the Open Sound Control (OSC) protocol. It remains agnostic of the mixer's specific commands.
-2.  **Domain Logic (`x32_lib`):** Defines the X32/M32/XAir command set. It handles parameter scaling (e.g., converting a 0.0-1.0 float to a logarithmic fader dB value) and command generation.
+2.  **Domain Logic (`x32_lib`):** Defines the X32/M32/XAir command set, parameter scaling, and the **`MixerClient` abstraction** that provides unified, async, multi-transport connections and query-response tracking.
 3.  **Application Layer (Binary Crates):** Specialized tools that use the libraries to perform specific tasks.
 
 ---
 
-## 📡 Networking Model
+## 📡 Networking & Connection Model
 
-All tools communicate with the mixer via **UDP (User Datagram Protocol)**, which is the native transport for X32 OSC.
+All tools communicate with the mixer using the unified `MixerClient`.
+
+### Multi-Transport & Fallback Hierarchy
+`MixerClient` supports both UDP (network OSC and AES50 tunneled OSC) and USB MIDI System Exclusive (Sysex) transports. Connections utilize a prioritized auto-fallback mechanism:
+1.  **Ethernet OSC**: Standard UDP control over the primary network IP.
+2.  **AES50 Tunneled OSC**: UDP control routed through AES50 ethernet extension.
+3.  **USB MIDI Sysex**: Fallback local control via USB MIDI connection.
 
 ### `/xremote` and Client Tracking
 The X32 mixer only sends state updates to clients that have explicitly requested them via the `/xremote` command. These subscriptions expire every 10 seconds.
-*   **Heartbeat Mechanism:** Tools that require real-time updates (like `x32_reaper` or `x32_tapw`) implement an async heartbeat loop to renew the `/xremote` subscription.
+*   **Heartbeat Mechanism**: `MixerClient` runs a background task that automatically sends `/xremote` keep-alives every 9 seconds, freeing the binary tools from managing heartbeat boilerplate.
 *   **Emulator Support:** The `x32_core` emulator tracks up to 4 concurrent clients and automatically broadcasts state changes to all registered subscribers, mimicking the behavior of physical hardware.
 
 ---
