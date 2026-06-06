@@ -1,0 +1,350 @@
+[
+  {
+    "pattern": "/config/chlink/{link}",
+    "type": "enum",
+    "range": ["OFF", "ON"]
+  },
+  {
+    "pattern": "/config/auxlink/{link}",
+    "type": "enum",
+    "range": ["OFF", "ON"]
+  },
+  {
+    "pattern": "/config/fxlink/{link}",
+    "type": "enum",
+    "range": ["OFF", "ON"]
+  },
+  {
+    "pattern": "/config/buslink/{link}",
+    "type": "enum",
+    "range": ["OFF", "ON"]
+  },
+  {
+    "pattern": "/config/mtxlink/{link}",
+    "type": "enum",
+    "range": ["OFF", "ON"]
+  },
+  {
+    "pattern": "/config/mute/{mute}",
+    "type": "enum",
+    "range": ["OFF", "ON"]
+  },
+  {
+    "pattern": "/config/linkcfg/{param}",
+    "type": "enum",
+    "range": ["OFF", "ON"],
+    "params": ["ha", "eq", "dyn", "fdrmute", "hadly"]
+  },
+  {
+    "pattern": "/config/mono/mode",
+    "type": "enum",
+    "range": ["L+R", "LR+M"]
+  },
+  {
+    "pattern": "/config/mono/link",
+    "type": "enum",
+    "range": ["OFF", "ON"]
+  },
+  {
+    "pattern": "/config/solo/source",
+    "type": "enum",
+    "range": ["OFF", "LR", "LR+C", "LRPFL", "LRAFL", "AUX56", "AUX78"]
+  },
+  {
+    "pattern": "/config/solo/{param}",
+    "type": "enum",
+    "range": ["OFF", "ON"],
+    "params": ["exclusive", "followsel", "followfader"]
+  },
+  {
+    "pattern": "/config/solo/level",
+    "type": "level"
+  },
+  {
+    "pattern": "/config/solo/chmode",
+    "type": "enum",
+    "range": ["OFF", "ON"]
+  },
+  {
+    "pattern": "/config/solo/busmode",
+    "type": "enum",
+    "range": ["OFF", "ON"]
+  },
+  {
+    "pattern": "/config/solo/dcamode",
+    "type": "enum",
+    "range": ["OFF", "ON"]
+  },
+  {
+    "pattern": "/config/solo/dimatt",
+    "type": "enum",
+    "range": ["OFF", "ON"]
+  },
+  {
+    "pattern": "/ch/{ch}/config/name",
+    "type": "string"
+  },
+  {
+    "pattern": "/ch/{ch}/mix/on",
+    "type": "enum",
+    "range": ["OFF", "ON"]
+  },
+  {
+    "pattern": "/ch/{ch}/mix/fader",
+    "type": "level"
+  },
+  {
+    "pattern": "/ch/{ch}/mix/pan",
+    "type": "flin",
+    "range": [-100.0, 100.0]
+  },
+  {
+    "pattern": "/ch/{ch}/eq/{band}/f",
+    "type": "frequency"
+  },
+  {
+    "pattern": "/ch/{ch}/eq/{band}/g",
+    "type": "flin",
+    "range": [-15.0, 15.0]
+  },
+  {
+    "pattern": "/ch/{ch}/eq/{band}/q",
+    "type": "logf",
+    "range": [0.3, 10.0]
+  },
+  {
+    "pattern": "/ch/{ch}/eq/{band}/type",
+    "type": "enum",
+    "range": ["LCut", "LShv", "PEQ", "HShv", "HCut"]
+  },
+  {
+    "pattern": "/ch/{ch}/gate/on",
+    "type": "enum",
+    "range": ["OFF", "ON"]
+  },
+  {
+    "pattern": "/ch/{ch}/dyn/on",
+    "type": "enum",
+    "range": ["OFF", "ON"]
+  },
+  {
+    "pattern": "/auxin/{auxin}/config/name",
+    "type": "string"
+  },
+  {
+    "pattern": "/auxin/{auxin}/mix/on",
+    "type": "enum",
+    "range": ["OFF", "ON"]
+  },
+  {
+    "pattern": "/auxin/{auxin}/mix/fader",
+    "type": "level"
+  },
+  {
+    "pattern": "/auxin/{auxin}/mix/pan",
+    "type": "flin",
+    "range": [-100.0, 100.0]
+  },
+  {
+    "pattern": "/auxin/{auxin}/eq/{band}/f",
+    "type": "frequency"
+  },
+  {
+    "pattern": "/auxin/{auxin}/eq/{band}/g",
+    "type": "flin",
+    "range": [-15.0, 15.0]
+  },
+  {
+    "pattern": "/auxin/{auxin}/eq/{band}/q",
+    "type": "logf",
+    "range": [0.3, 10.0]
+  },
+  {
+    "pattern": "/auxin/{auxin}/eq/{band}/type",
+    "type": "enum",
+    "range": ["LCut", "LShv", "PEQ", "HShv", "HCut"]
+  },
+  {
+    "pattern": "/fxrtn/{fxrtn}/config/name",
+    "type": "string"
+  },
+  {
+    "pattern": "/fxrtn/{fxrtn}/mix/on",
+    "type": "enum",
+    "range": ["OFF", "ON"]
+  },
+  {
+    "pattern": "/fxrtn/{fxrtn}/mix/fader",
+    "type": "level"
+  },
+  {
+    "pattern": "/fxrtn/{fxrtn}/eq/{band}/f",
+    "type": "frequency"
+  },
+  {
+    "pattern": "/fxrtn/{fxrtn}/eq/{band}/g",
+    "type": "flin",
+    "range": [-15.0, 15.0]
+  },
+  {
+    "pattern": "/fxrtn/{fxrtn}/eq/{band}/q",
+    "type": "logf",
+    "range": [0.3, 10.0]
+  },
+  {
+    "pattern": "/fxrtn/{fxrtn}/eq/{band}/type",
+    "type": "enum",
+    "range": ["LCut", "LShv", "PEQ", "HShv", "HCut"]
+  },
+  {
+    "pattern": "/bus/{bus}/config/name",
+    "type": "string"
+  },
+  {
+    "pattern": "/bus/{bus}/mix/on",
+    "type": "enum",
+    "range": ["OFF", "ON"]
+  },
+  {
+    "pattern": "/bus/{bus}/mix/fader",
+    "type": "level"
+  },
+  {
+    "pattern": "/bus/{bus}/eq/{band}/f",
+    "type": "frequency"
+  },
+  {
+    "pattern": "/bus/{bus}/eq/{band}/g",
+    "type": "flin",
+    "range": [-15.0, 15.0]
+  },
+  {
+    "pattern": "/bus/{bus}/eq/{band}/q",
+    "type": "logf",
+    "range": [0.3, 10.0]
+  },
+  {
+    "pattern": "/bus/{bus}/eq/{band}/type",
+    "type": "enum",
+    "range": ["LCut", "LShv", "PEQ", "HShv", "HCut"]
+  },
+  {
+    "pattern": "/mtx/{mtx}/config/name",
+    "type": "string"
+  },
+  {
+    "pattern": "/mtx/{mtx}/mix/on",
+    "type": "enum",
+    "range": ["OFF", "ON"]
+  },
+  {
+    "pattern": "/mtx/{mtx}/mix/fader",
+    "type": "level"
+  },
+  {
+    "pattern": "/mtx/{mtx}/eq/{band}/f",
+    "type": "frequency"
+  },
+  {
+    "pattern": "/mtx/{mtx}/eq/{band}/g",
+    "type": "flin",
+    "range": [-15.0, 15.0]
+  },
+  {
+    "pattern": "/mtx/{mtx}/eq/{band}/q",
+    "type": "logf",
+    "range": [0.3, 10.0]
+  },
+  {
+    "pattern": "/mtx/{mtx}/eq/{band}/type",
+    "type": "enum",
+    "range": ["LCut", "LShv", "PEQ", "HShv", "HCut"]
+  },
+  {
+    "pattern": "/main/st/config/name",
+    "type": "string"
+  },
+  {
+    "pattern": "/main/st/mix/on",
+    "type": "enum",
+    "range": ["OFF", "ON"]
+  },
+  {
+    "pattern": "/main/st/mix/fader",
+    "type": "level"
+  },
+  {
+    "pattern": "/main/st/eq/{band}/f",
+    "type": "frequency"
+  },
+  {
+    "pattern": "/main/st/eq/{band}/g",
+    "type": "flin",
+    "range": [-15.0, 15.0]
+  },
+  {
+    "pattern": "/main/st/eq/{band}/q",
+    "type": "logf",
+    "range": [0.3, 10.0]
+  },
+  {
+    "pattern": "/main/st/eq/{band}/type",
+    "type": "enum",
+    "range": ["LCut", "LShv", "PEQ", "HShv", "HCut"]
+  },
+  {
+    "pattern": "/main/m/config/name",
+    "type": "string"
+  },
+  {
+    "pattern": "/main/m/mix/on",
+    "type": "enum",
+    "range": ["OFF", "ON"]
+  },
+  {
+    "pattern": "/main/m/mix/fader",
+    "type": "level"
+  },
+  {
+    "pattern": "/main/m/eq/{band}/f",
+    "type": "frequency"
+  },
+  {
+    "pattern": "/main/m/eq/{band}/g",
+    "type": "flin",
+    "range": [-15.0, 15.0]
+  },
+  {
+    "pattern": "/main/m/eq/{band}/q",
+    "type": "logf",
+    "range": [0.3, 10.0]
+  },
+  {
+    "pattern": "/main/m/eq/{band}/type",
+    "type": "enum",
+    "range": ["LCut", "LShv", "PEQ", "HShv", "HCut"]
+  },
+  {
+    "pattern": "/dca/{dca}/config/name",
+    "type": "string"
+  },
+  {
+    "pattern": "/dca/{dca}/config/on",
+    "type": "enum",
+    "range": ["OFF", "ON"]
+  },
+  {
+    "pattern": "/dca/{dca}/config/fader",
+    "type": "level"
+  },
+  {
+    "pattern": "/headamp/{headamp}/gain",
+    "type": "flin",
+    "range": [-12.0, 60.0]
+  },
+  {
+    "pattern": "/headamp/{headamp}/phantom",
+    "type": "enum",
+    "range": ["OFF", "ON"]
+  }
+]

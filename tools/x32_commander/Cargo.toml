@@ -1,0 +1,15 @@
+[package]
+name = "x32_commander"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = { workspace = true }
+clap = { workspace = true }
+midir = "0.10.3"
+osc_lib = { workspace = true }
+tokio = { workspace = true }
+x32_lib = { workspace = true }
+
+[dev-dependencies]
+tempfile = "3.10.1"

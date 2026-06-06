@@ -1,5 +1,6 @@
 # TODO
 
+- Reconcile and merge all performance, security compliance, and porting PRs into `refactor/mixer-client-abstraction` (Completed)
 - Extract 'todo' items from reference C files in `c_origin/` and document them here for future work.
   - Evaluate `// TODO: How to select Master from REAPER???` from `X32Reaper.c`
   - Evaluate `// TODO: do a proper implementation of the function` for `/add` and `/load` from `X32.c`
@@ -7,6 +8,7 @@
 
 ## Context
 These TODOs are legacy markers from the original C codebase that was ported to Rust. Future agents should review these items to verify whether the ported Rust components (like `x32_reaper` and `x32_core`) fully implement the intended functionality or if additional logic is needed to resolve the original author's comments.
+
 
 ## Remaining Legacy TODOs
 The following are all the remaining 'todo' items found in `c_origin/`:
@@ -36,7 +38,8 @@ The following are all the remaining 'todo' items found in `c_origin/`:
 
 ## Future Enhancements
 1. **Automatic DCA Spills**: Automatically spill DCA members onto a custom fader bank for quick access. Architectural Considerations: Needs an OSC listener to detect DCA select button presses and dynamically rewrite custom layer mappings (`/-prefs/custom_bank/`). Must handle latency tightly to make spills feel instantaneous to the engineer.
-2. **Intelligent Feedback Suppression**: Auto-detect feedback frequencies and inject surgical notch filters into the master/bus EQs. Architectural Considerations: Needs real-time audio FFT via X-USB/X-Live or meter polling via OSC (`/meters/15`). Meter polling is slower, so USB audio access is preferred but requires a multi-threaded audio backend (CPAL).
+2. **Intelligent Feedback Suppression / Spectral Ducking (Implemented)**: Auto-detect feedback frequencies and inject surgical notch filters into the master/bus EQs.
+   * *Status*: Completed via `x32_vocal_ducking` using real-time audio FFT (via USB CPAL) or meter polling (via OSC) and dynamic PEQ Band 3 updates.
 3. **Crossfading Snapshots**: Smoothly interpolate faders, EQs, and dynamics parameters between two scenes. Architectural Considerations: Current scene changes are instantaneous (`/load`). This needs a background tick-loop to tween float values over time. Requires state caching of both scenes to calculate deltas without overwhelming the console with `/node` requests.
 4. **Auto-Mixing NOM (Number of Open Mics) Extension**: Expand the Dugan-style automixer with dynamic background noise tracking and priority ducking. Architectural Considerations: High-frequency OSC polling (`/meters/1`) can cause network congestion. Must implement a UDP throttling mechanism and an efficient algorithm to compute gain shares on a dedicated realtime-priority thread to prevent audio pumping.
 5. **Multi-Console Sync**: Mirror specific channels, busses, or master state across two or more X32s (e.g., FOH and Monitors). Architectural Considerations: Requires a robust TCP or UDP bidirectional bridge. Needs loop-prevention logic (split-horizon) so updates don't ping-pong infinitely between consoles. Must handle connection drops gracefully.

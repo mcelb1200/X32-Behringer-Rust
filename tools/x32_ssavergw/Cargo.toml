@@ -1,0 +1,18 @@
+[package]
+name = "x32_ssavergw"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+clap = { workspace = true }
+anyhow = { workspace = true }
+tokio = { workspace = true }
+x32_lib = { workspace = true }
+osc_lib = { workspace = true }
+
+[dev-dependencies]
+x32_emulator = { path = "../../tools/x32_emulator" }
+assert_cmd = "2.0.14"
+predicates = "3.1.0"
+tempfile = "3.10.1"
+escargot = "0.5"

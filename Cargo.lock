@@ -120,6 +120,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "async-trait"
+version = "0.1.89"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9035ad2d096bed7955a320ee7e2230574d28fd3c3a0f186cbea1ff3c7eed5dbb"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "autocfg"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1452,6 +1463,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "thread-priority"
+version = "1.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cfe075d7053dae61ac5413a34ea7d4913b6e6207844fd726bdd858b37ff72bf5"
+dependencies = [
+ "bitflags 2.10.0",
+ "cfg-if",
+ "libc",
+ "log",
+ "rustversion",
+ "winapi",
+]
+
+[[package]]
 name = "tokio"
 version = "1.51.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2235,6 +2260,7 @@ name = "x32_autobeat"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "async-trait",
  "clap",
  "cpal",
  "crossbeam-channel",
@@ -2255,6 +2281,7 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "osc_lib",
+ "tokio",
  "x32_lib",
 ]
 
@@ -2281,6 +2308,7 @@ dependencies = [
  "midir",
  "osc_lib",
  "tempfile",
+ "tokio",
  "x32_lib",
 ]
 
@@ -2288,9 +2316,13 @@ dependencies = [
 name = "x32_copy_fx"
 version = "0.1.0"
 dependencies = [
+ "assert_cmd",
  "clap",
+ "escargot",
  "lazy_static",
  "osc_lib",
+ "predicates",
+ "tokio",
  "x32_lib",
 ]
 
@@ -2319,6 +2351,7 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "osc_lib",
+ "tokio",
  "x32_lib",
 ]
 
@@ -2331,6 +2364,7 @@ dependencies = [
  "escargot",
  "osc_lib",
  "predicates",
+ "tokio",
  "x32_lib",
 ]
 
@@ -2343,6 +2377,7 @@ dependencies = [
  "escargot",
  "osc_lib",
  "predicates",
+ "tokio",
  "x32_lib",
 ]
 
@@ -2380,6 +2415,7 @@ dependencies = [
  "osc_lib",
  "serde",
  "serde_json",
+ "tokio",
  "x32_lib",
 ]
 
@@ -2389,6 +2425,8 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "osc_lib",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -2398,6 +2436,7 @@ dependencies = [
  "anyhow",
  "clap",
  "osc_lib",
+ "tokio",
  "x32_lib",
 ]
 
@@ -2408,6 +2447,7 @@ dependencies = [
  "anyhow",
  "clap",
  "osc_lib",
+ "tokio",
  "x32_lib",
 ]
 
@@ -2417,6 +2457,7 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "osc_lib",
+ "tokio",
  "x32_lib",
 ]
 
@@ -2429,6 +2470,7 @@ dependencies = [
  "escargot",
  "osc_lib",
  "predicates",
+ "tokio",
  "x32_lib",
 ]
 
@@ -2447,11 +2489,29 @@ dependencies = [
 name = "x32_lib"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
+ "async-trait",
  "bitflags 2.10.0",
  "lazy_static",
+ "midir",
  "osc_lib",
  "regex",
+ "tokio",
  "x32_emulator",
+ "x32_fxparse",
+]
+
+[[package]]
+name = "x32_loudness"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "osc_lib",
+ "serde",
+ "serde_json",
+ "tokio",
+ "x32_lib",
 ]
 
 [[package]]
@@ -2511,6 +2571,7 @@ dependencies = [
  "anyhow",
  "clap",
  "osc_lib",
+ "tokio",
  "x32_lib",
 ]
 
@@ -2521,6 +2582,7 @@ dependencies = [
  "anyhow",
  "clap",
  "osc_lib",
+ "tokio",
  "x32_lib",
 ]
 
@@ -2530,6 +2592,7 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "osc_lib",
+ "tokio",
  "x32_lib",
 ]
 
@@ -2555,7 +2618,6 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "assert_cmd",
- "byteorder",
  "clap",
  "osc_lib",
  "predicates",
@@ -2589,6 +2651,7 @@ dependencies = [
  "escargot",
  "osc_lib",
  "predicates",
+ "tokio",
  "x32_lib",
 ]
 
@@ -2613,7 +2676,22 @@ dependencies = [
  "clap",
  "osc_lib",
  "predicates",
+ "tokio",
  "x32_emulator",
+ "x32_lib",
+]
+
+[[package]]
+name = "x32_vocal_ducking"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "cpal",
+ "osc_lib",
+ "rustfft",
+ "thread-priority",
+ "tokio",
  "x32_lib",
 ]
 
@@ -2656,17 +2734,20 @@ dependencies = [
  "predicates",
  "tempfile",
  "tokio",
+ "x32_lib",
 ]
 
 [[package]]
 name = "xair_get_scene"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "assert_cmd",
  "clap",
  "escargot",
  "osc_lib",
  "predicates",
+ "tokio",
  "x32_lib",
 ]
 
@@ -2674,10 +2755,12 @@ dependencies = [
 name = "xair_set_scene"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "assert_cmd",
  "clap",
  "escargot",
  "osc_lib",
  "predicates",
+ "tokio",
  "x32_lib",
 ]
