@@ -63,6 +63,14 @@ struct Cli {
     #[arg(long, default_value = "A/enc/5")]
     preset_enc: String,
 
+    /// OSC Path for feedback LED to flash with the beat
+    #[arg(long, default_value = "/config/usercontrols/assign/A/btn/5/led")]
+    btn_led_path: String,
+
+    /// OSC Path for target scribble strip to show BPM and preset style
+    #[arg(long, default_value = "/ch/32/config/name")]
+    info_scribble_path: String,
+
     /// Target Channels for Compressor Sync (e.g., "1,2,3" or "1-4")
     #[arg(long)]
     target_channels: Option<String>,
@@ -210,6 +218,9 @@ async fn main() -> Result<()> {
     let subdivisions = ["1/4", "1/8", "1/8d", "1/8t", "1/1", "1/2", "1/16"];
     let styles = ["Standard", "Tight", "Natural", "Big", "Huge"];
 
+    let mut last_sent_bpm: Option<u32> = None;
+    let mut last_sent_style = String::new();
+
     loop {
         // 1. Process Audio Data (Primary)
         let mut audio_received_this_frame = false;
@@ -262,20 +273,20 @@ async fn main() -> Result<()> {
                 }
                 NetworkEvent::EncoderTurned(val) => {
                     let cfg = &mut effect_configs[selected_slot];
-                    let current_idx = subdivisions
+                    let current_idx = styles
                         .iter()
-                        .position(|&s| s == cfg.subdivision)
+                        .position(|&s| s == cfg.style)
                         .unwrap_or(0);
                     let new_idx = if val > 0 {
-                        (current_idx + 1) % subdivisions.len()
+                        (current_idx + 1) % styles.len()
                     } else {
                         if current_idx == 0 {
-                            subdivisions.len() - 1
+                            styles.len() - 1
                         } else {
                             current_idx - 1
                         }
                     };
-                    cfg.subdivision = subdivisions[new_idx].to_string();
+                    cfg.style = styles[new_idx].to_string();
                 }
                 NetworkEvent::EffectLoaded(slot, name) => {
                     if (1..=8).contains(&slot) {
@@ -289,6 +300,34 @@ async fn main() -> Result<()> {
             }
         }
 
+        // 2b. Flash Beat LED if onset detected
+        let is_beat_detected = if !is_panic {
+            if !use_fallback {
+                if audio_received_this_frame {
+                    match selected_algorithm {
+                        Algorithm::Energy => energy_detector.is_beat(),
+                        Algorithm::Spectral => spectral_detector.is_beat(),
+                    }
+                } else {
+                    false
+                }
+            } else {
+                osc_detector.is_beat()
+            }
+        } else {
+            false
+        };
+
+        if is_beat_detected {
+            let network_clone = network.clone();
+            let path_clone = cli.btn_led_path.clone();
+            tokio::spawn(async move {
+                let _ = network_clone.send_osc_float(&path_clone, 1.0).await;
+                tokio::time::sleep(Duration::from_millis(80)).await;
+                let _ = network_clone.send_osc_float(&path_clone, 0.0).await;
+            });
+        }
+
         // 3. Determine Active BPM
         let active_bpm = if !use_fallback {
             match selected_algorithm {
@@ -298,6 +337,19 @@ async fn main() -> Result<()> {
         } else {
             osc_detector.current_bpm()
         };
+
+        // Update User Assigned Scribble Strip Display
+        let rounded_bpm = active_bpm.map(|b| b.round() as u32);
+        let current_style = effect_configs[selected_slot].style.clone();
+        if rounded_bpm != last_sent_bpm || current_style != last_sent_style {
+            last_sent_bpm = rounded_bpm;
+            last_sent_style = current_style.clone();
+            let bpm_str = rounded_bpm
+                .map(|b| format!("{}BPM", b))
+                .unwrap_or_else(|| "---BPM".to_string());
+            let text = format!("{} {}", bpm_str, current_style.to_uppercase());
+            let _ = network.set_scribble_target(&cli.info_scribble_path, &text).await;
+        }
 
         // 4. Update Effects (All Slots)
         if !is_panic {
@@ -311,7 +363,7 @@ async fn main() -> Result<()> {
                     }
                 }
                 // Update Compressors
-                let _ = comp_handler.update(&network, bpm);
+                let _ = comp_handler.update(&network, bpm).await;
             }
         }
 

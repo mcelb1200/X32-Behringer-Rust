@@ -1,6 +1,7 @@
 use super::{EffectConfig, EffectHandler};
 use crate::musical_theory::MusicCalculator;
 use crate::network::NetworkManager;
+use crate::scaling::{afine2float, log2float, ratio2float};
 use anyhow::Result;
 
 /// Handler for standard "Stereo Delay" or "Delay" (DLY).
@@ -19,12 +20,25 @@ impl EffectHandler for GenericDelayHandler {
         let ms = MusicCalculator::bpm_to_ms(bpm, &config.subdivision);
         // Clamp to 1.0 - 3000.0 ms (Standard X32 Delay Range)
         let ms = ms.clamp(1.0, 3000.0);
-
-        // Normalized value 0.0 - 1.0 maps to 1 - 3000
-        // formula: val = (ms - 1) / 2999
-        let val = (ms - 1.0) / 2999.0;
-
+        let val = afine2float(ms, 1.0, 2999.0);
         network.set_effect_param(slot, 2, val).await?;
+
+        // Dynamic style scaling
+        let (mix, offset, feedback, hi_cut) = match config.style.as_str() {
+            "Tight" => (15.0, 0.0, 12.0, 8000.0),
+            "Natural" => (10.0, -10.0, 22.0, 3000.0),
+            "Standard" => (20.0, 20.0, 30.0, 4000.0),
+            "Big" => (30.0, 40.0, 45.0, 2500.0),
+            "Huge" => (40.0, 60.0, 65.0, 1500.0),
+            _ => (20.0, 20.0, 30.0, 4000.0),
+        };
+
+        network.set_effect_param(slot, 1, ratio2float(mix, 100.0)).await?;
+        network.set_effect_param(slot, 6, afine2float(offset, -100.0, 200.0)).await?;
+        network.set_effect_param(slot, 10, ratio2float(feedback, 100.0)).await?;
+        network.set_effect_param(slot, 11, ratio2float(feedback, 100.0)).await?;
+        network.set_effect_param(slot, 12, log2float(hi_cut, 200.0, 4.605_170_2)).await?;
+
         Ok(())
     }
 
@@ -38,7 +52,9 @@ impl EffectHandler for GenericDelayHandler {
 
 /// Handler for Multi-Tap Delays (3TAP, 4TAP).
 /// Param 1 is Time (Master).
-pub struct TapDelayHandler;
+pub struct TapDelayHandler {
+    pub is_4tap: bool,
+}
 
 #[async_trait::async_trait]
 impl EffectHandler for TapDelayHandler {
@@ -51,9 +67,28 @@ impl EffectHandler for TapDelayHandler {
     ) -> Result<()> {
         let ms = MusicCalculator::bpm_to_ms(bpm, &config.subdivision);
         let ms = ms.clamp(1.0, 3000.0);
-        let val = (ms - 1.0) / 2999.0;
-
+        let val = afine2float(ms, 1.0, 2999.0);
         network.set_effect_param(slot, 1, val).await?;
+
+        // Dynamic style scaling
+        let (gain_base, feedback, hi_cut) = match config.style.as_str() {
+            "Tight" => (15.0, 12.0, 8000.0),
+            "Natural" => (10.0, 22.0, 3000.0),
+            "Standard" => (20.0, 30.0, 4000.0),
+            "Big" => (30.0, 45.0, 2500.0),
+            "Huge" => (40.0, 65.0, 1500.0),
+            _ => (20.0, 30.0, 4000.0),
+        };
+
+        network.set_effect_param(slot, 2, ratio2float(gain_base, 100.0)).await?;
+        if self.is_4tap {
+            network.set_effect_param(slot, 3, ratio2float(feedback, 100.0)).await?;
+            network.set_effect_param(slot, 5, log2float(hi_cut, 200.0, 4.605_170_2)).await?;
+        } else {
+            network.set_effect_param(slot, 4, ratio2float(feedback, 100.0)).await?;
+            network.set_effect_param(slot, 6, log2float(hi_cut, 200.0, 4.605_170_2)).await?;
+        }
+
         Ok(())
     }
 
@@ -69,7 +104,9 @@ impl EffectHandler for TapDelayHandler {
 
 /// Handler for Combined Delays (D_CR, D_FL, MODD).
 /// Param 1 is Time.
-pub struct CombinedDelayHandler;
+pub struct CombinedDelayHandler {
+    pub is_modd: bool,
+}
 
 #[async_trait::async_trait]
 impl EffectHandler for CombinedDelayHandler {
@@ -82,9 +119,30 @@ impl EffectHandler for CombinedDelayHandler {
     ) -> Result<()> {
         let ms = MusicCalculator::bpm_to_ms(bpm, &config.subdivision);
         let ms = ms.clamp(1.0, 3000.0);
-        let val = (ms - 1.0) / 2999.0;
-
+        let val = afine2float(ms, 1.0, 2999.0);
         network.set_effect_param(slot, 1, val).await?;
+
+        // Dynamic style scaling
+        let (mix, feedback, hi_cut) = match config.style.as_str() {
+            "Tight" => (15.0, 12.0, 8000.0),
+            "Natural" => (10.0, 22.0, 3000.0),
+            "Standard" => (20.0, 30.0, 4000.0),
+            "Big" => (30.0, 45.0, 2500.0),
+            "Huge" => (40.0, 65.0, 1500.0),
+            _ => (20.0, 30.0, 4000.0),
+        };
+
+        if self.is_modd {
+            network.set_effect_param(slot, 13, ratio2float(mix, 100.0)).await?;
+            network.set_effect_param(slot, 3, ratio2float(feedback, 100.0)).await?;
+            network.set_effect_param(slot, 5, log2float(hi_cut, 200.0, 4.605_170_2)).await?;
+        } else {
+            network.set_effect_param(slot, 12, ratio2float(mix, 100.0)).await?;
+            network.set_effect_param(slot, 4, ratio2float(feedback, 100.0)).await?;
+            // Combined feed hi cut is Param 3 [1000..20000]
+            network.set_effect_param(slot, 3, log2float(hi_cut, 1000.0, 2.995_732_3)).await?;
+        }
+
         Ok(())
     }
 
@@ -103,24 +161,16 @@ mod tests {
     use super::*;
     use crossbeam_channel::unbounded;
 
-    // A mock network trait might be better here, but since NetworkManager relies on physical sockets with a bug
-    // in parsing dummy IP's in test setup (0 timeout on non-dummy addresses via lib), we perform isolated state checks if possible.
-    // However, since NetworkManager requires a full physical network setup and we cannot inject a mock,
-    // we use `if let Ok` to silently ignore on test failure environments that don't support proper bind/timeout,
-    // ensuring we at least test the code block if it DOES bind successfully.
-
     #[tokio::test]
     async fn test_combined_delay_handler_update() {
         let (tx, _) = unbounded();
         if let Ok(network) = NetworkManager::new("127.0.0.1:10023", 1, tx, "/btn", "/enc").await {
-            let handler = CombinedDelayHandler;
+            let handler = CombinedDelayHandler { is_modd: false };
             let config = EffectConfig {
                 subdivision: "1/4".to_string(), // 1/4 at 120bpm is 500ms
                 style: "Standard".to_string(),
                 enabled: true,
             };
-            // The underlying send may or may not return an error depending on OS UDP / ICMP propagation.
-            // We just verify that it does not panic.
             let _res = handler.update(&network, 1, 120.0, &config).await;
         }
     }
@@ -129,9 +179,7 @@ mod tests {
     async fn test_combined_delay_handler_panic() {
         let (tx, _) = unbounded();
         if let Ok(network) = NetworkManager::new("127.0.0.1:10023", 1, tx, "/btn", "/enc").await {
-            let handler = CombinedDelayHandler;
-            // The underlying sends may or may not return an error depending on OS UDP / ICMP propagation.
-            // We just verify that it does not panic.
+            let handler = CombinedDelayHandler { is_modd: false };
             let _res = handler.panic(&network, 1).await;
         }
     }

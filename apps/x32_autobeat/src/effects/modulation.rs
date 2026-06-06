@@ -1,6 +1,7 @@
 use super::{EffectConfig, EffectHandler};
 use crate::musical_theory::MusicCalculator;
 use crate::network::NetworkManager;
+use crate::scaling::ratio2float;
 use anyhow::Result;
 
 /// Handler for Modulation Effects (Chorus, Flanger, Phaser).
@@ -17,16 +18,6 @@ impl EffectHandler for ModulationHandler {
         bpm: f32,
         config: &EffectConfig,
     ) -> Result<()> {
-        // Interpret subdivision as "Cycles per Bar" or similar.
-        // e.g. "1/4" -> 1 cycle every quarter note? Or 1 cycle every 4 bars?
-        // Convention: "1/1" = 1 cycle per bar. "1/4" = 4 cycles per bar (quarter note rate).
-        // "4/1" = 1 cycle every 4 bars.
-
-        // Let's reuse the subdivision parser.
-        // If sub is "1/4" (0.25), that usually means duration.
-        // Rate = 1 / Duration.
-        // So we calculate MS duration for the subdivision, then Hz = 1000 / ms.
-
         let period_ms = MusicCalculator::bpm_to_ms(bpm, &config.subdivision);
         if period_ms <= 0.0 {
             return Ok(());
@@ -43,6 +34,21 @@ impl EffectHandler for ModulationHandler {
         let val = (hz.ln() - min.ln()) / (max.ln() - min.ln());
 
         network.set_effect_param(slot, 1, val).await?;
+
+        // Dynamic style scaling for Depth and Mix
+        let (depth, mix) = match config.style.as_str() {
+            "Tight" => (15.0, 30.0),
+            "Natural" => (10.0, 10.0),
+            "Standard" => (25.0, 25.0),
+            "Big" => (50.0, 40.0),
+            "Huge" => (80.0, 50.0),
+            _ => (25.0, 25.0),
+        };
+
+        network.set_effect_param(slot, 2, ratio2float(depth, 100.0)).await?;
+        network.set_effect_param(slot, 3, ratio2float(depth, 100.0)).await?; // Depth R for Chorus/Flanger
+        network.set_effect_param(slot, 6, ratio2float(mix, 100.0)).await?;
+
         Ok(())
     }
 

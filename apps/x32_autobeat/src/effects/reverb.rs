@@ -1,6 +1,7 @@
 use super::{EffectConfig, EffectHandler};
 use crate::musical_theory::MusicCalculator;
 use crate::network::NetworkManager;
+use crate::scaling::{afine2float, log2float};
 use anyhow::Result;
 
 #[derive(Clone, Copy)]
@@ -62,7 +63,6 @@ impl EffectHandler for ReverbHandler {
         let (pre_sub, decay_sub) = Self::get_style_settings(&config.style);
 
         // 1. Pre-Delay (Param 1)
-        // X32 Pre-Delay is typically 0-200ms Linear
         let pre_ms = MusicCalculator::bpm_to_ms(bpm, pre_sub);
         let pre_ms = pre_ms.clamp(0.0, 200.0);
         let pre_val = pre_ms / 200.0;
@@ -75,15 +75,25 @@ impl EffectHandler for ReverbHandler {
         let decay_sec = decay_sec.clamp(min, max);
 
         let decay_val = if is_log {
-            // Map log range [min, max] to [0.0, 1.0]
-            // val = (log(x) - log(min)) / (log(max) - log(min))
             (decay_sec.ln() - min.ln()) / (max.ln() - min.ln())
         } else {
-            // Linear mapping
             (decay_sec - min) / (max - min)
         };
-
         network.set_effect_param(slot, 2, decay_val).await?;
+
+        // 3. Style-based Size (Param 3), Damping (Param 4), and Level (Param 6)
+        let (size_val, damp_hz, level_db) = match config.style.as_str() {
+            "Tight" => (0.25, 12000.0, -1.2),
+            "Natural" => (0.50, 4000.0, -2.4),
+            "Standard" => (0.60, 6000.0, 0.0),
+            "Big" => (0.80, 3000.0, 2.0),
+            "Huge" => (1.00, 1500.0, 4.0),
+            _ => (0.60, 6000.0, 0.0),
+        };
+
+        network.set_effect_param(slot, 3, size_val).await?;
+        network.set_effect_param(slot, 4, log2float(damp_hz, 1000.0, 2.995_732_3)).await?;
+        network.set_effect_param(slot, 6, afine2float(level_db, -12.0, 24.0)).await?;
 
         Ok(())
     }

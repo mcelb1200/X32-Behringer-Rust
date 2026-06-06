@@ -43,8 +43,8 @@ pub fn get_handler(fx_type: &str) -> Option<Box<dyn EffectHandler + Send + Sync>
     match fx_type {
         // Delays
         "DLY" | "STEREO_DELAY" => Some(Box::new(GenericDelayHandler)),
-        "3TAP" => Some(Box::new(TapDelayHandler)),
-        "4TAP" => Some(Box::new(TapDelayHandler)),
+        "3TAP" => Some(Box::new(TapDelayHandler { is_4tap: false })),
+        "4TAP" => Some(Box::new(TapDelayHandler { is_4tap: true })),
 
         // Reverbs
         "HALL" => Some(Box::new(ReverbHandler::new(ReverbType::Hall))),
@@ -61,10 +61,10 @@ pub fn get_handler(fx_type: &str) -> Option<Box<dyn EffectHandler + Send + Sync>
         "PHAS" | "PHASER" => Some(Box::new(ModulationHandler)),
 
         // Combined Effects (Delay is always Param 1)
-        "DLY+CHO" | "D_CR" => Some(Box::new(CombinedDelayHandler)),
-        "DLY+FLG" | "D_FL" => Some(Box::new(CombinedDelayHandler)),
-        "DLY+REV" | "D_RV" => Some(Box::new(CombinedDelayHandler)),
-        "MODD" | "MODULATION_DELAY" => Some(Box::new(CombinedDelayHandler)),
+        "DLY+CHO" | "D_CR" => Some(Box::new(CombinedDelayHandler { is_modd: false })),
+        "DLY+FLG" | "D_FL" => Some(Box::new(CombinedDelayHandler { is_modd: false })),
+        "DLY+REV" | "D_RV" => Some(Box::new(CombinedDelayHandler { is_modd: false })),
+        "MODD" | "MODULATION_DELAY" => Some(Box::new(CombinedDelayHandler { is_modd: true })),
 
         _ => None,
     }
