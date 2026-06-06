@@ -111,7 +111,9 @@ impl MixerClient {
             return Ok((client, "usb".to_string()));
         }
 
-        Err(crate::error::X32Error::Custom("All connection attempts failed".to_string()))
+        Err(crate::error::X32Error::Custom(
+            "All connection attempts failed".to_string(),
+        ))
     }
 
     /// Connects to the mixer using the specified transport configuration.
@@ -123,9 +125,7 @@ impl MixerClient {
         heartbeat: bool,
     ) -> Result<(Self, String)> {
         match transport {
-            "auto" => {
-                Self::connect_auto(primary_ip, aes50_ip, usb_port, heartbeat).await
-            }
+            "auto" => Self::connect_auto(primary_ip, aes50_ip, usb_port, heartbeat).await,
             "osc" | "aes50" => {
                 let target_ip = if transport == "aes50" && !aes50_ip.is_empty() {
                     aes50_ip
@@ -144,10 +144,12 @@ impl MixerClient {
                 let client = Self::connect_midi(usb_port, heartbeat)?;
                 Ok((client, "usb".to_string()))
             }
-            other => Err(crate::error::X32Error::Custom(format!("Unknown transport type: {}", other))),
+            other => Err(crate::error::X32Error::Custom(format!(
+                "Unknown transport type: {}",
+                other
+            ))),
         }
     }
-
 
     /// Starts the auto-heartbeat task.
     pub fn start_heartbeat(&self) {
@@ -183,13 +185,9 @@ impl MixerClient {
             match time::timeout(timeout - start.elapsed(), rx.recv()).await {
                 Ok(Ok(msg)) => {
                     if msg.path == path {
-                        return msg
-                            .args
-                            .first()
-                            .cloned()
-                            .ok_or_else(|| {
-                                OscError::ParseError("Empty response".to_string()).into()
-                            });
+                        return msg.args.first().cloned().ok_or_else(|| {
+                            OscError::ParseError("Empty response".to_string()).into()
+                        });
                     }
                 }
                 _ => break,

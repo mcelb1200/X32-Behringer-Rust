@@ -139,7 +139,8 @@ async fn main() -> Result<()> {
         &cli.usb_port,
         &transport_str,
         true,
-    ).await?;
+    )
+    .await?;
     let client = Arc::new(client_raw);
     println!("Connected successfully via {}.", transport_used);
 
@@ -304,7 +305,8 @@ async fn run_daemon(
                 // Delta threshold: only update if change >= 0.01 (~0.5 dB in active fader range)
                 if delta >= 0.01 {
                     last_fader_val = Some(f);
-                    if let Err(e) = update_eq(&client, f, cal.c_room, mode, fx_slot, &room_eq).await {
+                    if let Err(e) = update_eq(&client, f, cal.c_room, mode, fx_slot, &room_eq).await
+                    {
                         eprintln!("Error updating EQ: {}", e);
                     }
                 }
