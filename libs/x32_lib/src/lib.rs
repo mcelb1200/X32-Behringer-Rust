@@ -63,8 +63,10 @@ pub mod common;
 pub mod error;
 pub mod main_bus;
 pub mod scene_parse;
+pub mod transport;
 
 pub use crate::client::MixerClient;
+pub use crate::transport::MixerTransport;
 use std::net::{SocketAddr, UdpSocket};
 use std::time::Duration;
 

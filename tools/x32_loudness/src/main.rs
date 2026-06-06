@@ -17,6 +17,9 @@ struct Cli {
     #[arg(short, long, default_value = "192.168.1.50")]
     ip: String,
 
+    #[arg(long, default_value = "")]
+    aes50_ip: String,
+
     #[arg(long, default_value = ".x32_loudness.json")]
     config: String,
 
@@ -32,8 +35,23 @@ struct Cli {
     #[arg(long, default_value = "/main/st/mix/fader")]
     fader_path: String,
 
+    #[arg(long, value_enum, default_value_t = TransportType::Auto)]
+    transport: TransportType,
+
+    #[arg(long, default_value = "")]
+    usb_port: String,
+
     #[command(subcommand)]
     command: Commands,
+}
+
+#[derive(ValueEnum, Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+enum TransportType {
+    Auto,
+    Osc,
+    Usb,
+    Aes50,
 }
 
 #[derive(Subcommand, Debug, Clone)]
@@ -114,15 +132,16 @@ fn geq_slope_factor(freq: f32) -> f32 {
 async fn main() -> Result<()> {
     let cli = Cli::parse();
 
-    let full_ip = if cli.ip.contains(':') {
-        cli.ip.clone()
-    } else {
-        format!("{}:10023", cli.ip)
-    };
-
-    println!("Connecting to X32 Mixer at {}...", full_ip);
-    let client = Arc::new(MixerClient::connect(&full_ip, true).await?);
-    println!("Connected successfully.");
+    let transport_str = format!("{:?}", cli.transport).to_lowercase();
+    let (client_raw, transport_used) = MixerClient::connect_with_transport(
+        &cli.ip,
+        &cli.aes50_ip,
+        &cli.usb_port,
+        &transport_str,
+        true,
+    ).await?;
+    let client = Arc::new(client_raw);
+    println!("Connected successfully via {}.", transport_used);
 
     match cli.command {
         Commands::Calibrate { target_db } => {
@@ -136,6 +155,7 @@ async fn main() -> Result<()> {
                 cli.mode,
                 cli.fx_slot,
                 &cli.fader_path,
+                &transport_used,
             )
             .await?;
         }
@@ -222,6 +242,7 @@ async fn run_daemon(
     mode: LoudnessMode,
     fx_slot: usize,
     fader_path: &str,
+    transport_used: &str,
 ) -> Result<()> {
     if !Path::new(config_path).exists() {
         return Err(anyhow!(
@@ -267,32 +288,54 @@ async fn run_daemon(
         }
     }
 
+    let is_midi = transport_used == "usb";
+    let poll_interval = if is_midi {
+        Duration::from_millis(200)
+    } else {
+        Duration::from_millis(100)
+    };
+
     loop {
-        tokio::select! {
-            msg_res = rx.recv() => {
-                match msg_res {
-                    Ok(msg) => {
-                        if msg.path == fader_path {
-                            if let Some(OscArg::Float(f)) = msg.args.first() {
-                                if Some(*f) != last_fader_val {
-                                    last_fader_val = Some(*f);
-                                    if let Err(e) = update_eq(&client, *f, cal.c_room, mode, fx_slot, &room_eq).await {
-                                        eprintln!("Error updating EQ: {}", e);
+        if is_midi {
+            // In USB MIDI mode: no subscription broadcasts, poll actively with delta thresholding
+            sleep(poll_interval).await;
+            if let Ok(OscArg::Float(f)) = client.query_value(fader_path).await {
+                let delta = last_fader_val.map(|last| (f - last).abs()).unwrap_or(1.0);
+                // Delta threshold: only update if change >= 0.01 (~0.5 dB in active fader range)
+                if delta >= 0.01 {
+                    last_fader_val = Some(f);
+                    if let Err(e) = update_eq(&client, f, cal.c_room, mode, fx_slot, &room_eq).await {
+                        eprintln!("Error updating EQ: {}", e);
+                    }
+                }
+            }
+        } else {
+            tokio::select! {
+                msg_res = rx.recv() => {
+                    match msg_res {
+                        Ok(msg) => {
+                            if msg.path == fader_path {
+                                if let Some(OscArg::Float(f)) = msg.args.first() {
+                                    if Some(*f) != last_fader_val {
+                                        last_fader_val = Some(*f);
+                                        if let Err(e) = update_eq(&client, *f, cal.c_room, mode, fx_slot, &room_eq).await {
+                                            eprintln!("Error updating EQ: {}", e);
+                                        }
                                     }
                                 }
                             }
                         }
+                        _ => break,
                     }
-                    _ => break,
                 }
-            }
-            _ = sleep(Duration::from_millis(100)) => {
-                // Periodically query fader in case client missed updates or mixer wasn't sending /xremote updates
-                if let Ok(OscArg::Float(f)) = client.query_value(fader_path).await {
-                    if Some(f) != last_fader_val {
-                        last_fader_val = Some(f);
-                        if let Err(e) = update_eq(&client, f, cal.c_room, mode, fx_slot, &room_eq).await {
-                            eprintln!("Error updating EQ: {}", e);
+                _ = sleep(poll_interval) => {
+                    // Periodically query fader in case client missed updates or mixer wasn't sending /xremote updates
+                    if let Ok(OscArg::Float(f)) = client.query_value(fader_path).await {
+                        if Some(f) != last_fader_val {
+                            last_fader_val = Some(f);
+                            if let Err(e) = update_eq(&client, f, cal.c_room, mode, fx_slot, &room_eq).await {
+                                eprintln!("Error updating EQ: {}", e);
+                            }
                         }
                     }
                 }
