@@ -2425,6 +2425,8 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "osc_lib",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -2496,6 +2498,7 @@ dependencies = [
  "regex",
  "tokio",
  "x32_emulator",
+ "x32_fxparse",
 ]
 
 [[package]]

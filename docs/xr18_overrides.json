@@ -1,0 +1,15 @@
+{
+  "remove": [
+    "/config/mono/mode",
+    "/config/mono/link",
+    "/main/m/config/name",
+    "/main/m/mix/on",
+    "/main/m/mix/fader",
+    "/main/m/eq/{band}/f",
+    "/main/m/eq/{band}/g",
+    "/main/m/eq/{band}/q",
+    "/main/m/eq/{band}/type"
+  ],
+  "modify": [],
+  "add": []
+}

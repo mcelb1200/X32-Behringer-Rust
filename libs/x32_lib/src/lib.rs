@@ -67,6 +67,7 @@ pub mod transport;
 
 pub use crate::client::MixerClient;
 pub use crate::transport::MixerTransport;
+pub use x32_fxparse::MixerModel;
 use std::net::{SocketAddr, UdpSocket};
 use std::time::Duration;
 
