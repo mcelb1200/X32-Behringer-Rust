@@ -14,17 +14,26 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::io::Read;
 use std::path::PathBuf;
-use std::thread;
 use std::time::Duration;
-use x32_lib::{create_socket, get_fader_level};
+use x32_lib::{MixerClient, get_parameter_async};
+use tokio::time::sleep;
+
 
 /// A command-line tool to control and fade X32 faders.
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
-    /// IP address of the X32 console.
     #[arg(short, long)]
     ip: Option<String>,
+
+    #[arg(long, default_value = "auto")]
+    transport: String,
+
+    #[arg(long, default_value = "")]
+    usb_port: String,
+
+    #[arg(long, default_value = "")]
+    aes50_ip: String,
 
     /// A fader to control. Can be specified multiple times.
     /// E.g., --fader /ch/01/mix/fader
@@ -76,7 +85,8 @@ struct Config {
 }
 
 /// The main entry point for the application.
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     let args = Args::parse();
     let mut config = Config::default();
 
@@ -129,7 +139,14 @@ fn main() -> Result<()> {
 
     // Ensure we have an IP address before proceeding.
     if let Some(ip) = &config.ip {
-        let socket = create_socket(ip, 1000)?;
+        let (client, _) = MixerClient::connect_with_transport(
+            ip,
+            &args.aes50_ip,
+            &args.usb_port,
+            &args.transport,
+            false,
+        ).await?;
+        let client = std::sync::Arc::new(client);
         if args.verbose {
             println!("Connected to X32 at {}", ip);
         }
@@ -146,13 +163,13 @@ fn main() -> Result<()> {
                     );
                 }
                 fade(
-                    &socket,
+                    &client,
                     &config.faders,
                     fade_in_duration,
                     steps,
                     true,
                     args.verbose,
-                )?;
+                ).await?;
             }
         }
 
@@ -166,13 +183,13 @@ fn main() -> Result<()> {
                     );
                 }
                 fade(
-                    &socket,
+                    &client,
                     &config.faders,
                     fade_out_duration,
                     steps,
                     false,
                     args.verbose,
-                )?;
+                ).await?;
             }
         }
     } else {
@@ -192,8 +209,8 @@ fn main() -> Result<()> {
 /// * `steps` - The number of steps to use for the fade.
 /// * `is_fade_in` - If `true`, performs a fade-in (to 0.75). If `false`, performs a fade-out (to 0.0).
 /// * `verbose` - If `true`, prints the OSC messages being sent.
-fn fade(
-    socket: &std::net::UdpSocket,
+async fn fade(
+    client: &MixerClient,
     faders: &[String],
     duration_s: f32,
     steps: u32,
@@ -207,7 +224,7 @@ fn fade(
     // Query the initial level of each fader.
     let mut initial_levels = Vec::new();
     for fader_addr in faders {
-        initial_levels.push(get_fader_level(socket, fader_addr)?);
+        initial_levels.push(get_parameter_async(client, fader_addr).await?);
     }
 
     let target_level = if is_fade_in { 0.75 } else { 0.0 };
@@ -222,21 +239,21 @@ fn fade(
             };
 
             let msg = OscMessage::new(fader_addr.clone(), vec![OscArg::Float(current_level)]);
-            let buf = msg.to_bytes()?;
-            socket.send(&buf)?;
+
+            client.send_message(&msg.path, msg.args.clone()).await?;
             if verbose {
                 println!("Sent: {} {}", fader_addr, current_level);
             }
         }
 
-        thread::sleep(step_interval);
+        sleep(step_interval).await;
     }
 
     // Send the final target level to ensure accuracy.
     for fader_addr in faders {
         let msg = OscMessage::new(fader_addr.clone(), vec![OscArg::Float(target_level)]);
-        let buf = msg.to_bytes()?;
-        socket.send(&buf)?;
+
+        client.send_message(&msg.path, msg.args.clone()).await?;
         if verbose {
             println!("Sent final: {} {}", fader_addr, target_level);
         }

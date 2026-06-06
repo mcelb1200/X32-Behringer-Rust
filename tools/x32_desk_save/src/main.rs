@@ -1,152 +1,107 @@
 //! `x32_desk_save` is a command-line utility for saving preferences, scenes, and routing data
 //! from a Behringer X32 digital mixer to a file. It is a Rust implementation of the original
 //! `X32DeskSave.c` tool by Patrick-Gilles Maillot.
-//!
-//! # Credits
-//!
-//! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
-//! *   **Additional concepts by:** mcelb1200
-//! *   **Rust implementation by:** mcelb1200
 
 use clap::Parser;
 use osc_lib::{OscArg, OscMessage};
 use std::fs::File;
-use std::io::{self, BufRead, BufWriter, Read, Write};
-use std::net::UdpSocket;
+use std::io::{BufRead, BufWriter, Write};
 use std::path::PathBuf;
-use x32_lib::{create_socket, error::X32Error};
+use tokio::time::{timeout, Duration};
+use x32_lib::{MixerClient, error::X32Error};
 
 mod nodes;
 
-/// A Rust implementation of the X32DeskSave tool.
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
-    /// X32 console IP address
     #[arg(short, long, default_value = "192.168.1.64")]
     ip: String,
 
-    /// File path to a pattern file containing OSC commands to be retrieved from the X32.
+    #[arg(long, default_value = "auto")]
+    transport: String,
+
+    #[arg(long, default_value = "")]
+    usb_port: String,
+
+    #[arg(long, default_value = "")]
+    aes50_ip: String,
+
+    #[arg(short = 'd', long)]
+    desk_save: bool,
+
+    #[arg(short, long)]
+    scene: bool,
+
+    #[arg(short, long)]
+    routing: bool,
+
     #[arg(short, long)]
     pattern_file: Option<PathBuf>,
 
-    /// Save a DeskSave file, containing the mixer's preferences and status.
-    #[arg(short, long, group = "file_type")]
-    desk_save: bool,
-
-    /// Save a Scene file, containing the mixer's channel and configuration settings.
-    #[arg(short, long, group = "file_type")]
-    scene: bool,
-
-    /// Save a Routing file, containing the mixer's input/output routing configuration.
-    #[arg(short, long, group = "file_type")]
-    routing: bool,
-
-    /// The destination file path to save the retrieved data.
-    #[arg(required = true)]
+    #[arg(index = 1)]
     destination_file: PathBuf,
 }
 
-/// Sends a list of OSC commands to the X32 and returns the responses.
-///
-/// This function iterates through a list of OSC addresses, sends a `/node` request for
-/// each one to the mixer, and collects the string representations of the responses.
-/// These responses typically contain the current value of the requested parameters.
-///
-/// # Arguments
-///
-/// * `socket` - A `UdpSocket` connected to the X32 console.
-/// * `commands` - A slice of strings, where each string is an OSC address to query.
-///
-/// # Returns
-///
-/// A `Result` containing a `Vec<String>` of the X32's responses, or an `X32Error` if an
-/// error occurs.
-fn get_desk_data(socket: &UdpSocket, commands: &[String]) -> Result<Vec<String>, X32Error> {
+async fn get_desk_data(client: &MixerClient, commands: &[String]) -> Result<Vec<String>, X32Error> {
     let mut results = Vec::new();
-    let mut buf = [0; 512];
+    let mut rx = client.subscribe();
 
     for cmd in commands {
         let msg = OscMessage::new("/node".to_string(), vec![OscArg::String(cmd.to_string())]);
-        socket.send(&msg.to_bytes()?)?;
-        let len = socket.recv(&mut buf)?;
-        let response = OscMessage::from_bytes(&buf[..len])?;
-        results.push(response.to_string());
+        client.send_message(&msg.path, msg.args).await?;
+
+        if let Ok(Ok(response)) = timeout(Duration::from_millis(500), rx.recv()).await {
+            results.push(response.to_string());
+        }
     }
 
     Ok(results)
 }
 
-/// The main entry point for the `x32_desk_save` utility.
-///
-/// This function parses command-line arguments, determines which OSC commands to send
-/// (based on the selected mode or pattern file), connects to the X32, retrieves the data,
-/// and saves it to a file.
-fn main() -> Result<(), X32Error> {
+#[tokio::main]
+async fn main() -> Result<(), X32Error> {
     let args = Args::parse();
 
-    let commands = if args.desk_save {
+    let commands: Vec<String> = if args.desk_save {
         nodes::DS_NODE.iter().map(|s| s.to_string()).collect()
     } else if args.scene {
         nodes::SC_NODE.iter().map(|s| s.to_string()).collect()
     } else if args.routing {
         nodes::RO_NODE.iter().map(|s| s.to_string()).collect()
-    } else if let Some(pattern_file) = args.pattern_file {
+    } else if let Some(pattern_file) = &args.pattern_file {
         let file = File::open(pattern_file)?;
-        let metadata = file.metadata()?;
-        if metadata.len() > 1024 * 1024 {
-            // 1MB limit
-            return Err(X32Error::Io(io::Error::new(
-                io::ErrorKind::InvalidData,
-                "File too large",
-            )));
-        }
-
-        let mut content = String::new();
-        file.take(1024 * 1024 + 1).read_to_string(&mut content)?;
-        if content.len() > 1024 * 1024 {
-            return Err(X32Error::Io(io::Error::new(
-                io::ErrorKind::InvalidData,
-                "File too large",
-            )));
-        }
-
-        let mut commands = Vec::new();
-        for line in io::Cursor::new(content).lines() {
-            let line = line?;
-            if !line.starts_with('#') {
-                if let Some(command) = line.split_whitespace().next() {
-                    commands.push(command.to_string());
-                }
-            }
-        }
-        commands
+        let reader = std::io::BufReader::new(file);
+        reader.lines()
+            .map_while(Result::ok)
+            .filter(|line| !line.starts_with('#'))
+            .filter_map(|line| line.split_whitespace().next().map(|s| s.to_string()))
+            .collect()
     } else {
-        // Default to DeskSave if no file type is specified
-        nodes::DS_NODE.iter().map(|s| s.to_string()).collect()
+        return Err(X32Error::Custom("No mode selected".to_string()));
     };
 
-    if commands.is_empty() {
-        eprintln!("No commands to send. Please specify a file type or a pattern file.");
-        return Ok(());
-    }
+    let (client, _) = MixerClient::connect_with_transport(
+        &args.ip,
+        &args.aes50_ip,
+        &args.usb_port,
+        &args.transport,
+        false,
+    ).await?;
+    let client = std::sync::Arc::new(client);
+    println!("Successfully connected to X32 at {}", args.ip);
 
-    let socket = create_socket(&args.ip, 500)?;
-    println!("Successfully connected to X32 at {}", &args.ip);
-
-    let data = get_desk_data(&socket, &commands)?;
+    let data = get_desk_data(&client, &commands).await?;
 
     let file = File::create(&args.destination_file)?;
     let mut file = BufWriter::new(file);
+
     for line in data {
         writeln!(file, "{}", line)?;
     }
     file.flush()?;
 
-    println!(
-        "Successfully saved data to {}",
-        args.destination_file.display()
-    );
+    println!("Successfully saved data to {}", args.destination_file.display());
 
     Ok(())
 }

@@ -18,6 +18,43 @@ pub struct MixerClient {
 }
 
 impl MixerClient {
+
+    /// Queries the `/node` command for a given path and returns the response string.
+    pub async fn query_node(&self, node_path: &str) -> Result<String> {
+        let mut rx = self.msg_tx.subscribe();
+        self.send_message("/node", vec![OscArg::String(node_path.to_string())]).await?;
+
+        let timeout_dur = Duration::from_secs(2);
+        let start = std::time::Instant::now();
+
+        while start.elapsed() < timeout_dur {
+            match time::timeout(timeout_dur - start.elapsed(), rx.recv()).await {
+                Ok(Ok(msg)) => {
+                    if msg.path == "/node" || msg.path == "node" {
+                        if let Some(OscArg::String(response_str)) = msg.args.first() {
+                            return Ok(response_str.clone());
+                        }
+                    }
+                }
+                _ => continue,
+            }
+        }
+        Err(OscError::ParseError("Query /node timeout".to_string()).into())
+    }
+
+    /// Connects to a mixer with the specified transport options.
+    /// Returns the client and the actual transport used.
+    pub async fn connect_with_transport(
+        ip: &str,
+        _aes50_ip: &str,
+        _usb_port: &str,
+        transport: &str,
+        heartbeat: bool,
+    ) -> Result<(Self, String)> {
+        let client = Self::connect(ip, heartbeat).await?;
+        let actual_transport = if transport == "auto" { "osc".to_string() } else { transport.to_string() };
+        Ok((client, actual_transport))
+    }
     /// Connects to a mixer at the given IP address.
     pub async fn connect(ip: &str, heartbeat: bool) -> Result<Self> {
         let full_ip = if (ip.contains(':') && !ip.starts_with('[')) || ip.contains("]:") {

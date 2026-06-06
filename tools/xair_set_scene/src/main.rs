@@ -1,6 +1,6 @@
 use anyhow::Result;
 use clap::Parser;
-use osc_lib::{OscArg, OscMessage};
+use osc_lib::OscMessage;
 use std::io::{self, BufRead, Read};
 use x32_lib::MixerClient;
 

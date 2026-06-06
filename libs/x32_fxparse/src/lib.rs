@@ -1,3 +1,5 @@
+#![allow(clippy::manual_range_patterns)]
+#![allow(clippy::excessive_precision)]
 use osc_lib::{OscArg, OscMessage};
 use std::str::FromStr;
 

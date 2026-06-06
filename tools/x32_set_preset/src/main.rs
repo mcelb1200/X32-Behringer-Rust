@@ -18,15 +18,23 @@ use osc_lib::{OscArg, OscMessage};
 use std::fs::File;
 use std::io::{BufRead, Read};
 use std::path::PathBuf;
-use x32_lib::create_socket;
+use x32_lib::MixerClient;
 
 /// Command-line arguments for `x32_set_preset`.
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
-    /// The IP address of the X32 mixer.
     #[arg(short, long, default_value = "192.168.0.64")]
     ip: String,
+
+    #[arg(long, default_value = "auto")]
+    transport: String,
+
+    #[arg(long, default_value = "")]
+    usb_port: String,
+
+    #[arg(long, default_value = "")]
+    aes50_ip: String,
 
     /// The preset file to load (.chn, .efx, .rou).
     file: PathBuf,
@@ -78,7 +86,8 @@ enum PresetType {
 }
 
 /// The main entry point for the application.
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     let args = Args::parse();
 
     // Detect preset type from extension
@@ -109,7 +118,14 @@ fn main() -> Result<()> {
 
     // Connect to X32
     println!("Connecting to X32 at {}...", args.ip);
-    let socket = create_socket(&args.ip, 500)?;
+    let (client, _) = MixerClient::connect_with_transport(
+        &args.ip,
+        &args.aes50_ip,
+        &args.usb_port,
+        &args.transport,
+        false,
+    ).await?;
+    let client = std::sync::Arc::new(client);
 
     // Master Safe: Mute mains if requested
     if args.master_safe {
@@ -119,7 +135,7 @@ fn main() -> Result<()> {
             OscMessage::new("/main/m/mix/on".to_string(), vec![OscArg::Int(0)]),
         ];
         for msg in msgs {
-            socket.send(&msg.to_bytes()?)?;
+            client.send_message(&msg.path, msg.args.clone()).await?;
         }
     }
 
@@ -188,7 +204,7 @@ fn main() -> Result<()> {
         if args.verbose {
             println!("Sending: {}", msg);
         }
-        socket.send(&msg.to_bytes()?)?;
+        client.send_message(&msg.path, msg.args.clone()).await?;
     }
 
     println!("Done.");

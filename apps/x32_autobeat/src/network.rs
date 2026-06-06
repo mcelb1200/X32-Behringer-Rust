@@ -19,7 +19,6 @@ pub enum NetworkEvent {
 
 pub struct NetworkManager {
     client: Arc<MixerClient>,
-    ip: String,
     connected: Arc<AtomicBool>,
     event_sender: Sender<NetworkEvent>,
     #[allow(dead_code)]
@@ -43,7 +42,7 @@ impl NetworkManager {
         Ok(Self {
             client,
 
-            ip: ip.to_string(),
+
             connected: Arc::new(AtomicBool::new(false)),
             event_sender,
             panic_subscribed: Arc::new(AtomicBool::new(false)),
