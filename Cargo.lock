@@ -2472,6 +2472,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "x32_loudness"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "osc_lib",
+ "serde",
+ "serde_json",
+ "tokio",
+ "x32_lib",
+]
+
+[[package]]
 name = "x32_midi2osc"
 version = "0.1.0"
 dependencies = [
