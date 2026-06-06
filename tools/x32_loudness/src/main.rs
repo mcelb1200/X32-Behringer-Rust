@@ -3,7 +3,7 @@ use clap::{Parser, Subcommand, ValueEnum};
 use osc_lib::OscArg;
 use serde::{Deserialize, Serialize};
 use std::fs::File;
-use std::io::{self, Write};
+use std::io::{self, BufRead, Read, Write};
 use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
@@ -410,7 +410,7 @@ async fn run_calibration(
     print!("Press ENTER to start tone generator...");
     io::stdout().flush()?;
     let mut input = String::new();
-    io::stdin().read_line(&mut input)?;
+    io::stdin().lock().take(1024).read_line(&mut input)?;
 
     // Configure oscillator: Pink Noise, target L/R, level -18 dBFS, Active = 1
     println!("Activating oscillator...");
@@ -435,7 +435,7 @@ async fn run_calibration(
     print!("Press ENTER when done...");
     io::stdout().flush()?;
     input.clear();
-    io::stdin().read_line(&mut input)?;
+    io::stdin().lock().take(1024).read_line(&mut input)?;
 
     // Query main fader value
     println!("Querying main fader level...");

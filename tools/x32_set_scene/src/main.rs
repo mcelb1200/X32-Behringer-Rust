@@ -44,6 +44,7 @@ async fn main() -> Result<()> {
 
     let stdin = io::stdin();
     let mut stdin_lock = stdin.lock();
+    let mut parser = x32_lib::scene_parse::SceneParser::new();
     loop {
         let mut byte_buf = Vec::new();
         let mut handle = stdin_lock.by_ref().take(4096);
@@ -83,7 +84,7 @@ async fn main() -> Result<()> {
 
         let line = line_str.trim();
         if line.starts_with('/') {
-            let mut messages = x32_lib::scene_parse::parse_scene_line(line);
+            let mut messages = parser.parse_scene_line(line);
 
             if messages.is_empty() {
                 match OscMessage::from_str(line) {

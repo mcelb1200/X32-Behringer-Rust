@@ -111,6 +111,11 @@ fn main() -> Result<()> {
         process::exit(1);
     }
 
+    if metadata.len() > 1024 * 1024 {
+        eprintln!("File is too large to be a valid SE_LOG.BIN file");
+        process::exit(1);
+    }
+
     let markers = match process_file(&mut file, &cli) {
         Ok(m) => m,
         Err(e) => {
