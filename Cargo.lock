@@ -1463,6 +1463,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "thread-priority"
+version = "1.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cfe075d7053dae61ac5413a34ea7d4913b6e6207844fd726bdd858b37ff72bf5"
+dependencies = [
+ "bitflags 2.10.0",
+ "cfg-if",
+ "libc",
+ "log",
+ "rustversion",
+ "winapi",
+]
+
+[[package]]
 name = "tokio"
 version = "1.51.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2661,6 +2675,20 @@ dependencies = [
  "predicates",
  "tokio",
  "x32_emulator",
+ "x32_lib",
+]
+
+[[package]]
+name = "x32_vocal_ducking"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "cpal",
+ "osc_lib",
+ "rustfft",
+ "thread-priority",
+ "tokio",
  "x32_lib",
 ]
 
