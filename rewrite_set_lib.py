@@ -1,4 +1,9 @@
-//! `x32_set_lib` is a command-line tool for uploading library presets to a Behringer X32/M32 mixer.
+import re
+
+with open("tools/x32_set_lib/src/main.rs", "r") as f:
+    text = f.read()
+
+out = """//! `x32_set_lib` is a command-line tool for uploading library presets to a Behringer X32/M32 mixer.
 //!
 //! It reads preset files (Channel, Effects, or Routing) and sends them to the specified library slots on the mixer.
 //!
@@ -12,7 +17,7 @@ use anyhow::Result;
 use clap::Parser;
 use osc_lib::{OscArg, OscMessage};
 use std::fs::File;
-use std::io::Read;
+use std::io::{BufRead, Read};
 use std::path::{Path, PathBuf};
 use x32_lib::MixerClient;
 use tokio::time::{timeout, Duration};
@@ -86,7 +91,7 @@ async fn process_file(
     index: usize,
     verbose: bool,
 ) -> Result<()> {
-    let file = File::open(path)?;
+    let mut file = File::open(path)?;
 
     // Sentinel: Prevent OOM from maliciously large files
     if file.metadata()?.len() > 1024 * 1024 {
@@ -118,7 +123,7 @@ async fn process_file(
         .unwrap_or("")
         .to_lowercase();
 
-    let _lib_type = match ext.as_str() {
+    let lib_type = match ext.as_str() {
         "chn" => "libchan",
         "efx" => "libfx",
         "rou" => "librout",
@@ -266,3 +271,6 @@ async fn process_file(
 
     Ok(())
 }
+"""
+with open("tools/x32_set_lib/src/main.rs", "w") as f:
+    f.write(out)

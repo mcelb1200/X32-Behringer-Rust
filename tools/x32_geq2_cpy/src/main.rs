@@ -15,17 +15,25 @@
 
 use anyhow::Result;
 use clap::{Parser, ValueEnum};
-use std::thread;
-use std::time::Duration;
-use x32_lib::{create_socket, get_parameter, set_parameter, verify_fx_type};
+use tokio::time::{sleep, Duration};
+use x32_lib::{MixerClient, get_parameter_async, set_parameter_async, verify_fx_type_async};
+
 
 /// Command-line arguments for the `x32_geq2_cpy` tool.
 #[derive(Parser, Debug)]
 #[command(author, version, about = "A utility to copy GEQ settings between FX slots on an X32 console.", long_about = None)]
 struct Args {
-    /// IP address of the X32 console.
     #[arg(short, long, default_value = "192.168.0.64")]
     ip: String,
+
+    #[arg(long, default_value = "auto")]
+    transport: String,
+
+    #[arg(long, default_value = "")]
+    usb_port: String,
+
+    #[arg(long, default_value = "")]
+    aes50_ip: String,
 
     /// Source FX slot number (1-8).
     #[arg(short, long, default_value_t = 1)]
@@ -66,7 +74,8 @@ enum Direction {
 }
 
 /// The main entry point for the application.
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     let args = Args::parse();
 
     if args.debug {
@@ -74,19 +83,26 @@ fn main() -> Result<()> {
         println!("Arguments: {:?}", args);
     }
 
-    let socket = create_socket(&args.ip, 1000)?;
+    let (client, _) = MixerClient::connect_with_transport(
+        &args.ip,
+        &args.aes50_ip,
+        &args.usb_port,
+        &args.transport,
+        false,
+    ).await?;
+    let client = std::sync::Arc::new(client);
     if args.verbose {
         println!("Connected to X32 at {}", args.ip);
     }
 
     // Verify that the source slot has a GEQ2 or TEQ2 effect.
-    if !verify_fx_type(&socket, args.from, "EQ")? {
+    if !verify_fx_type_async(&client, args.from, "EQ").await? {
         println!("--!!-- No GEQ2/TEQ2 effect at FX slot #{}", args.from);
         return Ok(());
     }
 
     // If we're copying to another slot, verify the destination slot as well.
-    if args.direction == Direction::CopyTo && !verify_fx_type(&socket, args.to, "EQ")? {
+    if args.direction == Direction::CopyTo && !verify_fx_type_async(&client, args.to, "EQ").await? {
         println!("--!!-- No GEQ2/TEQ2 effect at FX slot #{}", args.to);
         return Ok(());
     }
@@ -100,8 +116,8 @@ fn main() -> Result<()> {
             for i in 1..32 {
                 let source_addr = format!("/fx/{}/par/{:02}", args.from, i);
                 let dest_addr = format!("/fx/{}/par/{:02}", args.from, i + 32);
-                let value = get_parameter(&socket, &source_addr)?;
-                set_parameter(&socket, &dest_addr, value)?;
+                let value = get_parameter_async(&client, &source_addr).await?;
+                set_parameter_async(&client, &dest_addr, value).await?;
                 if args.verbose {
                     println!("Copied {} to {}", source_addr, dest_addr);
                 }
@@ -109,8 +125,8 @@ fn main() -> Result<()> {
             if args.master {
                 let source_addr = format!("/fx/{}/par/32", args.from);
                 let dest_addr = format!("/fx/{}/par/64", args.from);
-                let value = get_parameter(&socket, &source_addr)?;
-                set_parameter(&socket, &dest_addr, value)?;
+                let value = get_parameter_async(&client, &source_addr).await?;
+                set_parameter_async(&client, &dest_addr, value).await?;
                 if args.verbose {
                     println!("Copied master level.");
                 }
@@ -120,8 +136,8 @@ fn main() -> Result<()> {
             for i in 33..64 {
                 let source_addr = format!("/fx/{}/par/{:02}", args.from, i);
                 let dest_addr = format!("/fx/{}/par/{:02}", args.from, i - 32);
-                let value = get_parameter(&socket, &source_addr)?;
-                set_parameter(&socket, &dest_addr, value)?;
+                let value = get_parameter_async(&client, &source_addr).await?;
+                set_parameter_async(&client, &dest_addr, value).await?;
                 if args.verbose {
                     println!("Copied {} to {}", source_addr, dest_addr);
                 }
@@ -129,8 +145,8 @@ fn main() -> Result<()> {
             if args.master {
                 let source_addr = format!("/fx/{}/par/64", args.from);
                 let dest_addr = format!("/fx/{}/par/32", args.from);
-                let value = get_parameter(&socket, &source_addr)?;
-                set_parameter(&socket, &dest_addr, value)?;
+                let value = get_parameter_async(&client, &source_addr).await?;
+                set_parameter_async(&client, &dest_addr, value).await?;
                 if args.verbose {
                     println!("Copied master level.");
                 }
@@ -139,17 +155,17 @@ fn main() -> Result<()> {
         Direction::Reset => {
             for i in 1..64 {
                 let addr = format!("/fx/{}/par/{:02}", args.from, i);
-                set_parameter(&socket, &addr, 0.5)?;
+                set_parameter_async(&client, &addr, 0.5).await?;
                 if args.verbose {
                     println!("Reset {}", addr);
                 }
-                thread::sleep(Duration::from_millis(10));
+                sleep(Duration::from_millis(10)).await;
             }
             if args.master {
                 let addr_a = format!("/fx/{}/par/32", args.from);
                 let addr_b = format!("/fx/{}/par/64", args.from);
-                set_parameter(&socket, &addr_a, 0.5)?;
-                set_parameter(&socket, &addr_b, 0.5)?;
+                set_parameter_async(&client, &addr_a, 0.5).await?;
+                set_parameter_async(&client, &addr_b, 0.5).await?;
                 if args.verbose {
                     println!("Reset master levels.");
                 }
@@ -159,8 +175,8 @@ fn main() -> Result<()> {
             for i in 1..64 {
                 let source_addr = format!("/fx/{}/par/{:02}", args.from, i);
                 let dest_addr = format!("/fx/{}/par/{:02}", args.to, i);
-                let value = get_parameter(&socket, &source_addr)?;
-                set_parameter(&socket, &dest_addr, value)?;
+                let value = get_parameter_async(&client, &source_addr).await?;
+                set_parameter_async(&client, &dest_addr, value).await?;
                 if args.verbose {
                     println!("Copied {} to {}", source_addr, dest_addr);
                 }
@@ -170,10 +186,10 @@ fn main() -> Result<()> {
                 let source_addr_b = format!("/fx/{}/par/64", args.from);
                 let dest_addr_a = format!("/fx/{}/par/32", args.to);
                 let dest_addr_b = format!("/fx/{}/par/64", args.to);
-                let value_a = get_parameter(&socket, &source_addr_a)?;
-                let value_b = get_parameter(&socket, &source_addr_b)?;
-                set_parameter(&socket, &dest_addr_a, value_a)?;
-                set_parameter(&socket, &dest_addr_b, value_b)?;
+                let value_a = get_parameter_async(&client, &source_addr_a).await?;
+                let value_b = get_parameter_async(&client, &source_addr_b).await?;
+                set_parameter_async(&client, &dest_addr_a, value_a).await?;
+                set_parameter_async(&client, &dest_addr_b, value_b).await?;
                 if args.verbose {
                     println!("Copied master levels.");
                 }

@@ -1,4 +1,12 @@
-//! `x32_custom_layer` is a command-line tool for creating and managing custom channel layers on X32/M32 mixers.
+import re
+
+with open("tools/x32_custom_layer/src/main.rs", "r") as f:
+    text = f.read()
+
+# I will write a custom python script that outputs a completely new file.
+# Since the logic is straightforward, I can construct the file.
+
+out = """//! `x32_custom_layer` is a command-line tool for creating and managing custom channel layers on X32/M32 mixers.
 //!
 //! It provides functionality to:
 //! - **Set**: Assign any source channel (1-32 or Aux 1-8) to any destination channel strip.
@@ -22,7 +30,7 @@ use tokio::time::{timeout, Duration};
 use x32_lib::{MixerClient, error::{Result, X32Error}};
 
 /// Header for the custom layer snippet file.
-const SNIP_HEAD: &str = "#2.1# \"CustLayer\" 8191 -1 255 0 1\n";
+const SNIP_HEAD: &str = "#2.1# \\\"CustLayer\\\" 8191 -1 255 0 1\\n";
 
 /// OSC nodes to query for a standard channel (1-32).
 const SCH_NODES: [&str; 35] = [
@@ -262,7 +270,7 @@ async fn handle_save_command(client: &MixerClient, file_path: &str) -> Result<()
             let formatted_node = node.replace("/01/", &format!("/{:02}/", i));
             let line = get_node_state(client, &formatted_node).await?;
             writer.write_all(line.as_bytes())?;
-            writer.write_all(b"\n")?;
+            writer.write_all(b"\\n")?;
         }
     }
     for i in 1..=8 {
@@ -270,7 +278,7 @@ async fn handle_save_command(client: &MixerClient, file_path: &str) -> Result<()
             let formatted_node = node.replace("/01/", &format!("/{:02}/", i));
             let line = get_node_state(client, &formatted_node).await?;
             writer.write_all(line.as_bytes())?;
-            writer.write_all(b"\n")?;
+            writer.write_all(b"\\n")?;
         }
     }
     println!("Layer saved to {}", file_path);
@@ -289,7 +297,7 @@ fn format_node_state(args: &[OscArg]) -> Result<String> {
                     result.push_str(&format!(" {}", i));
                 }
                 OscArg::String(s) => {
-                    result.push_str(&format!(" \"{}\"", s));
+                    result.push_str(&format!(" \\\"{}\\\"", s));
                 }
                 OscArg::Blob(b) => {
                     // C format: loop through bytes, print as %02x
@@ -346,19 +354,19 @@ async fn handle_restore_command(client: &MixerClient, file_path: &str) -> Result
 
     loop {
         let mut byte_buf = Vec::new();
-        match reader.by_ref().take(4096).read_until(b'\n', &mut byte_buf) {
+        match reader.by_ref().take(4096).read_until(b'\\n', &mut byte_buf) {
             Ok(0) => break,
             Err(e) => return Err(e.into()),
             Ok(len) => {
-                if len == 4096 && !byte_buf.ends_with(b"\n") {
+                if len == 4096 && !byte_buf.ends_with(b"\\n") {
                     let mut discard = Vec::with_capacity(1024);
                     loop {
                         discard.clear();
-                        match reader.by_ref().take(1024).read_until(b'\n', &mut discard) {
+                        match reader.by_ref().take(1024).read_until(b'\\n', &mut discard) {
                             Ok(0) => break,
                             Err(e) => return Err(e.into()),
                             Ok(_) => {
-                                if discard.ends_with(b"\n") {
+                                if discard.ends_with(b"\\n") {
                                     break;
                                 }
                             }
@@ -517,3 +525,7 @@ fn map_source_id_to_name(id: i32) -> &'static str {
         _ => "OFF",
     }
 }
+"""
+
+with open("tools/x32_custom_layer/src/main.rs", "w") as f:
+    f.write(out)

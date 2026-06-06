@@ -12,7 +12,7 @@
 //! *   **Rust implementation by:** mcelb1200
 
 use clap::Parser;
-use osc_lib::{OscArg, OscMessage};
+use osc_lib::OscArg;
 use std::io::{self, BufRead, Read};
 use tokio::time::Duration;
 use x32_lib::{MixerClient, error::Result};

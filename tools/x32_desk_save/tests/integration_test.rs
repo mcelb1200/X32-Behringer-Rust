@@ -26,6 +26,11 @@ fn setup_mock_x32_server() -> SocketAddr {
                                 .send_to(&response_msg.to_bytes().unwrap(), src_addr)
                                 .expect("couldn't send data");
                         }
+                    } else if received_msg.path == "/info" {
+                        let response_msg = OscMessage::new("/info".to_string(), vec![]);
+                        socket
+                            .send_to(&response_msg.to_bytes().unwrap(), src_addr)
+                            .expect("couldn't send data");
                     }
                 }
             } else {

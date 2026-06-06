@@ -16,7 +16,6 @@ use clap::Parser;
 use std::fs::File;
 use std::io::{self, BufRead, Read};
 use std::str::FromStr;
-use std::time::Duration;
 use tokio::net::UdpSocket;
 
 use midir::MidiOutput;

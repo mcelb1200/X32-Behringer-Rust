@@ -1,113 +1,77 @@
 //! `x32_desk_restore` is a command-line utility for restoring preferences, scenes, and routing data
 //! to a Behringer X32 digital mixer from a file. It is a Rust implementation of the original
 //! `X32DeskRestore.c` tool by Patrick-Gilles Maillot.
-//!
-//! # Credits
-//!
-//! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
-//! *   **Additional concepts by:** mcelb1200
-//! *   **Rust implementation by:** mcelb1200
 
 use clap::Parser;
 use osc_lib::OscMessage;
 use std::fs::File;
 use std::io::{self, Read};
-use std::net::UdpSocket;
 use std::path::PathBuf;
 use std::str::FromStr;
-use x32_lib::{
-    create_socket,
-    error::{Result, X32Error},
-};
+use std::time::Duration;
+use tokio::time::timeout;
+use x32_lib::{MixerClient, error::{Result, X32Error}};
 
 mod parse;
 
-/// A Rust implementation of the X32DeskRestore tool.
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
-    /// X32 console IP address
     #[arg(short, long, default_value = "192.168.1.64")]
     ip: String,
 
-    /// The source file path to restore data from.
+    #[arg(long, default_value = "auto")]
+    transport: String,
+
+    #[arg(long, default_value = "")]
+    usb_port: String,
+
+    #[arg(long, default_value = "")]
+    aes50_ip: String,
+
     #[arg(index = 1)]
     file: PathBuf,
 }
 
-/// Sends a list of OSC commands to the X32.
-///
-/// This function iterates over a slice of command strings, parses each one into
-/// an `OscMessage`, and sends it to the mixer. It waits for a response after each
-/// command to ensure reliable delivery, though the response content is discarded.
-///
-/// # Arguments
-///
-/// * `socket` - A `UdpSocket` connected to the X32 console.
-/// * `commands` - A slice of strings, where each string is an OSC command to be sent.
-///
-/// # Returns
-///
-/// A `Result` indicating success or an `X32Error` if an error occurs.
-fn send_commands(socket: &UdpSocket, commands: &[String]) -> Result<()> {
-    let mut buf = [0; 512];
+async fn send_commands(client: &MixerClient, commands: &[String]) -> Result<()> {
+    let mut rx = client.subscribe();
+
     for cmd_str in commands {
         let msg = if cmd_str.starts_with("/-") {
-            // Attempt to parse `/-...` lines using XDS_parse logic.
-            // If it fails to parse (or unsupported), skip it or log it (C code skipped unsupported nodes).
             if let Some(parsed_msg) = parse::parse_node_line(cmd_str) {
                 parsed_msg
             } else {
                 continue;
             }
         } else {
-            // Prepend "/" to the command string if it doesn't start with it
             let command = if cmd_str.starts_with('/') {
                 cmd_str.to_string()
             } else {
                 format!("/{}", cmd_str)
             };
 
-            // Attempt to parse with OscMessage::from_str first
             match OscMessage::from_str(&command) {
                 Ok(msg) => msg,
-                Err(_) => {
-                    // If parsing fails, treat the line as a simple command with no arguments
-                    OscMessage::new(command, vec![])
-                }
+                Err(_) => OscMessage::new(command, vec![]),
             }
         };
 
-        let bytes = msg.to_bytes()?;
-        socket.send(&bytes)?;
+        client.send_message(&msg.path, msg.args).await?;
 
-        match socket.recv(&mut buf) {
-            Ok(_) => {
-                // We don't care about the response for this tool
-            }
-            Err(e) => {
-                if e.kind() != io::ErrorKind::WouldBlock {
-                    return Err(X32Error::Io(e));
-                }
-            }
-        }
+        // Wait a small amount for any response (equivalent to `socket.recv`)
+        let _ = timeout(Duration::from_millis(50), rx.recv()).await;
     }
     Ok(())
 }
 
-/// The main entry point for the `x32_desk_restore` utility.
-///
-/// This function parses command-line arguments, reads OSC commands from a file,
-/// connects to the X32, and sends the commands to restore the mixer's state.
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     let args = Args::parse();
 
     let file = File::open(&args.file)?;
 
-    // Security: Prevent OOM from maliciously large or corrupted files.
     let metadata = file.metadata()?;
     if metadata.len() > 1024 * 1024 {
-        // 1MB limit
         return Err(X32Error::Io(io::Error::new(
             io::ErrorKind::InvalidData,
             "File too large",
@@ -134,10 +98,17 @@ fn main() -> Result<()> {
         return Ok(());
     }
 
-    let socket = create_socket(&args.ip, 2000)?;
+    let (client, _transport) = MixerClient::connect_with_transport(
+        &args.ip,
+        &args.aes50_ip,
+        &args.usb_port,
+        &args.transport,
+        false,
+    ).await?;
+    
     println!("Successfully connected to X32 at {}", args.ip);
 
-    send_commands(&socket, &commands)?;
+    send_commands(&client, &commands).await?;
 
     println!("Successfully restored data from {}", args.file.display());
 

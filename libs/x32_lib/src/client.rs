@@ -15,6 +15,29 @@ pub struct MixerClient {
 }
 
 impl MixerClient {
+    /// Queries the `/node` command for a given path and returns the response string.
+    pub async fn query_node(&self, node_path: &str) -> Result<String> {
+        let mut rx = self.msg_tx.subscribe();
+        self.send_message("/node", vec![OscArg::String(node_path.to_string())]).await?;
+
+        let timeout_dur = Duration::from_secs(2);
+        let start = std::time::Instant::now();
+
+        while start.elapsed() < timeout_dur {
+            match time::timeout(timeout_dur - start.elapsed(), rx.recv()).await {
+                Ok(Ok(msg)) => {
+                    if msg.path == "/node" || msg.path == "node" {
+                        if let Some(OscArg::String(response_str)) = msg.args.first() {
+                            return Ok(response_str.clone());
+                        }
+                    }
+                }
+                _ => continue,
+            }
+        }
+        Err(OscError::ParseError("Query /node timeout".to_string()).into())
+    }
+
     /// Creates a new `MixerClient` instance using the provided transport.
     pub fn new(transport: Arc<dyn MixerTransport>, heartbeat: bool) -> Self {
         let (msg_tx, _) = broadcast::channel(100);
@@ -69,9 +92,23 @@ impl MixerClient {
 
     /// Probes the mixer connection by sending a /info message.
     pub async fn probe(&self) -> bool {
-        tokio::time::timeout(Duration::from_millis(250), self.query_value("/info"))
-            .await
-            .is_ok()
+        let mut rx = self.msg_tx.subscribe();
+        if self.send_message("/info", vec![]).await.is_err() {
+            return false;
+        }
+        let timeout_dur = Duration::from_millis(250);
+        let start = std::time::Instant::now();
+        while start.elapsed() < timeout_dur {
+            match time::timeout(timeout_dur - start.elapsed(), rx.recv()).await {
+                Ok(Ok(msg)) => {
+                    if msg.path == "/info" {
+                        return true;
+                    }
+                }
+                _ => break,
+            }
+        }
+        false
     }
 
     /// Connects automatically using fallback hierarchy.

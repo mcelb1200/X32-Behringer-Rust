@@ -1,11 +1,16 @@
-//! `x32_get_lib` is a command-line tool for retrieving library presets from a Behringer X32/M32 mixer.
+import re
+
+with open("tools/x32_get_lib/src/main.rs", "r") as f:
+    text = f.read()
+
+out = """//! `x32_get_lib` is a command-line tool for retrieving library presets from a Behringer X32/M32 mixer.
 //!
 //! It can fetch Channel, Effects, or Routing presets and save them to local files.
 //! This tool allows you to backup your library presets or transfer them between consoles.
 
 use anyhow::Result;
 use clap::{Parser, ValueEnum};
-use osc_lib::OscArg;
+use osc_lib::{OscArg, OscMessage};
 use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
@@ -95,7 +100,7 @@ async fn main() -> Result<()> {
 
             if let Ok(Ok(resp)) = timeout(Duration::from_millis(50), rx.recv()).await {
                 if let Some(OscArg::Int(1)) = resp.args.first() {
-                    process_lib_slot(&client, t.clone(), i, &args.output_dir, args.verbose).await?;
+                    process_lib_slot(&client, t, i, &args.output_dir, args.verbose).await?;
                 }
             }
         }
@@ -119,7 +124,7 @@ async fn process_lib_slot(
 
     let resp = match timeout(Duration::from_millis(500), rx.recv()).await {
         Ok(Ok(m)) => m,
-        _ => return Err(X32Error::from("Timeout waiting for node".to_string()).into()),
+        _ => return Err(X32Error::from("Timeout waiting for node").into()),
     };
 
     let name = if let Some(OscArg::String(s)) = resp.args.get(1) {
@@ -168,7 +173,7 @@ async fn process_lib_slot(
         }
     }
 
-    writeln!(file, "#2.1# \"{}\" {}", name, flags)?;
+    writeln!(file, "#2.1# \\\"{}\\\" {}", name, flags)?;
 
     let params: Vec<String> = match t {
         LibType::Channel => {
@@ -274,3 +279,7 @@ async fn process_lib_slot(
     file.flush()?;
     Ok(())
 }
+"""
+
+with open("tools/x32_get_lib/src/main.rs", "w") as f:
+    f.write(out)

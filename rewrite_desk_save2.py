@@ -1,4 +1,9 @@
-//! `x32_desk_save` is a command-line utility for saving preferences, scenes, and routing data
+import re
+
+with open("tools/x32_desk_save/src/main.rs", "r") as f:
+    text = f.read()
+
+out = """//! `x32_desk_save` is a command-line utility for saving preferences, scenes, and routing data
 //! from a Behringer X32 digital mixer to a file. It is a Rust implementation of the original
 //! `X32DeskSave.c` tool by Patrick-Gilles Maillot.
 
@@ -72,11 +77,7 @@ async fn main() -> Result<(), X32Error> {
     } else if let Some(pattern_file) = &args.pattern_file {
         let file = File::open(pattern_file)?;
         let reader = std::io::BufReader::new(file);
-        reader.lines()
-            .filter_map(|l| l.ok())
-            .filter(|line| !line.starts_with('#'))
-            .filter_map(|line| line.split_whitespace().next().map(|s| s.to_string()))
-            .collect()
+        reader.lines().filter_map(|l| l.ok()).collect()
     } else {
         return Err(X32Error::Custom("No mode selected".to_string()));
     };
@@ -105,3 +106,7 @@ async fn main() -> Result<(), X32Error> {
 
     Ok(())
 }
+"""
+
+with open("tools/x32_desk_save/src/main.rs", "w") as f:
+    f.write(out)

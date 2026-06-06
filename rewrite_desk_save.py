@@ -1,4 +1,9 @@
-//! `x32_desk_save` is a command-line utility for saving preferences, scenes, and routing data
+import re
+
+with open("tools/x32_desk_save/src/main.rs", "r") as f:
+    text = f.read()
+
+out = """//! `x32_desk_save` is a command-line utility for saving preferences, scenes, and routing data
 //! from a Behringer X32 digital mixer to a file. It is a Rust implementation of the original
 //! `X32DeskSave.c` tool by Patrick-Gilles Maillot.
 
@@ -40,23 +45,29 @@ struct Args {
     pattern_file: Option<PathBuf>,
 
     #[arg(index = 1)]
-    destination_file: PathBuf,
+    file: PathBuf,
 }
 
 async fn get_desk_data(client: &MixerClient, commands: &[String]) -> Result<Vec<String>, X32Error> {
-    let mut results = Vec::new();
+    let mut data = Vec::new();
     let mut rx = client.subscribe();
 
-    for cmd in commands {
-        let msg = OscMessage::new("/node".to_string(), vec![OscArg::String(cmd.to_string())]);
+    for node in commands {
+        let msg = OscMessage::new("/node".to_string(), vec![OscArg::String(node.to_string())]);
         client.send_message(&msg.path, msg.args).await?;
 
-        if let Ok(Ok(response)) = timeout(Duration::from_millis(500), rx.recv()).await {
-            results.push(response.to_string());
+        if let Ok(Ok(received_msg)) = timeout(Duration::from_millis(500), rx.recv()).await {
+            if received_msg.path == "node" || received_msg.path == "/node" {
+                if let Some(OscArg::String(s)) = received_msg.args.first() {
+                    data.push(s.clone());
+                }
+            }
+        } else {
+            eprintln!("Timeout waiting for node: {}", node);
         }
     }
 
-    Ok(results)
+    Ok(data)
 }
 
 #[tokio::main]
@@ -69,14 +80,10 @@ async fn main() -> Result<(), X32Error> {
         nodes::SC_NODE.iter().map(|s| s.to_string()).collect()
     } else if args.routing {
         nodes::RO_NODE.iter().map(|s| s.to_string()).collect()
-    } else if let Some(pattern_file) = &args.pattern_file {
+    } else if let Some(pattern_file) = args.pattern_file {
         let file = File::open(pattern_file)?;
         let reader = std::io::BufReader::new(file);
-        reader.lines()
-            .filter_map(|l| l.ok())
-            .filter(|line| !line.starts_with('#'))
-            .filter_map(|line| line.split_whitespace().next().map(|s| s.to_string()))
-            .collect()
+        reader.lines().filter_map(|l| l.ok()).collect()
     } else {
         return Err(X32Error::Custom("No mode selected".to_string()));
     };
@@ -93,15 +100,24 @@ async fn main() -> Result<(), X32Error> {
 
     let data = get_desk_data(&client, &commands).await?;
 
-    let file = File::create(&args.destination_file)?;
+    let file = File::create(&args.file)?;
     let mut file = BufWriter::new(file);
     
+    save_desk_state(&mut file, &data)?;
+
+    println!("Successfully saved data to {}", args.file.display());
+
+    Ok(())
+}
+
+fn save_desk_state(file: &mut BufWriter<File>, data: &[String]) -> Result<(), X32Error> {
     for line in data {
         writeln!(file, "{}", line)?;
     }
     file.flush()?;
-
-    println!("Successfully saved data to {}", args.destination_file.display());
-
     Ok(())
 }
+"""
+
+with open("tools/x32_desk_save/src/main.rs", "w") as f:
+    f.write(out)

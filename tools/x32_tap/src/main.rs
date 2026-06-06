@@ -9,13 +9,14 @@
 //! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
 //! *   **Additional concepts by:** mcelb1200
 //! *   **Rust implementation by:** mcelb1200
+//!
 
 use anyhow::{Context, Result, anyhow};
 use clap::Parser;
-use osc_lib::{OscArg, OscMessage};
+use osc_lib::OscArg;
 use std::io::{self, Write};
 use std::time::Instant;
-use x32_lib::create_socket;
+use x32_lib::MixerClient;
 
 /// Set the delay time of an X32 effects unit by tapping.
 #[derive(Parser, Debug)]
@@ -24,6 +25,15 @@ struct Args {
     /// The IP address of the X32 mixer.
     #[arg(short, long, default_value = "192.168.0.64")]
     ip: String,
+
+    #[arg(long, default_value = "auto")]
+    transport: String,
+
+    #[arg(long, default_value = "")]
+    usb_port: String,
+
+    #[arg(long, default_value = "")]
+    aes50_ip: String,
 
     /// The FX slot number (1-4) containing the delay effect.
     #[arg(short, long, default_value_t = 1)]
@@ -59,45 +69,23 @@ async fn main() -> Result<()> {
     }
 
     println!("Connecting to X32 at {}...", args.ip);
-    let std_socket = create_socket(&args.ip, 500).context("Failed to create socket")?;
-    std_socket.set_nonblocking(true)?;
-    let socket = tokio::net::UdpSocket::from_std(std_socket)?;
+    let (client, _) = MixerClient::connect_with_transport(
+        &args.ip,
+        &args.aes50_ip,
+        &args.usb_port,
+        &args.transport,
+        false,
+    )
+    .await
+    .context("Failed to connect to X32")?;
+    let client = std::sync::Arc::new(client);
+    println!("Connected!");
 
-    // Check connection with /info
-    let info_msg = OscMessage::new("/info".to_string(), vec![]);
-    socket.send(&info_msg.to_bytes()?).await?;
-
-    let mut buf = [0u8; 512];
-    match tokio::time::timeout(std::time::Duration::from_millis(500), socket.recv(&mut buf)).await {
-        Ok(Ok(_)) => println!("Connected!"),
-        Ok(Err(e)) => return Err(anyhow!("Failed to connect to X32: {}", e)),
-        Err(_) => {
-            return Err(anyhow!(
-                "Connection to X32 timed out. Is the IP address correct?"
-            ));
-        }
-    }
-
-    // We can't reuse get_fx_type easily because it takes std::net::UdpSocket.
-    // So let's write our own async check.
     println!("Checking FX slot {}...", args.slot);
-    let type_req = OscMessage::new(format!("/fx/{}/type", args.slot), vec![]);
-    socket.send(&type_req.to_bytes()?).await?;
     let mut fx_type = 0;
-
-    // Read response with timeout
-    #[allow(clippy::collapsible_match)]
-    if let Ok(res) =
-        tokio::time::timeout(std::time::Duration::from_millis(500), socket.recv(&mut buf)).await
-    {
-        if let Ok(len) = res {
-            if let Ok(msg) = OscMessage::from_bytes(&buf[..len]) {
-                if msg.path == type_req.path {
-                    if let Some(OscArg::Int(t)) = msg.args.first() {
-                        fx_type = *t;
-                    }
-                }
-            }
+    if let Ok(res) = client.query_value(&format!("/fx/{}/type", args.slot)).await {
+        if let OscArg::Int(t) = res {
+            fx_type = t;
         }
     }
 
@@ -127,97 +115,80 @@ async fn main() -> Result<()> {
         let param_idx = if fx_type == 10 { 2 } else { 1 };
         let address = format!("/fx/{}/par/{:02}", args.slot, param_idx);
 
+        let mut rx = client.subscribe();
+
         loop {
-            // Send keepalives every 9 seconds
+            // Send keepalives and meter subscriptions every 9 seconds
             let now = Instant::now();
             if now.duration_since(last_keepalive).as_secs() >= 9 {
                 // Keep the connection alive
-                let xremote_msg = OscMessage::new("/xremote".to_string(), vec![]);
-                if let Err(e) = socket.send(&xremote_msg.to_bytes()?).await {
-                    eprintln!("Failed to send /xremote: {}", e);
-                }
+                let _ = client.send_message("/xremote", vec![]).await;
 
-                // Meter 6 subscription with channel index in format. Wait, C code uses:
-                // "/meters\0,siii\0\0\0/meters/6\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
-                // followed by injecting the channel index at offset 31 (the 3rd int).
-                // Let's use osc_lib: path: "/meters", args: String("/meters/6"), Int(0), Int(0), Int(args.channel - 1), Int(0)
-                // Actually the C format is ,siii: string, int, int, int.
-                let meter_req = OscMessage::new(
-                    "/meters".to_string(),
-                    vec![
-                        OscArg::String("/meters/6".to_string()),
-                        OscArg::Int(0),
-                        OscArg::Int(0),
-                        OscArg::Int((args.channel - 1) as i32),
-                    ],
-                );
-                if let Err(e) = socket.send(&meter_req.to_bytes()?).await {
-                    eprintln!("Failed to send /meters request: {}", e);
-                }
+                // Meter 6 subscription with channel index
+                let _ = client
+                    .send_message(
+                        "/meters",
+                        vec![
+                            OscArg::String("/meters/6".to_string()),
+                            OscArg::Int(0),
+                            OscArg::Int(0),
+                            OscArg::Int((args.channel - 1) as i32),
+                        ],
+                    )
+                    .await;
 
                 last_keepalive = now;
             }
 
-            // Read UDP packets
-            if let Ok(Ok(len)) =
-                tokio::time::timeout(std::time::Duration::from_millis(100), socket.recv(&mut buf))
-                    .await
+            // Read incoming OSC messages
+            if let Ok(Ok(msg)) =
+                tokio::time::timeout(std::time::Duration::from_millis(100), rx.recv()).await
             {
-                if let Ok(msg) = OscMessage::from_bytes(&buf[..len]) {
-                    if msg.path == "/meters/6" {
-                        if let Some(OscArg::Blob(data)) = msg.args.first() {
-                            // C code reads float at offset 12 of the data (which is byte 28 from start of packet).
-                            // A blob in /meters/6 contains 4 floats: 4 * 4 = 16 bytes.
-                            if data.len() >= 16 {
-                                let mut f_bytes = [0u8; 4];
-                                // Rust OSC blobs usually come out as raw bytes. The float at offset 12:
-                                if let Some(slice) = data.get(12..16) {
-                                    f_bytes.copy_from_slice(slice);
-                                } else {
-                                    continue;
-                                }
-                                // X32 sends floats in Little Endian in blobs.
-                                let level = f32::from_le_bytes(f_bytes);
+                if msg.path == "/meters/6" {
+                    if let Some(OscArg::Blob(data)) = msg.args.first() {
+                        // A blob in /meters/6 contains 4 floats: 4 * 4 = 16 bytes.
+                        if data.len() >= 16 {
+                            let mut f_bytes = [0u8; 4];
+                            if let Some(slice) = data.get(12..16) {
+                                f_bytes.copy_from_slice(slice);
+                            } else {
+                                continue;
+                            }
+                            // X32 sends floats in Little Endian in blobs.
+                            let level = f32::from_le_bytes(f_bytes);
 
-                                if level > args.threshold {
-                                    if !was_above_threshold {
-                                        let tap_time = Instant::now();
-                                        if let Some(last) = last_tap {
-                                            let delta = tap_time.duration_since(last);
-                                            let delta_ms = delta.as_millis() as f32;
+                            if level > args.threshold {
+                                if !was_above_threshold {
+                                    let tap_time = Instant::now();
+                                    if let Some(last) = last_tap {
+                                        let delta = tap_time.duration_since(last);
+                                        let delta_ms = delta.as_millis() as f32;
 
-                                            // Minimum resolution is 60ms to avoid rapid-fire updates
-                                            if delta_ms > 60.0 {
-                                                let f_val = (delta_ms / 3000.0).clamp(0.0, 1.0);
-                                                let tempo_ms = (f_val * 3000.0) as i32;
-                                                println!(
-                                                    "Auto Tap: {}ms (level: {:.2})",
-                                                    tempo_ms, level
-                                                );
+                                        // Minimum resolution is 60ms to avoid rapid-fire updates
+                                        if delta_ms > 60.0 {
+                                            let f_val = (delta_ms / 3000.0).clamp(0.0, 1.0);
+                                            let tempo_ms = (f_val * 3000.0) as i32;
+                                            println!(
+                                                "Auto Tap: {}ms (level: {:.2})",
+                                                tempo_ms, level
+                                            );
 
-                                                let update_msg = OscMessage::new(
-                                                    address.clone(),
-                                                    vec![OscArg::Float(f_val)],
-                                                );
-                                                if let Err(e) =
-                                                    socket.send(&update_msg.to_bytes()?).await
-                                                {
-                                                    eprintln!(
-                                                        "Failed to update FX parameter: {}",
-                                                        e
-                                                    );
-                                                }
-                                                last_tap = Some(tap_time);
+                                            if let Err(e) = client
+                                                .send_message(&address, vec![OscArg::Float(f_val)])
+                                                .await
+                                            {
+                                                eprintln!("Failed to update FX parameter: {}", e);
                                             }
-                                        } else {
-                                            println!("First auto tap... (level: {:.2})", level);
                                             last_tap = Some(tap_time);
                                         }
-                                        was_above_threshold = true;
+                                    } else {
+                                        println!("First auto tap... (level: {:.2})", level);
+                                        last_tap = Some(tap_time);
                                     }
-                                } else {
-                                    was_above_threshold = false;
+                                    was_above_threshold = true;
                                 }
+                            } else {
+                                was_above_threshold = false;
                             }
                         }
                     }
@@ -298,8 +269,7 @@ async fn main() -> Result<()> {
                 let param_idx = if fx_type == 10 { 2 } else { 1 };
                 let address = format!("/fx/{}/par/{:02}", args.slot, param_idx);
 
-                let msg = OscMessage::new(address, vec![OscArg::Float(f_val)]);
-                if let Err(e) = socket.send(&msg.to_bytes()?).await {
+                if let Err(e) = client.send_message(&address, vec![OscArg::Float(f_val)]).await {
                     eprintln!("Failed to send OSC message: {}", e);
                 }
             } else {

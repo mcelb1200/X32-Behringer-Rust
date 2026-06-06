@@ -2,39 +2,45 @@
 //!
 //! It reads OSC commands from standard input (one per line) and sends them to the mixer.
 //! This is typically used to restore a scene or apply a batch of settings.
-//!
-//! # Credits
-//!
-//! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
-//! *   **Original C code for XAir version:** Ken Mitchell
-//! *   **Additional concepts by:** mcelb1200
-//! *   **Rust implementation by:** mcelb1200
 
 use clap::Parser;
 use osc_lib::OscMessage;
 use std::io::{self, BufRead, Read};
 use std::str::FromStr;
-use std::thread;
 use std::time::Duration;
-use x32_lib::{create_socket, error::Result};
+use x32_lib::{MixerClient, error::Result};
 
-/// Command-line arguments for `x32_set_scene`.
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
-    /// The IP address of the X32 console.
     #[arg(short, long, default_value = "192.168.0.64")]
     ip: String,
 
-    /// Delay between commands in milliseconds.
+    #[arg(long, default_value = "auto")]
+    transport: String,
+
+    #[arg(long, default_value = "")]
+    usb_port: String,
+
+    #[arg(long, default_value = "")]
+    aes50_ip: String,
+
     #[arg(short, long, default_value_t = 1)]
     delay: u64,
 }
 
-/// The main entry point for the application.
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     let args = Args::parse();
-    let socket = create_socket(&args.ip, 100)?;
+    
+    let (client, _transport) = MixerClient::connect_with_transport(
+        &args.ip,
+        &args.aes50_ip,
+        &args.usb_port,
+        &args.transport,
+        false,
+    ).await?;
+    let client = std::sync::Arc::new(client);
 
     let stdin = io::stdin();
     let mut stdin_lock = stdin.lock();
@@ -45,12 +51,7 @@ fn main() -> Result<()> {
             Ok(0) => break,                 // EOF
             Err(e) => return Err(e.into()), // Propagate I/O errors properly
             Ok(len) => {
-                if len == 4096
-                    && !byte_buf.ends_with(
-                        b"
-",
-                    )
-                {
+                if len == 4096 && !byte_buf.ends_with(b"\n") {
                     // Line too long, discard remainder
                     let mut discard = Vec::with_capacity(1024);
                     loop {
@@ -60,10 +61,7 @@ fn main() -> Result<()> {
                             Ok(0) => break,
                             Err(e) => return Err(e.into()),
                             Ok(_) => {
-                                if discard.ends_with(
-                                    b"
-",
-                                ) {
+                                if discard.ends_with(b"\n") {
                                     break;
                                 }
                             }
@@ -85,10 +83,8 @@ fn main() -> Result<()> {
 
         let line = line_str.trim();
         if line.starts_with('/') {
-            // First try to parse it as a scene line
             let mut messages = x32_lib::scene_parse::parse_scene_line(line);
 
-            // If it returns empty, it might be a fully formed raw OSC line, fall back to from_str
             if messages.is_empty() {
                 match OscMessage::from_str(line) {
                     Ok(msg) => messages.push(msg),
@@ -97,11 +93,9 @@ fn main() -> Result<()> {
             }
 
             for msg in messages {
-                if let Ok(bytes) = msg.to_bytes() {
-                    socket.send(&bytes)?;
-                    if args.delay > 0 {
-                        thread::sleep(Duration::from_millis(args.delay));
-                    }
+                client.send_message(&msg.path, msg.args).await?;
+                if args.delay > 0 {
+                    tokio::time::sleep(Duration::from_millis(args.delay)).await;
                 }
             }
         }
