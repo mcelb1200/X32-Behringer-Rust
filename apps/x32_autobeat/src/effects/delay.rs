@@ -33,11 +33,21 @@ impl EffectHandler for GenericDelayHandler {
             _ => (20.0, 20.0, 30.0, 4000.0),
         };
 
-        network.set_effect_param(slot, 1, ratio2float(mix, 100.0)).await?;
-        network.set_effect_param(slot, 6, afine2float(offset, -100.0, 200.0)).await?;
-        network.set_effect_param(slot, 10, ratio2float(feedback, 100.0)).await?;
-        network.set_effect_param(slot, 11, ratio2float(feedback, 100.0)).await?;
-        network.set_effect_param(slot, 12, log2float(hi_cut, 200.0, 4.605_170_2)).await?;
+        network
+            .set_effect_param(slot, 1, ratio2float(mix, 100.0))
+            .await?;
+        network
+            .set_effect_param(slot, 6, afine2float(offset, -100.0, 200.0))
+            .await?;
+        network
+            .set_effect_param(slot, 10, ratio2float(feedback, 100.0))
+            .await?;
+        network
+            .set_effect_param(slot, 11, ratio2float(feedback, 100.0))
+            .await?;
+        network
+            .set_effect_param(slot, 12, log2float(hi_cut, 200.0, 4.605_170_2))
+            .await?;
 
         Ok(())
     }
@@ -80,13 +90,23 @@ impl EffectHandler for TapDelayHandler {
             _ => (20.0, 30.0, 4000.0),
         };
 
-        network.set_effect_param(slot, 2, ratio2float(gain_base, 100.0)).await?;
+        network
+            .set_effect_param(slot, 2, ratio2float(gain_base, 100.0))
+            .await?;
         if self.is_4tap {
-            network.set_effect_param(slot, 3, ratio2float(feedback, 100.0)).await?;
-            network.set_effect_param(slot, 5, log2float(hi_cut, 200.0, 4.605_170_2)).await?;
+            network
+                .set_effect_param(slot, 3, ratio2float(feedback, 100.0))
+                .await?;
+            network
+                .set_effect_param(slot, 5, log2float(hi_cut, 200.0, 4.605_170_2))
+                .await?;
         } else {
-            network.set_effect_param(slot, 4, ratio2float(feedback, 100.0)).await?;
-            network.set_effect_param(slot, 6, log2float(hi_cut, 200.0, 4.605_170_2)).await?;
+            network
+                .set_effect_param(slot, 4, ratio2float(feedback, 100.0))
+                .await?;
+            network
+                .set_effect_param(slot, 6, log2float(hi_cut, 200.0, 4.605_170_2))
+                .await?;
         }
 
         Ok(())
@@ -133,14 +153,26 @@ impl EffectHandler for CombinedDelayHandler {
         };
 
         if self.is_modd {
-            network.set_effect_param(slot, 13, ratio2float(mix, 100.0)).await?;
-            network.set_effect_param(slot, 3, ratio2float(feedback, 100.0)).await?;
-            network.set_effect_param(slot, 5, log2float(hi_cut, 200.0, 4.605_170_2)).await?;
+            network
+                .set_effect_param(slot, 13, ratio2float(mix, 100.0))
+                .await?;
+            network
+                .set_effect_param(slot, 3, ratio2float(feedback, 100.0))
+                .await?;
+            network
+                .set_effect_param(slot, 5, log2float(hi_cut, 200.0, 4.605_170_2))
+                .await?;
         } else {
-            network.set_effect_param(slot, 12, ratio2float(mix, 100.0)).await?;
-            network.set_effect_param(slot, 4, ratio2float(feedback, 100.0)).await?;
+            network
+                .set_effect_param(slot, 12, ratio2float(mix, 100.0))
+                .await?;
+            network
+                .set_effect_param(slot, 4, ratio2float(feedback, 100.0))
+                .await?;
             // Combined feed hi cut is Param 3 [1000..20000]
-            network.set_effect_param(slot, 3, log2float(hi_cut, 1000.0, 2.995_732_3)).await?;
+            network
+                .set_effect_param(slot, 3, log2float(hi_cut, 1000.0, 2.995_732_3))
+                .await?;
         }
 
         Ok(())

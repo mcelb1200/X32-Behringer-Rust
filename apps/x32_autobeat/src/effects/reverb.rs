@@ -92,8 +92,12 @@ impl EffectHandler for ReverbHandler {
         };
 
         network.set_effect_param(slot, 3, size_val).await?;
-        network.set_effect_param(slot, 4, log2float(damp_hz, 1000.0, 2.995_732_3)).await?;
-        network.set_effect_param(slot, 6, afine2float(level_db, -12.0, 24.0)).await?;
+        network
+            .set_effect_param(slot, 4, log2float(damp_hz, 1000.0, 2.995_732_3))
+            .await?;
+        network
+            .set_effect_param(slot, 6, afine2float(level_db, -12.0, 24.0))
+            .await?;
 
         Ok(())
     }

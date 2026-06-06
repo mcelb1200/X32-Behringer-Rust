@@ -273,10 +273,7 @@ async fn main() -> Result<()> {
                 }
                 NetworkEvent::EncoderTurned(val) => {
                     let cfg = &mut effect_configs[selected_slot];
-                    let current_idx = styles
-                        .iter()
-                        .position(|&s| s == cfg.style)
-                        .unwrap_or(0);
+                    let current_idx = styles.iter().position(|&s| s == cfg.style).unwrap_or(0);
                     let new_idx = if val > 0 {
                         (current_idx + 1) % styles.len()
                     } else {
@@ -348,7 +345,9 @@ async fn main() -> Result<()> {
                 .map(|b| format!("{}BPM", b))
                 .unwrap_or_else(|| "---BPM".to_string());
             let text = format!("{} {}", bpm_str, current_style.to_uppercase());
-            let _ = network.set_scribble_target(&cli.info_scribble_path, &text).await;
+            let _ = network
+                .set_scribble_target(&cli.info_scribble_path, &text)
+                .await;
         }
 
         // 4. Update Effects (All Slots)

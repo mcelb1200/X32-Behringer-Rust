@@ -40,7 +40,7 @@ Run the application specifying your mixer's IP, target input channel, and audio 
 For sound board operators and church/live-event volunteers.
 
 ### Dynamic Syncing
-Instead of manually tapping tempos during a live set, `x32_autobeat` listens to the music (e.g. from the drum channel or master output) and constantly updates the mixer's delays/reverbs in real time. 
+Instead of manually tapping tempos during a live set, `x32_autobeat` listens to the music (e.g. from the drum channel or master output) and constantly updates the mixer's delays/reverbs in real time.
 
 ### Visual Screen Layout
 *   **BPM**: Displays the currently detected music tempo.

@@ -45,9 +45,15 @@ impl EffectHandler for ModulationHandler {
             _ => (25.0, 25.0),
         };
 
-        network.set_effect_param(slot, 2, ratio2float(depth, 100.0)).await?;
-        network.set_effect_param(slot, 3, ratio2float(depth, 100.0)).await?; // Depth R for Chorus/Flanger
-        network.set_effect_param(slot, 6, ratio2float(mix, 100.0)).await?;
+        network
+            .set_effect_param(slot, 2, ratio2float(depth, 100.0))
+            .await?;
+        network
+            .set_effect_param(slot, 3, ratio2float(depth, 100.0))
+            .await?; // Depth R for Chorus/Flanger
+        network
+            .set_effect_param(slot, 6, ratio2float(mix, 100.0))
+            .await?;
 
         Ok(())
     }
