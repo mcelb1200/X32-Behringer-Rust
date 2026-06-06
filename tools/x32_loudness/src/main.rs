@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use clap::{Parser, Subcommand, ValueEnum};
 use osc_lib::OscArg;
 use serde::{Deserialize, Serialize};
@@ -129,14 +129,26 @@ async fn main() -> Result<()> {
             run_calibration(client, &cli.config, target_db).await?;
         }
         Commands::Run => {
-            run_daemon(client, &cli.config, cli.room_eq.as_deref(), cli.mode, cli.fx_slot, &cli.fader_path).await?;
+            run_daemon(
+                client,
+                &cli.config,
+                cli.room_eq.as_deref(),
+                cli.mode,
+                cli.fx_slot,
+                &cli.fader_path,
+            )
+            .await?;
         }
     }
 
     Ok(())
 }
 
-async fn run_calibration(client: Arc<MixerClient>, config_path: &str, target_db: f32) -> Result<()> {
+async fn run_calibration(
+    client: Arc<MixerClient>,
+    config_path: &str,
+    target_db: f32,
+) -> Result<()> {
     println!("\n=== Starting Loudness Calibration ===");
     println!("This will activate the X32 built-in pink noise generator.");
     println!("Please ensure Main volume is down or comfortable before starting.");
@@ -147,13 +159,24 @@ async fn run_calibration(client: Arc<MixerClient>, config_path: &str, target_db:
 
     // Configure oscillator: Pink Noise, target L/R, level -18 dBFS, Active = 1
     println!("Activating oscillator...");
-    client.send_message("/config/osc/type", vec![OscArg::Int(1)]).await?; // Pink Noise
-    client.send_message("/config/osc/dest", vec![OscArg::Int(16)]).await?; // Main L/R
-    client.send_message("/config/osc/level", vec![OscArg::Float(0.166)]).await?; // approx -18 dBFS
-    client.send_message("/config/osc/active", vec![OscArg::Int(1)]).await?;
+    client
+        .send_message("/config/osc/type", vec![OscArg::Int(1)])
+        .await?; // Pink Noise
+    client
+        .send_message("/config/osc/dest", vec![OscArg::Int(16)])
+        .await?; // Main L/R
+    client
+        .send_message("/config/osc/level", vec![OscArg::Float(0.166)])
+        .await?; // approx -18 dBFS
+    client
+        .send_message("/config/osc/active", vec![OscArg::Int(1)])
+        .await?;
 
     println!("\n---> Adjust main fader on the console until room volume");
-    println!("     matches a comfortable conversation level (~{} dBA SPL).", target_db);
+    println!(
+        "     matches a comfortable conversation level (~{} dBA SPL).",
+        target_db
+    );
     print!("Press ENTER when done...");
     io::stdout().flush()?;
     input.clear();
@@ -169,7 +192,9 @@ async fn run_calibration(client: Arc<MixerClient>, config_path: &str, target_db:
 
     // Deactivate oscillator
     println!("Deactivating oscillator...");
-    let _ = client.send_message("/config/osc/active", vec![OscArg::Int(0)]).await;
+    let _ = client
+        .send_message("/config/osc/active", vec![OscArg::Int(0)])
+        .await;
 
     let fader_db = fader_to_db(fader_val);
     let c_room = target_db - fader_db;
@@ -216,14 +241,20 @@ async fn run_daemon(
             println!("Loaded room EQ correction file: {}", path);
             r
         } else {
-            println!("Warning: Room EQ file '{}' specified but not found. Using zero offsets.", path);
+            println!(
+                "Warning: Room EQ file '{}' specified but not found. Using zero offsets.",
+                path
+            );
             RoomEqConfig::default()
         }
     } else {
         RoomEqConfig::default()
     };
 
-    println!("Running Fletcher-Munson dynamic EQ daemon in {:?} mode (polling {})...", mode, fader_path);
+    println!(
+        "Running Fletcher-Munson dynamic EQ daemon in {:?} mode (polling {})...",
+        mode, fader_path
+    );
 
     let mut last_fader_val: Option<f32> = None;
     let mut rx = client.subscribe();
@@ -299,21 +330,48 @@ async fn update_eq(
                 0.0
             };
 
-            let offset_low = room_eq.peq.as_ref().and_then(|v| v.first()).cloned().unwrap_or(0.0);
-            let offset_high = room_eq.peq.as_ref().and_then(|v| v.get(5)).cloned().unwrap_or(0.0);
+            let offset_low = room_eq
+                .peq
+                .as_ref()
+                .and_then(|v| v.first())
+                .cloned()
+                .unwrap_or(0.0);
+            let offset_high = room_eq
+                .peq
+                .as_ref()
+                .and_then(|v| v.get(5))
+                .cloned()
+                .unwrap_or(0.0);
 
             let final_low = (dynamic_low + offset_low).clamp(-15.0, 15.0);
             let final_high = (dynamic_high + offset_high).clamp(-15.0, 15.0);
 
             // Configure PEQ types (Low Shelf / High Shelf) to ensure correctness
-            client.send_message("/main/st/eq/1/type", vec![OscArg::Int(1)]).await?; // Low Shelf
-            client.send_message("/main/st/eq/6/type", vec![OscArg::Int(2)]).await?; // High Shelf
+            client
+                .send_message("/main/st/eq/1/type", vec![OscArg::Int(1)])
+                .await?; // Low Shelf
+            client
+                .send_message("/main/st/eq/6/type", vec![OscArg::Int(2)])
+                .await?; // High Shelf
 
             // Send gains
-            client.send_message("/main/st/eq/1/g", vec![OscArg::Float(db_to_eq_gain(final_low))]).await?;
-            client.send_message("/main/st/eq/6/g", vec![OscArg::Float(db_to_eq_gain(final_high))]).await?;
+            client
+                .send_message(
+                    "/main/st/eq/1/g",
+                    vec![OscArg::Float(db_to_eq_gain(final_low))],
+                )
+                .await?;
+            client
+                .send_message(
+                    "/main/st/eq/6/g",
+                    vec![OscArg::Float(db_to_eq_gain(final_high))],
+                )
+                .await?;
 
-            println!("SPL: {:.1} dBA | PEQ Low: {:.1} dB, PEQ High: {:.1} dB", spl_est, final_low, final_high);
+            println!(
+                "SPL: {:.1} dBA | PEQ Low: {:.1} dB, PEQ High: {:.1} dB",
+                spl_est, final_low, final_high
+            );
         }
         LoudnessMode::Geq => {
             // Update 31 Graphic EQ bands in the selected slot
@@ -329,13 +387,23 @@ async fn update_eq(
                     0.0
                 };
 
-                let offset = room_eq.geq.as_ref().and_then(|v| v.get(i)).cloned().unwrap_or(0.0);
+                let offset = room_eq
+                    .geq
+                    .as_ref()
+                    .and_then(|v| v.get(i))
+                    .cloned()
+                    .unwrap_or(0.0);
                 let final_gain = (dynamic_gain + offset).clamp(-15.0, 15.0);
 
                 let path = format!("/fx/{}/par/{:02}", fx_slot, i);
-                client.send_message(&path, vec![OscArg::Float(db_to_eq_gain(final_gain))]).await?;
+                client
+                    .send_message(&path, vec![OscArg::Float(db_to_eq_gain(final_gain))])
+                    .await?;
             }
-            println!("SPL: {:.1} dBA | GEQ Slot {} updated (31 bands)", spl_est, fx_slot);
+            println!(
+                "SPL: {:.1} dBA | GEQ Slot {} updated (31 bands)",
+                spl_est, fx_slot
+            );
         }
         LoudnessMode::Deq => {
             // Dynamic EQ: 4 bands.
@@ -343,25 +411,81 @@ async fn update_eq(
             // Band 2 (Bell 500Hz): Gain param 10
             // Band 3 (Bell 3.2kHz): Gain param 20
             // Band 4 (High Shelf): Gain param 30
-            let dyn_b1 = if spl_diff > 0.0 { (0.22 * spl_diff).clamp(0.0, 9.0) } else { 0.0 };
-            let dyn_b2 = if spl_diff > 0.0 { (-0.05 * spl_diff).clamp(-2.0, 0.0) } else { 0.0 };
-            let dyn_b3 = if spl_diff > 0.0 { (-0.10 * spl_diff).clamp(-4.0, 0.0) } else { 0.0 };
-            let dyn_b4 = if spl_diff > 0.0 { (0.12 * spl_diff).clamp(0.0, 5.0) } else { 0.0 };
+            let dyn_b1 = if spl_diff > 0.0 {
+                (0.22 * spl_diff).clamp(0.0, 9.0)
+            } else {
+                0.0
+            };
+            let dyn_b2 = if spl_diff > 0.0 {
+                (-0.05 * spl_diff).clamp(-2.0, 0.0)
+            } else {
+                0.0
+            };
+            let dyn_b3 = if spl_diff > 0.0 {
+                (-0.10 * spl_diff).clamp(-4.0, 0.0)
+            } else {
+                0.0
+            };
+            let dyn_b4 = if spl_diff > 0.0 {
+                (0.12 * spl_diff).clamp(0.0, 5.0)
+            } else {
+                0.0
+            };
 
-            let off_b1 = room_eq.deq.as_ref().and_then(|v| v.first()).cloned().unwrap_or(0.0);
-            let off_b2 = room_eq.deq.as_ref().and_then(|v| v.get(1)).cloned().unwrap_or(0.0);
-            let off_b3 = room_eq.deq.as_ref().and_then(|v| v.get(2)).cloned().unwrap_or(0.0);
-            let off_b4 = room_eq.deq.as_ref().and_then(|v| v.get(3)).cloned().unwrap_or(0.0);
+            let off_b1 = room_eq
+                .deq
+                .as_ref()
+                .and_then(|v| v.first())
+                .cloned()
+                .unwrap_or(0.0);
+            let off_b2 = room_eq
+                .deq
+                .as_ref()
+                .and_then(|v| v.get(1))
+                .cloned()
+                .unwrap_or(0.0);
+            let off_b3 = room_eq
+                .deq
+                .as_ref()
+                .and_then(|v| v.get(2))
+                .cloned()
+                .unwrap_or(0.0);
+            let off_b4 = room_eq
+                .deq
+                .as_ref()
+                .and_then(|v| v.get(3))
+                .cloned()
+                .unwrap_or(0.0);
 
             let final_b1 = (dyn_b1 + off_b1).clamp(-15.0, 15.0);
             let final_b2 = (dyn_b2 + off_b2).clamp(-15.0, 15.0);
             let final_b3 = (dyn_b3 + off_b3).clamp(-15.0, 15.0);
             let final_b4 = (dyn_b4 + off_b4).clamp(-15.0, 15.0);
 
-            client.send_message(&format!("/fx/{}/par/00", fx_slot), vec![OscArg::Float(db_to_eq_gain(final_b1))]).await?;
-            client.send_message(&format!("/fx/{}/par/10", fx_slot), vec![OscArg::Float(db_to_eq_gain(final_b2))]).await?;
-            client.send_message(&format!("/fx/{}/par/20", fx_slot), vec![OscArg::Float(db_to_eq_gain(final_b3))]).await?;
-            client.send_message(&format!("/fx/{}/par/30", fx_slot), vec![OscArg::Float(db_to_eq_gain(final_b4))]).await?;
+            client
+                .send_message(
+                    &format!("/fx/{}/par/00", fx_slot),
+                    vec![OscArg::Float(db_to_eq_gain(final_b1))],
+                )
+                .await?;
+            client
+                .send_message(
+                    &format!("/fx/{}/par/10", fx_slot),
+                    vec![OscArg::Float(db_to_eq_gain(final_b2))],
+                )
+                .await?;
+            client
+                .send_message(
+                    &format!("/fx/{}/par/20", fx_slot),
+                    vec![OscArg::Float(db_to_eq_gain(final_b3))],
+                )
+                .await?;
+            client
+                .send_message(
+                    &format!("/fx/{}/par/30", fx_slot),
+                    vec![OscArg::Float(db_to_eq_gain(final_b4))],
+                )
+                .await?;
 
             println!(
                 "SPL: {:.1} dBA | DEQ Slot {} (B1: {:.1}dB, B2: {:.1}dB, B3: {:.1}dB, B4: {:.1}dB)",
