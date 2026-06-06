@@ -62,12 +62,12 @@ For systems integrators, acousticians, and power users.
 
 ### Mathematical Foundations
 The tool translates normalized fader values $f \in [0.0, 1.0]$ into decibels ($dB_F$) using the Behringer X32 fader curve approximation:
-$$dB_F = \begin{cases} 
+$$dB_F = \begin{cases}
   40.0 f - 30.0 & \text{if } f \ge 0.5 \\
   80.0 f - 50.0 & \text{if } 0.25 \le f < 0.5 \\
   160.0 f - 70.0 & \text{if } 0.0625 \le f < 0.25 \\
   480.0 f - 90.0 & \text{if } 0.0 < f < 0.0625 \\
-  -120.0 & \text{if } f = 0.0 
+  -120.0 & \text{if } f = 0.0
 \end{cases}$$
 
 Estimated SPL in the room is calculated as:
