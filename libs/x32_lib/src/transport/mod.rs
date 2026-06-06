@@ -1,9 +1,9 @@
 use crate::error::Result;
-use osc_lib::OscMessage;
 use async_trait::async_trait;
+use osc_lib::OscMessage;
 
-pub mod udp;
 pub mod midi;
+pub mod udp;
 
 /// A trait for abstracting the physical transport layer of the X32/M32 mixer.
 #[async_trait]

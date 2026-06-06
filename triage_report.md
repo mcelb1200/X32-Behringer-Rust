@@ -1,6 +1,6 @@
 # 🔍 Semantic Diff Triage & SemVer Report
-Generated on: `2026-05-21 23:28:26`  
-Repository: `X32-Behringer-Rust`  
+Generated on: `2026-05-21 23:28:26`
+Repository: `X32-Behringer-Rust`
 Comparing Target: `origin/main` ➔ Branch: `refactor/mixer-client-abstraction`
 
 ## 📊 Branch Status
@@ -12,15 +12,15 @@ Comparing Target: `origin/main` ➔ Branch: `refactor/mixer-client-abstraction`
 
 ## 🚨 Risk & Regression Analysis
 > [!CRITICAL]
-> **🔴 API Breaking Change (Static Detection)**  
+> **🔴 API Breaking Change (Static Detection)**
 > Detected **7 deleted public API items** (functions or structs) which will cause downstream compilation breaks.
 
 > [!WARNING]
-> **🟡 File Deletion Alert**  
+> **🟡 File Deletion Alert**
 > The following files were completely deleted (not renamed): `x32_automix/Cargo.toml`, `x32_command/Cargo.toml`, `x32_command/src/main.rs`, `x32_commander/Cargo.toml`, `x32_copy_fx/Cargo.toml`, `x32_custom_layer/Cargo.toml`, `x32_emulator/Cargo.toml`, `x32_fade/Cargo.toml`, `x32_geq2_cpy/Cargo.toml`, `x32_get_lib/Cargo.toml`, `x32_get_scene/Cargo.toml`, `x32_jog4xlive/Cargo.toml`, `x32_punch_control/Cargo.toml`, `x32_reaper/Cargo.toml`, `x32_replay/Cargo.toml`, `x32_set_lib/Cargo.toml`, `x32_set_preset/Cargo.toml`, `x32_set_scene/Cargo.toml`, `x32_ssavergw/Cargo.toml`, `x32_tcp/Cargo.toml`, `x32_udp/Cargo.toml`, `x32_usb/Cargo.toml`, `xair_get_scene/src/main.rs`, `xair_set_scene/src/main.rs`
 
 > [!CRITICAL]
-> **🔴 SemVer Compatibility Failure**  
+> **🔴 SemVer Compatibility Failure**
 > Workspace fails semver check against baseline! Downstream integration breaking.
 
 ## 🛠️ API & Public Symbol Changes

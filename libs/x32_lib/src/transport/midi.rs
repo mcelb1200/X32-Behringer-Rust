@@ -4,8 +4,8 @@ use async_trait::async_trait;
 use midir::{Ignore, MidiInput, MidiOutput, MidiOutputConnection};
 use osc_lib::OscMessage;
 use std::sync::Mutex;
-use tokio::sync::mpsc;
 use tokio::sync::Mutex as TokioMutex;
+use tokio::sync::mpsc;
 
 /// A MIDI Sysex transport implementation of `MixerTransport` for USB connection.
 pub struct MidiTransport {
@@ -89,7 +89,10 @@ impl MidiTransport {
         for port in ports {
             if let Ok(name) = midi_io.port_name(port) {
                 let lower = name.to_lowercase();
-                if lower.contains("x-usb") || lower.contains("x-live") || lower.contains("behringer") {
+                if lower.contains("x-usb")
+                    || lower.contains("x-live")
+                    || lower.contains("behringer")
+                {
                     return Ok(port.clone());
                 }
             }
