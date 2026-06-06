@@ -13,16 +13,19 @@ struct Args {
     file: Option<String>,
 }
 
+use std::fmt::Write;
+
 fn dump_osc_message(msg: &OscMessage) {
     let mut out = String::new();
     // format like Xdump.c:
-    out.push_str(&format!(
+    let _ = write!(
+        &mut out,
         "{}, {:4} B: ",
         msg.path,
         OscMessage::serialize_to_bytes(&msg.path, &msg.args)
             .unwrap_or_default()
             .len()
-    ));
+    );
 
     // We emulate Xdump.c printing logic:
     // It prints comma
@@ -38,21 +41,23 @@ fn dump_osc_message(msg: &OscMessage) {
 
     for arg in &msg.args {
         match arg {
-            OscArg::Int(val) => out.push_str(&format!(" [{:6}]", val)),
+            OscArg::Int(val) => {
+                let _ = write!(&mut out, " [{:6}]", val);
+            }
             OscArg::Float(val) => {
                 let f = *val;
                 if f < 10.0 {
-                    out.push_str(&format!(" [{:06.4}]", f));
+                    let _ = write!(&mut out, " [{:06.4}]", f);
                 } else if f < 100.0 {
-                    out.push_str(&format!(" [{:06.3}]", f));
+                    let _ = write!(&mut out, " [{:06.3}]", f);
                 } else if f < 1000.0 {
-                    out.push_str(&format!(" [{:06.2}]", f));
+                    let _ = write!(&mut out, " [{:06.2}]", f);
                 } else {
-                    out.push_str(&format!(" [{:06.1}]", f));
+                    let _ = write!(&mut out, " [{:06.1}]", f);
                 }
             }
             OscArg::String(val) => {
-                out.push_str(&format!(" {}", val));
+                let _ = write!(&mut out, " {}", val);
             }
             OscArg::Blob(blob) => {
                 // Read from blob based on path
@@ -60,11 +65,11 @@ fn dump_osc_message(msg: &OscMessage) {
                     let mut cursor = std::io::Cursor::new(blob);
                     if let Ok(num_elements) = cursor.read_i32::<LittleEndian>() {
                         let n = num_elements * 2;
-                        out.push_str(&format!(" {} rta: \n", n));
+                        let _ = write!(&mut out, " {} rta: \n", n);
                         for j in 0..n {
                             if let Ok(s) = cursor.read_i16::<LittleEndian>() {
                                 let f = (s as f32) / 256.0;
-                                out.push_str(&format!("[{}] {:07.2} ", j, f));
+                                let _ = write!(&mut out, "[{}] {:07.2} ", j, f);
                             } else {
                                 break;
                             }
@@ -74,22 +79,22 @@ fn dump_osc_message(msg: &OscMessage) {
                     let mut cursor = std::io::Cursor::new(blob);
                     if let Ok(num_elements) = cursor.read_i32::<LittleEndian>() {
                         let n = num_elements * 2;
-                        out.push_str(&format!(" M/16: {} shorts\n", n));
+                        let _ = write!(&mut out, " M/16: {} shorts\n", n);
                         for j in 0..(n - 8) {
                             if let Ok(s) = cursor.read_i16::<LittleEndian>() {
                                 let f = (s as f32) / 32767.0;
                                 if j < 32 {
-                                    out.push_str(&format!("[{}: G {:07.2}] ", j, f));
+                                    let _ = write!(&mut out, "[{}: G {:07.2}] ", j, f);
                                 } else if j < 64 {
-                                    out.push_str(&format!("[{}: C {:07.2}] ", j, f));
+                                    let _ = write!(&mut out, "[{}: C {:07.2}] ", j, f);
                                 } else if j < 80 {
-                                    out.push_str(&format!("[{}: B {:07.2}] ", j, f));
+                                    let _ = write!(&mut out, "[{}: B {:07.2}] ", j, f);
                                 } else if j < 86 {
-                                    out.push_str(&format!("[{}: M {:07.2}] ", j, f));
+                                    let _ = write!(&mut out, "[{}: M {:07.2}] ", j, f);
                                 } else if j == 86 {
-                                    out.push_str(&format!("[{}:LR {:07.2}] ", j, f));
+                                    let _ = write!(&mut out, "[{}:LR {:07.2}] ", j, f);
                                 } else if j == 87 {
-                                    out.push_str(&format!("[{}:MC {:07.2}] ", j, f));
+                                    let _ = write!(&mut out, "[{}:MC {:07.2}] ", j, f);
                                 }
                             } else {
                                 break;
@@ -98,7 +103,7 @@ fn dump_osc_message(msg: &OscMessage) {
                         for j in (n - 8)..n {
                             if let Ok(s) = cursor.read_i16::<LittleEndian>() {
                                 let f = (s as f32) / 256.0;
-                                out.push_str(&format!("[{}: A {:07.2}] ", j, f));
+                                let _ = write!(&mut out, "[{}: A {:07.2}] ", j, f);
                             } else {
                                 break;
                             }
@@ -108,16 +113,16 @@ fn dump_osc_message(msg: &OscMessage) {
                 } else {
                     let mut cursor = std::io::Cursor::new(blob);
                     if let Ok(num_elements) = cursor.read_i32::<LittleEndian>() {
-                        out.push_str(&format!(" {} flts: ", num_elements));
+                        let _ = write!(&mut out, " {} flts: ", num_elements);
                         for _ in 0..num_elements {
                             if let Ok(f) = cursor.read_f32::<LittleEndian>() {
-                                out.push_str(&format!("{:06.2} ", f));
+                                let _ = write!(&mut out, "{:06.2} ", f);
                             } else {
                                 break;
                             }
                         }
                     } else {
-                        out.push_str(&format!(" {} chrs: ", blob.len()));
+                        let _ = write!(&mut out, " {} chrs: ", blob.len());
                         for b in blob {
                             out.push(*b as char);
                             out.push(' ');
