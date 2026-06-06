@@ -10,6 +10,77 @@ use tokio::task;
 use tokio::time::{self, Duration};
 use x32_lib::client::MixerClient;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Source {
+    Channel(usize), // 1..32
+    Bus(usize),     // 1..16
+    Aux(usize),     // 1..6
+    MainL,
+    MainR,
+}
+
+impl std::fmt::Display for Source {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Source::Channel(ch) => write!(f, "ch{}", ch),
+            Source::Bus(b) => write!(f, "bus{}", b),
+            Source::Aux(a) => write!(f, "aux{}", a),
+            Source::MainL => write!(f, "main/l"),
+            Source::MainR => write!(f, "main/r"),
+        }
+    }
+}
+
+impl std::str::FromStr for Source {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let s = s.trim().to_lowercase();
+        if s == "main" || s == "mainl" || s == "main/l" {
+            return Ok(Source::MainL);
+        }
+        if s == "mainr" || s == "main/r" {
+            return Ok(Source::MainR);
+        }
+        if s.starts_with("ch") {
+            let num_str = &s[2..];
+            if let Ok(val) = num_str.parse::<usize>() {
+                if val >= 1 && val <= 32 {
+                    return Ok(Source::Channel(val));
+                }
+            }
+            return Err(format!("Invalid channel number: {}", s));
+        }
+        if s.starts_with("bus") {
+            let num_str = &s[3..];
+            if let Ok(val) = num_str.parse::<usize>() {
+                if val >= 1 && val <= 16 {
+                    return Ok(Source::Bus(val));
+                }
+            }
+            return Err(format!("Invalid bus number: {}", s));
+        }
+        if s.starts_with("aux") {
+            let num_str = &s[3..];
+            if let Ok(val) = num_str.parse::<usize>() {
+                if val >= 1 && val <= 6 {
+                    return Ok(Source::Aux(val));
+                }
+            }
+            return Err(format!("Invalid aux number: {}", s));
+        }
+        if let Ok(val) = s.parse::<usize>() {
+            if val >= 1 && val <= 32 {
+                return Ok(Source::Channel(val));
+            }
+        }
+        Err(format!(
+            "Invalid source: '{}'. Use ch1-32, bus1-16, aux1-6, or main",
+            s
+        ))
+    }
+}
+
 pub enum NetworkEvent {
     MeterLevel(f32), // Normalized 0.0-1.0
     PanicTriggered,
@@ -19,13 +90,14 @@ pub enum NetworkEvent {
 
 pub struct NetworkManager {
     client: Arc<MixerClient>,
+    #[allow(dead_code)]
     ip: String,
     connected: Arc<AtomicBool>,
     event_sender: Sender<NetworkEvent>,
     #[allow(dead_code)]
     panic_subscribed: Arc<AtomicBool>,
-    // We need to know which channel to parse from the meter blob
-    target_channel_idx: usize,
+    // We need to know which source to parse from the meter blob
+    source: Source,
     panic_btn_path: String,
     preset_enc_path: String,
 }
@@ -33,7 +105,7 @@ pub struct NetworkManager {
 impl NetworkManager {
     pub async fn new(
         ip: &str,
-        target_channel_idx: usize,
+        source: Source,
         event_sender: Sender<NetworkEvent>,
         panic_btn_path: &str,
         preset_enc_path: &str,
@@ -47,7 +119,7 @@ impl NetworkManager {
             connected: Arc::new(AtomicBool::new(false)),
             event_sender,
             panic_subscribed: Arc::new(AtomicBool::new(false)),
-            target_channel_idx,
+            source,
             panic_btn_path: panic_btn_path.to_string(),
             preset_enc_path: preset_enc_path.to_string(),
         })
@@ -69,7 +141,7 @@ impl NetworkManager {
         let client = self.client.clone();
         let sender = self.event_sender.clone();
         let is_connected = self.connected.clone();
-        let channel_idx = self.target_channel_idx;
+        let source = self.source;
         let panic_path = self.panic_btn_path.clone();
         let enc_path = self.preset_enc_path.clone();
 
@@ -79,6 +151,12 @@ impl NetworkManager {
             let mut meter_interval = time::interval(Duration::from_millis(50));
             let mut fx_interval = time::interval(Duration::from_secs(2));
 
+            let meter_path = match source {
+                Source::Channel(_) => "/meters/1",
+                Source::Bus(_) | Source::MainL | Source::MainR => "/meters/2",
+                Source::Aux(_) => "/meters/0",
+            };
+
             loop {
                 if !is_connected.load(Ordering::Relaxed) {
                     time::sleep(Duration::from_millis(100)).await;
@@ -87,7 +165,7 @@ impl NetworkManager {
 
                 tokio::select! {
                     _ = meter_interval.tick() => {
-                        let _ = client.send_message("/meters", vec![osc_lib::OscArg::String("/meters/1".to_string())]).await;
+                        let _ = client.send_message("/meters", vec![osc_lib::OscArg::String(meter_path.to_string())]).await;
                     }
                     _ = fx_interval.tick() => {
                         for slot in 1..=8 {
@@ -99,7 +177,7 @@ impl NetworkManager {
                     msg_res = rx.recv() => {
                         match msg_res {
                             Ok(msg) => {
-                                Self::handle_message(msg, &sender, channel_idx, &panic_path, &enc_path);
+                                Self::handle_message(msg, &sender, source, &panic_path, &enc_path);
                             }
                             Err(RecvError::Lagged(_)) => continue,
                             Err(RecvError::Closed) => break,
@@ -113,13 +191,21 @@ impl NetworkManager {
     fn handle_message(
         msg: OscMessage,
         sender: &Sender<NetworkEvent>,
-        channel_idx: usize,
+        source: Source,
         panic_path: &str,
         enc_path: &str,
     ) {
-        if msg.path == "/meters/1" {
+        let (expected_path, offset_idx) = match source {
+            Source::Channel(ch) => ("/meters/1", ch - 1),
+            Source::Bus(b) => ("/meters/2", b - 1),
+            Source::MainL => ("/meters/2", 22),
+            Source::MainR => ("/meters/2", 23),
+            Source::Aux(a) => ("/meters/0", 32 + (a - 1)),
+        };
+
+        if msg.path == expected_path {
             if let Some(osc_lib::OscArg::Blob(data)) = msg.args.first() {
-                let start = channel_idx * 4;
+                let start = offset_idx * 4;
                 let end = start + 4;
                 if data.len() >= end {
                     let mut bytes = [0u8; 4];
@@ -156,20 +242,17 @@ impl NetworkManager {
                 }
             }
         } else if msg.path.contains(enc_path) {
-            // Encoder turn
-            // We can try to infer direction from value if it's relative,
-            // but for now we just signal 'Next' behavior (+1).
-            // Improving this would require knowing if the encoder sends absolute or relative values.
-            // X32 Encoders usually send absolute values 0.0-1.0 unless configured otherwise?
-            // If it's an assignable encoder, it tracks value.
-            // But typically we want to use it as a scroll wheel here.
-            // Just trigger an event.
             let _ = sender.send(NetworkEvent::EncoderTurned(1));
         }
     }
 
-    pub async fn set_scribble_text(&self, channel_num: usize, text: &str) -> Result<()> {
-        let path = format!("/ch/{:02}/config/name", channel_num);
+    pub async fn set_scribble_text(&self, source: Source, text: &str) -> Result<()> {
+        let path = match source {
+            Source::Channel(ch) => format!("/ch/{:02}/config/name", ch),
+            Source::Bus(b) => format!("/bus/{:02}/config/name", b),
+            Source::Aux(a) => format!("/auxin/{:02}/config/name", a),
+            Source::MainL | Source::MainR => "/main/st/config/name".to_string(),
+        };
         let msg = OscMessage {
             path,
             args: vec![osc_lib::OscArg::String(text.to_string())],

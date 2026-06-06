@@ -15,7 +15,7 @@ use crate::audio::AudioEngine;
 use crate::compressor::CompressorHandler;
 use crate::detection::{BeatDetector, EnergyDetector, OscLevelDetector, SpectralFluxDetector};
 use crate::effects::{EffectConfig, EffectHandler, get_handler};
-use crate::network::{NetworkEvent, NetworkManager};
+use crate::network::{NetworkEvent, NetworkManager, Source};
 use crate::ui::{AppState, Tui, UIEvent};
 use anyhow::Result;
 use clap::{Parser, Subcommand};
@@ -47,13 +47,13 @@ struct Cli {
     #[arg(long)]
     device: Option<String>,
 
-    /// Audio Input Channel (1-32).
-    #[arg(long, default_value_t = 1)]
-    channel: usize,
+    /// Audio source for beat detection (e.g. "ch1", "bus8", "aux2", "main", or "1")
+    #[arg(long, default_value = "ch1")]
+    channel: String,
 
-    /// Target Effect Slot (1-8). Used as default selected slot.
-    #[arg(long, default_value_t = 1)]
-    slot: usize,
+    /// Target Effect Slot(s) (1-8, e.g. "1", "1,2", "1-4").
+    #[arg(long, default_value = "1")]
+    slot: String,
 
     /// OSC Path segment for Panic Button (substring match)
     #[arg(long, default_value = "A/btn/5")]
@@ -122,6 +122,30 @@ fn parse_channels(s: &str) -> Vec<usize> {
         }
     }
     channels
+}fn parse_slots(s: &str) -> Vec<usize> {
+    let mut slots = Vec::new();
+    for part in s.split(',') {
+        let part = part.trim();
+        if part.contains('-') {
+            let ranges: Vec<&str> = part.split('-').collect();
+            if ranges.len() == 2 {
+                if let (Ok(start), Ok(end)) =
+                    (ranges[0].parse::<usize>(), ranges[1].parse::<usize>())
+                {
+                    for i in start..=end {
+                        if i >= 1 && i <= 8 {
+                            slots.push(i - 1); // convert to 0-indexed internally
+                        }
+                    }
+                }
+            }
+        } else if let Ok(n) = part.parse::<usize>() {
+            if n >= 1 && n <= 8 {
+                slots.push(n - 1); // convert to 0-indexed internally
+            }
+        }
+    }
+    slots
 }
 
 #[tokio::main]
@@ -141,8 +165,17 @@ async fn main() -> Result<()> {
     let (audio_sender, audio_receiver) = unbounded::<Vec<f32>>();
     let (net_sender, net_receiver) = unbounded::<NetworkEvent>();
 
+    let source: Source = cli.channel.parse().map_err(|e: String| anyhow::anyhow!(e))?;
+    let local_audio_idx = match source {
+        Source::Channel(ch) => ch - 1,
+        Source::Bus(b) => b - 1,
+        Source::Aux(a) => a - 1,
+        Source::MainL => 0,
+        Source::MainR => 1,
+    };
+
     // Initialize Audio
-    let audio_result = AudioEngine::start(cli.device.clone(), cli.channel, audio_sender);
+    let audio_result = AudioEngine::start(cli.device.clone(), local_audio_idx + 1, audio_sender);
 
     let mut audio_sample_rate = 48000; // Default fallback
     let audio_started = match &audio_result {
@@ -161,11 +194,10 @@ async fn main() -> Result<()> {
     };
 
     // Initialize Network
-    let channel_idx = if cli.channel > 0 { cli.channel - 1 } else { 0 };
     let network = Arc::new(
         NetworkManager::new(
             &cli.ip,
-            channel_idx,
+            source,
             net_sender,
             &cli.panic_btn,
             &cli.preset_enc,
@@ -195,14 +227,19 @@ async fn main() -> Result<()> {
 
     // State
     let mut is_panic = false;
-    let mut selected_slot = if cli.slot > 0 { cli.slot - 1 } else { 0 };
-    if selected_slot > 7 {
-        selected_slot = 0;
-    }
+    let target_slots = parse_slots(&cli.slot);
+    let mut selected_slot = if !target_slots.is_empty() {
+        target_slots[0]
+    } else {
+        0
+    };
 
     // Per-slot state
     // Effect Configs
     let mut effect_configs: [EffectConfig; 8] = Default::default();
+    for i in 0..8 {
+        effect_configs[i].enabled = target_slots.contains(&i);
+    }
     // Loaded effect handlers
     let mut effect_handlers: [Option<Box<dyn EffectHandler + Send + Sync>>; 8] = Default::default();
     // Names of active effects
@@ -269,7 +306,7 @@ async fn main() -> Result<()> {
                             let _ = h.panic(&network, i + 1).await;
                         }
                     }
-                    let _ = network.set_scribble_text(cli.channel, "PANIC!").await;
+                    let _ = network.set_scribble_text(source, "PANIC!").await;
                 }
                 NetworkEvent::EncoderTurned(val) => {
                     let cfg = &mut effect_configs[selected_slot];
@@ -369,10 +406,18 @@ async fn main() -> Result<()> {
         // 5. UI Update & Input
         if last_ui_update.elapsed() > Duration::from_millis(50) {
             let state = AppState {
+                source: source.to_string(),
                 current_bpm: active_bpm,
                 input_level: last_level,
                 active_effects: active_effects.clone(),
                 effect_configs: effect_configs.clone(),
+                is_supported: {
+                    let mut is_supp = [false; 8];
+                    for i in 0..8 {
+                        is_supp[i] = effect_handlers[i].is_some();
+                    }
+                    is_supp
+                },
                 selected_slot,
                 is_fallback: use_fallback,
                 is_panic,
@@ -454,11 +499,15 @@ async fn main() -> Result<()> {
                         };
                         cfg.style = styles[new_idx].to_string();
                     }
+                    UIEvent::ToggleSync => {
+                        let cfg = &mut effect_configs[selected_slot];
+                        cfg.enabled = !cfg.enabled;
+                    }
                 }
 
                 let cfg = &effect_configs[selected_slot];
                 let text = format!("FX{}:{}", selected_slot + 1, cfg.subdivision);
-                let _ = network.set_scribble_text(cli.channel, &text).await;
+                let _ = network.set_scribble_text(source, &text).await;
             }
 
             last_ui_update = Instant::now();

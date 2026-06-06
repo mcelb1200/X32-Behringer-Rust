@@ -16,10 +16,12 @@ use ratatui::{
 use std::{io, time::Duration};
 
 pub struct AppState {
+    pub source: String,
     pub current_bpm: Option<f32>,
     pub input_level: f32,
     pub active_effects: [String; 8], // Names of loaded effects
     pub effect_configs: [EffectConfig; 8],
+    pub is_supported: [bool; 8],
     pub selected_slot: usize, // 0-7 (FX 1-8)
     pub is_fallback: bool,
     pub is_panic: bool,
@@ -118,14 +120,19 @@ impl Tui {
                 ]),
                 Line::from(vec![
                     Span::raw("Status:                "),
-                    Span::styled(
-                        if cfg.enabled { "SYNCED" } else { "BYPASS" },
-                        Style::default().fg(if cfg.enabled {
-                            Color::Green
+                    {
+                        let is_supported = state.is_supported[state.selected_slot];
+                        let effect_name = &state.active_effects[state.selected_slot];
+                        if effect_name.is_empty() {
+                            Span::styled("EMPTY SLOT", Style::default().fg(Color::DarkGray))
+                        } else if !is_supported {
+                            Span::styled("UNSUPPORTED (NO TEMPO PARAM)", Style::default().fg(Color::LightYellow))
+                        } else if cfg.enabled {
+                            Span::styled("SYNCED", Style::default().fg(Color::Green))
                         } else {
-                            Color::Red
-                        }),
-                    ),
+                            Span::styled("BYPASS", Style::default().fg(Color::Red))
+                        }
+                    },
                 ]),
             ];
             let details = Paragraph::new(detail_text).block(
@@ -162,9 +169,9 @@ impl Tui {
                 .ratio(state.input_level.clamp(0.0, 1.0) as f64);
             f.render_widget(gauge, chunks[4]);
 
-            // 6. Status Bar
             let status_text = format!(
-                "Mode: {} | Msg: {} | Controls: Arrow Keys, PgUp/Dn, 'a'lgo, 'r'eset, 'q'uit",
+                "Source: {} | Mode: {} | Msg: {} | Controls: Arrow Keys, PgUp/Dn, Space (toggle), 'a'lgo, 'r'eset, 'q'uit",
+                state.source,
                 if state.is_fallback {
                     "OSC Fallback"
                 } else {
@@ -192,6 +199,7 @@ impl Tui {
                     KeyCode::Down => return Ok(Some(UIEvent::PrevSubdiv)),
                     KeyCode::PageUp => return Ok(Some(UIEvent::NextStyle)),
                     KeyCode::PageDown => return Ok(Some(UIEvent::PrevStyle)),
+                    KeyCode::Char(' ') => return Ok(Some(UIEvent::ToggleSync)),
                     _ => {}
                 }
             }
@@ -222,4 +230,5 @@ pub enum UIEvent {
     PrevSubdiv,
     NextStyle,
     PrevStyle,
+    ToggleSync,
 }

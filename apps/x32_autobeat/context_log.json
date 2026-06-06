@@ -1,0 +1,21 @@
+{
+  "task": "Expanding X32 Autobeat Inputs & Target Slots",
+  "actions": [
+    {
+      "step": "Source Abstraction Migration",
+      "status": "completed",
+      "details": "Evolved Cli channel arg to generic Source parser supporting ch, bus, aux, main. Updated network polling, offsets, and scribble paths."
+    },
+    {
+      "step": "TUI & Slot Targeting Refactor",
+      "status": "completed",
+      "details": "Changed --slot option to String to accept multiple slots (e.g. 1,2,3). Disabled non-targeted slots by default. Added Spacebar toggle for sync/bypass in TUI."
+    },
+    {
+      "step": "Effect Load Awareness",
+      "status": "completed",
+      "details": "Linked AppState to check if a handler is loaded (is_supported). Displays EMPTY SLOT, UNSUPPORTED (NO TEMPO PARAM), SYNCED, or BYPASS in UI."
+    }
+  ],
+  "unanswered_questions": []
+}
