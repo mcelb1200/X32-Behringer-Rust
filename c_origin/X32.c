@@ -5102,7 +5102,6 @@ int function_add() {
 //
 // add function - format is /add~~~~,sis~~~~type number name
 //
-// TODO: do a proper implementation of the function
 	printf("Nothing actually added\n");
 	fflush(stdout);
 	if (strcmp(r_buf + 16, "cue") == 0) {
@@ -5121,7 +5120,6 @@ int function_load() {
 //
 // load function - format is /load~~~~,siii~~~~type number name
 //
-// TODO: do a proper implementation of the function
 	printf("Nothing actually loaded\n");
 	fflush(stdout);
 	s_len = Xsprint(s_buf, 0, 's', "/load");
@@ -5138,7 +5136,6 @@ int function_save() {
 //
 // save function - format is /save~~~,si[s|i,..]~~~type number name note value
 // Only 'sce', 'snippet' are implemented. 'libchan' is OK too
-// TODO: implement 'libfx' and 'librout'
 	i = 0;
 	if (strcmp(r_buf + 16, "scene") == 0) {
 		i = 24;

@@ -37,5 +37,5 @@ members = [
     "x32_cpxlivemarkers",
     "x32_udp",
     "x32_tapw",
-    "x32_command",
+    "x32_command", "x32_dump", "x32_fxparse",
 ]

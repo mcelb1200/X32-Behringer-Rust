@@ -1,0 +1,16 @@
+[package]
+name = "x32_dump"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0"
+clap = { version = "4.6", features = ["derive"] }
+byteorder = "1.5"
+osc_lib = { path = "../osc_lib" }
+x32_lib = { path = "../x32_lib" }
+
+[dev-dependencies]
+assert_cmd = "2.0"
+predicates = "3.1"
+tempfile = "3.10"

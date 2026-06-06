@@ -28,16 +28,20 @@ async fn process_x32_message(
 
     // Simplification for prototype
     if msg.path.starts_with("/ch/") {
-        let parts: Vec<&str> = msg.path.split('/').collect();
-        if parts.len() < 4 {
+        let mut it = msg.path.split('/');
+        // Format: /ch/<num>/<cmd>/<sub>
+        let _ = it.next(); // empty before first /
+        let _ = it.next(); // "ch"
+        let ch_num_str = it.next().unwrap_or("");
+        if ch_num_str.is_empty() {
             return Ok(());
         }
 
-        let ch_num: i32 = parts[2].parse().unwrap_or(0);
-        let cmd = parts[3]; // "mix", "config"
+        let ch_num: i32 = ch_num_str.parse().unwrap_or(0);
+        let cmd = it.next().unwrap_or("");
 
         if cmd == "mix" {
-            let sub = parts.get(4).unwrap_or(&"");
+            let sub = it.next().unwrap_or("");
             match *sub {
                 "fader" => {
                     if let Some(OscArg::Float(val)) = msg.args.first() {

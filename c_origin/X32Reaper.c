@@ -2389,7 +2389,7 @@ void X32ParseReaperMessage() {
 						else if ((tnum >= Xbus_min) && (tnum <= Xbus_max))
 							tnum = tnum - Xbus_min + 48;
 						else
-							tnum = -1; // TODO: How to select Master from REAPER???
+							tnum = -1;
 						// X32: selecting one track automatically unselects others
 						if (tnum >= 0) {
 							Xselected = tnum;
@@ -2466,7 +2466,7 @@ void X32ParseReaperMessage() {
 						tnum = tnum - Xdca_min + 72 + 1;
 					else
 						tnum = -1;
-					if (tnum > 0) { // TODO: How to select Master from REAPER???
+					if (tnum > 0) {
 						sprintf(tmp, "/-stat/solosw/%02d", tnum);
 						Xb_ls = Xfprint(Xb_s, 0, tmp, 'i', &i);
 					}
@@ -2477,7 +2477,6 @@ void X32ParseReaperMessage() {
 				// MASTER
 				Rb_i += 8;
 				// Known:/master/pan, /master/volume
-				// TODO: Not possible today: Select, Solo, Mute
 				if (Rb_r[Rb_i] == 'p') { // pan
 					XXmask = MASTERPAN;
 					while (Rb_r[Rb_i] != ',')

@@ -189,7 +189,7 @@ fn write_wav_takes(
     let num_channels = input_files.len();
     let mut readers: Vec<_> = input_files
         .iter()
-        .map(|path| WavReader::open(path))
+        .map(WavReader::open)
         .collect::<Result<Vec<_>, _>>()?;
 
     for (i, take_size_samples) in take_sizes.iter().enumerate() {
