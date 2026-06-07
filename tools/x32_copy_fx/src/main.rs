@@ -67,10 +67,14 @@ async fn main() -> Result<(), X32Error> {
     let args = Args::parse();
 
     if args.from < 1 || args.from > 8 {
-        return Err(X32Error::from("Source FX slot must be between 1 and 8.".to_string()));
+        return Err(X32Error::from(
+            "Source FX slot must be between 1 and 8.".to_string(),
+        ));
     }
     if args.to > 8 {
-        return Err(X32Error::from("Destination FX slot must be between 1 and 8.".to_string()));
+        return Err(X32Error::from(
+            "Destination FX slot must be between 1 and 8.".to_string(),
+        ));
     }
 
     let (client, _transport) = MixerClient::connect_with_transport(
@@ -79,7 +83,8 @@ async fn main() -> Result<(), X32Error> {
         &args.usb_port,
         &args.transport,
         false,
-    ).await?;
+    )
+    .await?;
 
     match args.action {
         Action::Reset => reset_fx(&client, args.from, args.defaults_file).await,
@@ -93,13 +98,17 @@ fn load_user_defaults(path: PathBuf) -> Result<HashMap<String, String>, X32Error
     let file = File::open(path)?;
 
     if file.metadata()?.len() > 1024 * 1024 {
-        return Err(X32Error::from("Defaults file too large to load (max 1MB)".to_string()));
+        return Err(X32Error::from(
+            "Defaults file too large to load (max 1MB)".to_string(),
+        ));
     }
 
     let mut content = String::new();
     file.take(1024 * 1024 + 1).read_to_string(&mut content)?;
     if content.len() > 1024 * 1024 {
-        return Err(X32Error::from("Defaults file too large to load (max 1MB)".to_string()));
+        return Err(X32Error::from(
+            "Defaults file too large to load (max 1MB)".to_string(),
+        ));
     }
 
     let mut user_defaults = HashMap::new();
@@ -115,7 +124,11 @@ fn load_user_defaults(path: PathBuf) -> Result<HashMap<String, String>, X32Error
     Ok(user_defaults)
 }
 
-async fn reset_fx(client: &MixerClient, from: u8, defaults_file: Option<PathBuf>) -> Result<(), X32Error> {
+async fn reset_fx(
+    client: &MixerClient,
+    from: u8,
+    defaults_file: Option<PathBuf>,
+) -> Result<(), X32Error> {
     println!("Resetting FX slot {}.", from);
 
     let user_defaults: Option<HashMap<String, String>> = if let Some(path) = defaults_file {
@@ -152,7 +165,10 @@ async fn reset_fx(client: &MixerClient, from: u8, defaults_file: Option<PathBuf>
             client.send_message(&par_addr, args).await?;
             Ok(())
         } else {
-            Err(X32Error::from(format!("Defaults not found for FX type: {}", fx_name)))
+            Err(X32Error::from(format!(
+                "Defaults not found for FX type: {}",
+                fx_name
+            )))
         }
     } else {
         Err(X32Error::from("Could not determine FX type.".to_string()))
@@ -192,7 +208,9 @@ async fn copy_param(
 
 async fn copy_fx(client: &MixerClient, from: u8, to: u8, master: bool) -> Result<(), X32Error> {
     if to == 0 {
-        return Err(X32Error::from("Destination FX slot must be provided for copy action.".to_string()));
+        return Err(X32Error::from(
+            "Destination FX slot must be provided for copy action.".to_string(),
+        ));
     }
     println!("Copying FX from slot {} to {}.", from, to);
     for i in 1..32 {

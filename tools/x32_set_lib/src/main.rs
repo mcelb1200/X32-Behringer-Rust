@@ -14,8 +14,8 @@ use osc_lib::{OscArg, OscMessage};
 use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
+use tokio::time::{Duration, timeout};
 use x32_lib::MixerClient;
-use tokio::time::{timeout, Duration};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -51,7 +51,8 @@ async fn main() -> Result<()> {
         &args.usb_port,
         &args.transport,
         false,
-    ).await?;
+    )
+    .await?;
     let client = std::sync::Arc::new(client);
 
     println!("Connected to X32 at {}", args.ip);
@@ -126,12 +127,12 @@ async fn process_file(
             return Err(anyhow::anyhow!(
                 "Unknown preset file extension: {}. Expected .chn, .efx, or .rou",
                 ext
-            ))
+            ));
         }
     };
 
     let mut param_index = 0;
-    
+
     let mut rx = client.subscribe();
 
     for line in lines {

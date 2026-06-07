@@ -1,21 +1,25 @@
 //! `x32_vocal_ducking` is a tool that implements dynamic EQ sidechaining
 //! and surgical frequency carving on an instrument bus to make space for vocals.
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use clap::Parser;
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use osc_lib::{OscArg, OscMessage};
-use rustfft::num_complex::Complex;
 use rustfft::FftPlanner;
-use std::sync::atomic::{AtomicBool, Ordering};
+use rustfft::num_complex::Complex;
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, Instant};
 use tokio::sync::mpsc;
 use tokio::time::sleep;
 use x32_lib::MixerClient;
 
 #[derive(Parser, Debug)]
-#[command(name = "x32_vocal_ducking", version = "0.1.0", about = "Dynamic Vocal Ducking & Spectral Carver for X32")]
+#[command(
+    name = "x32_vocal_ducking",
+    version = "0.1.0",
+    about = "Dynamic Vocal Ducking & Spectral Carver for X32"
+)]
 struct Cli {
     /// X32 IP Address
     #[arg(long, default_value = "192.168.1.50")]
@@ -118,19 +122,25 @@ async fn main() -> Result<()> {
     let r_clone = running.clone();
 
     // Spawn Audio thread if USB mode is selected
-    let _stream = if let (Some(device_query), Some(channel)) = (&cli.audio_device, cli.card_channel) {
+    let _stream = if let (Some(device_query), Some(channel)) = (&cli.audio_device, cli.card_channel)
+    {
         println!("Initializing USB Audio Mode...");
         let host = cpal::default_host();
-        let device = host.input_devices()?
+        let device = host
+            .input_devices()?
             .find(|d| d.name().map(|n| n.contains(device_query)).unwrap_or(false))
             .ok_or_else(|| anyhow!("Audio device containing '{}' not found", device_query))?;
-        
+
         let config: cpal::StreamConfig = device.default_input_config()?.into();
         let sample_rate = config.sample_rate.0;
         let channels = config.channels as usize;
 
         if channel > channels || channel == 0 {
-            return Err(anyhow!("Target channel {} out of range (1-{})", channel, channels));
+            return Err(anyhow!(
+                "Target channel {} out of range (1-{})",
+                channel,
+                channels
+            ));
         }
 
         println!("Using device: {}", device.name()?);
@@ -139,7 +149,7 @@ async fn main() -> Result<()> {
         // Circular buffer for FFT
         let mut audio_buffer = vec![0.0f32; 1024];
         let mut buffer_idx = 0;
-        
+
         // Envelope tracking state
         let mut envelope = 0.0f32;
         let attack_coef = f32::exp(-1.0 / (sample_rate as f32 * (cli.attack / 1000.0)));
@@ -183,10 +193,19 @@ async fn main() -> Result<()> {
                                 }
 
                                 // Apply Hanning window
-                                let mut fft_input: Vec<Complex<f32>> = window.iter().enumerate().map(|(idx, &val)| {
-                                    let w = 0.5 * (1.0 - f32::cos(2.0 * std::f32::consts::PI * idx as f32 / 1023.0));
-                                    Complex::new(val * w, 0.0)
-                                }).collect();
+                                let mut fft_input: Vec<Complex<f32>> = window
+                                    .iter()
+                                    .enumerate()
+                                    .map(|(idx, &val)| {
+                                        let w = 0.5
+                                            * (1.0
+                                                - f32::cos(
+                                                    2.0 * std::f32::consts::PI * idx as f32
+                                                        / 1023.0,
+                                                ));
+                                        Complex::new(val * w, 0.0)
+                                    })
+                                    .collect();
 
                                 let mut planner = FftPlanner::new();
                                 let fft = planner.plan_fft_forward(1024);
@@ -234,11 +253,16 @@ async fn main() -> Result<()> {
             println!("Initializing Pure OSC Mode (Vocal Bus: Bus {})...", v_bus);
             tokio::spawn(async move {
                 // Subscribe to /meters/2 (contains bus levels)
-                let subscribe_msg = OscMessage::new("/meters".to_string(), vec![
-                    OscArg::String("/meters/2".to_string()),
-                    OscArg::Int(50), // 50ms update rate
-                ]);
-                let _ = client_clone.send_message("/meters", subscribe_msg.args).await;
+                let subscribe_msg = OscMessage::new(
+                    "/meters".to_string(),
+                    vec![
+                        OscArg::String("/meters/2".to_string()),
+                        OscArg::Int(50), // 50ms update rate
+                    ],
+                );
+                let _ = client_clone
+                    .send_message("/meters", subscribe_msg.args)
+                    .await;
 
                 let mut osc_rx = client_clone.subscribe();
                 let mut moving_avg_window = vec![0.0f32; 10]; // ~500ms sliding window
@@ -255,7 +279,7 @@ async fn main() -> Result<()> {
                                     let mut bytes = [0u8; 4];
                                     bytes.copy_from_slice(&data[start..end]);
                                     let level = f32::from_le_bytes(bytes);
-                                    
+
                                     // Convert level to dBFS
                                     let db = if level > 1e-5 {
                                         20.0 * level.log10()
@@ -279,7 +303,9 @@ async fn main() -> Result<()> {
                 }
             });
         } else {
-            return Err(anyhow!("Must specify either (--audio-device + --card-channel) OR --vocal-bus"));
+            return Err(anyhow!(
+                "Must specify either (--audio-device + --card-channel) OR --vocal-bus"
+            ));
         }
     }
 
@@ -325,25 +351,34 @@ async fn main() -> Result<()> {
                 // Send Surgical PEQ notch gain update
                 // Instrument bus EQ Band 3 path: /bus/[bus_idx]/eq/3/g
                 let eq_path_g = format!("/bus/{:02}/eq/3/g", cli.instrument_bus);
-                let _ = client.send_message(&eq_path_g, vec![OscArg::Float(db_to_eq_gain(target_gain))]).await;
+                let _ = client
+                    .send_message(&eq_path_g, vec![OscArg::Float(db_to_eq_gain(target_gain))])
+                    .await;
                 last_sent_gain = target_gain;
 
                 // Send Surgical PEQ notch frequency if peak frequency is dynamic (USB mode)
                 if _stream.is_some() && freq_changed {
                     let eq_path_f = format!("/bus/{:02}/eq/3/f", cli.instrument_bus);
                     let freq_float = log2float(msg.peak_freq, 20.0, range_log);
-                    let _ = client.send_message(&eq_path_f, vec![OscArg::Float(freq_float)]).await;
+                    let _ = client
+                        .send_message(&eq_path_f, vec![OscArg::Float(freq_float)])
+                        .await;
 
                     // Dynamically tune dynamic sidechain key filter if enabled
                     if cli.use_key_filter {
                         let filter_path = format!("/bus/{:02}/dyn/filter/f", cli.instrument_bus);
-                        let _ = client.send_message(&filter_path, vec![OscArg::Float(freq_float)]).await;
+                        let _ = client
+                            .send_message(&filter_path, vec![OscArg::Float(freq_float)])
+                            .await;
                     }
                     last_sent_freq = msg.peak_freq;
                 }
 
                 // Render simple status line
-                print!("\r  {:>8.1} dB | {:>11.1} dB | {:>7.0} Hz", msg.db, target_gain, last_sent_freq);
+                print!(
+                    "\r  {:>8.1} dB | {:>11.1} dB | {:>7.0} Hz",
+                    msg.db, target_gain, last_sent_freq
+                );
                 std::io::Write::flush(&mut std::io::stdout())?;
             }
         }
@@ -352,7 +387,9 @@ async fn main() -> Result<()> {
 
     // Graceful cleanup: restore EQ band to flat (0dB) before exit
     let eq_path_cleanup = format!("/bus/{:02}/eq/3/g", cli.instrument_bus);
-    let _ = client.send_message(&eq_path_cleanup, vec![OscArg::Float(db_to_eq_gain(0.0))]).await;
+    let _ = client
+        .send_message(&eq_path_cleanup, vec![OscArg::Float(db_to_eq_gain(0.0))])
+        .await;
     println!("\nSettings restored. Exiting.");
 
     Ok(())
