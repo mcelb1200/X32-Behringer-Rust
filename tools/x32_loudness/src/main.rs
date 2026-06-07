@@ -691,7 +691,7 @@ async fn update_eq(
                         let k = geq_slope_factor(freq);
                         if k > 0.0 {
                             (k * spl_diff).clamp(0.0, 12.0)
-                        } else {
+                } else {
                             (k * spl_diff).clamp(-4.0, 0.0)
                         }
                     }
