@@ -8,6 +8,7 @@ fn setup_mock_x32_server() -> SocketAddr {
     let addr = socket.local_addr().unwrap();
     thread::spawn(move || {
         let mut buf = [0; 512];
+        #[allow(clippy::while_let_loop)]
         loop {
             if let Ok((len, src)) = socket.recv_from(&mut buf) {
                 let msg = OscMessage::from_bytes(&buf[..len]).unwrap();
@@ -54,7 +55,7 @@ fn test_get_scene_name_command() {
         .run()
         .unwrap();
     let mut cmd = bin.command();
-    cmd.args(&["--ip", &addr.to_string(), "-o", "1"]);
+    cmd.args(["--ip", &addr.to_string(), "-o", "1"]);
 
     let output = cmd.output().unwrap();
     assert!(output.status.success());

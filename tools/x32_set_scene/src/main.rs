@@ -39,8 +39,7 @@ async fn main() -> Result<()> {
         &args.usb_port,
         &args.transport,
         false,
-    )
-    .await?;
+    ).await?;
     let client = std::sync::Arc::new(client);
 
     let stdin = io::stdin();

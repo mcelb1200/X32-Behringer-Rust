@@ -18,8 +18,7 @@ impl MixerClient {
     /// Queries the `/node` command for a given path and returns the response string.
     pub async fn query_node(&self, node_path: &str) -> Result<String> {
         let mut rx = self.msg_tx.subscribe();
-        self.send_message("/node", vec![OscArg::String(node_path.to_string())])
-            .await?;
+        self.send_message("/node", vec![OscArg::String(node_path.to_string())]).await?;
 
         let timeout_dur = Duration::from_secs(2);
         let start = std::time::Instant::now();

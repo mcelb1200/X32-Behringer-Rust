@@ -41,10 +41,7 @@ struct Cli {
     #[arg(long, default_value = "")]
     usb_port: String,
 
-    #[arg(
-        long,
-        help = "Use ISO 226:2003 equal-loudness contours for calculation"
-    )]
+    #[arg(long, help = "Use ISO 226:2003 equal-loudness contours for calculation")]
     iso226: bool,
 
     #[command(subcommand)]
@@ -146,22 +143,23 @@ fn geq_slope_factor(freq: f32) -> f32 {
 
 // ISO 226:2003 Equal-Loudness Contours standard data tables
 const ISO_226_FREQ: [f32; 29] = [
-    20.0, 25.0, 31.5, 40.0, 50.0, 63.0, 80.0, 100.0, 125.0, 160.0, 200.0, 250.0, 315.0, 400.0,
-    500.0, 630.0, 800.0, 1000.0, 1250.0, 1600.0, 2000.0, 2500.0, 3150.0, 4000.0, 5000.0, 6300.0,
-    8000.0, 10000.0, 12500.0,
+    20.0, 25.0, 31.5, 40.0, 50.0, 63.0, 80.0, 100.0, 125.0, 160.0, 200.0, 250.0, 315.0,
+    400.0, 500.0, 630.0, 800.0, 1000.0, 1250.0, 1600.0, 2000.0, 2500.0, 3150.0, 4000.0,
+    5000.0, 6300.0, 8000.0, 10000.0, 12500.0,
 ];
 const ISO_226_ALPHA: [f32; 29] = [
-    0.532, 0.506, 0.480, 0.455, 0.432, 0.409, 0.387, 0.367, 0.349, 0.330, 0.315, 0.301, 0.288,
-    0.276, 0.267, 0.259, 0.253, 0.250, 0.246, 0.244, 0.243, 0.243, 0.243, 0.242, 0.242, 0.245,
-    0.254, 0.271, 0.301,
+    0.532, 0.506, 0.480, 0.455, 0.432, 0.409, 0.387, 0.367, 0.349, 0.330, 0.315, 0.301,
+    0.288, 0.276, 0.267, 0.259, 0.253, 0.250, 0.246, 0.244, 0.243, 0.243, 0.243, 0.242,
+    0.242, 0.245, 0.254, 0.271, 0.301,
 ];
 const ISO_226_LU: [f32; 29] = [
-    -31.6, -27.2, -23.0, -19.1, -15.9, -13.0, -10.3, -8.1, -6.2, -4.5, -3.1, -2.0, -1.1, -0.4, 0.0,
-    0.3, 0.5, 0.0, -2.7, -4.1, -1.0, 1.7, 2.5, 1.2, -2.1, -7.1, -11.2, -10.7, -3.1,
+    -31.6, -27.2, -23.0, -19.1, -15.9, -13.0, -10.3, -8.1, -6.2, -4.5, -3.1, -2.0, -1.1,
+    -0.4, 0.0, 0.3, 0.5, 0.0, -2.7, -4.1, -1.0, 1.7, 2.5, 1.2, -2.1, -7.1, -11.2, -10.7,
+    -3.1,
 ];
 const ISO_226_TF: [f32; 29] = [
-    78.5, 68.7, 59.5, 51.1, 44.0, 37.5, 31.5, 26.5, 22.1, 17.9, 14.4, 11.4, 8.6, 6.2, 4.4, 3.0,
-    2.2, 2.4, 3.5, 1.7, -1.3, -4.2, -6.0, -5.4, -1.5, 6.0, 12.6, 13.9, 12.3,
+    78.5, 68.7, 59.5, 51.1, 44.0, 37.5, 31.5, 26.5, 22.1, 17.9, 14.4, 11.4, 8.6, 6.2,
+    4.4, 3.0, 2.2, 2.4, 3.5, 1.7, -1.3, -4.2, -6.0, -5.4, -1.5, 6.0, 12.6, 13.9, 12.3,
 ];
 
 // Linear interpolation helper for ISO 226 frequency parameters
@@ -172,11 +170,7 @@ fn interpolate_iso_226(freq: f32) -> (f32, f32, f32) {
     }
     let len = ISO_226_FREQ.len();
     if f >= 12500.0 {
-        return (
-            ISO_226_ALPHA[len - 1],
-            ISO_226_LU[len - 1],
-            ISO_226_TF[len - 1],
-        );
+        return (ISO_226_ALPHA[len - 1], ISO_226_LU[len - 1], ISO_226_TF[len - 1]);
     }
     for i in 0..len - 1 {
         if f >= ISO_226_FREQ[i] && f <= ISO_226_FREQ[i + 1] {
@@ -240,10 +234,7 @@ fn show_curve_calculation(
     println!("============================================================");
     println!(" Equal-Loudness Compensation Curve Analysis");
     println!("============================================================");
-    println!(
-        "Estimated SPL: {:.1} dBA  | Reference SPL: 85.0 dBA",
-        spl_clamped
-    );
+    println!("Estimated SPL: {:.1} dBA  | Reference SPL: 85.0 dBA", spl_clamped);
     println!("SPL Difference (Reference - Current): {:.1} dB", spl_diff);
     println!(
         "Model in use:  {}",
@@ -479,6 +470,7 @@ async fn run_calibration(
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn run_daemon(
     client: Arc<MixerClient>,
     config_path: &str,
@@ -549,8 +541,7 @@ async fn run_daemon(
                 // Delta threshold: only update if change >= 0.01 (~0.5 dB in active fader range)
                 if delta >= 0.01 {
                     last_fader_val = Some(f);
-                    if let Err(e) =
-                        update_eq(&client, f, cal.c_room, mode, fx_slot, &room_eq, iso226).await
+                    if let Err(e) = update_eq(&client, f, cal.c_room, mode, fx_slot, &room_eq, iso226).await
                     {
                         eprintln!("Error updating EQ: {}", e);
                     }
@@ -848,12 +839,7 @@ mod tests {
     fn test_iso_226_spl_accuracy() {
         for phon in (0..=90).step_by(10) {
             let spl = iso_226_spl(1000.0, phon as f32);
-            assert!(
-                (spl - phon as f32).abs() < 0.1,
-                "Phon {} got SPL {}",
-                phon,
-                spl
-            );
+            assert!((spl - phon as f32).abs() < 0.1, "Phon {} got SPL {}", phon, spl);
         }
     }
 

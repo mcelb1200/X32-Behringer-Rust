@@ -122,8 +122,7 @@ fn parse_channels(s: &str) -> Vec<usize> {
         }
     }
     channels
-}
-fn parse_slots(s: &str) -> Vec<usize> {
+}fn parse_slots(s: &str) -> Vec<usize> {
     let mut slots = Vec::new();
     for part in s.split(',') {
         let part = part.trim();
@@ -134,6 +133,7 @@ fn parse_slots(s: &str) -> Vec<usize> {
                     (ranges[0].parse::<usize>(), ranges[1].parse::<usize>())
                 {
                     for i in start..=end {
+                        #[allow(clippy::manual_range_contains)]
                         if i >= 1 && i <= 8 {
                             slots.push(i - 1); // convert to 0-indexed internally
                         }
@@ -141,6 +141,7 @@ fn parse_slots(s: &str) -> Vec<usize> {
                 }
             }
         } else if let Ok(n) = part.parse::<usize>() {
+            #[allow(clippy::manual_range_contains)]
             if n >= 1 && n <= 8 {
                 slots.push(n - 1); // convert to 0-indexed internally
             }
@@ -166,10 +167,7 @@ async fn main() -> Result<()> {
     let (audio_sender, audio_receiver) = unbounded::<Vec<f32>>();
     let (net_sender, net_receiver) = unbounded::<NetworkEvent>();
 
-    let source: Source = cli
-        .channel
-        .parse()
-        .map_err(|e: String| anyhow::anyhow!(e))?;
+    let source: Source = cli.channel.parse().map_err(|e: String| anyhow::anyhow!(e))?;
     let local_audio_idx = match source {
         Source::Channel(ch) => ch - 1,
         Source::Bus(b) => b - 1,
@@ -199,7 +197,14 @@ async fn main() -> Result<()> {
 
     // Initialize Network
     let network = Arc::new(
-        NetworkManager::new(&cli.ip, source, net_sender, &cli.panic_btn, &cli.preset_enc).await?,
+        NetworkManager::new(
+            &cli.ip,
+            source,
+            net_sender,
+            &cli.panic_btn,
+            &cli.preset_enc,
+        )
+        .await?,
     );
 
     network.connect()?;
@@ -234,6 +239,7 @@ async fn main() -> Result<()> {
     // Per-slot state
     // Effect Configs
     let mut effect_configs: [EffectConfig; 8] = Default::default();
+    #[allow(clippy::needless_range_loop)]
     for i in 0..8 {
         effect_configs[i].enabled = target_slots.contains(&i);
     }
@@ -410,6 +416,7 @@ async fn main() -> Result<()> {
                 effect_configs: effect_configs.clone(),
                 is_supported: {
                     let mut is_supp = [false; 8];
+                    #[allow(clippy::needless_range_loop)]
                     for i in 0..8 {
                         is_supp[i] = effect_handlers[i].is_some();
                     }

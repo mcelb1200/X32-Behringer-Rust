@@ -280,6 +280,7 @@ pub(crate) fn parse_list(val: &str, list: &[&str]) -> Option<OscArg> {
         .map(|i| OscArg::Int(i as i32))
 }
 
+
 #[allow(
     clippy::excessive_precision,
     clippy::manual_range_patterns,
@@ -353,7 +354,7 @@ mod tests {
         assert_eq!(msg.args.len(), 12);
         // decay should be log scaled: 3.218895825 = log(5/0.2)
         if let OscArg::Float(f) = msg.args[1] {
-            assert!(f >= 0.0 && f <= 1.0);
+            assert!((0.0..=1.0).contains(&f));
         }
     }
 

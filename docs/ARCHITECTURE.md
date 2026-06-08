@@ -56,33 +56,3 @@ Early versions were vulnerable to Out-of-Memory (OOM) attacks via unbounded file
 Latency is critical in live audio control. The **Bolt** initiative focuses on reducing the "OSC-to-Action" delay.
 *   **Zero-Alloc Serialization:** High-frequency paths (like meter monitoring) use pre-allocated buffers and direct byte manipulation instead of expensive string formatting or `write!` macros.
 *   **Async I/O:** Built on `tokio`, the suite handles concurrent network traffic and file I/O without blocking the main event loops.
-
----
-
-## ⏱️ Latency & External DSP (RT-Linux `PREEMPT_RT`)
-
-External audio processing vs. hybrid analysis comparison under RT-Linux kernel.
-
-### Latency Comparison Matrix
-
-| Option | Audio RTL | Control Lag | Phase Cancellation Risk | Optimal Use Case | Target Hardware / Bus |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **1. Full External DSP** (X-USB $\rightarrow$ Host $\rightarrow$ X-USB) | ~4.8ms | N/A (Direct) | High (Comb filtering if mixed) | Reverb, Delay FX (Time-domain) | RT-patched PC, USB 2.0 (32-sample buffer) |
-| **2. Hybrid Control** (X-USB $\rightarrow$ PC Analyze $\rightarrow$ OSC $\rightarrow$ X32) | ~1.6ms (Console path) | ~25–35ms | Zero (Coherent analog path) | Ducking, Automixer, FB Suppression | PC (RT/Standard), LAN/UDP |
-| **3. AES50 Hardware DSP** (AES50 $\rightarrow$ FPGA Card $\rightarrow$ AES50) | ~2.5ms | N/A (Direct) | Low | Live Inserts (Channel EQ/Comp) | Waves SoundGrid / AES50 expansion card |
-
-### Architectural Tradeoffs
-
-#### 1. Full External DSP Loop
-* **Causality**: AD/DA $\rightarrow$ X32 Internal Route $\rightarrow$ USB Tx buffer $\rightarrow$ RT-Linux ALSA $\rightarrow$ Host DSP engine $\rightarrow$ ALSA Tx $\rightarrow$ USB Rx $\rightarrow$ X32 Aux/Input $\rightarrow$ DA.
-* **Math (RT-Linux @ 48kHz, 32-sample buffer)**:
-  $$\text{Console AD/DA}~(1.6\text{ms}) + \text{Console DSP}~(0.83\text{ms}) + \text{USB I/O Buffer}~(2 \times 0.67\text{ms} = 1.33\text{ms}) + \text{USB Bus Overhead}~(\sim1.0\text{ms}) + \text{RT Kernel Jitter}~(<0.05\text{ms}) \approx 4.8\text{ms}$$
-* **Limitation**: Comb filtering occurs if processed dry/wet signals merge on console. Latency is close to human tolerance limit for IEMs ($\sim5\text{ms}$).
-
-#### 2. Hybrid Analysis & OSC Control
-* **Causality**:
-  * **Audio**: Direct analog input $\rightarrow$ X32 DSP $\rightarrow$ Output (constant $1.6\text{ms}$).
-  * **Control**: X-USB $\rightarrow$ PC (RT-patched) $\rightarrow$ FFT/Spectral Analysis $\rightarrow$ OSC over UDP $\rightarrow$ X32 Parameter update.
-* **Math**:
-  $$\text{X-USB Capture}~(\sim2.2\text{ms}) + \text{FFT Window}~(512\text{ samples} \approx 10.6\text{ms}) + \text{OSC Network Tx}~(<0.5\text{ms}) + \text{X32 CPU Parse}~(\sim10\text{ms}) \approx 23.3\text{ms}$$
-* **Advantage**: Zero phase cancellation. Clean direct sound. Perfectly suited for dynamic parameter controls (e.g. vocal ducking trigger times).

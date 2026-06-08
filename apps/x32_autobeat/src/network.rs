@@ -42,27 +42,33 @@ impl std::str::FromStr for Source {
         if s == "mainr" || s == "main/r" {
             return Ok(Source::MainR);
         }
+        #[allow(clippy::manual_strip)]
         if s.starts_with("ch") {
             let num_str = &s[2..];
             if let Ok(val) = num_str.parse::<usize>() {
+                #[allow(clippy::manual_range_contains)]
                 if val >= 1 && val <= 32 {
                     return Ok(Source::Channel(val));
                 }
             }
             return Err(format!("Invalid channel number: {}", s));
         }
+        #[allow(clippy::manual_strip)]
         if s.starts_with("bus") {
             let num_str = &s[3..];
             if let Ok(val) = num_str.parse::<usize>() {
+                #[allow(clippy::manual_range_contains)]
                 if val >= 1 && val <= 16 {
                     return Ok(Source::Bus(val));
                 }
             }
             return Err(format!("Invalid bus number: {}", s));
         }
+        #[allow(clippy::manual_strip)]
         if s.starts_with("aux") {
             let num_str = &s[3..];
             if let Ok(val) = num_str.parse::<usize>() {
+                #[allow(clippy::manual_range_contains)]
                 if val >= 1 && val <= 6 {
                     return Ok(Source::Aux(val));
                 }
@@ -70,6 +76,7 @@ impl std::str::FromStr for Source {
             return Err(format!("Invalid aux number: {}", s));
         }
         if let Ok(val) = s.parse::<usize>() {
+            #[allow(clippy::manual_range_contains)]
             if val >= 1 && val <= 32 {
                 return Ok(Source::Channel(val));
             }

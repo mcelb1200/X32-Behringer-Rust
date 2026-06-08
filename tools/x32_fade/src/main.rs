@@ -15,8 +15,9 @@ use std::fs;
 use std::io::Read;
 use std::path::PathBuf;
 use std::time::Duration;
-use tokio::time::sleep;
 use x32_lib::{MixerClient, get_parameter_async};
+use tokio::time::sleep;
+
 
 /// A command-line tool to control and fade X32 faders.
 #[derive(Parser, Debug)]
@@ -144,8 +145,7 @@ async fn main() -> Result<()> {
             &args.usb_port,
             &args.transport,
             false,
-        )
-        .await?;
+        ).await?;
         let client = std::sync::Arc::new(client);
         if args.verbose {
             println!("Connected to X32 at {}", ip);
@@ -169,8 +169,7 @@ async fn main() -> Result<()> {
                     steps,
                     true,
                     args.verbose,
-                )
-                .await?;
+                ).await?;
             }
         }
 
@@ -190,8 +189,7 @@ async fn main() -> Result<()> {
                     steps,
                     false,
                     args.verbose,
-                )
-                .await?;
+                ).await?;
             }
         }
     } else {

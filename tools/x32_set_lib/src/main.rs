@@ -14,8 +14,8 @@ use osc_lib::{OscArg, OscMessage};
 use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
-use tokio::time::{Duration, timeout};
 use x32_lib::MixerClient;
+use tokio::time::{timeout, Duration};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -51,8 +51,7 @@ async fn main() -> Result<()> {
         &args.usb_port,
         &args.transport,
         false,
-    )
-    .await?;
+    ).await?;
     let client = std::sync::Arc::new(client);
 
     println!("Connected to X32 at {}", args.ip);
@@ -127,7 +126,7 @@ async fn process_file(
             return Err(anyhow::anyhow!(
                 "Unknown preset file extension: {}. Expected .chn, .efx, or .rou",
                 ext
-            ));
+            ))
         }
     };
 
@@ -158,7 +157,7 @@ async fn process_file(
                     "ch/01/dyn".to_string()
                 } else if param_index == 6 {
                     "ch/01/dyn/filter".to_string()
-                } else if param_index >= 7 && param_index <= 11 {
+                } else if (7..=11).contains(&param_index) {
                     let eq_idx = param_index - 7;
                     if eq_idx == 0 {
                         "ch/01/eq".to_string()
@@ -167,7 +166,7 @@ async fn process_file(
                     }
                 } else if param_index == 12 {
                     "ch/01/mix".to_string()
-                } else if param_index >= 13 && param_index <= 28 {
+                } else if (13..=28).contains(&param_index) {
                     format!("ch/01/mix/{:02}", param_index - 12)
                 } else {
                     param_index += 1;
@@ -199,7 +198,7 @@ async fn process_file(
                     "config/routing/OUT".to_string()
                 } else if param_index == 5 {
                     "config/routing/PLAY".to_string()
-                } else if param_index >= 6 && param_index <= 37 {
+                } else if (6..=37).contains(&param_index) {
                     let idx = param_index - 6;
                     let out_idx = (idx / 2) + 1;
                     if idx % 2 == 0 {
@@ -207,9 +206,9 @@ async fn process_file(
                     } else {
                         format!("outputs/main/{:02}/delay", out_idx)
                     }
-                } else if param_index >= 38 && param_index <= 43 {
+                } else if (38..=43).contains(&param_index) {
                     format!("outputs/aux/{:02}", param_index - 37)
-                } else if param_index >= 44 && param_index <= 75 {
+                } else if (44..=75).contains(&param_index) {
                     let idx = param_index - 44;
                     let p16_idx = (idx / 2) + 1;
                     if idx % 2 == 0 {
@@ -217,7 +216,7 @@ async fn process_file(
                     } else {
                         format!("outputs/p16/{:02}/iQ", p16_idx)
                     }
-                } else if param_index >= 76 && param_index <= 77 {
+                } else if (76..=77).contains(&param_index) {
                     format!("outputs/aes/{:02}", param_index - 75)
                 } else {
                     param_index += 1;
