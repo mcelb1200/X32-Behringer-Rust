@@ -267,7 +267,10 @@ async fn main() -> Result<()> {
                 let param_idx = if fx_type == 10 { 2 } else { 1 };
                 let address = format!("/fx/{}/par/{:02}", args.slot, param_idx);
 
-                if let Err(e) = client.send_message(&address, vec![OscArg::Float(f_val)]).await {
+                if let Err(e) = client
+                    .send_message(&address, vec![OscArg::Float(f_val)])
+                    .await
+                {
                     eprintln!("Failed to send OSC message: {}", e);
                 }
             } else {
