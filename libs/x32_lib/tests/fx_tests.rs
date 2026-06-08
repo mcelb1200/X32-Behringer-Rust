@@ -1,3 +1,4 @@
+#![allow(deprecated)]
 use std::thread;
 use x32_emulator::server;
 use x32_lib::command::fx;

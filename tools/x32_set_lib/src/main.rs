@@ -14,7 +14,7 @@ use osc_lib::{OscArg, OscMessage};
 use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
-use tokio::time::{Duration, timeout};
+use tokio::time::{timeout, Duration};
 use x32_lib::MixerClient;
 
 #[derive(Parser, Debug)]
@@ -127,7 +127,7 @@ async fn process_file(
             return Err(anyhow::anyhow!(
                 "Unknown preset file extension: {}. Expected .chn, .efx, or .rou",
                 ext
-            ));
+            ))
         }
     };
 
