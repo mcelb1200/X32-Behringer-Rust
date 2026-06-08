@@ -18,10 +18,10 @@ use osc_lib::{OscArg, OscMessage};
 use std::fs::File;
 use std::io::{BufRead, BufWriter, Read, Write};
 use std::str::FromStr;
-use tokio::time::{timeout, Duration};
+use tokio::time::{Duration, timeout};
 use x32_lib::{
-    error::{Result, X32Error},
     MixerClient,
+    error::{Result, X32Error},
 };
 
 /// Header for the custom layer snippet file.
