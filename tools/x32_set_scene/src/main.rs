@@ -8,7 +8,7 @@ use osc_lib::OscMessage;
 use std::io::{self, BufRead, Read};
 use std::str::FromStr;
 use std::time::Duration;
-use x32_lib::{MixerClient, error::Result};
+use x32_lib::{error::Result, MixerClient};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -32,14 +32,15 @@ struct Args {
 #[tokio::main]
 async fn main() -> Result<()> {
     let args = Args::parse();
-    
+
     let (client, _transport) = MixerClient::connect_with_transport(
         &args.ip,
         &args.aes50_ip,
         &args.usb_port,
         &args.transport,
         false,
-    ).await?;
+    )
+    .await?;
     let client = std::sync::Arc::new(client);
 
     let stdin = io::stdin();

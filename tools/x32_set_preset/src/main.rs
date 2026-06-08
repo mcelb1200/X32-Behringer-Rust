@@ -12,7 +12,7 @@
 //! *   **Additional concepts by:** mcelb1200
 //! *   **Rust implementation by:** mcelb1200
 
-use anyhow::{Context, Result, anyhow};
+use anyhow::{anyhow, Context, Result};
 use clap::Parser;
 use osc_lib::{OscArg, OscMessage};
 use std::fs::File;
@@ -124,14 +124,19 @@ async fn main() -> Result<()> {
         &args.usb_port,
         &args.transport,
         false,
-    ).await?;
+    )
+    .await?;
     let client = std::sync::Arc::new(client);
 
     // Master Safe: Mute mains if requested
     if args.master_safe {
         println!("Muting Main L/R and M/C...");
-        client.send_message("/main/st/mix/on", vec![OscArg::Int(0)]).await?;
-        client.send_message("/main/m/mix/on", vec![OscArg::Int(0)]).await?;
+        client
+            .send_message("/main/st/mix/on", vec![OscArg::Int(0)])
+            .await?;
+        client
+            .send_message("/main/m/mix/on", vec![OscArg::Int(0)])
+            .await?;
     }
 
     println!("Loading preset: {:?}", args.file);

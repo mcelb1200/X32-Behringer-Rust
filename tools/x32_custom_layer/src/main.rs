@@ -19,7 +19,10 @@ use std::fs::File;
 use std::io::{BufRead, BufWriter, Read, Write};
 use std::str::FromStr;
 use tokio::time::{timeout, Duration};
-use x32_lib::{MixerClient, error::{Result, X32Error}};
+use x32_lib::{
+    error::{Result, X32Error},
+    MixerClient,
+};
 
 /// Header for the custom layer snippet file.
 const SNIP_HEAD: &str = "#2.1# \"CustLayer\" 8191 -1 255 0 1\n";
@@ -134,16 +137,27 @@ fn parse_assignments(assignments_str: &[String]) -> Result<Vec<Assignment>> {
     for a in assignments_str {
         let parts: Vec<&str> = a.split(':').collect();
         if parts.len() != 2 {
-            return Err(X32Error::Custom(format!("Invalid assignment format: {}", a)));
+            return Err(X32Error::Custom(format!(
+                "Invalid assignment format: {}",
+                a
+            )));
         }
-        let dest = u8::from_str(parts[0]).map_err(|_| X32Error::Custom(format!("Invalid destination channel: {}", parts[0])))?;
-        let src = u8::from_str(parts[1]).map_err(|_| X32Error::Custom(format!("Invalid source channel: {}", parts[1])))?;
-        
+        let dest = u8::from_str(parts[0])
+            .map_err(|_| X32Error::Custom(format!("Invalid destination channel: {}", parts[0])))?;
+        let src = u8::from_str(parts[1])
+            .map_err(|_| X32Error::Custom(format!("Invalid source channel: {}", parts[1])))?;
+
         if dest == 0 || dest > 40 {
-            return Err(X32Error::Custom(format!("Destination channel {} out of range (1-40)", dest)));
+            return Err(X32Error::Custom(format!(
+                "Destination channel {} out of range (1-40)",
+                dest
+            )));
         }
         if src == 0 || src > 40 {
-            return Err(X32Error::Custom(format!("Source channel {} out of range (1-40)", src)));
+            return Err(X32Error::Custom(format!(
+                "Source channel {} out of range (1-40)",
+                src
+            )));
         }
         assignments.push(Assignment { dest, src });
     }
@@ -153,14 +167,16 @@ fn parse_assignments(assignments_str: &[String]) -> Result<Vec<Assignment>> {
 #[tokio::main]
 async fn main() {
     let cli = Cli::parse();
-    
+
     let (client, _) = match MixerClient::connect_with_transport(
         &cli.ip,
         &cli.aes50_ip,
         &cli.usb_port,
         &cli.transport,
         false,
-    ).await {
+    )
+    .await
+    {
         Ok(c) => c,
         Err(e) => {
             eprintln!("Error connecting: {}", e);
@@ -207,7 +223,11 @@ async fn handle_set_command(client: &MixerClient, assignments_str: &[String]) ->
 
     println!("Applying states to destination channels...");
     for a in &assignments {
-        let strip_data = &saved_strips.iter().find(|(src, _)| *src == a.src).unwrap().1;
+        let strip_data = &saved_strips
+            .iter()
+            .find(|(src, _)| *src == a.src)
+            .unwrap()
+            .1;
         if a.dest <= 32 {
             for (i, &node) in SCH_NODES.iter().enumerate() {
                 let dest_node = node.replace("/01/", &format!("/{:02}/", a.dest));
@@ -215,18 +235,27 @@ async fn handle_set_command(client: &MixerClient, assignments_str: &[String]) ->
                 if let Some(pos) = state_to_apply.find(' ') {
                     state_to_apply.replace_range(..pos, &dest_node);
                 }
-                
+
                 let msg = OscMessage::from_str(&state_to_apply)?;
                 client.send_message(&msg.path, msg.args).await?;
             }
             let config_node = format!("/ch/{:02}/config", a.dest);
-            let config_val = if a.src <= 32 { a.src - 1 } else { a.src - 33 + 32 };
-            client.send_message(&config_node, vec![
-                OscArg::String(format!("C{:02}", a.src)),
-                OscArg::Int(22), // custom color
-                OscArg::Int(config_val as i32),
-                OscArg::Int(0),
-            ]).await?;
+            let config_val = if a.src <= 32 {
+                a.src - 1
+            } else {
+                a.src - 33 + 32
+            };
+            client
+                .send_message(
+                    &config_node,
+                    vec![
+                        OscArg::String(format!("C{:02}", a.src)),
+                        OscArg::Int(22), // custom color
+                        OscArg::Int(config_val as i32),
+                        OscArg::Int(0),
+                    ],
+                )
+                .await?;
         } else {
             for (i, &node) in ACH_NODES.iter().enumerate() {
                 let dest_node = node.replace("/01/", &format!("/{:02}/", a.dest - 32));
@@ -238,13 +267,22 @@ async fn handle_set_command(client: &MixerClient, assignments_str: &[String]) ->
                 client.send_message(&msg.path, msg.args).await?;
             }
             let config_node = format!("/auxin/{:02}/config", a.dest - 32);
-            let config_val = if a.src <= 32 { a.src - 1 } else { a.src - 33 + 32 };
-            client.send_message(&config_node, vec![
-                OscArg::String(format!("A{:02}", a.src - 32)),
-                OscArg::Int(22), // custom color
-                OscArg::Int(config_val as i32),
-                OscArg::Int(0),
-            ]).await?;
+            let config_val = if a.src <= 32 {
+                a.src - 1
+            } else {
+                a.src - 33 + 32
+            };
+            client
+                .send_message(
+                    &config_node,
+                    vec![
+                        OscArg::String(format!("A{:02}", a.src - 32)),
+                        OscArg::Int(22), // custom color
+                        OscArg::Int(config_val as i32),
+                        OscArg::Int(0),
+                    ],
+                )
+                .await?;
         }
     }
     println!("Set command completed.");
@@ -309,7 +347,9 @@ fn format_node_state(args: &[OscArg]) -> Result<String> {
 
 async fn get_node_state(client: &MixerClient, node: &str) -> Result<String> {
     let mut rx = client.subscribe();
-    client.send_message("/node", vec![OscArg::String(node.to_string())]).await?;
+    client
+        .send_message("/node", vec![OscArg::String(node.to_string())])
+        .await?;
     let start = std::time::Instant::now();
     let timeout_dur = Duration::from_secs(2);
     while start.elapsed() < timeout_dur {
@@ -323,7 +363,10 @@ async fn get_node_state(client: &MixerClient, node: &str) -> Result<String> {
             }
         }
     }
-    Err(X32Error::Custom(format!("Timeout waiting for node {}", node)))
+    Err(X32Error::Custom(format!(
+        "Timeout waiting for node {}",
+        node
+    )))
 }
 
 async fn handle_restore_command(client: &MixerClient, file_path: &str) -> Result<()> {
@@ -406,13 +449,22 @@ async fn handle_reset_command(client: &MixerClient, channels_str: &str) -> Resul
             ch as i32 - 33 + 32
         };
 
-        client.send_message(&config_node, vec![
-            OscArg::String(format!("{}{:02}", if ch <= 32 { "CH" } else { "A" }, if ch <= 32 { ch } else { ch - 32 })),
-            OscArg::Int(1), // default color
-            OscArg::Int(src_val),
-            OscArg::Int(0),
-        ]).await?;
-        
+        client
+            .send_message(
+                &config_node,
+                vec![
+                    OscArg::String(format!(
+                        "{}{:02}",
+                        if ch <= 32 { "CH" } else { "A" },
+                        if ch <= 32 { ch } else { ch - 32 }
+                    )),
+                    OscArg::Int(1), // default color
+                    OscArg::Int(src_val),
+                    OscArg::Int(0),
+                ],
+            )
+            .await?;
+
         let _ = timeout(Duration::from_millis(5), rx.recv()).await;
     }
     println!("Reset completed for channels: {:?}", channels_to_reset);
@@ -424,8 +476,12 @@ fn parse_channel_range(range_str: &str) -> Result<Vec<u8>> {
     for part in range_str.split(',') {
         let part = part.trim();
         if let Some(pos) = part.find('-') {
-            let start = u8::from_str(&part[..pos]).map_err(|_| X32Error::Custom(format!("Invalid start channel: {}", &part[..pos])))?;
-            let end = u8::from_str(&part[pos + 1..]).map_err(|_| X32Error::Custom(format!("Invalid end channel: {}", &part[pos + 1..])))?;
+            let start = u8::from_str(&part[..pos]).map_err(|_| {
+                X32Error::Custom(format!("Invalid start channel: {}", &part[..pos]))
+            })?;
+            let end = u8::from_str(&part[pos + 1..]).map_err(|_| {
+                X32Error::Custom(format!("Invalid end channel: {}", &part[pos + 1..]))
+            })?;
             if start > end || start == 0 || end > 40 {
                 return Err(X32Error::Custom(format!("Invalid range: {}", part)));
             }
@@ -433,7 +489,8 @@ fn parse_channel_range(range_str: &str) -> Result<Vec<u8>> {
                 channels.push(i);
             }
         } else {
-            let ch = u8::from_str(part).map_err(|_| X32Error::Custom(format!("Invalid channel: {}", part)))?;
+            let ch = u8::from_str(part)
+                .map_err(|_| X32Error::Custom(format!("Invalid channel: {}", part)))?;
             if ch == 0 || ch > 40 {
                 return Err(X32Error::Custom(format!("Channel {} out of range", ch)));
             }
@@ -467,8 +524,10 @@ async fn get_source_name(client: &MixerClient, channel: u8) -> Result<String> {
     };
 
     let mut rx = client.subscribe();
-    client.send_message(&expected_response_prefix, vec![]).await?;
-    
+    client
+        .send_message(&expected_response_prefix, vec![])
+        .await?;
+
     let start = std::time::Instant::now();
     let timeout_dur = Duration::from_secs(2);
     while start.elapsed() < timeout_dur {
@@ -480,7 +539,9 @@ async fn get_source_name(client: &MixerClient, channel: u8) -> Result<String> {
             }
         }
     }
-    Err(X32Error::Custom("Timeout waiting for source config".to_string()))
+    Err(X32Error::Custom(
+        "Timeout waiting for source config".to_string(),
+    ))
 }
 
 fn map_source_id_to_name(id: i32) -> &'static str {

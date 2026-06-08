@@ -10,7 +10,7 @@ use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
 use tokio::time::{timeout, Duration};
-use x32_lib::{MixerClient, error::X32Error};
+use x32_lib::{error::X32Error, MixerClient};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -67,14 +67,15 @@ impl LibType {
 #[tokio::main]
 async fn main() -> Result<()> {
     let args = Args::parse();
-    
+
     let (client, _) = MixerClient::connect_with_transport(
         &args.ip,
         &args.aes50_ip,
         &args.usb_port,
         &args.transport,
         false,
-    ).await?;
+    )
+    .await?;
     let client = std::sync::Arc::new(client);
 
     println!("Connected to X32 at {}", args.ip);
@@ -115,7 +116,9 @@ async fn process_lib_slot(
 
     let mut rx = client.subscribe();
     let node_arg = format!("-libs/{}/{:03}", type_str, id);
-    client.send_message("/node", vec![OscArg::String(node_arg)]).await?;
+    client
+        .send_message("/node", vec![OscArg::String(node_arg)])
+        .await?;
 
     let resp = match timeout(Duration::from_millis(500), rx.recv()).await {
         Ok(Ok(m)) => m,
@@ -221,7 +224,9 @@ async fn process_lib_slot(
     };
 
     for (i, p) in params.iter().enumerate() {
-        client.send_message("/node", vec![OscArg::String(p.to_string())]).await?;
+        client
+            .send_message("/node", vec![OscArg::String(p.to_string())])
+            .await?;
 
         if let Ok(Ok(resp)) = timeout(Duration::from_millis(500), rx.recv()).await {
             if resp.path == "/node" || resp.path == "node" {
@@ -230,7 +235,10 @@ async fn process_lib_slot(
 
                     match t {
                         LibType::Channel => {
-                            if let Some(stripped) = output.strip_prefix("ch/01").or_else(|| output.strip_prefix("/ch/01")) {
+                            if let Some(stripped) = output
+                                .strip_prefix("ch/01")
+                                .or_else(|| output.strip_prefix("/ch/01"))
+                            {
                                 output = stripped.to_string();
                             }
                             if i == 0 {
@@ -241,7 +249,10 @@ async fn process_lib_slot(
                             writeln!(file, "{}", output.trim_start())?;
                         }
                         LibType::Effects => {
-                            if let Some(stripped) = output.strip_prefix("fx/1/").or_else(|| output.strip_prefix("/fx/1/")) {
+                            if let Some(stripped) = output
+                                .strip_prefix("fx/1/")
+                                .or_else(|| output.strip_prefix("/fx/1/"))
+                            {
                                 output = stripped.to_string();
                             }
                             writeln!(file, "{}", output.trim_start())?;
@@ -259,7 +270,9 @@ async fn process_lib_slot(
     }
 
     if t == LibType::Channel {
-        client.send_message("/node", vec![OscArg::String("headamp/000".to_string())]).await?;
+        client
+            .send_message("/node", vec![OscArg::String("headamp/000".to_string())])
+            .await?;
         if let Ok(Ok(resp)) = timeout(Duration::from_millis(500), rx.recv()).await {
             if resp.path == "/node" || resp.path == "node" {
                 if let Some(OscArg::String(val)) = resp.args.first() {

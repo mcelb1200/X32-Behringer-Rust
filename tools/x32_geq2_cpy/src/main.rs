@@ -16,8 +16,7 @@
 use anyhow::Result;
 use clap::{Parser, ValueEnum};
 use tokio::time::{sleep, Duration};
-use x32_lib::{MixerClient, get_parameter_async, set_parameter_async, verify_fx_type_async};
-
+use x32_lib::{get_parameter_async, set_parameter_async, verify_fx_type_async, MixerClient};
 
 /// Command-line arguments for the `x32_geq2_cpy` tool.
 #[derive(Parser, Debug)]
@@ -89,7 +88,8 @@ async fn main() -> Result<()> {
         &args.usb_port,
         &args.transport,
         false,
-    ).await?;
+    )
+    .await?;
     let client = std::sync::Arc::new(client);
     if args.verbose {
         println!("Connected to X32 at {}", args.ip);

@@ -2,8 +2,8 @@ use anyhow::Result;
 use crossbeam_channel::Sender;
 use osc_lib::OscMessage;
 use std::sync::{
-    Arc,
     atomic::{AtomicBool, Ordering},
+    Arc,
 };
 use tokio::sync::broadcast::error::RecvError;
 use tokio::task;
@@ -42,35 +42,32 @@ impl std::str::FromStr for Source {
         if s == "mainr" || s == "main/r" {
             return Ok(Source::MainR);
         }
-        if s.starts_with("ch") {
-            let num_str = &s[2..];
+        if let Some(num_str) = s.strip_prefix("ch") {
             if let Ok(val) = num_str.parse::<usize>() {
-                if val >= 1 && val <= 32 {
+                if (1..=32).contains(&val) {
                     return Ok(Source::Channel(val));
                 }
             }
             return Err(format!("Invalid channel number: {}", s));
         }
-        if s.starts_with("bus") {
-            let num_str = &s[3..];
+        if let Some(num_str) = s.strip_prefix("bus") {
             if let Ok(val) = num_str.parse::<usize>() {
-                if val >= 1 && val <= 16 {
+                if (1..=16).contains(&val) {
                     return Ok(Source::Bus(val));
                 }
             }
             return Err(format!("Invalid bus number: {}", s));
         }
-        if s.starts_with("aux") {
-            let num_str = &s[3..];
+        if let Some(num_str) = s.strip_prefix("aux") {
             if let Ok(val) = num_str.parse::<usize>() {
-                if val >= 1 && val <= 6 {
+                if (1..=6).contains(&val) {
                     return Ok(Source::Aux(val));
                 }
             }
             return Err(format!("Invalid aux number: {}", s));
         }
         if let Ok(val) = s.parse::<usize>() {
-            if val >= 1 && val <= 32 {
+            if (1..=32).contains(&val) {
                 return Ok(Source::Channel(val));
             }
         }

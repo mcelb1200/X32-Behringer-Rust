@@ -10,7 +10,10 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use std::time::Duration;
 use tokio::time::timeout;
-use x32_lib::{MixerClient, error::{Result, X32Error}};
+use x32_lib::{
+    error::{Result, X32Error},
+    MixerClient,
+};
 
 mod parse;
 
@@ -104,8 +107,9 @@ async fn main() -> Result<()> {
         &args.usb_port,
         &args.transport,
         false,
-    ).await?;
-    
+    )
+    .await?;
+
     println!("Successfully connected to X32 at {}", args.ip);
 
     send_commands(&client, &commands).await?;

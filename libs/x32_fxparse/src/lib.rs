@@ -1,3 +1,7 @@
+#![allow(clippy::excessive_precision)]
+#![allow(clippy::collapsible_if)]
+#![allow(clippy::manual_range_contains)]
+#![allow(clippy::approx_constant)]
 use osc_lib::{OscArg, OscMessage};
 use std::str::FromStr;
 
@@ -61,7 +65,10 @@ fn parse_enum(val: &str, range: &[&str]) -> Option<OscArg> {
     if let Ok(idx) = val.parse::<i32>() {
         return Some(OscArg::Int(idx));
     }
-    range.iter().position(|&x| x == val).map(|i| OscArg::Int(i as i32))
+    range
+        .iter()
+        .position(|&x| x == val)
+        .map(|i| OscArg::Int(i as i32))
 }
 
 fn parse_enum_fx(s: Option<&str>, range: &[&str]) -> i32 {
@@ -72,7 +79,11 @@ fn parse_enum_fx(s: Option<&str>, range: &[&str]) -> i32 {
     if let Ok(idx) = s.parse::<i32>() {
         return idx;
     }
-    range.iter().position(|&x| x == s).map(|i| i as i32).unwrap_or(0)
+    range
+        .iter()
+        .position(|&x| x == s)
+        .map(|i| i as i32)
+        .unwrap_or(0)
 }
 
 fn parse_level(val: &str) -> Option<OscArg> {
@@ -84,7 +95,9 @@ fn parse_level(val: &str) -> Option<OscArg> {
     if fval < -60.0 {
         fval = fval * 0.002_083_333_4 + 0.1875;
         fval = (fval * 1023.0).round() / 1023.0;
-        if fval < 0.0 { fval = 0.0; }
+        if fval < 0.0 {
+            fval = 0.0;
+        }
     } else if fval < -30.0 {
         fval = 0.00625 * fval + 0.4375;
         fval = (fval * 1023.0).round() / 1023.0;
@@ -93,7 +106,9 @@ fn parse_level(val: &str) -> Option<OscArg> {
         fval = (fval * 1023.0).round() / 1023.0;
     } else {
         fval = fval * 0.025 + 0.75;
-        if fval > 1.0 { fval = 1.0; }
+        if fval > 1.0 {
+            fval = 1.0;
+        }
     }
     Some(OscArg::Float(fval))
 }
@@ -123,7 +138,9 @@ fn parse_logf(val: &str, min: f32, max: f32) -> Option<OscArg> {
 
 fn parse_bits(val: &str) -> Option<OscArg> {
     let val = val.trim();
-    if !val.starts_with('%') { return None; }
+    if !val.starts_with('%') {
+        return None;
+    }
     let bits_str = &val[1..];
     let mut result = 0;
     for (i, c) in bits_str.chars().rev().enumerate() {
@@ -307,7 +324,8 @@ mod tests {
 
     #[test]
     fn test_parse_parameter_fader_x32() {
-        let msg = parse_parameter(MixerModel::X32, "/ch/01/mix/fader", "-10.0").expect("Parse fader");
+        let msg =
+            parse_parameter(MixerModel::X32, "/ch/01/mix/fader", "-10.0").expect("Parse fader");
         assert_eq!(msg.path, "/ch/01/mix/fader");
         if let OscArg::Float(f) = msg.args[0] {
             assert!(f > 0.0 && f <= 1.0);
@@ -364,4 +382,3 @@ mod tests {
         assert!(parse_parameter(MixerModel::XR18, "/main/m/mix/fader", "-10.0").is_none());
     }
 }
-
