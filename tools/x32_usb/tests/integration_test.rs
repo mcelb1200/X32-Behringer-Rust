@@ -1,8 +1,8 @@
-use std::sync::mpsc::{Sender, channel};
+use std::sync::mpsc::{channel, Sender};
 use std::thread::{self, JoinHandle};
 use std::time::Duration;
-use x32_emulator::Mixer;
 use x32_emulator::server;
+use x32_emulator::Mixer;
 
 fn run_server_with_seeder<F>(port: u16, seeder: F) -> (JoinHandle<()>, Sender<()>)
 where
@@ -58,7 +58,7 @@ fn test_ls_command() {
          FileEntry { index: 3, name: \"track01.wav\", file_type: Wav }\n"
     );
 
-    tx.send(()).unwrap();
+    let _ = tx.send(());
     handle.join().unwrap();
 }
 
@@ -105,6 +105,6 @@ fn test_file_operations() {
     let stdout = String::from_utf8(output.stdout).unwrap();
     assert_eq!(stdout, "Playing file: track02.wav\n");
 
-    tx.send(()).unwrap();
+    let _ = tx.send(());
     handle.join().unwrap();
 }
