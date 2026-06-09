@@ -1,3 +1,4 @@
+#![allow(deprecated)]
 use super::*;
 
 #[path = "tests/async_methods.rs"]

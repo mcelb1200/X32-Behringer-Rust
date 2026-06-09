@@ -104,7 +104,7 @@ def parse_range(ptype, r_str):
         parts = re.split(r'…|\.\.\.', r_str)
         if len(parts) != 2:
             parts = re.findall(r'[\-\d\.]+(?:k|K)?', r_str)
-        
+
         def parse_num(s):
             s = s.strip().lower()
             factor = 1.0
@@ -125,11 +125,11 @@ def parse_md_file(path):
     start_idx = content.find("\nEFFECTS\n")
     if start_idx == -1:
         start_idx = content.find("EFFECTS")
-    
+
     effects_text = content[start_idx:]
-    
+
     parsed = {}
-    
+
     for code, format_str in C_EFFECTS:
         md_code = code
         if code == "TEQ":
@@ -140,41 +140,41 @@ def parse_md_file(path):
             md_code = "WAV"
         elif code == "FAC1M":
             md_code = "FAC2"
-            
+
         pattern = rf'\n({re.escape(md_code)}|_?{re.escape(md_code)})\s+([a-z0-9]+)\s+'
         match = re.search(pattern, effects_text)
-        
+
         if not match:
             pattern = rf'\n({re.escape(md_code)}|_?{re.escape(md_code)})\s+(\d+\s+[a-z0-9]+)\s+'
             match = re.search(pattern, effects_text)
-            
+
         if not match:
             continue
-            
+
         snippet = effects_text[match.end():]
         lines = snippet.split('\n')
-        
+
         expected_count = len(format_str)
-        
+
         raw_params = []
         current_param = None
-        
+
         for line in lines:
             if re.match(r'^[A-Z][a-zA-Z0-9\s\-]{3,30}$', line.strip()) and not any(x in line for x in ["linf", "logf", "enum"]):
                 break
-                
+
             m_param = re.search(r'\b(linf|logf|enum)\s+\[([^\]\n]*)\]?', line)
             if m_param:
                 if current_param:
                     raw_params.append(current_param)
-                
+
                 ptype = m_param.group(1)
                 prange = m_param.group(2)
                 before_type = line[:m_param.start()].strip()
                 name = re.sub(r'^\s*(\([^\)]+\))?\s*', '', before_type).strip()
-                
+
                 closed = ']' in line[m_param.start():]
-                
+
                 current_param = {
                     "name": name,
                     "type": ptype,
@@ -192,10 +192,10 @@ def parse_md_file(path):
                                 current_param["closed"] = True
                             else:
                                 current_param["raw_range"] += " " + right_part
-        
+
         if current_param:
             raw_params.append(current_param)
-            
+
         expanded_params = []
         for rp in raw_params:
             m_mult = re.match(r'^(\d+)\s*x\s*(.+)$', rp["name"])
@@ -210,12 +210,12 @@ def parse_md_file(path):
                     })
             else:
                 expanded_params.append(rp)
-                
+
         final_params = {}
         for idx in range(expected_count):
             par_key = f"par/{idx+1:02d}"
             c_char = format_str[idx]
-            
+
             if idx < len(expanded_params):
                 ep = expanded_params[idx]
                 ptype = ep["type"]
@@ -223,13 +223,13 @@ def parse_md_file(path):
                     ptype = 'linf'
                 elif c_char == 'i' and ptype != 'enum':
                     ptype = 'enum'
-                
+
                 p_range = parse_range(ptype, ep["raw_range"])
-                
+
                 # Apply PLAT decay range override
                 if code == "PLAT" and par_key == "par/02":
                     p_range = [0.5, 10.0]
-                    
+
                 name = ep["name"]
                 if code == "TEQ":
                     name = name.replace("GEQ", "TEQ")
@@ -241,14 +241,14 @@ def parse_md_file(path):
                 ptype = 'linf' if c_char == 'f' else 'enum'
                 p_range = [0.0, 1.0] if ptype == 'linf' else ["OFF", "ON"]
                 name = f"Unknown {par_key}"
-                
+
             unit = None
             if ptype != 'enum':
                 for u in ["ms", "Hz", "dB", "%", "deg"]:
                     if u in name:
                         unit = u
                         break
-            
+
             final_params[par_key] = {
                 "name": name,
                 "type": ptype,
@@ -256,17 +256,17 @@ def parse_md_file(path):
             }
             if unit:
                 final_params[par_key]["unit"] = unit
-                
+
         parsed[code] = final_params
-        
+
     return parsed
 
 def main():
     md_path = "/home/pa-system/github/X32-Behringer-Rust/docs/unofficial_x32_osc_remote_protocol.md"
     json_path = "/home/pa-system/github/X32-Behringer-Rust/docs/osc_effects.json"
-    
+
     parsed = parse_md_file(md_path)
-    
+
     output_list = []
     for idx, (code, _) in enumerate(C_EFFECTS):
         if code in parsed:
@@ -276,10 +276,10 @@ def main():
                 "type_index": idx,
                 "parameters": parsed[code]
             })
-            
+
     with open(json_path, 'w') as f:
         json.dump(output_list, f, indent=2)
-        
+
     print(f"Generated {len(output_list)} effects into {json_path}")
 
 if __name__ == '__main__':

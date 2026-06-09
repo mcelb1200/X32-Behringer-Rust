@@ -65,7 +65,7 @@ fn dump_osc_message(msg: &OscMessage) {
                     let mut cursor = std::io::Cursor::new(blob);
                     if let Ok(num_elements) = cursor.read_i32::<LittleEndian>() {
                         let n = num_elements * 2;
-                        let _ = write!(&mut out, " {} rta: \n", n);
+                        let _ = writeln!(&mut out, " {} rta: ", n);
                         for j in 0..n {
                             if let Ok(s) = cursor.read_i16::<LittleEndian>() {
                                 let f = (s as f32) / 256.0;
@@ -79,7 +79,7 @@ fn dump_osc_message(msg: &OscMessage) {
                     let mut cursor = std::io::Cursor::new(blob);
                     if let Ok(num_elements) = cursor.read_i32::<LittleEndian>() {
                         let n = num_elements * 2;
-                        let _ = write!(&mut out, " M/16: {} shorts\n", n);
+                        let _ = writeln!(&mut out, " M/16: {} shorts", n);
                         for j in 0..(n - 8) {
                             if let Ok(s) = cursor.read_i16::<LittleEndian>() {
                                 let f = (s as f32) / 32767.0;

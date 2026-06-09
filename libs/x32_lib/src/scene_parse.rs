@@ -280,7 +280,6 @@ pub(crate) fn parse_list(val: &str, list: &[&str]) -> Option<OscArg> {
         .map(|i| OscArg::Int(i as i32))
 }
 
-
 #[allow(
     clippy::excessive_precision,
     clippy::manual_range_patterns,
