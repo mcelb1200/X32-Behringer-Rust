@@ -50,8 +50,10 @@ fn apply_overrides(
     if !path.exists() {
         return specs;
     }
-    let file = File::open(&path).unwrap_or_else(|e| panic!("Failed to open overrides {}: {}", path.display(), e));
-    let overrides: OverrideSpec = serde_json::from_reader(file).unwrap_or_else(|e| panic!("Failed to parse overrides {}: {}", path.display(), e));
+    let file = File::open(&path)
+        .unwrap_or_else(|e| panic!("Failed to open overrides {}: {}", path.display(), e));
+    let overrides: OverrideSpec = serde_json::from_reader(file)
+        .unwrap_or_else(|e| panic!("Failed to parse overrides {}: {}", path.display(), e));
 
     for pattern in overrides.remove {
         specs.remove(&pattern);
@@ -65,13 +67,12 @@ fn apply_overrides(
     specs
 }
 
-fn resolve_specs_for_model(
-    model: &str,
-    root_dir: &Path,
-) -> Vec<ChannelParamSpec> {
+fn resolve_specs_for_model(model: &str, root_dir: &Path) -> Vec<ChannelParamSpec> {
     let base_path = root_dir.join("docs/osc_channels.json");
-    let base_file = File::open(&base_path).unwrap_or_else(|e| panic!("Failed to open base channels spec: {}", e));
-    let base_vec: Vec<ChannelParamSpec> = serde_json::from_reader(base_file).unwrap_or_else(|e| panic!("Failed to parse base channels: {}", e));
+    let base_file = File::open(&base_path)
+        .unwrap_or_else(|e| panic!("Failed to open base channels spec: {}", e));
+    let base_vec: Vec<ChannelParamSpec> = serde_json::from_reader(base_file)
+        .unwrap_or_else(|e| panic!("Failed to parse base channels: {}", e));
 
     let mut specs = BTreeMap::new();
     for spec in base_vec {
@@ -113,7 +114,8 @@ fn main() {
     // 1. Generate FX parameter parser match arms
     let fx_json_path = root_dir.join("docs/osc_effects.json");
     let fx_json_file = File::open(&fx_json_path).expect("Failed to open osc_effects.json");
-    let effects: Vec<EffectSpec> = serde_json::from_reader(fx_json_file).expect("Failed to parse FX JSON");
+    let effects: Vec<EffectSpec> =
+        serde_json::from_reader(fx_json_file).expect("Failed to parse FX JSON");
 
     let out_dir = env::var("OUT_DIR").unwrap();
     let fx_dest_path = Path::new(&out_dir).join("fx_parameters_gen.rs");
@@ -122,32 +124,63 @@ fn main() {
     writeln!(fx_out, "match ifx {{").unwrap();
     for eff in effects {
         writeln!(fx_out, "    {} => {{ // {}", eff.type_index, eff.name).unwrap();
-        for (_par_key, param) in &eff.parameters {
+        for param in eff.parameters.values() {
             if param.param_type == "linf" {
                 let range_arr = param.range.as_array().expect("linf range must be array");
                 let min = range_arr[0].as_f64().expect("min must be f64") as f32;
                 let max = range_arr[1].as_f64().expect("max must be f64") as f32;
-                writeln!(fx_out, "        let val = parse_float(parts.get(i).copied()); i += 1;").unwrap();
+                writeln!(
+                    fx_out,
+                    "        let val = parse_float(parts.get(i).copied()); i += 1;"
+                )
+                .unwrap();
                 if min == 0.0 {
-                    writeln!(fx_out, "        args.push(OscArg::Float(ratio2float(val, {:.7}))); // {}", max, param.name).unwrap();
+                    writeln!(
+                        fx_out,
+                        "        args.push(OscArg::Float(ratio2float(val, {:.7}))); // {}",
+                        max, param.name
+                    )
+                    .unwrap();
                 } else {
-                    writeln!(fx_out, "        args.push(OscArg::Float(afine2float(val, {:.7}, {:.7}))); // {}", min, max - min, param.name).unwrap();
+                    writeln!(
+                        fx_out,
+                        "        args.push(OscArg::Float(afine2float(val, {:.7}, {:.7}))); // {}",
+                        min,
+                        max - min,
+                        param.name
+                    )
+                    .unwrap();
                 }
             } else if param.param_type == "logf" {
                 let range_arr = param.range.as_array().expect("logf range must be array");
                 let min = range_arr[0].as_f64().expect("min must be f64") as f32;
                 let max = range_arr[1].as_f64().expect("max must be f64") as f32;
                 let log_range = (max / min).ln();
-                writeln!(fx_out, "        let val = parse_float(parts.get(i).copied()); i += 1;").unwrap();
-                writeln!(fx_out, "        args.push(OscArg::Float(log2float(val, {:.7}, {:.15}))); // {}", min, log_range, param.name).unwrap();
+                writeln!(
+                    fx_out,
+                    "        let val = parse_float(parts.get(i).copied()); i += 1;"
+                )
+                .unwrap();
+                writeln!(
+                    fx_out,
+                    "        args.push(OscArg::Float(log2float(val, {:.7}, {:.15}))); // {}",
+                    min, log_range, param.name
+                )
+                .unwrap();
             } else if param.param_type == "enum" {
                 let range_arr = param.range.as_array().expect("enum range must be array");
-                let items: Vec<String> = range_arr.iter()
+                let items: Vec<String> = range_arr
+                    .iter()
                     .map(|v| format!("\"{}\"", v.as_str().expect("enum item must be string")))
                     .collect();
                 let items_str = items.join(", ");
                 writeln!(fx_out, "        let val = parts.get(i).copied(); i += 1;").unwrap();
-                writeln!(fx_out, "        args.push(OscArg::Int(parse_enum_fx(val, &[ {} ]))); // {}", items_str, param.name).unwrap();
+                writeln!(
+                    fx_out,
+                    "        args.push(OscArg::Int(parse_enum_fx(val, &[ {} ]))); // {}",
+                    items_str, param.name
+                )
+                .unwrap();
             }
         }
         writeln!(fx_out, "    }}").unwrap();
@@ -161,7 +194,12 @@ fn main() {
         let channels_specs = resolve_specs_for_model(model, &root_dir);
         let filename = format!("channel_parameters_{}_gen.rs", model.to_lowercase());
         let dest_path = Path::new(&out_dir).join(&filename);
-        let mut chan_out = File::create(&dest_path).unwrap_or_else(|e| panic!("Failed to create channels destination file {}: {}", filename, e));
+        let mut chan_out = File::create(&dest_path).unwrap_or_else(|e| {
+            panic!(
+                "Failed to create channels destination file {}: {}",
+                filename, e
+            )
+        });
 
         writeln!(chan_out, "match parts.len() {{").unwrap();
 
@@ -234,16 +272,32 @@ fn main() {
                                 if_conditions.push((format!("if let Some((first, second)) = parts[{}].split_once('-') {{ if let (Ok(f), Ok(s)) = (first.parse::<usize>(), second.parse::<usize>()) {{ if f + 1 == s && s <= {} && f % 2 == 1 {{", idx, link_limit), 3));
                             }
                             "param" => {
-                                let plist = spec.params.as_ref().expect("params option must be present for {param}");
-                                let list_str = plist.iter().map(|p| format!("\"{}\"", p)).collect::<Vec<_>>().join(", ");
-                                if_conditions.push((format!("if [{ }].contains(&parts[{}]) {{ if true {{", list_str, idx), 2));
+                                let plist = spec
+                                    .params
+                                    .as_ref()
+                                    .expect("params option must be present for {param}");
+                                let list_str = plist
+                                    .iter()
+                                    .map(|p| format!("\"{}\"", p))
+                                    .collect::<Vec<_>>()
+                                    .join(", ");
+                                if_conditions.push((
+                                    format!(
+                                        "if [{ }].contains(&parts[{}]) {{ if true {{",
+                                        list_str, idx
+                                    ),
+                                    2,
+                                ));
                             }
                             _ => {
                                 panic!("Unknown wildcard type: {}", var_name);
                             }
                         }
                     } else {
-                        if_conditions.push((format!("if parts[{}] == \"{}\" {{ if true {{", idx, part), 2));
+                        if_conditions.push((
+                            format!("if parts[{}] == \"{}\" {{ if true {{", idx, part),
+                            2,
+                        ));
                     }
                 }
 
@@ -256,44 +310,122 @@ fn main() {
 
                 match spec.param_type.as_str() {
                     "string" => {
-                        writeln!(chan_out, "{}if let Some(arg) = parse_string(arg_str) {{", indent).unwrap();
-                        writeln!(chan_out, "{}    return Some(OscMessage::new(path.to_string(), vec![arg]));", indent).unwrap();
+                        writeln!(
+                            chan_out,
+                            "{}if let Some(arg) = parse_string(arg_str) {{",
+                            indent
+                        )
+                        .unwrap();
+                        writeln!(
+                            chan_out,
+                            "{}    return Some(OscMessage::new(path.to_string(), vec![arg]));",
+                            indent
+                        )
+                        .unwrap();
                         writeln!(chan_out, "{}}}", indent).unwrap();
                     }
                     "enum" => {
-                        let range_arr = spec.range.as_ref().expect("enum spec must have range").as_array().expect("enum range must be array");
-                        let items: Vec<String> = range_arr.iter()
-                            .map(|v| format!("\"{}\"", v.as_str().expect("enum item must be string")))
+                        let range_arr = spec
+                            .range
+                            .as_ref()
+                            .expect("enum spec must have range")
+                            .as_array()
+                            .expect("enum range must be array");
+                        let items: Vec<String> = range_arr
+                            .iter()
+                            .map(|v| {
+                                format!("\"{}\"", v.as_str().expect("enum item must be string"))
+                            })
                             .collect();
                         let items_str = items.join(", ");
-                        writeln!(chan_out, "{}if let Some(arg) = parse_enum(arg_str, &[ {} ]) {{", indent, items_str).unwrap();
-                        writeln!(chan_out, "{}    return Some(OscMessage::new(path.to_string(), vec![arg]));", indent).unwrap();
+                        writeln!(
+                            chan_out,
+                            "{}if let Some(arg) = parse_enum(arg_str, &[ {} ]) {{",
+                            indent, items_str
+                        )
+                        .unwrap();
+                        writeln!(
+                            chan_out,
+                            "{}    return Some(OscMessage::new(path.to_string(), vec![arg]));",
+                            indent
+                        )
+                        .unwrap();
                         writeln!(chan_out, "{}}}", indent).unwrap();
                     }
                     "level" => {
-                        writeln!(chan_out, "{}if let Some(arg) = parse_level(arg_str) {{", indent).unwrap();
-                        writeln!(chan_out, "{}    return Some(OscMessage::new(path.to_string(), vec![arg]));", indent).unwrap();
+                        writeln!(
+                            chan_out,
+                            "{}if let Some(arg) = parse_level(arg_str) {{",
+                            indent
+                        )
+                        .unwrap();
+                        writeln!(
+                            chan_out,
+                            "{}    return Some(OscMessage::new(path.to_string(), vec![arg]));",
+                            indent
+                        )
+                        .unwrap();
                         writeln!(chan_out, "{}}}", indent).unwrap();
                     }
                     "frequency" => {
-                        writeln!(chan_out, "{}if let Some(arg) = parse_frequency(arg_str) {{", indent).unwrap();
-                        writeln!(chan_out, "{}    return Some(OscMessage::new(path.to_string(), vec![arg]));", indent).unwrap();
+                        writeln!(
+                            chan_out,
+                            "{}if let Some(arg) = parse_frequency(arg_str) {{",
+                            indent
+                        )
+                        .unwrap();
+                        writeln!(
+                            chan_out,
+                            "{}    return Some(OscMessage::new(path.to_string(), vec![arg]));",
+                            indent
+                        )
+                        .unwrap();
                         writeln!(chan_out, "{}}}", indent).unwrap();
                     }
                     "flin" => {
-                        let range_arr = spec.range.as_ref().expect("flin spec must have range").as_array().expect("flin range must be array");
+                        let range_arr = spec
+                            .range
+                            .as_ref()
+                            .expect("flin spec must have range")
+                            .as_array()
+                            .expect("flin range must be array");
                         let min = range_arr[0].as_f64().expect("min must be f64") as f32;
                         let max = range_arr[1].as_f64().expect("max must be f64") as f32;
-                        writeln!(chan_out, "{}if let Some(arg) = parse_flin(arg_str, {:.7}, {:.7}) {{", indent, min, max).unwrap();
-                        writeln!(chan_out, "{}    return Some(OscMessage::new(path.to_string(), vec![arg]));", indent).unwrap();
+                        writeln!(
+                            chan_out,
+                            "{}if let Some(arg) = parse_flin(arg_str, {:.7}, {:.7}) {{",
+                            indent, min, max
+                        )
+                        .unwrap();
+                        writeln!(
+                            chan_out,
+                            "{}    return Some(OscMessage::new(path.to_string(), vec![arg]));",
+                            indent
+                        )
+                        .unwrap();
                         writeln!(chan_out, "{}}}", indent).unwrap();
                     }
                     "logf" => {
-                        let range_arr = spec.range.as_ref().expect("logf spec must have range").as_array().expect("logf range must be array");
+                        let range_arr = spec
+                            .range
+                            .as_ref()
+                            .expect("logf spec must have range")
+                            .as_array()
+                            .expect("logf range must be array");
                         let min = range_arr[0].as_f64().expect("min must be f64") as f32;
                         let max = range_arr[1].as_f64().expect("max must be f64") as f32;
-                        writeln!(chan_out, "{}if let Some(arg) = parse_logf(arg_str, {:.7}, {:.7}) {{", indent, min, max).unwrap();
-                        writeln!(chan_out, "{}    return Some(OscMessage::new(path.to_string(), vec![arg]));", indent).unwrap();
+                        writeln!(
+                            chan_out,
+                            "{}if let Some(arg) = parse_logf(arg_str, {:.7}, {:.7}) {{",
+                            indent, min, max
+                        )
+                        .unwrap();
+                        writeln!(
+                            chan_out,
+                            "{}    return Some(OscMessage::new(path.to_string(), vec![arg]));",
+                            indent
+                        )
+                        .unwrap();
                         writeln!(chan_out, "{}}}", indent).unwrap();
                     }
                     _ => panic!("Unknown param type: {}", spec.param_type),

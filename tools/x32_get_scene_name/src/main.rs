@@ -10,7 +10,7 @@
 //! *   **Rust implementation by:** mcelb1200
 
 use clap::Parser;
-use osc_lib::{OscArg, };
+use osc_lib::OscArg;
 use std::time::Duration;
 use tokio::time::{self, Instant};
 use x32_lib::{MixerClient, error::X32Error};
@@ -56,7 +56,8 @@ async fn main() -> Result<(), X32Error> {
         &args.usb_port,
         &args.transport,
         true, // needs heartbeat for /xremote
-    ).await?;
+    )
+    .await?;
     let client = std::sync::Arc::new(client);
 
     // Initial connection validation via /info
@@ -94,14 +95,18 @@ async fn main() -> Result<(), X32Error> {
     // Subscribe to all incoming OSC messages
     let mut rx = client.subscribe();
     let mut last_show_control_sent = Instant::now();
-    
+
     // Initial show control send
-    client.send_message("/-prefs/show_control", vec![OscArg::Int(1)]).await?;
+    client
+        .send_message("/-prefs/show_control", vec![OscArg::Int(1)])
+        .await?;
 
     loop {
         // We still need to send /-prefs/show_control occasionally, maybe every 9s alongside the heartbeat which client does automatically for /xremote
         if last_show_control_sent.elapsed() >= Duration::from_secs(9) {
-            let _ = client.send_message("/-prefs/show_control", vec![OscArg::Int(1)]).await;
+            let _ = client
+                .send_message("/-prefs/show_control", vec![OscArg::Int(1)])
+                .await;
             last_show_control_sent = Instant::now();
         }
 

@@ -7,7 +7,7 @@ use osc_lib::{OscArg, OscMessage};
 use std::fs::File;
 use std::io::{BufRead, BufWriter, Write};
 use std::path::PathBuf;
-use tokio::time::{timeout, Duration};
+use tokio::time::{Duration, timeout};
 use x32_lib::{MixerClient, error::X32Error};
 
 mod nodes;
@@ -72,8 +72,9 @@ async fn main() -> Result<(), X32Error> {
     } else if let Some(pattern_file) = &args.pattern_file {
         let file = File::open(pattern_file)?;
         let reader = std::io::BufReader::new(file);
-        reader.lines()
-            .filter_map(|l| l.ok())
+        reader
+            .lines()
+            .map_while(Result::ok)
             .filter(|line| !line.starts_with('#'))
             .filter_map(|line| line.split_whitespace().next().map(|s| s.to_string()))
             .collect()
@@ -87,7 +88,8 @@ async fn main() -> Result<(), X32Error> {
         &args.usb_port,
         &args.transport,
         false,
-    ).await?;
+    )
+    .await?;
     let client = std::sync::Arc::new(client);
     println!("Successfully connected to X32 at {}", args.ip);
 
@@ -95,13 +97,16 @@ async fn main() -> Result<(), X32Error> {
 
     let file = File::create(&args.destination_file)?;
     let mut file = BufWriter::new(file);
-    
+
     for line in data {
         writeln!(file, "{}", line)?;
     }
     file.flush()?;
 
-    println!("Successfully saved data to {}", args.destination_file.display());
+    println!(
+        "Successfully saved data to {}",
+        args.destination_file.display()
+    );
 
     Ok(())
 }

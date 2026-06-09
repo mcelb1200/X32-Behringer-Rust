@@ -15,9 +15,8 @@ use std::fs;
 use std::io::Read;
 use std::path::PathBuf;
 use std::time::Duration;
-use x32_lib::{MixerClient, get_parameter_async};
 use tokio::time::sleep;
-
+use x32_lib::{MixerClient, get_parameter_async};
 
 /// A command-line tool to control and fade X32 faders.
 #[derive(Parser, Debug)]
@@ -145,7 +144,8 @@ async fn main() -> Result<()> {
             &args.usb_port,
             &args.transport,
             false,
-        ).await?;
+        )
+        .await?;
         let client = std::sync::Arc::new(client);
         if args.verbose {
             println!("Connected to X32 at {}", ip);
@@ -169,7 +169,8 @@ async fn main() -> Result<()> {
                     steps,
                     true,
                     args.verbose,
-                ).await?;
+                )
+                .await?;
             }
         }
 
@@ -189,7 +190,8 @@ async fn main() -> Result<()> {
                     steps,
                     false,
                     args.verbose,
-                ).await?;
+                )
+                .await?;
             }
         }
     } else {
@@ -239,7 +241,7 @@ async fn fade(
             };
 
             let msg = OscMessage::new(fader_addr.clone(), vec![OscArg::Float(current_level)]);
-            
+
             client.send_message(&msg.path, msg.args.clone()).await?;
             if verbose {
                 println!("Sent: {} {}", fader_addr, current_level);
@@ -252,7 +254,7 @@ async fn fade(
     // Send the final target level to ensure accuracy.
     for fader_addr in faders {
         let msg = OscMessage::new(fader_addr.clone(), vec![OscArg::Float(target_level)]);
-        
+
         client.send_message(&msg.path, msg.args.clone()).await?;
         if verbose {
             println!("Sent final: {} {}", fader_addr, target_level);
