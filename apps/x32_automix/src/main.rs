@@ -13,7 +13,7 @@
 
 use clap::Parser;
 use osc_lib::OscArg;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 use x32_lib::{MixerClient, error::Result};
 
 /// A utility to provide automixing functionality for the Behringer X32/X-Air consoles.
@@ -78,9 +78,12 @@ async fn main() -> Result<()> {
 /// * `args` - The command-line arguments containing the automix configuration.
 /// * `client` - The MixerClient connected to the mixer.
 async fn run_automix(args: Args, client: MixerClient) -> Result<()> {
-    let mut channel_status: Vec<(bool, Instant)> = vec![(false, Instant::now()); 32];
-    let mut active_channels = 0;
-    let mut nom_level = 1;
+    // We maintain state for Dugan UDP throttling and noise tracking
+    let mut last_sent_levels: [f32; 32] = [0.0; 32];
+    let mut smoothed_levels: [f32; 32] = [0.0; 32];
+
+    let attack_coef = 0.8;
+    let release_coef = 0.2;
 
     let fader_addresses: Vec<(String, String)> = (1..=32)
         .map(|ch| {
@@ -95,11 +98,6 @@ async fn run_automix(args: Args, client: MixerClient) -> Result<()> {
             }
         })
         .collect();
-    let mix_address = if args.use_bus {
-        format!("/bus/{:02}/mix/fader", args.bus_number)
-    } else {
-        "/main/st/mix/fader".to_string()
-    };
 
     let mut rx = client.subscribe();
     let mut meter_interval = tokio::time::interval(Duration::from_secs(9));
@@ -125,10 +123,11 @@ async fn run_automix(args: Args, client: MixerClient) -> Result<()> {
                 };
                 if response.path == "/meters/1" {
                     if let Some(OscArg::Blob(data)) = response.args.first() {
-                        let mut changed = false;
                         let start_ch = args.start_channel.saturating_sub(1) as usize;
                         let stop_ch = args.stop_channel as usize;
 
+                        // 1. Parse levels and apply fast attack / slow release envelope
+                        let mut current_levels = vec![0.0; 32];
                         for ch in start_ch..stop_ch {
                             let start = ch * 4;
                             let end = start + 4;
@@ -136,100 +135,53 @@ async fn run_automix(args: Args, client: MixerClient) -> Result<()> {
                                 data.get(start..end).and_then(|s| s.try_into().ok())
                             {
                                 let level = f32::from_be_bytes(bytes);
-                                if let Some((is_active, last_active_time)) =
-                                    channel_status.get_mut(ch)
-                                {
-                                    if level > args.sensitivity {
-                                        *last_active_time = Instant::now();
-                                        if !*is_active {
-                                            *is_active = true;
-                                            active_channels += 1;
-                                            changed = true;
-                                            if let Some(addr) = fader_addresses.get(ch) {
-                                                client.send_message(
-                                                    &addr.1,
-                                                    vec![OscArg::Float(1.0)],
-                                                ).await?;
-                                            }
-                                        }
-                                    } else if *is_active
-                                        && last_active_time.elapsed()
-                                            > Duration::from_secs(args.down_delay)
-                                    {
-                                        *is_active = false;
-                                        active_channels -= 1;
-                                        changed = true;
-                                        if let Some(addr) = fader_addresses.get(ch) {
-                                            client.send_message(
-                                                &addr.0,
-                                                vec![OscArg::Float(0.0)],
-                                            ).await?;
-                                        }
-                                    }
+                                if level > smoothed_levels[ch] {
+                                    smoothed_levels[ch] = smoothed_levels[ch] * (1.0 - attack_coef) + level * attack_coef;
+                                } else {
+                                    smoothed_levels[ch] = smoothed_levels[ch] * (1.0 - release_coef) + level * release_coef;
                                 }
+                                current_levels[ch] = smoothed_levels[ch];
                             }
                         }
-                        if args.nom && changed {
-                            update_nom_gain(
-                                &client,
-                                &mix_address,
-                                active_channels,
-                                &mut nom_level,
-                            ).await?;
+
+                        // 2. Calculate Dugan gains if NOM is enabled, else simple threshold
+                        let gains = if args.nom {
+                            let levels_slice = &current_levels[start_ch..stop_ch];
+                            let calculated = calculate_dugan_gains(levels_slice, args.sensitivity);
+                            let mut full_gains = vec![0.0; 32];
+                            for (i, &g) in calculated.iter().enumerate() {
+                                full_gains[start_ch + i] = g;
+                            }
+                            full_gains
+                        } else {
+                            // Legacy simple threshold (0.75 represents unity gain on X32, 1.0 represents +10dB which can cause feedback)
+                            let mut full_gains = vec![0.0; 32];
+                            for ch in start_ch..stop_ch {
+                                if current_levels[ch] > args.sensitivity {
+                                    full_gains[ch] = 0.75;
+                                }
+                            }
+                            full_gains
+                        };
+
+                        // 3. UDP Throttling: Only send updates if fader level changed by > 0.01
+                        for ch in start_ch..stop_ch {
+                            let new_gain = gains[ch];
+                            if (new_gain - last_sent_levels[ch]).abs() > 0.01 {
+                                last_sent_levels[ch] = new_gain;
+                                if let Some(addr) = fader_addresses.get(ch) {
+                                    client.send_message(
+                                        &addr.0,
+                                        vec![OscArg::Float(new_gain)],
+                                    ).await?;
+                                }
+                            }
                         }
                     }
                 }
             }
         }
     }
-}
-
-/// Updates the master gain based on the Number of Open Mics (NOM).
-///
-/// # Arguments
-///
-/// * `socket` - The UDP socket connected to the mixer.
-/// * `mix_address` - The OSC address of the master fader.
-/// * `active_channels` - The count of currently active channels.
-/// * `nom_level` - A mutable reference to the current NOM attenuation level.
-async fn update_nom_gain(
-    client: &MixerClient,
-    mix_address: &str,
-    active_channels: i32,
-    nom_level: &mut i32,
-) -> Result<()> {
-    if active_channels >= *nom_level * 2 {
-        *nom_level *= 2;
-        adjust_gain(client, mix_address, -3.0).await?;
-    } else if active_channels <= *nom_level / 2 {
-        *nom_level /= 2;
-        if *nom_level < 1 {
-            *nom_level = 1;
-        }
-        adjust_gain(client, mix_address, 3.0).await?;
-    }
-    Ok(())
-}
-
-/// Adjusts the gain of a fader by a relative decibel amount.
-///
-/// # Arguments
-///
-/// * `socket` - The UDP socket connected to the mixer.
-/// * `address` - The OSC address of the fader to adjust.
-/// * `db_change` - The amount to change the gain by, in decibels.
-async fn adjust_gain(client: &MixerClient, address: &str, db_change: f32) -> Result<()> {
-    let response = client.query_value(address).await?;
-
-    if let OscArg::Float(current_level) = response {
-        let db = level_to_db(current_level);
-        let new_db = (db + db_change).clamp(-90.0, 10.0);
-        let new_level = db_to_level(new_db);
-        client
-            .send_message(address, vec![OscArg::Float(new_level)])
-            .await?;
-    }
-    Ok(())
 }
 
 /// Converts a linear fader level (0.0 to 1.0) to decibels.
@@ -257,6 +209,52 @@ fn db_to_level(db: f32) -> f32 {
         (db + 90.0) / 480.0
     };
     level.clamp(0.0, 1.0)
+}
+
+/// Calculates the gain for each channel based on the Dugan algorithm.
+///
+/// The Dugan algorithm works by calculating the sum of the linear weights
+/// of all channels. The gain for each channel is its weight divided by the total sum.
+/// This ensures that the overall system gain remains constant (NOM attenuation),
+/// preventing feedback and noise buildup.
+///
+/// We also apply priority ducking by only including channels above the noise_floor.
+fn calculate_dugan_gains(levels: &[f32], noise_floor: f32) -> Vec<f32> {
+    let mut weights = Vec::with_capacity(levels.len());
+    let mut sum_weights = 0.0;
+
+    for &level in levels {
+        if level > noise_floor {
+            let db = level_to_db(level);
+            // Convert dB to linear weight. 10^(dB/20) gives voltage gain,
+            // which works well for Dugan sum.
+            let weight = 10.0_f32.powf(db / 20.0);
+            weights.push(weight);
+            sum_weights += weight;
+        } else {
+            weights.push(0.0);
+        }
+    }
+
+    let mut gains = Vec::with_capacity(levels.len());
+    for weight in weights {
+        if sum_weights > 0.0 && weight > 0.0 {
+            // G_i = W_i / W_sum
+            let gain_linear = weight / sum_weights;
+            // The gain to apply (in linear fader space) should reflect this attenuation.
+            // A channel alone gets gain 1.0. Two equal channels get gain 0.5 (-6dB).
+            let gain_db = 20.0 * gain_linear.log10();
+
+            // Map the Dugan target gain to the X32 fader curve where 0dB = 0.75 float.
+            // We assume a base unity mix (0dB). If we want to be safe, Dugan max is 0dB -> 0.75 fader.
+            let fader_level = db_to_level(gain_db);
+            gains.push(fader_level);
+        } else {
+            gains.push(0.0); // Full attenuation if below noise floor or no signal
+        }
+    }
+
+    gains
 }
 
 #[cfg(test)]
@@ -330,7 +328,7 @@ mod tests {
     #[test]
     fn test_meters_parsing_safety() {
         let data = vec![0u8; 8];
-        let status = vec![(false, Instant::now()); 32];
+        let status = vec![false; 32];
         let mut count = 0;
 
         let start_ch: u32 = 1;
@@ -360,5 +358,30 @@ mod tests {
         assert!((level_to_db(0.0) - -90.0).abs() < 0.01);
         assert!((db_to_level(10.0) - 1.0).abs() < 0.01);
         assert!((db_to_level(-90.0) - 0.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_dugan_gain_calculation() {
+        // Two equal channels should get 0.5 (-6dB) gain each.
+        // We use levels that convert to a reasonable dB.
+        // 0.75 level -> 40*0.75 - 30 = 0 dB.
+        let levels = vec![0.75, 0.75];
+        let gains = calculate_dugan_gains(&levels, 0.01);
+        // Half linear gain = -6.02 dB. X32 scale for -6.02 dB is: (db + 30) / 40 = ( -6.02 + 30 ) / 40 = 23.98 / 40 = ~0.6
+        assert!((gains[0] - 0.6).abs() < 0.01);
+        assert!((gains[1] - 0.6).abs() < 0.01);
+
+        // One channel active, one below noise floor
+        let levels = vec![0.75, 0.0];
+        let gains = calculate_dugan_gains(&levels, 0.01);
+        // Full linear gain = 1.0 = 0 dB. X32 scale for 0 dB is 0.75.
+        assert!((gains[0] - 0.75).abs() < 0.01);
+        assert!((gains[1] - 0.0).abs() < 0.01);
+
+        // All below noise floor
+        let levels = vec![0.001, 0.001];
+        let gains = calculate_dugan_gains(&levels, 0.01);
+        assert_eq!(gains[0], 0.0);
+        assert_eq!(gains[1], 0.0);
     }
 }
