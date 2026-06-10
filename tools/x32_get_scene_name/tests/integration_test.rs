@@ -54,7 +54,7 @@ fn test_get_scene_name_command() {
         .run()
         .unwrap();
     let mut cmd = bin.command();
-    cmd.args(&["--ip", &addr.to_string(), "-o", "1"]);
+    cmd.args(&["--ip", &addr.to_string(), "-o", "1", "--transport", "osc"]);
 
     let output = cmd.output().unwrap();
     assert!(output.status.success());

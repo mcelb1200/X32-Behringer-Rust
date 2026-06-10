@@ -143,7 +143,16 @@ async fn handle_client(mut stream: TcpStream, args: Args) -> Result<()> {
 
                 match x32_socket.query_value(&osc_msg.path).await {
                     Ok(arg) => {
-                        let response_str = format!("{} {:?}", osc_msg.path, arg);
+                        let response_str = format!(
+                            "{} {}",
+                            osc_msg.path,
+                            match arg {
+                                osc_lib::OscArg::String(ref s) => format!("\"{}\"", s),
+                                osc_lib::OscArg::Int(i) => i.to_string(),
+                                osc_lib::OscArg::Float(f) => f.to_string(),
+                                _ => format!("{:?}", arg),
+                            }
+                        );
                         if args.verbose {
                             println!("Sending to client: {}", response_str);
                         }
