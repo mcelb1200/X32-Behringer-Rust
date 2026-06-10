@@ -2613,6 +2613,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "x32_sync"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "osc_lib",
+ "tokio",
+]
+
+[[package]]
 name = "x32_tap"
 version = "0.1.0"
 dependencies = [

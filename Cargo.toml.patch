@@ -1,0 +1,9 @@
+--- Cargo.toml
++++ Cargo.toml
+@@ -6,6 +6,7 @@
+ members = [
+     "libs/*",
+     "apps/*",
++    "apps/x32_sync",
+     "tools/*",
+ ]
