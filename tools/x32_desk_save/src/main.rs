@@ -72,10 +72,9 @@ async fn main() -> Result<(), X32Error> {
     } else if let Some(pattern_file) = &args.pattern_file {
         let file = File::open(pattern_file)?;
         let reader = std::io::BufReader::new(file);
-        #[allow(clippy::lines_filter_map_ok)]
         reader
             .lines()
-            .filter_map(|l| l.ok())
+            .map_while(Result::ok)
             .filter(|line| !line.starts_with('#'))
             .filter_map(|line| line.split_whitespace().next().map(|s| s.to_string()))
             .collect()

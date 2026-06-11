@@ -1,9 +1,9 @@
 #![allow(
     clippy::excessive_precision,
     clippy::approx_constant,
-    clippy::collapsible_if
+    clippy::collapsible_if,
+    clippy::manual_range_contains
 )]
-
 use osc_lib::{OscArg, OscMessage};
 use std::str::FromStr;
 

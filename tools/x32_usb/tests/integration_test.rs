@@ -58,7 +58,7 @@ fn test_ls_command() {
          FileEntry { index: 3, name: \"track01.wav\", file_type: Wav }\n"
     );
 
-    tx.send(()).unwrap();
+    let _ = tx.send(());
     handle.join().unwrap();
 }
 
@@ -105,6 +105,6 @@ fn test_file_operations() {
     let stdout = String::from_utf8(output.stdout).unwrap();
     assert_eq!(stdout, "Playing file: track02.wav\n");
 
-    tx.send(()).unwrap();
+    let _ = tx.send(());
     handle.join().unwrap();
 }

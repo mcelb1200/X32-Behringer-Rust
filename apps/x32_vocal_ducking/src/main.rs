@@ -265,8 +265,7 @@ async fn main() -> Result<()> {
                     .await;
 
                 let mut osc_rx = client_clone.subscribe();
-                #[allow(clippy::useless_vec)]
-                let mut moving_avg_window = vec![0.0f32; 10]; // ~500ms sliding window
+                let mut moving_avg_window = [0.0f32; 10]; // ~500ms sliding window
                 let mut window_idx = 0;
 
                 while r_clone.load(Ordering::Relaxed) {

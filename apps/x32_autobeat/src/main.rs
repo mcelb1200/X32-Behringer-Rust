@@ -134,16 +134,14 @@ fn parse_slots(s: &str) -> Vec<usize> {
                     (ranges[0].parse::<usize>(), ranges[1].parse::<usize>())
                 {
                     for i in start..=end {
-                        #[allow(clippy::manual_range_contains)]
-                        if i >= 1 && i <= 8 {
+                        if (1..=8).contains(&i) {
                             slots.push(i - 1); // convert to 0-indexed internally
                         }
                     }
                 }
             }
         } else if let Ok(n) = part.parse::<usize>() {
-            #[allow(clippy::manual_range_contains)]
-            if n >= 1 && n <= 8 {
+            if (1..=8).contains(&n) {
                 slots.push(n - 1); // convert to 0-indexed internally
             }
         }
