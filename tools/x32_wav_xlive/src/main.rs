@@ -403,6 +403,7 @@ mod tests {
     fn create_test_wav(dir: &Path, name: &str, spec: WavSpec, duration_ms: u32) {
         let path = dir.join(name);
         let mut writer = WavWriter::create(&path, spec).unwrap();
+        #[allow(clippy::unnecessary_cast)]
         let num_samples = (spec.sample_rate as u32 * duration_ms) / 1000;
         for _ in 0..num_samples {
             // Write a 24-bit sample
@@ -541,6 +542,7 @@ mod tests {
             .unwrap()
             .filter_map(|entry| {
                 let path = entry.unwrap().path();
+                #[allow(clippy::unnecessary_map_or)]
                 if path.extension().map_or(false, |ext| ext == "wav") {
                     Some(path)
                 } else {
