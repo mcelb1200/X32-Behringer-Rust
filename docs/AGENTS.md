@@ -91,19 +91,19 @@ Auditing codebase state and stubs:
 
 1.  **Use `generate_context_report` first**:
     *   Retrieves project status, language, git diff, and structures in a single call, avoiding multiple tool executions.
- 
+
 2.  **`doxy_skeleton` > `read_file`**:
     *   Reading the full file wastes tokens on method bodies. Use `doxy_skeleton` to read only signatures first.
 
 3.  **`doxy_query` > `read_file`**:
     *   Raw file = too many tokens.
     *   Query symbol = interface + docs. Enough.
- 
+
 4.  **`doxy_structure` to navigate**:
     *   No path guess. Use map find file.
- 
+
 5.  **Automatic Output Compression (Token Crusher)**:
     *   MCP server outputs are automatically compressed in caveman style (fluff stripped, synonyms used) to save context tokens. No agent action needed.
- 
+
 6.  **Check `doxygen_status`**:
     *   If Doxygen index not found, run `doxy_generate` first.
