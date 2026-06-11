@@ -10,12 +10,11 @@ fn setup_mock_x32_server() -> SocketAddr {
     let addr = socket.local_addr().unwrap();
     thread::spawn(move || {
         let mut buf = [0; 512];
-        #[allow(clippy::while_let_loop)]
         loop {
             if let Ok((number_of_bytes, src_addr)) = socket.recv_from(&mut buf) {
                 if let Ok(received_msg) = OscMessage::from_bytes(&buf[..number_of_bytes]) {
                     if received_msg.path == "/node" {
-                        if let Some(OscArg::String(node_path)) = received_msg.args.first() {
+                        if let Some(OscArg::String(node_path)) = received_msg.args.get(0) {
                             let response_msg = OscMessage::new(
                                 "/node".to_string(),
                                 vec![
@@ -50,7 +49,7 @@ fn test_desk_save_command() {
     let addr = setup_mock_x32_server();
 
     let mut cmd = std::process::Command::new(assert_cmd::cargo::cargo_bin("x32_desk_save"));
-    cmd.args(["--ip", &addr.to_string(), "-d", "test_output_save.txt"]);
+    cmd.args(&["--ip", &addr.to_string(), "-d", "test_output_save.txt"]);
 
     let output = cmd.output().unwrap();
     assert!(output.status.success());
@@ -61,11 +60,9 @@ fn test_desk_save_command() {
     // Verify the content of the output file
     let content = std::fs::read_to_string("test_output_save.txt").unwrap();
     let lines: Vec<&str> = content.lines().collect();
-    assert!(
-        lines
-            .iter()
-            .any(|&line| line == "/node ,ss \"-stat/solosw\" \"mock_value\"")
-    );
+    assert!(lines
+        .iter()
+        .any(|&line| line == "/node ,ss \"-stat/solosw\" \"mock_value\""));
 
     // Clean up the output file
     let _ = std::fs::remove_file("test_output_save.txt");
@@ -82,7 +79,7 @@ fn test_pattern_file_command() {
     writeln!(file, "/-prefs/remote").unwrap();
 
     let mut cmd = std::process::Command::new(assert_cmd::cargo::cargo_bin("x32_desk_save"));
-    cmd.args([
+    cmd.args(&[
         "--ip",
         &addr.to_string(),
         "-p",
@@ -101,16 +98,12 @@ fn test_pattern_file_command() {
     let content = std::fs::read_to_string("test_output_pattern.txt").unwrap();
     let lines: Vec<&str> = content.lines().collect();
     assert_eq!(lines.len(), 2);
-    assert!(
-        lines
-            .iter()
-            .any(|&line| line == "/node ,ss \"/-stat/solosw\" \"mock_value\"")
-    );
-    assert!(
-        lines
-            .iter()
-            .any(|&line| line == "/node ,ss \"/-prefs/remote\" \"mock_value\"")
-    );
+    assert!(lines
+        .iter()
+        .any(|&line| line == "/node ,ss \"/-stat/solosw\" \"mock_value\""));
+    assert!(lines
+        .iter()
+        .any(|&line| line == "/node ,ss \"/-prefs/remote\" \"mock_value\""));
 
     // Clean up the files
     let _ = std::fs::remove_file("test_pattern.txt");
