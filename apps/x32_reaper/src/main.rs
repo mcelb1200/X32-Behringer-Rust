@@ -1764,6 +1764,7 @@ mod tests {
     }
 }
 
+#[allow(clippy::items_after_test_module)]
 #[inline(always)]
 fn extract_nth_segment(path: &str, n: usize) -> Option<&str> {
     let iter = path.as_bytes().iter().enumerate();
