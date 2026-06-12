@@ -7,4 +7,5 @@ edition = "2021"
 anyhow = "1.0"
 clap = { version = "4.5", features = ["derive"] }
 osc_lib = { path = "../../libs/osc_lib" }
+x32_lib = { path = "../../libs/x32_lib" }
 tokio = { version = "1.36", features = ["full"] }

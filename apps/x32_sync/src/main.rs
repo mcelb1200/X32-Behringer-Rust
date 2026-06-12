@@ -1,11 +1,10 @@
 use anyhow::Result;
 use clap::Parser;
-use osc_lib::{OscArg, OscMessage};
+use osc_lib::OscArg;
 use std::collections::HashMap;
 use std::sync::Arc;
-use tokio::net::UdpSocket;
 use tokio::sync::Mutex;
-use tokio::time::{Duration, sleep};
+use x32_lib::MixerClient;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about = "Bidirectional synchronization tool for two X32/M32 consoles", long_about = None)]
@@ -56,38 +55,20 @@ impl SharedState {
     }
 }
 
-async fn handle_message(
-    buf: &[u8],
-    len: usize,
-    state: &SharedState,
-    target_sock: &UdpSocket,
-    target_addr: &str,
-) -> Result<()> {
-    if let Ok(msg) = OscMessage::from_bytes(&buf[..len]) {
+async fn run_proxy(
+    local_client: Arc<MixerClient>,
+    target_client: Arc<MixerClient>,
+    state: SharedState,
+) {
+    let mut rx = local_client.subscribe();
+    while let Ok(msg) = rx.recv().await {
         if !state.should_sync(&msg.path) {
-            return Ok(());
+            continue;
         }
 
         if state.update_and_check(&msg.path, &msg.args).await {
             // Forward the exact message with all arguments
-            if let Ok(bytes) = msg.to_bytes() {
-                let _ = target_sock.send_to(&bytes, target_addr).await;
-            }
-        }
-    }
-    Ok(())
-}
-
-async fn run_proxy(
-    local_sock: Arc<UdpSocket>,
-    target_sock: Arc<UdpSocket>,
-    target_addr: String,
-    state: SharedState,
-) {
-    let mut buf = [0u8; 1024];
-    loop {
-        if let Ok((len, _addr)) = local_sock.recv_from(&mut buf).await {
-            let _ = handle_message(&buf, len, &state, &target_sock, &target_addr).await;
+            let _ = target_client.send_message(&msg.path, msg.args.clone()).await;
         }
     }
 }
@@ -110,38 +91,30 @@ async fn main() -> Result<()> {
 
     let state = SharedState::new(args.prefix.clone());
 
-    let sock_a = Arc::new(UdpSocket::bind("0.0.0.0:0").await?);
-    let sock_b = Arc::new(UdpSocket::bind("0.0.0.0:0").await?);
-
     println!("Starting sync between {} and {}", ip_a, ip_b);
+
+    let client_a = Arc::new(MixerClient::connect(&ip_a, true).await?);
+    let client_b = Arc::new(MixerClient::connect(&ip_b, true).await?);
 
     // Spawn proxy A -> B
     let state_a = state.clone();
-    let sock_a_clone = sock_a.clone();
-    let sock_b_clone = sock_b.clone();
-    let ip_b_clone = ip_b.clone();
+    let client_a_clone = client_a.clone();
+    let client_b_clone = client_b.clone();
     tokio::spawn(async move {
-        run_proxy(sock_a_clone, sock_b_clone, ip_b_clone, state_a).await;
+        run_proxy(client_a_clone, client_b_clone, state_a).await;
     });
 
     // Spawn proxy B -> A
     let state_b = state.clone();
-    let sock_a_clone = sock_a.clone();
-    let sock_b_clone = sock_b.clone();
-    let ip_a_clone = ip_a.clone();
-    tokio::spawn(async move {
-        run_proxy(sock_b_clone, sock_a_clone, ip_a_clone, state_b).await;
+    let client_a_clone = client_a.clone();
+    let client_b_clone = client_b.clone();
+    let proxy_b_handle = tokio::spawn(async move {
+        run_proxy(client_b_clone, client_a_clone, state_b).await;
     });
 
-    // Keep-alive loop
-    loop {
-        let xremote_msg = OscMessage::new("/xremote".to_string(), vec![]);
-        if let Ok(bytes) = xremote_msg.to_bytes() {
-            let _ = sock_a.send_to(&bytes, &ip_a).await;
-            let _ = sock_b.send_to(&bytes, &ip_b).await;
-        }
-        sleep(Duration::from_secs(9)).await;
-    }
+    // Wait forever while tasks run
+    let _ = proxy_b_handle.await;
+    Ok(())
 }
 
 #[cfg(test)]
