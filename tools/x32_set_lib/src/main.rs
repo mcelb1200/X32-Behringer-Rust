@@ -14,7 +14,7 @@ use osc_lib::{OscArg, OscMessage};
 use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
-use tokio::time::{Duration, timeout};
+use tokio::time::{timeout, Duration};
 use x32_lib::MixerClient;
 
 #[derive(Parser, Debug)]
