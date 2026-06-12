@@ -45,3 +45,7 @@
 ## 2024-05-18 - [Use common extract_segments utility for allocation-free string splitting]
 **Learning:** Using `.split('/').collect::<Vec<&str>>()` or `.split_whitespace().collect::<Vec<&str>>()` causes unnecessary heap allocations for the intermediate vector. While custom local routines like `extract_nth_segment` are fast for single accesses, general path or argument parsing requires multiple segments.
 **Action:** Use the `osc_lib::extract_segments` utility to split strings and populate a fixed-size stack array (`let mut parts_arr = [""; 8]; let parts = extract_segments(path, '/', &mut parts_arr);`). For sequential parsing logic (e.g., in `x32_fxparse/build.rs` auto-generated code), iterate directly over the split result using `parts.next()` instead of `.get(i)` on a collected vector.
+
+## 2024-06-25 - [Use byte slice indexing instead of chars().collect::<Vec<char>>()]
+**Learning:** In hot loops, converting an ASCII string slice like an OSC path into a `Vec<char>` via `.chars().collect()` introduces a significant O(N) heap allocation and unnecessary UTF-8 decoding overhead just to extract a single character. Since OSC paths are guaranteed ASCII, direct byte slice indexing is safe and completely allocation-free.
+**Action:** When extracting known characters (like a digit representing a slot or channel) from known ASCII strings (like OSC paths), use `.as_bytes().get(n)` and check if the byte is an ASCII digit. Subtract `b'0'` to get the numeric value, completely avoiding `Vec` allocations and UTF-8 string processing on hot networking paths.

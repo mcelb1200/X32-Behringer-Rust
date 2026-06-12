@@ -2620,7 +2620,6 @@ dependencies = [
  "clap",
  "osc_lib",
  "tokio",
- "x32_lib",
 ]
 
 [[package]]
