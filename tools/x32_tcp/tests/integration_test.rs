@@ -12,23 +12,28 @@ fn test_server_e2e() -> Result<(), Box<dyn std::error::Error>> {
     let mock_x32_socket_clone = mock_x32_socket.try_clone()?;
 
     let mock_server_handle = thread::spawn(move || {
-        let mut buf = [0; 1024];
-        match mock_x32_socket_clone.recv_from(&mut buf) {
-            Ok((len, src)) => {
-                let received_msg = OscMessage::from_bytes(&buf[..len]).unwrap();
+        let received_info;
+        loop {
+            let mut buf = [0; 1024];
+            let (len, src) = mock_x32_socket_clone.recv_from(&mut buf).unwrap();
+            let msg = OscMessage::from_bytes(&buf[..len]).unwrap();
 
+            // Ignore automatic /xremote heartbeat from MixerClient connection
+            if msg.path == "/info" {
                 // Respond to the client
                 let response_msg = OscMessage::new(
                     "/info".to_string(),
                     vec![OscArg::String("X32 ROCKS".to_string())],
                 );
                 let response_bytes = response_msg.to_bytes().unwrap();
-                let _ = mock_x32_socket_clone.send_to(&response_bytes, src);
+                mock_x32_socket_clone.send_to(&response_bytes, src).unwrap();
 
-                received_msg
+                thread::sleep(Duration::from_millis(100)); // Give the server time to process the response
+                received_info = Some(msg);
+                break;
             }
-            Err(_) => panic!("Mock server failed to receive message"),
         }
+        received_info.unwrap()
     });
 
     // 2. Start the x32_tcp server
