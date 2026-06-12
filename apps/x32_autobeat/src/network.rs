@@ -2,8 +2,8 @@ use anyhow::Result;
 use crossbeam_channel::Sender;
 use osc_lib::OscMessage;
 use std::sync::{
-    Arc,
     atomic::{AtomicBool, Ordering},
+    Arc,
 };
 use tokio::sync::broadcast::error::RecvError;
 use tokio::task;
