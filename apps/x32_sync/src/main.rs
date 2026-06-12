@@ -68,9 +68,7 @@ async fn run_proxy(
 
         if state.update_and_check(&msg.path, &msg.args).await {
             // Forward the exact message with all arguments
-            let _ = target_client
-                .send_message(&msg.path, msg.args.clone())
-                .await;
+            let _ = target_client.send_message(&msg.path, msg.args.clone()).await;
         }
     }
 }
@@ -102,7 +100,7 @@ async fn main() -> Result<()> {
     let state_a = state.clone();
     let client_a_clone = client_a.clone();
     let client_b_clone = client_b.clone();
-    tokio::spawn(async move {
+    let proxy_a_handle = tokio::spawn(async move {
         run_proxy(client_a_clone, client_b_clone, state_a).await;
     });
 
@@ -114,8 +112,8 @@ async fn main() -> Result<()> {
         run_proxy(client_b_clone, client_a_clone, state_b).await;
     });
 
-    // Wait forever while tasks run
-    let _ = proxy_b_handle.await;
+    // Wait forever while tasks run, if either fails/exits, the main thread will exit.
+    let _ = tokio::try_join!(proxy_a_handle, proxy_b_handle);
     Ok(())
 }
 
