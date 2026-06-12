@@ -221,6 +221,7 @@ fn show_curve_calculation(
     } else {
         let c_room = if Path::new(config_path).exists() {
             let file = File::open(config_path)?;
+            let file = std::io::Read::take(file, 1024 * 1024 + 1);
             let cal: CalibrationConfig = serde_json::from_reader(file)?;
             cal.c_room
         } else {
@@ -498,12 +499,14 @@ async fn run_daemon(
     }
 
     let file = File::open(config_path)?;
+    let file = std::io::Read::take(file, 1024 * 1024 + 1);
     let cal: CalibrationConfig = serde_json::from_reader(file)?;
     println!("Loaded calibration offset C_room: {:.1} dB", cal.c_room);
 
     let room_eq = if let Some(path) = room_eq_path {
         if Path::new(path).exists() {
             let file = File::open(path)?;
+            let file = std::io::Read::take(file, 1024 * 1024 + 1);
             let r: RoomEqConfig = serde_json::from_reader(file)?;
             println!("Loaded room EQ correction file: {}", path);
             r
