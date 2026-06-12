@@ -43,6 +43,7 @@ fn test_server_e2e() -> Result<(), Box<dyn std::error::Error>> {
 
     // 4. Send a command from the client
     client_stream.write_all(b"/info\n")?;
+    std::thread::sleep(std::time::Duration::from_millis(500));
 
     // 5. Assert that the client receives the correctly formatted string
     let mut response = String::new();

@@ -353,7 +353,7 @@ mod tests {
         assert_eq!(msg.args.len(), 12);
         // decay should be log scaled: 3.218895825 = log(5/0.2)
         if let OscArg::Float(f) = msg.args[1] {
-            assert!((0.0..=1.0).contains(&f));
+            assert!(f >= 0.0 && f <= 1.0);
         }
     }
 

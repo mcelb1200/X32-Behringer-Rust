@@ -41,7 +41,3 @@
 ## 2024-11-20 - [Use write! macro to prevent intermediate String allocations]
 **Learning:** Using `out.push_str(&format!(...))` allocates a new `String` on the heap every time it executes, which is a major performance anti-pattern inside loops or hot paths.
 **Action:** Replace `push_str(&format!(...))` with the `write!` macro (from `std::fmt::Write`). `write!(&mut out, ...)` formats the string directly into the existing buffer without generating intermediate heap allocations.
-
-## 2024-06-25 - [Use byte slice indexing instead of chars().collect::<Vec<char>>()]
-**Learning:** In hot loops, converting an ASCII string slice like an OSC path into a `Vec<char>` via `.chars().collect()` introduces a significant O(N) heap allocation and unnecessary UTF-8 decoding overhead just to extract a single character. Since OSC paths are guaranteed ASCII, direct byte slice indexing is safe and completely allocation-free.
-**Action:** When extracting known characters (like a digit representing a slot or channel) from known ASCII strings (like OSC paths), use `.as_bytes().get(n)` and check if the byte is an ASCII digit. Subtract `b'0'` to get the numeric value, completely avoiding `Vec` allocations and UTF-8 string processing on hot networking paths.

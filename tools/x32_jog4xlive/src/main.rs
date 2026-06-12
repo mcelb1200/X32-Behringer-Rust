@@ -212,13 +212,6 @@ async fn query_osc(socket: &UdpSocket, path: &str) -> Result<()> {
     Ok(())
 }
 
-async fn send_osc_int(socket: &UdpSocket, path: &str, i: i32) -> Result<()> {
-    let msg = osc_lib::OscMessage::new(path.to_string(), vec![osc_lib::OscArg::Int(i)]);
-    let buf = msg.to_bytes().map_err(|e| anyhow::anyhow!(e))?;
-    socket.send(&buf).await?;
-    Ok(())
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -231,4 +224,11 @@ mod tests {
         assert_eq!(calculate_delta_time(64), 40970);
         assert_eq!(calculate_delta_time(127), 161300);
     }
+}
+
+async fn send_osc_int(socket: &UdpSocket, path: &str, i: i32) -> Result<()> {
+    let msg = osc_lib::OscMessage::new(path.to_string(), vec![osc_lib::OscArg::Int(i)]);
+    let buf = msg.to_bytes().map_err(|e| anyhow::anyhow!(e))?;
+    socket.send(&buf).await?;
+    Ok(())
 }

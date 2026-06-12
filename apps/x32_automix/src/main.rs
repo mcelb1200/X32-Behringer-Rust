@@ -326,7 +326,6 @@ mod tests {
     }
 
     #[test]
-    #[allow(clippy::useless_vec)]
     fn test_meters_parsing_safety() {
         let data = vec![0u8; 8];
         let status = vec![false; 32];
