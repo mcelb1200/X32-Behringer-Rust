@@ -68,7 +68,9 @@ async fn run_proxy(
 
         if state.update_and_check(&msg.path, &msg.args).await {
             // Forward the exact message with all arguments
-            let _ = target_client.send_message(&msg.path, msg.args.clone()).await;
+            let _ = target_client
+                .send_message(&msg.path, msg.args.clone())
+                .await;
         }
     }
 }
