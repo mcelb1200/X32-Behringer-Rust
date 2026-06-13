@@ -5,7 +5,7 @@
 use clap::Parser;
 use osc_lib::{OscArg, OscMessage};
 use std::fs::File;
-use std::io::{BufRead, BufWriter, Read, Write};
+use std::io::{BufRead, BufWriter, Write};
 use std::path::PathBuf;
 use tokio::time::{Duration, timeout};
 use x32_lib::{MixerClient, error::X32Error};
