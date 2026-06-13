@@ -129,11 +129,7 @@ fn main() {
                 let range_arr = param.range.as_array().expect("linf range must be array");
                 let min = range_arr[0].as_f64().expect("min must be f64") as f32;
                 let max = range_arr[1].as_f64().expect("max must be f64") as f32;
-                writeln!(
-                    fx_out,
-                    "        let val = parse_float(parts.get(i).copied()); i += 1;"
-                )
-                .unwrap();
+                writeln!(fx_out, "        let val = parse_float(parts.next());").unwrap();
                 if min == 0.0 {
                     writeln!(
                         fx_out,
@@ -156,11 +152,7 @@ fn main() {
                 let min = range_arr[0].as_f64().expect("min must be f64") as f32;
                 let max = range_arr[1].as_f64().expect("max must be f64") as f32;
                 let log_range = (max / min).ln();
-                writeln!(
-                    fx_out,
-                    "        let val = parse_float(parts.get(i).copied()); i += 1;"
-                )
-                .unwrap();
+                writeln!(fx_out, "        let val = parse_float(parts.next());").unwrap();
                 writeln!(
                     fx_out,
                     "        args.push(OscArg::Float(log2float(val, {:.7}, {:.15}))); // {}",
@@ -174,7 +166,7 @@ fn main() {
                     .map(|v| format!("\"{}\"", v.as_str().expect("enum item must be string")))
                     .collect();
                 let items_str = items.join(", ");
-                writeln!(fx_out, "        let val = parts.get(i).copied(); i += 1;").unwrap();
+                writeln!(fx_out, "        let val = parts.next();").unwrap();
                 writeln!(
                     fx_out,
                     "        args.push(OscArg::Int(parse_enum_fx(val, &[ {} ]))); // {}",
@@ -246,7 +238,7 @@ fn main() {
                                 if_conditions.push((format!("if let Ok(ha) = parts[{}].parse::<usize>() {{ if ha >= 1 && ha <= limits.channels.max(32) {{", idx), 2));
                             }
                             "mute" => {
-                                if_conditions.push((format!("if let Ok(mute) = parts[{}].parse::<usize>() {{ if mute >= 1 && mute <= 6 {{", idx), 2));
+                                if_conditions.push((format!("if let Ok(mute) = parts[{}].parse::<usize>() {{ if (1..=6).contains(&mute) {{", idx), 2));
                             }
                             "band" => {
                                 let band_limit = match parts[0] {

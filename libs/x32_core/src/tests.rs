@@ -232,7 +232,7 @@ mod tests {
         let item_type = "libchan".to_string();
 
         for cmd in commands {
-            if cmd == "/copy" || cmd == "/save" {
+            if cmd == "/copy" || cmd == "/save" || cmd == "/load" || cmd == "/add" {
                 continue;
             } // Tested separately
             let msg = OscMessage {
@@ -850,5 +850,67 @@ mod tests {
         } else {
             panic!("Expected blob argument");
         }
+    }
+
+    #[test]
+    fn test_mixer_dispatch_add() {
+        let mut mixer = Mixer::new();
+        // Send an /add for a scene
+        let arg1 = OscArg::String("scene".to_string());
+        let arg2 = OscArg::Int(1);
+        let arg3 = OscArg::String("New Scene".to_string());
+        let bytes = OscMessage::serialize_to_bytes("/add", [&arg1, &arg2, &arg3]).unwrap();
+
+        let _ = mixer.dispatch(&bytes, test_addr(1234)).unwrap();
+
+        // Assert the scene name was created in the list
+        assert_eq!(
+            mixer.state.get("/-show/showfile/scene/001/name"),
+            Some(&OscArg::String("New Scene".to_string()))
+        );
+
+        // Send an /add for a snippet
+        let arg1 = OscArg::String("snippet".to_string());
+        let arg2 = OscArg::Int(2);
+        let arg3 = OscArg::String("New Snippet".to_string());
+        let bytes2 = OscMessage::serialize_to_bytes("/add", [&arg1, &arg2, &arg3]).unwrap();
+
+        let _ = mixer.dispatch(&bytes2, test_addr(1234)).unwrap();
+
+        // Assert the snippet name was created in the list
+        assert_eq!(
+            mixer.state.get("/-show/showfile/snippet/002/name"),
+            Some(&OscArg::String("New Snippet".to_string()))
+        );
+    }
+
+    #[test]
+    fn test_mixer_dispatch_load() {
+        let mut mixer = Mixer::new();
+        // Seed the state with a fake scene property
+        mixer.state.set(
+            "/-show/showfile/scene/001/ch/01/mix/fader",
+            OscArg::Float(0.75),
+        );
+
+        let arg1 = OscArg::String("scene".to_string());
+        let arg2 = OscArg::Int(1);
+        let bytes = OscMessage::serialize_to_bytes("/load", [&arg1, &arg2]).unwrap();
+
+        let responses = mixer.dispatch(&bytes, test_addr(1234)).unwrap();
+
+        // The mixer should have copied the scene's property to the active root state
+        assert_eq!(
+            mixer.state.get("/ch/01/mix/fader"),
+            Some(&OscArg::Float(0.75))
+        );
+
+        // It should also send back a success response
+        assert_eq!(responses.len(), 1);
+        let response_msg = OscMessage::from_bytes(&responses[0].1).unwrap();
+        assert_eq!(response_msg.path, "/load");
+        assert_eq!(response_msg.args.len(), 2);
+        assert_eq!(response_msg.args[0], OscArg::String("scene".to_string()));
+        assert_eq!(response_msg.args[1], OscArg::Int(1));
     }
 }

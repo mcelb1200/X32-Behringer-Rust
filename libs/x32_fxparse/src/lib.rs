@@ -1,7 +1,9 @@
-#![allow(clippy::excessive_precision)]
-#![allow(clippy::collapsible_if)]
-#![allow(clippy::manual_range_contains)]
-#![allow(clippy::approx_constant)]
+#![allow(
+    clippy::excessive_precision,
+    clippy::approx_constant,
+    clippy::collapsible_if,
+    clippy::manual_range_contains
+)]
 use osc_lib::{OscArg, OscMessage};
 use std::str::FromStr;
 
@@ -238,7 +240,8 @@ pub fn parse_parameter(model: MixerModel, path: &str, arg_str: &str) -> Option<O
         },
     };
 
-    let parts: Vec<&str> = path.trim_start_matches('/').split('/').collect();
+    let mut parts_arr = [""; 8];
+    let parts = osc_lib::extract_segments(path.trim_start_matches('/'), '/', &mut parts_arr);
 
     match model {
         MixerModel::X32 => {
@@ -267,13 +270,11 @@ pub fn parse_fx_par(ifx: usize, arg_str: &str, path: &str) -> Option<OscMessage>
         return None;
     }
 
-    let parts: Vec<&str> = arg_str.split_whitespace().collect();
-    if parts.is_empty() {
-        return None;
-    }
+    let mut parts = arg_str.split_whitespace();
+    // Peak at the first item to ensure it's not empty, mirroring the previous check
+    parts.clone().next()?;
 
     let mut args = Vec::new();
-    let mut i = 0;
 
     include!(concat!(env!("OUT_DIR"), "/fx_parameters_gen.rs"));
 

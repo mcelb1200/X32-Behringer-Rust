@@ -6,7 +6,37 @@ use std::time::Duration;
 
 #[test]
 fn test_server_e2e() -> Result<(), Box<dyn std::error::Error>> {
-    // 1. Start the x32_tcp server in a separate process
+    // 1. Start the mock UDP server FIRST to act as the X32 mixer
+    let mock_x32_socket = UdpSocket::bind("127.0.0.1:10025")?;
+    mock_x32_socket.set_read_timeout(Some(Duration::from_secs(5)))?;
+    let mock_x32_socket_clone = mock_x32_socket.try_clone()?;
+
+    let mock_server_handle = thread::spawn(move || {
+        let received_info;
+        loop {
+            let mut buf = [0; 1024];
+            let (len, src) = mock_x32_socket_clone.recv_from(&mut buf).unwrap();
+            let msg = OscMessage::from_bytes(&buf[..len]).unwrap();
+
+            // Ignore automatic /xremote heartbeat from MixerClient connection
+            if msg.path == "/info" {
+                // Respond to the client
+                let response_msg = OscMessage::new(
+                    "/info".to_string(),
+                    vec![OscArg::String("X32 ROCKS".to_string())],
+                );
+                let response_bytes = response_msg.to_bytes().unwrap();
+                mock_x32_socket_clone.send_to(&response_bytes, src).unwrap();
+
+                thread::sleep(Duration::from_millis(100)); // Give the server time to process the response
+                received_info = Some(msg);
+                break;
+            }
+        }
+        received_info.unwrap()
+    });
+
+    // 2. Start the x32_tcp server
     let bin = escargot::CargoBuild::new().bin("x32_tcp").run()?;
     let mut cmd = bin.command();
     let mut server_process = cmd
@@ -15,47 +45,28 @@ fn test_server_e2e() -> Result<(), Box<dyn std::error::Error>> {
         .arg("-i")
         .arg("127.0.0.1:10025")
         .spawn()?;
-    thread::sleep(Duration::from_secs(1)); // Wait for the server to start
+    thread::sleep(Duration::from_millis(500)); // Wait for server to start and bind
 
-    // 2. Run a mock UDP server to act as the X32 mixer
-    let mock_x32_socket = UdpSocket::bind("127.0.0.1:10025")?;
-    let mock_x32_socket_clone = mock_x32_socket.try_clone()?;
-    let mock_server_handle = thread::spawn(move || {
-        let mut buf = [0; 1024];
-        let (len, src) = mock_x32_socket_clone.recv_from(&mut buf).unwrap();
-        let received_msg = OscMessage::from_bytes(&buf[..len]).unwrap();
-
-        // Respond to the client
-        let response_msg = OscMessage::new(
-            "/info".to_string(),
-            vec![OscArg::String("X32 ROCKS".to_string())],
-        );
-        let response_bytes = response_msg.to_bytes().unwrap();
-        mock_x32_socket_clone.send_to(&response_bytes, src).unwrap();
-
-        thread::sleep(Duration::from_millis(100)); // Give the server time to process the response
-        received_msg
-    });
-
-    // 3. Connect a TCP client to the x32_tcp server
+    // 3. Connect TCP client and send command
     let mut client_stream = TcpStream::connect("127.0.0.1:10043")?;
+    client_stream.set_read_timeout(Some(Duration::from_secs(5)))?;
     let mut reader = BufReader::new(client_stream.try_clone()?);
 
-    // 4. Send a command from the client
+    // 4. Send command
     client_stream.write_all(b"/info\n")?;
-    std::thread::sleep(std::time::Duration::from_millis(500));
+    client_stream.flush()?;
 
-    // 5. Assert that the client receives the correctly formatted string
+    // 5. Read response
     let mut response = String::new();
     reader.read_line(&mut response)?;
     assert_eq!(response.trim(), "/info \"X32 ROCKS\"");
 
-    // d. Assert that the correct OSC message is received by the mock X32
+    // 6. Verify mock server received the message
     let received_msg = mock_server_handle.join().unwrap();
     assert_eq!(received_msg.path, "/info");
     assert!(received_msg.args.is_empty());
 
     // Clean up
-    server_process.kill()?;
+    let _ = server_process.kill();
     Ok(())
 }

@@ -221,13 +221,8 @@ fn show_curve_calculation(
     } else {
         let c_room = if Path::new(config_path).exists() {
             let file = File::open(config_path)?;
-            let mut file_take = std::io::Read::take(file, 1024 * 1024 + 1);
-            let mut cal_buf = Vec::new();
-            std::io::Read::read_to_end(&mut file_take, &mut cal_buf)?;
-            if cal_buf.len() > 1024 * 1024 {
-                return Err(anyhow::anyhow!("File too large"));
-            }
-            let cal: CalibrationConfig = serde_json::from_slice(&cal_buf)?;
+            let file = std::io::Read::take(file, 4096);
+            let cal: CalibrationConfig = serde_json::from_reader(file)?;
             cal.c_room
         } else {
             println!(
@@ -504,25 +499,15 @@ async fn run_daemon(
     }
 
     let file = File::open(config_path)?;
-    let mut file_take = std::io::Read::take(file, 1024 * 1024 + 1);
-    let mut cal_buf = Vec::new();
-    std::io::Read::read_to_end(&mut file_take, &mut cal_buf)?;
-    if cal_buf.len() > 1024 * 1024 {
-        return Err(anyhow::anyhow!("File too large"));
-    }
-    let cal: CalibrationConfig = serde_json::from_slice(&cal_buf)?;
+    let file = std::io::Read::take(file, 4096);
+    let cal: CalibrationConfig = serde_json::from_reader(file)?;
     println!("Loaded calibration offset C_room: {:.1} dB", cal.c_room);
 
     let room_eq = if let Some(path) = room_eq_path {
         if Path::new(path).exists() {
             let file = File::open(path)?;
-            let mut file_take = std::io::Read::take(file, 1024 * 1024 + 1);
-            let mut req_buf = Vec::new();
-            std::io::Read::read_to_end(&mut file_take, &mut req_buf)?;
-            if req_buf.len() > 1024 * 1024 {
-                return Err(anyhow::anyhow!("File too large"));
-            }
-            let r: RoomEqConfig = serde_json::from_slice(&req_buf)?;
+            let file = std::io::Read::take(file, 4096);
+            let r: RoomEqConfig = serde_json::from_reader(file)?;
             println!("Loaded room EQ correction file: {}", path);
             r
         } else {
@@ -706,7 +691,7 @@ async fn update_eq(
                         let k = geq_slope_factor(freq);
                         if k > 0.0 {
                             (k * spl_diff).clamp(0.0, 12.0)
-                        } else {
+                } else {
                             (k * spl_diff).clamp(-4.0, 0.0)
                         }
                     }
