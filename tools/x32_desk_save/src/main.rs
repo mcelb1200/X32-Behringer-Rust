@@ -71,13 +71,7 @@ async fn main() -> Result<(), X32Error> {
         nodes::RO_NODE.iter().map(|s| s.to_string()).collect()
     } else if let Some(pattern_file) = &args.pattern_file {
         let file = File::open(pattern_file)?;
-        let mut file_take = std::io::Read::take(file, 1024 * 1024 + 1);
-        let mut buffer = String::new();
-        std::io::Read::read_to_string(&mut file_take, &mut buffer)?;
-        if buffer.len() > 1024 * 1024 {
-            return Err(X32Error::Custom("File too large".to_string()));
-        }
-        let reader = std::io::BufReader::new(std::io::Cursor::new(buffer.into_bytes()));
+        let reader = std::io::BufReader::new(file);
         reader
             .lines()
             .map_while(Result::ok)

@@ -238,7 +238,7 @@ fn main() {
                                 if_conditions.push((format!("if let Ok(ha) = parts[{}].parse::<usize>() {{ if ha >= 1 && ha <= limits.channels.max(32) {{", idx), 2));
                             }
                             "mute" => {
-                                if_conditions.push((format!("if let Ok(mute) = parts[{}].parse::<usize>() {{ if mute >= 1 && mute <= 6 {{", idx), 2));
+                                if_conditions.push((format!("if let Ok(mute) = parts[{}].parse::<usize>() {{ if (1..=6).contains(&mute) {{", idx), 2));
                             }
                             "band" => {
                                 let band_limit = match parts[0] {

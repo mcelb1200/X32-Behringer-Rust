@@ -9,7 +9,7 @@ async fn test_auto_mode_mock_server() {
     let port = local_addr.port();
 
     let mut cmd = Command::new(env!("CARGO_BIN_EXE_x32_tap"));
-    cmd.args(&[
+    cmd.args([
         "--ip",
         &format!("127.0.0.1:{}", port),
         "--slot",
@@ -18,6 +18,7 @@ async fn test_auto_mode_mock_server() {
         "--threshold",
         "0.5",
     ]);
+    #[allow(clippy::zombie_processes)]
     let mut child = cmd.spawn().expect("Failed to spawn x32_tap");
 
     let mut buf = [0u8; 1024];

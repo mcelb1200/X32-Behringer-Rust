@@ -129,7 +129,7 @@ mod tests {
         assert_eq!(cmd1.data1, 7);
         assert_eq!(cmd1.data2, 127);
         assert_eq!(cmd1.osc_command, "/ch/01/mix/fader ,f [$2 127 /]");
-        assert_eq!(cmd1.get_match_key(), (7 << 8) | (0xB0 | 0));
+        assert_eq!(cmd1.get_match_key(), (7 << 8) | 0xB0);
 
         let cmd2 = &commands[1];
         assert_eq!(cmd2.midi_status, 0x90);
