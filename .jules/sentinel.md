@@ -78,3 +78,7 @@
 **Vulnerability:** The `x32_dump` tool was reading unbounded input streams (`io::stdin()` and arbitrary files) entirely into memory using `read_to_end`. This created a severe Out-of-Memory (OOM) Denial of Service (DoS) vulnerability if a massive file or an infinite stream (e.g., `yes | x32_dump`) was provided.
 **Learning:** While files can be guarded via `metadata.len()`, standard input streams bypass metadata checks. Using `take(LIMIT)` directly solves unbounded memory issues, but introduces *silent truncation* if not handled correctly, which is a logic regression.
 **Prevention:** To prevent OOM while avoiding silent truncation, wrap unbounded stream reads with `take(LIMIT + 1)` and then assert that the final buffer length does not exceed `LIMIT`.
+## 2024-05-24 - Fix OOM DoS in File Readers
+**Vulnerability:** Unbounded file reading using `serde_json::from_reader(file)` or `BufReader::new(file)` can lead to Out-Of-Memory (OOM) Denial-of-Service (DoS) if an attacker provides an infinite stream (like `/dev/zero`) or a massive file.
+**Learning:** Rust's standard library file readers block or consume memory indefinitely until EOF is reached. Deserializers and buffered readers will attempt to consume the unbounded stream, leading to process termination via OOM.
+**Prevention:** Always bound file readers that read potentially unbounded user input using `.take(limit)` before passing them to deserializers or buffered readers. For example: `serde_json::from_reader(std::io::Read::take(file, 1024 * 1024))`.

@@ -15,7 +15,6 @@
 
 use clap::{Parser, Subcommand};
 use osc_lib::{OscArg, OscMessage};
-use std::fmt::Write as _;
 use std::fs::File;
 use std::io::{BufRead, BufWriter, Read, Write};
 use std::str::FromStr;
@@ -319,26 +318,24 @@ async fn handle_save_command(client: &MixerClient, file_path: &str) -> Result<()
 fn format_node_state(args: &[OscArg]) -> Result<String> {
     if let Some(OscArg::String(node)) = args.first() {
         let mut result = node.clone();
-        // ⚡ Bolt: Use `write!` to append directly into the pre-allocated `result` buffer.
-        // This avoids creating intermediate, dynamically allocated `String` objects
-        // inside the loop, preventing costly memory allocations on the hot path.
         for arg in args.iter().skip(1) {
             match arg {
                 OscArg::Float(f) => {
-                    write!(&mut result, " {:.4}", f).unwrap();
+                    result.push_str(&format!(" {:.4}", f));
                 }
                 OscArg::Int(i) => {
-                    write!(&mut result, " {}", i).unwrap();
+                    result.push_str(&format!(" {}", i));
                 }
                 OscArg::String(s) => {
-                    write!(&mut result, " \"{}\"", s).unwrap();
+                    result.push_str(&format!(" \"{}\"", s));
                 }
                 OscArg::Blob(b) => {
                     // C format: loop through bytes, print as %02x
-                    write!(&mut result, " ").unwrap();
+                    let mut blob_str = String::new();
                     for &byte in b {
-                        write!(&mut result, "{:02x}", byte).unwrap();
+                        blob_str.push_str(&format!("{:02x}", byte));
                     }
+                    result.push_str(&format!(" {}", blob_str));
                 }
             }
         }

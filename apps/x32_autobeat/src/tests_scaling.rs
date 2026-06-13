@@ -4,18 +4,15 @@ use crate::scaling::{afine2float, log2float, ratio2float};
 fn test_log2float() {
     // Test HALL decay range: 0.2 to 5.0, log factor 3.218895825
     // log2float(0.2, 3.218...) should be close to 0.0
-    #[allow(clippy::excessive_precision)]
     let val_min = log2float(0.2, 0.2, 3.218895825);
     assert!((val_min - 0.0).abs() < 0.001);
 
     // log2float(5.0, 3.218...) should be close to 1.0
-    #[allow(clippy::excessive_precision)]
     let val_max = log2float(5.0, 0.2, 3.218895825);
     assert!((val_max - 1.0).abs() < 0.001);
 
     // Test mid value
     // ln(1.0 / 0.2) / 3.218... = 1.609 / 3.218 = 0.5
-    #[allow(clippy::excessive_precision)]
     let val_mid = log2float(1.0, 0.2, 3.218895825);
     assert!((val_mid - 0.5).abs() < 0.001);
 }

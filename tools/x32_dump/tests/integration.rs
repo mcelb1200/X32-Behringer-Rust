@@ -12,7 +12,6 @@ fn test_x32_dump_consecutive_messages() {
     };
     let msg2 = osc_lib::OscMessage {
         path: "/test/2".to_string(),
-        #[allow(clippy::approx_constant)]
         args: vec![osc_lib::OscArg::Float(3.14)],
     };
 

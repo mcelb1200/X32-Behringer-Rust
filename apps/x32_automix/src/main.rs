@@ -127,7 +127,7 @@ async fn run_automix(args: Args, client: MixerClient) -> Result<()> {
                         let stop_ch = args.stop_channel as usize;
 
                         // 1. Parse levels and apply fast attack / slow release envelope
-                        let mut current_levels = vec![0.0; 32];
+                        let mut current_levels = [0.0; 32];
                         for ch in start_ch..stop_ch {
                             let start = ch * 4;
                             let end = start + 4;
@@ -326,7 +326,6 @@ mod tests {
     }
 
     #[test]
-    #[allow(clippy::useless_vec)]
     fn test_meters_parsing_safety() {
         let data = vec![0u8; 8];
         let status = vec![false; 32];
