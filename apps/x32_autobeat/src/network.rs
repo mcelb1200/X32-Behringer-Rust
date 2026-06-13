@@ -2,8 +2,8 @@ use anyhow::Result;
 use crossbeam_channel::Sender;
 use osc_lib::OscMessage;
 use std::sync::{
-    Arc,
     atomic::{AtomicBool, Ordering},
+    Arc,
 };
 use tokio::sync::broadcast::error::RecvError;
 use tokio::task;
@@ -215,11 +215,10 @@ impl NetworkManager {
             }
         } else if msg.path.starts_with("/fx/") && msg.path.ends_with("/type") {
             // Path is /fx/n/type
-            // ⚡ Bolt: Use direct byte slice indexing instead of .chars().collect::<Vec<char>>()
-            // to extract the FX slot digit. This avoids an O(N) heap allocation per OSC message.
-            if let Some(&byte) = msg.path.as_bytes().get(4) {
-                if byte.is_ascii_digit() {
-                    let slot = (byte - b'0') as usize;
+            let chars: Vec<char> = msg.path.chars().collect();
+            if chars.len() >= 5 {
+                if let Some(digit) = chars[4].to_digit(10) {
+                    let slot = digit as usize;
                     if let Some(osc_lib::OscArg::String(s)) = msg.args.first() {
                         let _ = sender.send(NetworkEvent::EffectLoaded(slot, s.clone()));
                     }

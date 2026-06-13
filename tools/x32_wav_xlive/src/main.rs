@@ -19,7 +19,7 @@
 //! and creates a new session directory containing one or more multi-channel, 32-bit WAV files
 //! and a `SE_LOG.BIN` metadata file.
 
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
 use byteorder::{LittleEndian, WriteBytesExt};
 use chrono::{Datelike, Timelike, Utc};
 use clap::Parser;
@@ -403,7 +403,6 @@ mod tests {
     fn create_test_wav(dir: &Path, name: &str, spec: WavSpec, duration_ms: u32) {
         let path = dir.join(name);
         let mut writer = WavWriter::create(&path, spec).unwrap();
-        #[allow(clippy::unnecessary_cast)]
         let num_samples = (spec.sample_rate as u32 * duration_ms) / 1000;
         for _ in 0..num_samples {
             // Write a 24-bit sample
@@ -455,12 +454,10 @@ mod tests {
         };
         let result = run(&args);
         assert!(result.is_err());
-        assert!(
-            result
-                .unwrap_err()
-                .to_string()
-                .contains("is not a 24-bit WAV file")
-        );
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("is not a 24-bit WAV file"));
     }
 
     #[test]
@@ -542,7 +539,6 @@ mod tests {
             .unwrap()
             .filter_map(|entry| {
                 let path = entry.unwrap().path();
-                #[allow(clippy::unnecessary_map_or)]
                 if path.extension().map_or(false, |ext| ext == "wav") {
                     Some(path)
                 } else {

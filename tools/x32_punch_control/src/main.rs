@@ -267,8 +267,8 @@ mod tests {
     #[tokio::test]
     async fn test_state_default() {
         let state = AppState::default();
-        assert!(!state.xplay);
-        assert!(!state.xpause);
-        assert!(state.xmerge);
+        assert_eq!(state.xplay, false);
+        assert_eq!(state.xpause, false);
+        assert_eq!(state.xmerge, true);
     }
 }

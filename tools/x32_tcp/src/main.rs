@@ -157,13 +157,19 @@ async fn handle_client(mut stream: TcpStream, args: Args) -> Result<()> {
                             println!("Sending to client: {}", response_str);
                         }
                         stream.write_all(response_str.as_bytes())?;
-                        stream.write_all(b"\n")?;
+                        stream.write_all(
+                            b"
+",
+                        )?;
                     }
                     Err(e) => {
                         if args.verbose {
                             println!("No response or error from X32: {}", e);
                         }
-                        stream.write_all(b"no data\n")?;
+                        stream.write_all(
+                            b"no data
+",
+                        )?;
                     }
                 }
             }
