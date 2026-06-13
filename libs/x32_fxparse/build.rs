@@ -131,7 +131,7 @@ fn main() {
                 let max = range_arr[1].as_f64().expect("max must be f64") as f32;
                 writeln!(
                     fx_out,
-                    "        let val = parse_float(parts.get(i).copied()); i += 1;"
+                    "        let val = parse_float(parts.next());"
                 )
                 .unwrap();
                 if min == 0.0 {
@@ -158,7 +158,7 @@ fn main() {
                 let log_range = (max / min).ln();
                 writeln!(
                     fx_out,
-                    "        let val = parse_float(parts.get(i).copied()); i += 1;"
+                    "        let val = parse_float(parts.next());"
                 )
                 .unwrap();
                 writeln!(
@@ -174,7 +174,7 @@ fn main() {
                     .map(|v| format!("\"{}\"", v.as_str().expect("enum item must be string")))
                     .collect();
                 let items_str = items.join(", ");
-                writeln!(fx_out, "        let val = parts.get(i).copied(); i += 1;").unwrap();
+                writeln!(fx_out, "        let val = parts.next();").unwrap();
                 writeln!(
                     fx_out,
                     "        args.push(OscArg::Int(parse_enum_fx(val, &[ {} ]))); // {}",

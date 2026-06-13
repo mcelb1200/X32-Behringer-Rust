@@ -127,7 +127,7 @@ async fn run_automix(args: Args, client: MixerClient) -> Result<()> {
                         let stop_ch = args.stop_channel as usize;
 
                         // 1. Parse levels and apply fast attack / slow release envelope
-                        let mut current_levels = vec![0.0; 32];
+                        let mut current_levels = [0.0; 32];
                         for ch in start_ch..stop_ch {
                             let start = ch * 4;
                             let end = start + 4;

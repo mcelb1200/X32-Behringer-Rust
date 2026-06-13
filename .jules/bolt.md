@@ -41,3 +41,7 @@
 ## 2024-11-20 - [Use write! macro to prevent intermediate String allocations]
 **Learning:** Using `out.push_str(&format!(...))` allocates a new `String` on the heap every time it executes, which is a major performance anti-pattern inside loops or hot paths.
 **Action:** Replace `push_str(&format!(...))` with the `write!` macro (from `std::fmt::Write`). `write!(&mut out, ...)` formats the string directly into the existing buffer without generating intermediate heap allocations.
+
+## 2024-05-18 - [Use common extract_segments utility for allocation-free string splitting]
+**Learning:** Using `.split('/').collect::<Vec<&str>>()` or `.split_whitespace().collect::<Vec<&str>>()` causes unnecessary heap allocations for the intermediate vector. While custom local routines like `extract_nth_segment` are fast for single accesses, general path or argument parsing requires multiple segments.
+**Action:** Use the `osc_lib::extract_segments` utility to split strings and populate a fixed-size stack array (`let mut parts_arr = [""; 8]; let parts = extract_segments(path, '/', &mut parts_arr);`). For sequential parsing logic (e.g., in `x32_fxparse/build.rs` auto-generated code), iterate directly over the split result using `parts.next()` instead of `.get(i)` on a collected vector.
