@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use clap::{Parser, Subcommand, ValueEnum};
 use osc_lib::OscArg;
 use serde::{Deserialize, Serialize};
@@ -691,7 +691,7 @@ async fn update_eq(
                         let k = geq_slope_factor(freq);
                         if k > 0.0 {
                             (k * spl_diff).clamp(0.0, 12.0)
-                } else {
+                        } else {
                             (k * spl_diff).clamp(-4.0, 0.0)
                         }
                     }

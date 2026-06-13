@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::net::UdpSocket;
 use tokio::sync::Mutex;
-use tokio::time::{sleep, Duration};
+use tokio::time::{Duration, sleep};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about = "Bidirectional synchronization tool for two X32/M32 consoles", long_about = None)]
