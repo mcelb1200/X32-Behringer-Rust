@@ -650,23 +650,3 @@ fn write_osc_string(bytes: &mut Vec<u8>, s: &str) -> Result<()> {
 
     Ok(())
 }
-
-/// A fixed-capacity allocation-free string path segment extractor.
-/// It splits an OSC path string over a given delimiter and populates a stack-allocated
-/// array of slices up to `MAX_PARTS`. Returns the valid populated slice.
-pub fn extract_segments<'a, const MAX_PARTS: usize>(
-    path: &'a str,
-    delimiter: char,
-    buffer: &'a mut [&'a str; MAX_PARTS],
-) -> &'a [&'a str] {
-    let mut count = 0;
-    for part in path.split(delimiter) {
-        if count < MAX_PARTS {
-            buffer[count] = part;
-            count += 1;
-        } else {
-            break;
-        }
-    }
-    &buffer[..count]
-}

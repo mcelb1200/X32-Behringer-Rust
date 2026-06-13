@@ -6,7 +6,6 @@ mod tests {
 
     #[test]
     fn test_error_from_io() {
-        #[allow(clippy::io_other_error)]
         let io_err = io::Error::new(io::ErrorKind::Other, "test io error");
         let err: X32Error = io_err.into();
         match err {

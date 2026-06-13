@@ -15,11 +15,11 @@ struct Args {
 
 use std::fmt::Write;
 
-fn dump_osc_message(msg: &OscMessage, out: &mut String) {
-    out.clear();
+fn dump_osc_message(msg: &OscMessage) {
+    let mut out = String::new();
     // format like Xdump.c:
     let _ = write!(
-        out,
+        &mut out,
         "{}, {:4} B: ",
         msg.path,
         OscMessage::serialize_to_bytes(&msg.path, &msg.args)
@@ -42,22 +42,22 @@ fn dump_osc_message(msg: &OscMessage, out: &mut String) {
     for arg in &msg.args {
         match arg {
             OscArg::Int(val) => {
-                let _ = write!(out, " [{:6}]", val);
+                let _ = write!(&mut out, " [{:6}]", val);
             }
             OscArg::Float(val) => {
                 let f = *val;
                 if f < 10.0 {
-                    let _ = write!(out, " [{:06.4}]", f);
+                    let _ = write!(&mut out, " [{:06.4}]", f);
                 } else if f < 100.0 {
-                    let _ = write!(out, " [{:06.3}]", f);
+                    let _ = write!(&mut out, " [{:06.3}]", f);
                 } else if f < 1000.0 {
-                    let _ = write!(out, " [{:06.2}]", f);
+                    let _ = write!(&mut out, " [{:06.2}]", f);
                 } else {
-                    let _ = write!(out, " [{:06.1}]", f);
+                    let _ = write!(&mut out, " [{:06.1}]", f);
                 }
             }
             OscArg::String(val) => {
-                let _ = write!(out, " {}", val);
+                let _ = write!(&mut out, " {}", val);
             }
             OscArg::Blob(blob) => {
                 // Read from blob based on path
@@ -65,11 +65,11 @@ fn dump_osc_message(msg: &OscMessage, out: &mut String) {
                     let mut cursor = std::io::Cursor::new(blob);
                     if let Ok(num_elements) = cursor.read_i32::<LittleEndian>() {
                         let n = num_elements * 2;
-                        let _ = writeln!(out, " {} rta: ", n);
+                        let _ = writeln!(&mut out, " {} rta: ", n);
                         for j in 0..n {
                             if let Ok(s) = cursor.read_i16::<LittleEndian>() {
                                 let f = (s as f32) / 256.0;
-                                let _ = write!(out, "[{}] {:07.2} ", j, f);
+                                let _ = write!(&mut out, "[{}] {:07.2} ", j, f);
                             } else {
                                 break;
                             }
@@ -79,22 +79,22 @@ fn dump_osc_message(msg: &OscMessage, out: &mut String) {
                     let mut cursor = std::io::Cursor::new(blob);
                     if let Ok(num_elements) = cursor.read_i32::<LittleEndian>() {
                         let n = num_elements * 2;
-                        let _ = writeln!(out, " M/16: {} shorts", n);
+                        let _ = writeln!(&mut out, " M/16: {} shorts", n);
                         for j in 0..(n - 8) {
                             if let Ok(s) = cursor.read_i16::<LittleEndian>() {
                                 let f = (s as f32) / 32767.0;
                                 if j < 32 {
-                                    let _ = write!(out, "[{}: G {:07.2}] ", j, f);
+                                    let _ = write!(&mut out, "[{}: G {:07.2}] ", j, f);
                                 } else if j < 64 {
-                                    let _ = write!(out, "[{}: C {:07.2}] ", j, f);
+                                    let _ = write!(&mut out, "[{}: C {:07.2}] ", j, f);
                                 } else if j < 80 {
-                                    let _ = write!(out, "[{}: B {:07.2}] ", j, f);
+                                    let _ = write!(&mut out, "[{}: B {:07.2}] ", j, f);
                                 } else if j < 86 {
-                                    let _ = write!(out, "[{}: M {:07.2}] ", j, f);
+                                    let _ = write!(&mut out, "[{}: M {:07.2}] ", j, f);
                                 } else if j == 86 {
-                                    let _ = write!(out, "[{}:LR {:07.2}] ", j, f);
+                                    let _ = write!(&mut out, "[{}:LR {:07.2}] ", j, f);
                                 } else if j == 87 {
-                                    let _ = write!(out, "[{}:MC {:07.2}] ", j, f);
+                                    let _ = write!(&mut out, "[{}:MC {:07.2}] ", j, f);
                                 }
                             } else {
                                 break;
@@ -103,7 +103,7 @@ fn dump_osc_message(msg: &OscMessage, out: &mut String) {
                         for j in (n - 8)..n {
                             if let Ok(s) = cursor.read_i16::<LittleEndian>() {
                                 let f = (s as f32) / 256.0;
-                                let _ = write!(out, "[{}: A {:07.2}] ", j, f);
+                                let _ = write!(&mut out, "[{}: A {:07.2}] ", j, f);
                             } else {
                                 break;
                             }
@@ -113,16 +113,16 @@ fn dump_osc_message(msg: &OscMessage, out: &mut String) {
                 } else {
                     let mut cursor = std::io::Cursor::new(blob);
                     if let Ok(num_elements) = cursor.read_i32::<LittleEndian>() {
-                        let _ = write!(out, " {} flts: ", num_elements);
+                        let _ = write!(&mut out, " {} flts: ", num_elements);
                         for _ in 0..num_elements {
                             if let Ok(f) = cursor.read_f32::<LittleEndian>() {
-                                let _ = write!(out, "{:06.2} ", f);
+                                let _ = write!(&mut out, "{:06.2} ", f);
                             } else {
                                 break;
                             }
                         }
                     } else {
-                        let _ = write!(out, " {} chrs: ", blob.len());
+                        let _ = write!(&mut out, " {} chrs: ", blob.len());
                         for b in blob {
                             out.push(*b as char);
                             out.push(' ');
@@ -144,8 +144,6 @@ fn process_stream<R: Read>(reader: R) -> Result<()> {
         anyhow::bail!("Input exceeds maximum allowed size (10MB)");
     }
 
-    // ⚡ Bolt: Pre-allocate string to avoid reallocations on every message dump iteration
-    let mut out = String::with_capacity(1024);
     let mut offset = 0;
     while offset < buffer.len() {
         if let Ok(msg) = OscMessage::from_bytes(&buffer[offset..]) {
@@ -157,7 +155,7 @@ fn process_stream<R: Read>(reader: R) -> Result<()> {
                 }
             };
 
-            dump_osc_message(&msg, &mut out);
+            dump_osc_message(&msg);
 
             offset += consumed;
 
@@ -198,8 +196,7 @@ mod tests {
             path: "/ch/01/mix/fader".to_string(),
             args: vec![OscArg::Float(0.75)],
         };
-        let mut out = String::new();
-        dump_osc_message(&msg, &mut out);
+        dump_osc_message(&msg);
     }
 
     #[test]
@@ -218,8 +215,7 @@ mod tests {
             path: path.to_string(),
             args: vec![OscArg::Blob(raw_bytes)],
         };
-        let mut out = String::new();
-        dump_osc_message(&msg, &mut out);
+        dump_osc_message(&msg);
     }
 
     #[test]
@@ -236,7 +232,6 @@ mod tests {
             path: path.to_string(),
             args: vec![OscArg::Blob(raw_bytes)],
         };
-        let mut out = String::new();
-        dump_osc_message(&msg, &mut out);
+        dump_osc_message(&msg);
     }
 }

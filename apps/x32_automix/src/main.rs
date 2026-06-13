@@ -148,14 +148,14 @@ async fn run_automix(args: Args, client: MixerClient) -> Result<()> {
                         let gains = if args.nom {
                             let levels_slice = &current_levels[start_ch..stop_ch];
                             let calculated = calculate_dugan_gains(levels_slice, args.sensitivity);
-                            let mut full_gains = [0.0; 32];
+                            let mut full_gains = vec![0.0; 32];
                             for (i, &g) in calculated.iter().enumerate() {
                                 full_gains[start_ch + i] = g;
                             }
                             full_gains
                         } else {
                             // Legacy simple threshold (0.75 represents unity gain on X32, 1.0 represents +10dB which can cause feedback)
-                            let mut full_gains = [0.0; 32];
+                            let mut full_gains = vec![0.0; 32];
                             for ch in start_ch..stop_ch {
                                 if current_levels[ch] > args.sensitivity {
                                     full_gains[ch] = 0.75;
@@ -326,7 +326,6 @@ mod tests {
     }
 
     #[test]
-    #[allow(clippy::useless_vec)]
     fn test_meters_parsing_safety() {
         let data = vec![0u8; 8];
         let status = vec![false; 32];
