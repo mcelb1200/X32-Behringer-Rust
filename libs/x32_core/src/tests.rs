@@ -888,7 +888,10 @@ mod tests {
     fn test_mixer_dispatch_load() {
         let mut mixer = Mixer::new();
         // Seed the state with a fake scene property
-        mixer.state.set("/-show/showfile/scene/001/ch/01/mix/fader", OscArg::Float(0.75));
+        mixer.state.set(
+            "/-show/showfile/scene/001/ch/01/mix/fader",
+            OscArg::Float(0.75),
+        );
 
         let arg1 = OscArg::String("scene".to_string());
         let arg2 = OscArg::Int(1);
