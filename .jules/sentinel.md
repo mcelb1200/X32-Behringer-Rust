@@ -82,3 +82,7 @@
 **Vulnerability:** Unbounded file reading using `serde_json::from_reader(file)` or `BufReader::new(file)` can lead to Out-Of-Memory (OOM) Denial-of-Service (DoS) if an attacker provides an infinite stream (like `/dev/zero`) or a massive file.
 **Learning:** Rust's standard library file readers block or consume memory indefinitely until EOF is reached. Deserializers and buffered readers will attempt to consume the unbounded stream, leading to process termination via OOM.
 **Prevention:** Always bound file readers that read potentially unbounded user input using `.take(limit)` before passing them to deserializers or buffered readers. For example: `serde_json::from_reader(std::io::Read::take(file, 1024 * 1024))`.
+## 2026-06-14 - [Panic DoS via OOB Array Indexing]
+**Vulnerability:** In `x32_punch_control`, the network listener parsed byte slices via direct indexing (`&data[15..17]`) without verifying that `data.len()` was at least 17. A malformed UDP packet shorter than 17 bytes would cause the application to panic, creating a Denial of Service (DoS) vulnerability.
+**Learning:** Checking a generic prefix (e.g. `data.starts_with(b"/-stat/userpar/")`) only guarantees a length of 15 bytes. Attempting to parse subsequent bytes with direct indexing will panic if the trailing characters are missing.
+**Prevention:** Never use direct array indexing on untrusted network packets. Always use safe slice access methods like `.get(15..17)` and gracefully handle the `None` case.
