@@ -15,6 +15,7 @@
 
 use clap::{Parser, Subcommand};
 use osc_lib::{OscArg, OscMessage};
+use std::collections::HashMap;
 use std::fmt::Write as FmtWrite;
 use std::fs::File;
 use std::io::{BufRead, BufWriter, Read, Write};
@@ -201,11 +202,11 @@ async fn main() {
 
 async fn handle_set_command(client: &MixerClient, assignments_str: &[String]) -> Result<()> {
     let assignments = parse_assignments(assignments_str)?;
-    let mut saved_strips: Vec<(u8, Vec<String>)> = Vec::new();
+    let mut saved_strips: HashMap<u8, Vec<String>> = HashMap::new();
 
     println!("Saving states of source channels...");
     for a in &assignments {
-        if !saved_strips.iter().any(|(src, _)| *src == a.src) {
+        if let std::collections::hash_map::Entry::Vacant(e) = saved_strips.entry(a.src) {
             let mut strip_data = Vec::new();
             if a.src <= 32 {
                 for &node in SCH_NODES.iter() {
@@ -218,17 +219,13 @@ async fn handle_set_command(client: &MixerClient, assignments_str: &[String]) ->
                     strip_data.push(get_node_state(client, &formatted_node).await?);
                 }
             }
-            saved_strips.push((a.src, strip_data));
+            e.insert(strip_data);
         }
     }
 
     println!("Applying states to destination channels...");
     for a in &assignments {
-        let strip_data = &saved_strips
-            .iter()
-            .find(|(src, _)| *src == a.src)
-            .unwrap()
-            .1;
+        let strip_data = saved_strips.get(&a.src).unwrap();
         if a.dest <= 32 {
             for (i, &node) in SCH_NODES.iter().enumerate() {
                 let dest_node = node.replace("/01/", &format!("/{:02}/", a.dest));
@@ -319,6 +316,9 @@ async fn handle_save_command(client: &MixerClient, file_path: &str) -> Result<()
 fn format_node_state(args: &[OscArg]) -> Result<String> {
     if let Some(OscArg::String(node)) = args.first() {
         let mut result = node.clone();
+        // ⚡ Bolt: Use `write!` to append directly into the pre-allocated `result` buffer.
+        // This avoids creating intermediate, dynamically allocated `String` objects
+        // inside the loop, preventing costly memory allocations on the hot path.
         for arg in args.iter().skip(1) {
             match arg {
                 OscArg::Float(f) => {
