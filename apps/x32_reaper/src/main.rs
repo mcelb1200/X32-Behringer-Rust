@@ -408,6 +408,8 @@ async fn process_x32_message(
     let mut rb_msg: Option<OscMessage> = None;
     let mut state_guard = state.lock().await;
 
+    let mut path_buf = String::with_capacity(64);
+
     // Logic for /ch/, /auxin/, /fxrtn/, /bus/, /dca/, /main/st/mix/
 
     let mut cnum = -1;
@@ -485,8 +487,11 @@ async fn process_x32_message(
                         if rmin > 0 && rmax >= rmin {
                             for r_trk in rmin..=rmax {
                                 if (xr_mask & config.xr_send_mask) != 0 {
+                                    path_buf.clear();
+                                    use std::fmt::Write;
+                                    write!(&mut path_buf, "/track/{}/volume", r_trk).unwrap();
                                     let m = OscMessage {
-                                        path: format!("/track/{}/volume", r_trk),
+                                        path: path_buf.clone(),
                                         args: vec![OscArg::Float(*f)],
                                     };
                                     send_to_r(r_sock, r_addr, &m).await?;
@@ -517,8 +522,11 @@ async fn process_x32_message(
                         if rmin > 0 && rmax >= rmin {
                             for r_trk in rmin..=rmax {
                                 if (xr_mask & config.xr_send_mask) != 0 {
+                                    path_buf.clear();
+                                    use std::fmt::Write;
+                                    write!(&mut path_buf, "/track/{}/mute", r_trk).unwrap();
                                     let m = OscMessage {
-                                        path: format!("/track/{}/mute", r_trk),
+                                        path: path_buf.clone(),
                                         args: vec![OscArg::Float(val)],
                                     };
                                     send_to_r(r_sock, r_addr, &m).await?;

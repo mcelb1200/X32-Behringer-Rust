@@ -327,7 +327,9 @@ impl Mixer {
                 let search_path = format!("/{}", node_path);
 
                 // ⚡ Bolt: Hoist string formatting outside the filter loop to prevent O(N) allocations
-                let search_path_slash = format!("{}/", search_path);
+                let mut search_path_slash = String::with_capacity(search_path.len() + 1);
+                search_path_slash.push_str(&search_path);
+                search_path_slash.push('/');
 
                 // Collect and sort matching keys
                 let mut matches: Vec<(&String, &OscArg)> = self
@@ -424,6 +426,7 @@ impl Mixer {
 
                         // We will collect keys to clone to avoid borrow checker issues with mut state
                         let mut to_copy = Vec::new();
+                        let mut new_key_buf = String::with_capacity(64);
                         for (key, val) in self.state.values.iter() {
                             if key.starts_with(&src_prefix) {
                                 let suffix = &key[src_prefix.len()..];
@@ -449,8 +452,10 @@ impl Mixer {
                                 }; // copy all if mask is -1
 
                                 if should_copy {
-                                    let new_key = format!("{}{}", dst_prefix, suffix);
-                                    to_copy.push((new_key, val.clone()));
+                                    new_key_buf.clear();
+                                    use std::fmt::Write;
+                                    write!(&mut new_key_buf, "{}{}", dst_prefix, suffix).unwrap();
+                                    to_copy.push((new_key_buf.clone(), val.clone()));
                                 }
                             }
                         }
