@@ -538,17 +538,26 @@ pub fn tokenize(s: &str) -> Result<Vec<String>> {
                         // std::mem::take leaves the current_token with 0 capacity,
                         // so we replace it with a new pre-allocated String to prevent
                         // repeated heap re-allocations on the next iterations.
-                        tokens.push(std::mem::replace(&mut current_token, String::with_capacity(32)));
+                        tokens.push(std::mem::replace(
+                            &mut current_token,
+                            String::with_capacity(32),
+                        ));
                     }
                 } else {
                     // Closing quote
-                    tokens.push(std::mem::replace(&mut current_token, String::with_capacity(32)));
+                    tokens.push(std::mem::replace(
+                        &mut current_token,
+                        String::with_capacity(32),
+                    ));
                 }
                 in_quote = !in_quote;
             }
             ' ' if !in_quote => {
                 if !current_token.is_empty() {
-                    tokens.push(std::mem::replace(&mut current_token, String::with_capacity(32)));
+                    tokens.push(std::mem::replace(
+                        &mut current_token,
+                        String::with_capacity(32),
+                    ));
                 }
             }
             _ => {
