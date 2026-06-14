@@ -205,9 +205,7 @@ async fn main() -> Result<()> {
 
         if args.listen {
             if args.verbose {
-                println!(
-                    "Listening for userpar commands 17 (Fade In), 18 (Fade Out), and 19 (Stop)..."
-                );
+                println!("Listening for userpar commands 17 (Fade In), 18 (Fade Out), and 19 (Stop)...");
             }
             let mut rx = client.subscribe();
             let mut current_cancel = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
@@ -224,8 +222,7 @@ async fn main() -> Result<()> {
                         "/-stat/userpar/17/value" => {
                             // Fade in
                             current_cancel.store(true, std::sync::atomic::Ordering::Relaxed);
-                            current_cancel =
-                                std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+                            current_cancel = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
 
                             let cancel_clone = current_cancel.clone();
                             let faders_clone = config.faders.clone();
@@ -235,24 +232,14 @@ async fn main() -> Result<()> {
 
                             if fade_time > 0.0 {
                                 tokio::spawn(async move {
-                                    let _ = fade(
-                                        &client_clone,
-                                        &faders_clone,
-                                        fade_time,
-                                        steps,
-                                        true,
-                                        verb,
-                                        cancel_clone,
-                                    )
-                                    .await;
+                                    let _ = fade(&client_clone, &faders_clone, fade_time, steps, true, verb, cancel_clone).await;
                                 });
                             }
                         }
                         "/-stat/userpar/18/value" => {
                             // Fade out
                             current_cancel.store(true, std::sync::atomic::Ordering::Relaxed);
-                            current_cancel =
-                                std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+                            current_cancel = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
 
                             let cancel_clone = current_cancel.clone();
                             let faders_clone = config.faders.clone();
@@ -262,16 +249,7 @@ async fn main() -> Result<()> {
 
                             if fade_time > 0.0 {
                                 tokio::spawn(async move {
-                                    let _ = fade(
-                                        &client_clone,
-                                        &faders_clone,
-                                        fade_time,
-                                        steps,
-                                        false,
-                                        verb,
-                                        cancel_clone,
-                                    )
-                                    .await;
+                                    let _ = fade(&client_clone, &faders_clone, fade_time, steps, false, verb, cancel_clone).await;
                                 });
                             }
                         }
@@ -294,8 +272,8 @@ async fn main() -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::Arc;
     use std::sync::atomic::{AtomicBool, Ordering};
+    use std::sync::Arc;
     use std::time::Instant;
 
     #[tokio::test]
@@ -320,24 +298,18 @@ mod tests {
                 if let Ok(msg) = OscMessage::from_bytes(&buf[..len]) {
                     if msg.args.is_empty() {
                         let response = OscMessage::new(msg.path, vec![OscArg::Float(0.5)]);
-                        let _ = emulator_socket
-                            .send_to(&response.to_bytes().unwrap(), src)
-                            .await;
+                        let _ = emulator_socket.send_to(&response.to_bytes().unwrap(), src).await;
                     }
                 }
             }
         });
 
-        let client = MixerClient::connect(&emulator_addr.to_string(), false)
-            .await
-            .unwrap();
+        let client = MixerClient::connect(&emulator_addr.to_string(), false).await.unwrap();
         let client = Arc::new(client);
 
         let start = Instant::now();
         // This fade should take 5 seconds if not cancelled, but we cancel it after 100ms
-        fade(&client, &faders, 5.0, 50, true, false, cancel)
-            .await
-            .unwrap();
+        fade(&client, &faders, 5.0, 50, true, false, cancel).await.unwrap();
         let duration = start.elapsed();
 
         // Ensure it cancelled early
