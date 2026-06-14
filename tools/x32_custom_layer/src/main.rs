@@ -15,6 +15,7 @@
 
 use clap::{Parser, Subcommand};
 use osc_lib::{OscArg, OscMessage};
+use std::fmt::Write as FmtWrite;
 use std::fs::File;
 use std::io::{BufRead, BufWriter, Read, Write};
 use std::str::FromStr;
@@ -321,21 +322,20 @@ fn format_node_state(args: &[OscArg]) -> Result<String> {
         for arg in args.iter().skip(1) {
             match arg {
                 OscArg::Float(f) => {
-                    result.push_str(&format!(" {:.4}", f));
+                    write!(result, " {:.4}", f).unwrap();
                 }
                 OscArg::Int(i) => {
-                    result.push_str(&format!(" {}", i));
+                    write!(result, " {}", i).unwrap();
                 }
                 OscArg::String(s) => {
-                    result.push_str(&format!(" \"{}\"", s));
+                    write!(result, " \"{}\"", s).unwrap();
                 }
                 OscArg::Blob(b) => {
                     // C format: loop through bytes, print as %02x
-                    let mut blob_str = String::new();
+                    write!(result, " ").unwrap();
                     for &byte in b {
-                        blob_str.push_str(&format!("{:02x}", byte));
+                        write!(result, "{:02x}", byte).unwrap();
                     }
-                    result.push_str(&format!(" {}", blob_str));
                 }
             }
         }
