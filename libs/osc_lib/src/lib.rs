@@ -517,7 +517,7 @@ impl std::fmt::Display for OscMessage {
 /// A `Result` containing a vector of tokens (strings) or an `OscError`.
 pub fn tokenize(s: &str) -> Result<Vec<String>> {
     let mut tokens = Vec::new();
-    let mut current_token = String::new();
+    let mut current_token = String::with_capacity(32);
     let mut in_quote = false;
     let mut escaped = false;
     for c in s.chars() {
@@ -535,20 +535,29 @@ pub fn tokenize(s: &str) -> Result<Vec<String>> {
                 if !in_quote {
                     // Opening quote
                     if !current_token.is_empty() {
-                        tokens.push(current_token);
-                        current_token = String::new();
+                        // std::mem::take leaves the current_token with 0 capacity,
+                        // so we replace it with a new pre-allocated String to prevent
+                        // repeated heap re-allocations on the next iterations.
+                        tokens.push(std::mem::replace(
+                            &mut current_token,
+                            String::with_capacity(32),
+                        ));
                     }
                 } else {
                     // Closing quote
-                    tokens.push(current_token);
-                    current_token = String::new();
+                    tokens.push(std::mem::replace(
+                        &mut current_token,
+                        String::with_capacity(32),
+                    ));
                 }
                 in_quote = !in_quote;
             }
             ' ' if !in_quote => {
                 if !current_token.is_empty() {
-                    tokens.push(current_token);
-                    current_token = String::new();
+                    tokens.push(std::mem::replace(
+                        &mut current_token,
+                        String::with_capacity(32),
+                    ));
                 }
             }
             _ => {
