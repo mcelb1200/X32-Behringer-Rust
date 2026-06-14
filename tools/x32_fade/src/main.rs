@@ -66,6 +66,10 @@ struct Args {
     /// Debug mode.
     #[arg(short, long, default_value_t = false)]
     debug: bool,
+
+    /// Listen mode: stay alive and listen for OSC userpar commands 17 (Fade In), 18 (Fade Out), and 19 (Stop).
+    #[arg(short, long, default_value_t = false)]
+    pub listen: bool,
 }
 
 /// Represents the configuration for a fade operation, serializable to/from JSON.
@@ -143,7 +147,7 @@ async fn main() -> Result<()> {
             &args.aes50_ip,
             &args.usb_port,
             &args.transport,
-            false,
+            args.listen, // Use listen flag to keep /xremote alive
         )
         .await?;
         let client = std::sync::Arc::new(client);
@@ -152,6 +156,8 @@ async fn main() -> Result<()> {
         }
 
         let steps = config.steps.unwrap_or(32);
+
+        let initial_cancel = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
 
         // Perform fade-in if specified.
         if let Some(fade_in_duration) = config.fade_in {
@@ -169,6 +175,7 @@ async fn main() -> Result<()> {
                     steps,
                     true,
                     args.verbose,
+                    initial_cancel.clone(),
                 )
                 .await?;
             }
@@ -190,8 +197,91 @@ async fn main() -> Result<()> {
                     steps,
                     false,
                     args.verbose,
+                    initial_cancel.clone(),
                 )
                 .await?;
+            }
+        }
+
+        if args.listen {
+            if args.verbose {
+                println!(
+                    "Listening for userpar commands 17 (Fade In), 18 (Fade Out), and 19 (Stop)..."
+                );
+            }
+            let mut rx = client.subscribe();
+            let mut current_cancel = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+
+            while let Ok(msg) = rx.recv().await {
+                let triggered = match msg.args.first() {
+                    Some(OscArg::Float(f)) => *f > 0.5,
+                    Some(OscArg::Int(i)) => *i == 1,
+                    _ => false,
+                };
+
+                if triggered {
+                    match msg.path.as_str() {
+                        "/-stat/userpar/17/value" => {
+                            // Fade in
+                            current_cancel.store(true, std::sync::atomic::Ordering::Relaxed);
+                            current_cancel =
+                                std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+
+                            let cancel_clone = current_cancel.clone();
+                            let faders_clone = config.faders.clone();
+                            let client_clone = client.clone();
+                            let fade_time = config.fade_in.unwrap_or(0.0);
+                            let verb = args.verbose;
+
+                            if fade_time > 0.0 {
+                                tokio::spawn(async move {
+                                    let _ = fade(
+                                        &client_clone,
+                                        &faders_clone,
+                                        fade_time,
+                                        steps,
+                                        true,
+                                        verb,
+                                        cancel_clone,
+                                    )
+                                    .await;
+                                });
+                            }
+                        }
+                        "/-stat/userpar/18/value" => {
+                            // Fade out
+                            current_cancel.store(true, std::sync::atomic::Ordering::Relaxed);
+                            current_cancel =
+                                std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+
+                            let cancel_clone = current_cancel.clone();
+                            let faders_clone = config.faders.clone();
+                            let client_clone = client.clone();
+                            let fade_time = config.fade_out.unwrap_or(0.0);
+                            let verb = args.verbose;
+
+                            if fade_time > 0.0 {
+                                tokio::spawn(async move {
+                                    let _ = fade(
+                                        &client_clone,
+                                        &faders_clone,
+                                        fade_time,
+                                        steps,
+                                        false,
+                                        verb,
+                                        cancel_clone,
+                                    )
+                                    .await;
+                                });
+                            }
+                        }
+                        "/-stat/userpar/19/value" => {
+                            // Stop
+                            current_cancel.store(true, std::sync::atomic::Ordering::Relaxed);
+                        }
+                        _ => {}
+                    }
+                }
             }
         }
     } else {
@@ -201,16 +291,71 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::Arc;
+    use std::sync::atomic::{AtomicBool, Ordering};
+    use std::time::Instant;
+
+    #[tokio::test]
+    async fn test_fade_cancellation() {
+        let cancel = Arc::new(AtomicBool::new(false));
+
+        let faders = vec!["/ch/01/mix/fader".to_string()];
+
+        let cancel_clone = cancel.clone();
+        tokio::spawn(async move {
+            sleep(Duration::from_millis(100)).await;
+            cancel_clone.store(true, Ordering::Relaxed);
+        });
+
+        // Start an embedded mock emulator so `get_parameter_async` inside `fade` does not timeout
+        let emulator_socket = tokio::net::UdpSocket::bind("127.0.0.1:0").await.unwrap();
+        let emulator_addr = emulator_socket.local_addr().unwrap();
+
+        tokio::spawn(async move {
+            let mut buf = [0u8; 1024];
+            while let Ok((len, src)) = emulator_socket.recv_from(&mut buf).await {
+                if let Ok(msg) = OscMessage::from_bytes(&buf[..len]) {
+                    if msg.args.is_empty() {
+                        let response = OscMessage::new(msg.path, vec![OscArg::Float(0.5)]);
+                        let _ = emulator_socket
+                            .send_to(&response.to_bytes().unwrap(), src)
+                            .await;
+                    }
+                }
+            }
+        });
+
+        let client = MixerClient::connect(&emulator_addr.to_string(), false)
+            .await
+            .unwrap();
+        let client = Arc::new(client);
+
+        let start = Instant::now();
+        // This fade should take 5 seconds if not cancelled, but we cancel it after 100ms
+        fade(&client, &faders, 5.0, 50, true, false, cancel)
+            .await
+            .unwrap();
+        let duration = start.elapsed();
+
+        // Ensure it cancelled early
+        assert!(duration < Duration::from_secs(4));
+    }
+}
+
 /// Performs a fade operation on a set of faders.
 ///
 /// # Arguments
 ///
-/// * `socket` - The UDP socket connected to the X32.
+/// * `client` - The MixerClient connected to the X32.
 /// * `faders` - A slice of strings representing the OSC addresses of the faders to control.
 /// * `duration_s` - The duration of the fade in seconds.
 /// * `steps` - The number of steps to use for the fade.
 /// * `is_fade_in` - If `true`, performs a fade-in (to 0.75). If `false`, performs a fade-out (to 0.0).
 /// * `verbose` - If `true`, prints the OSC messages being sent.
+/// * `cancel` - An atomic bool that aborts the fade loop early if set to true.
 async fn fade(
     client: &MixerClient,
     faders: &[String],
@@ -218,6 +363,7 @@ async fn fade(
     steps: u32,
     is_fade_in: bool,
     verbose: bool,
+    cancel: std::sync::Arc<std::sync::atomic::AtomicBool>,
 ) -> Result<()> {
     if steps == 0 || duration_s <= 0.0 {
         return Ok(());
@@ -233,6 +379,13 @@ async fn fade(
     let step_interval = Duration::from_secs_f32(duration_s / steps as f32);
 
     for i in 1..=steps {
+        if cancel.load(std::sync::atomic::Ordering::Relaxed) {
+            if verbose {
+                println!("Fade aborted midway.");
+            }
+            return Ok(());
+        }
+
         for (fader_addr, &initial_level) in faders.iter().zip(&initial_levels) {
             let current_level = if is_fade_in {
                 initial_level + ((target_level - initial_level) / steps as f32) * i as f32
@@ -249,6 +402,13 @@ async fn fade(
         }
 
         sleep(step_interval).await;
+    }
+
+    if cancel.load(std::sync::atomic::Ordering::Relaxed) {
+        if verbose {
+            println!("Fade aborted midway.");
+        }
+        return Ok(());
     }
 
     // Send the final target level to ensure accuracy.
