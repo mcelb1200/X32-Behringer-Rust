@@ -41,3 +41,10 @@
 ## 2024-11-20 - [Use write! macro to prevent intermediate String allocations]
 **Learning:** Using `out.push_str(&format!(...))` allocates a new `String` on the heap every time it executes, which is a major performance anti-pattern inside loops or hot paths.
 **Action:** Replace `push_str(&format!(...))` with the `write!` macro (from `std::fmt::Write`). `write!(&mut out, ...)` formats the string directly into the existing buffer without generating intermediate heap allocations.
+## 2024-11-20 - [Avoid String::clone() when trying to reduce allocations]
+**Learning:** Using `String::clone()` allocates new heap memory to copy string data. Optimizations that replace `format!` with `write!` to a buffer, but then `clone()` the result into a required struct or vector, do not actually eliminate the heap allocation and can sometimes be slower.
+**Action:** Always ensure that replacing `format!` in hot loops actually removes the allocation entirely. If the destination struct requires an owned `String` (like `OscMessage::new`), `format!` is often the clearest and equally performant choice unless the architecture can be refactored to use `&str`.
+
+## 2024-11-20 - [Reuse strings across loop iterations with std::mem::replace]
+**Learning:** Calling `String::new()` or `std::mem::take()` leaves a string with 0 capacity. When accumulating strings inside a tokenization loop (like OSC command parsing), repeatedly hitting 0 capacity forces repeated dynamic heap re-allocations as characters are pushed.
+**Action:** When extracting a completed token from a buffer variable and priming it for the next iteration, use `std::mem::replace(&mut buffer, String::with_capacity(32))` instead of `String::new()` to ensure the buffer maintains its pre-allocated capacity, dramatically reducing re-allocations in hot loops.
