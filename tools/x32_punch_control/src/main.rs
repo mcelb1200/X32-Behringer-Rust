@@ -91,7 +91,9 @@ async fn main() -> Result<()> {
                     if data.starts_with(b"/-stat/userpar/") && data.len() >= 17 {
                         let mut lock = state.lock().await;
 
-                        if let Ok(bnum) = std::str::from_utf8(&data[15..17]).unwrap_or("").parse::<u32>() {
+                        if let Some(slice) = data.get(15..17) {
+                        #[allow(clippy::collapsible_if)]
+                        if let Ok(bnum) = std::str::from_utf8(slice).unwrap_or("").parse::<u32>() {
                         // In c_origin: bnum = ((int)Xbank - 65) * 8 + i + 1;
                         // where Xbank is 'A', 'B', 'C'. A=65. So if Xbank='A', bnum is 1..8.
                         let bank_idx = (config.xbank as u32).saturating_sub(65);
@@ -147,6 +149,7 @@ async fn main() -> Result<()> {
                                     },
                                     _ => {}
                                 }
+                        }
                             }
                         }
                     }
