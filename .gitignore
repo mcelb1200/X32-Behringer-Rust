@@ -29,3 +29,8 @@ docs/unofficial_x32_osc_remote_protocol.md
 # Generated documentation
 docs/html/
 docs/xml/
+
+# Coverage reports & test logs
+coverage.json
+coverage.md
+x32_test_log_bash.txt
