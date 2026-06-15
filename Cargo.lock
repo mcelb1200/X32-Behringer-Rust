@@ -2380,6 +2380,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "x32-cli"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "tokio",
+ "x32_command",
+]
+
+[[package]]
 name = "x32_autobeat"
 version = "0.1.0"
 dependencies = [
