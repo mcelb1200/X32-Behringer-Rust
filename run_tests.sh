@@ -182,7 +182,7 @@ show_main_menu() {
     echo "4. Run specific test..."
     echo "5. Run test coverage (cargo llvm-cov)"
     echo "q. Quit"
-    read -p "Enter your choice: "
+    read -p "Enter your choice: " choice
 }
 
 # --- Main Loop ---
@@ -204,7 +204,7 @@ fi
 
 while true; do
     show_main_menu
-    case "$REPLY" in
+    case "$choice" in
         1)
             compile_binaries
             read -p "Press Enter to continue..."
