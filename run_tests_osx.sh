@@ -45,6 +45,30 @@ compile_binaries() {
     return 0
 }
 
+# --- Coverage Tooling Setup ---
+ensure_llvm_cov() {
+    if ! cargo llvm-cov --version &> /dev/null; then
+        log_message "cargo-llvm-cov is not installed."
+        if [ "$1" == "non_interactive" ]; then
+            log_message "ERROR: cargo-llvm-cov is required but not installed."
+            exit 1
+        fi
+        read -p "Do you want to install cargo-llvm-cov now? [y/N]: " confirm
+        if [[ "$confirm" =~ ^[Yy]$ ]]; then
+            log_message "Installing cargo-llvm-cov..."
+            cargo install cargo-llvm-cov
+            if [ $? -ne 0 ]; then
+                log_message "ERROR: Failed to install cargo-llvm-cov."
+                return 1
+            fi
+        else
+            log_message "Coverage run cancelled."
+            return 1
+        fi
+    fi
+    return 0
+}
+
 # --- X32 Connection Detection (macOS) ---
 detect_x32_connection() {
     log_message "Attempting to detect X32 connection..."
@@ -148,6 +172,7 @@ show_main_menu() {
 
 # Check for non-interactive flag
 if [ "$1" == "--coverage" ]; then
+    ensure_llvm_cov non_interactive
     log_message "Running test coverage..."
     cargo llvm-cov --workspace
     exit 0
@@ -210,9 +235,11 @@ while true; do
             read -p "Test finished. Press Enter to continue..."
             ;;
         5)
-            log_message "Running test coverage..."
-            cargo llvm-cov --workspace
-            read -p "Coverage complete. Press Enter to continue..."
+            if ensure_llvm_cov; then
+                log_message "Running test coverage..."
+                cargo llvm-cov --workspace
+            fi
+            read -p "Press Enter to continue..."
             ;;
         q)
             break
