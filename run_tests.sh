@@ -156,6 +156,7 @@ show_main_menu() {
     echo "2. Detect X32 connection"
     echo "3. Run all tests"
     echo "4. Run specific test..."
+    echo "5. Run test coverage (cargo llvm-cov)"
     echo "q. Quit"
     read -p "Enter your choice: "
 }
@@ -165,6 +166,10 @@ show_main_menu() {
 # Check for non-interactive flag
 if [ "$1" == "--run-tests-and-exit" ]; then
     run_all_tests_non_interactive
+elif [ "$1" == "--coverage" ]; then
+    log_message "Running test coverage..."
+    cargo llvm-cov --workspace
+    exit 0
 fi
 
 
@@ -223,6 +228,11 @@ while true; do
                 echo "Invalid selection."
             fi
             read -p "Test finished. Press Enter to continue..."
+            ;;
+        5)
+            log_message "Running test coverage..."
+            cargo llvm-cov --workspace
+            read -p "Coverage complete. Press Enter to continue..."
             ;;
         q)
             break
