@@ -1,0 +1,62 @@
+{
+  "X32": {
+    "channels": 32,
+    "buses": 16,
+    "auxins": 8,
+    "fxrtns": 8,
+    "matrices": 6,
+    "dcas": 8,
+    "fx_slots": 8,
+    "channel_eq_bands": 4,
+    "auxin_eq_bands": 2,
+    "fxrtn_eq_bands": 2,
+    "bus_eq_bands": 6,
+    "mtx_eq_bands": 6,
+    "main_eq_bands": 6
+  },
+  "XR18": {
+    "channels": 16,
+    "buses": 6,
+    "auxins": 2,
+    "fxrtns": 4,
+    "matrices": 0,
+    "dcas": 4,
+    "fx_slots": 4,
+    "channel_eq_bands": 4,
+    "auxin_eq_bands": 4,
+    "fxrtn_eq_bands": 4,
+    "bus_eq_bands": 6,
+    "mtx_eq_bands": 0,
+    "main_eq_bands": 6
+  },
+  "XR16": {
+    "channels": 16,
+    "buses": 4,
+    "auxins": 2,
+    "fxrtns": 4,
+    "matrices": 0,
+    "dcas": 4,
+    "fx_slots": 4,
+    "channel_eq_bands": 4,
+    "auxin_eq_bands": 4,
+    "fxrtn_eq_bands": 4,
+    "bus_eq_bands": 6,
+    "mtx_eq_bands": 0,
+    "main_eq_bands": 6
+  },
+  "XR12": {
+    "channels": 12,
+    "buses": 2,
+    "auxins": 2,
+    "fxrtns": 4,
+    "matrices": 0,
+    "dcas": 4,
+    "fx_slots": 4,
+    "channel_eq_bands": 4,
+    "auxin_eq_bands": 4,
+    "fxrtn_eq_bands": 4,
+    "bus_eq_bands": 6,
+    "mtx_eq_bands": 0,
+    "main_eq_bands": 6
+  }
+}

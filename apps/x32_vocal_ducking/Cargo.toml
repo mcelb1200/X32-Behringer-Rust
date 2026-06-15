@@ -1,0 +1,17 @@
+[package]
+name = "x32_vocal_ducking"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tokio = { workspace = true }
+anyhow = { workspace = true }
+clap = { workspace = true }
+cpal = { workspace = true }
+x32_lib = { workspace = true }
+osc_lib = { workspace = true }
+rustfft = "6.1.0"
+thread-priority = "1.1.0"
+
+[lints]
+workspace = true

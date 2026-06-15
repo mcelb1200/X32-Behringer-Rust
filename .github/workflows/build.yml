@@ -58,6 +58,14 @@ jobs:
     - name: Build
       run: cargo build --workspace --release --target ${{ matrix.target }}
 
-    - name: Run tests
-      if: matrix.test == true
+    - name: Install cargo-llvm-cov
+      if: matrix.test == true && runner.os == 'Linux'
+      uses: taiki-e/install-action@cargo-llvm-cov
+
+    - name: Run tests with coverage (Linux)
+      if: matrix.test == true && runner.os == 'Linux'
+      run: cargo llvm-cov --workspace --target ${{ matrix.target }} --lcov --output-path lcov.info
+
+    - name: Run tests (non-Linux)
+      if: matrix.test == true && runner.os != 'Linux'
       run: cargo test --workspace --release --target ${{ matrix.target }}

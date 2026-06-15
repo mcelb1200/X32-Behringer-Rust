@@ -78,3 +78,13 @@
 **Vulnerability:** In `x32_reaper/src/main.rs`, the `parse_osc_packet` function extracted OSC string arguments (`b's'`) by directly slicing the network byte buffer (`data[arg_idx..]`) to find the null terminator, but failed to verify that `arg_idx` was within `data.len()` bounds prior to slicing.
 **Learning:** While other argument types like floats (`b'f'`) or ints (`b'i'`) included checks like `if arg_idx + 4 <= data.len()`, variable-length types like strings or blobs are easily overlooked when migrating or writing low-level network parsers. An attacker could craft a truncated message containing string type tags without the corresponding string payloads, causing the parser to panic and crash the application (Denial of Service).
 **Prevention:** When sequentially parsing network packets or byte streams, always perform an explicit bounds check (e.g., `if arg_idx < data.len()`) immediately before any slicing operations (`data[idx..]`), even if extracting variable-length data up to a null terminator.
+
+## 2026-06-02 - [DoS via Unbounded Stream Reads in x32_dump]
+**Vulnerability:** The `x32_dump` tool was reading unbounded input streams (`io::stdin()` and arbitrary files) entirely into memory using `read_to_end`. This created a severe Out-of-Memory (OOM) Denial of Service (DoS) vulnerability if a massive file or an infinite stream (e.g., `yes | x32_dump`) was provided.
+**Learning:** While files can be guarded via `metadata.len()`, standard input streams bypass metadata checks. Using `take(LIMIT)` directly solves unbounded memory issues, but introduces *silent truncation* if not handled correctly, which is a logic regression.
+**Prevention:** To prevent OOM while avoiding silent truncation, wrap unbounded stream reads with `take(LIMIT + 1)` and then assert that the final buffer length does not exceed `LIMIT`.
+
+## 2024-05-24 - Fix OOM DoS in File Readers
+**Vulnerability:** Unbounded file reading using `serde_json::from_reader(file)` or `BufReader::new(file)` can lead to Out-Of-Memory (OOM) Denial-of-Service (DoS) if an attacker provides an infinite stream (like `/dev/zero`) or a massive file.
+**Learning:** Rust's standard library file readers block or consume memory indefinitely until EOF is reached. Deserializers and buffered readers will attempt to consume the unbounded stream, leading to process termination via OOM.
+**Prevention:** Always bound file readers that read potentially unbounded user input using `.take(limit)` before passing them to deserializers or buffered readers. For example: `serde_json::from_reader(std::io::Read::take(file, 1024 * 1024))`.

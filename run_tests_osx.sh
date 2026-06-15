@@ -45,6 +45,30 @@ compile_binaries() {
     return 0
 }
 
+# --- Coverage Tooling Setup ---
+ensure_llvm_cov() {
+    if ! cargo llvm-cov --version &> /dev/null; then
+        log_message "cargo-llvm-cov is not installed."
+        if [ "$1" == "non_interactive" ]; then
+            log_message "ERROR: cargo-llvm-cov is required but not installed."
+            exit 1
+        fi
+        read -p "Do you want to install cargo-llvm-cov now? [y/N]: " confirm
+        if [[ "$confirm" =~ ^[Yy]$ ]]; then
+            log_message "Installing cargo-llvm-cov..."
+            cargo install cargo-llvm-cov
+            if [ $? -ne 0 ]; then
+                log_message "ERROR: Failed to install cargo-llvm-cov."
+                return 1
+            fi
+        else
+            log_message "Coverage run cancelled."
+            return 1
+        fi
+    fi
+    return 0
+}
+
 # --- X32 Connection Detection (macOS) ---
 detect_x32_connection() {
     log_message "Attempting to detect X32 connection..."
@@ -139,14 +163,28 @@ show_main_menu() {
     echo "2. Detect X32 connection"
     echo "3. Run all tests"
     echo "4. Run specific test..."
+    echo "5. Run test coverage (cargo llvm-cov)"
     echo "q. Quit"
-    read -p "Enter your choice: "
+    read -p "Enter your choice: " choice
 }
 
 # --- Main Loop ---
+
+# Check for non-interactive flag
+if [ "$1" == "--coverage" ]; then
+    ensure_llvm_cov non_interactive
+    log_message "Running test coverage..."
+    cargo llvm-cov --workspace --json --output-path coverage.json
+    echo -e "# Test Coverage Report\n\n\`\`\`text" > coverage.md
+    cargo llvm-cov --workspace >> coverage.md
+    echo -e "\`\`\`" >> coverage.md
+    log_message "Reports saved to coverage.json and coverage.md"
+    exit 0
+fi
+
 while true; do
     show_main_menu
-    case "$REPLY" in
+    case "$choice" in
         1)
             compile_binaries
             read -p "Press Enter to continue..."
@@ -199,6 +237,17 @@ while true; do
                 echo "Invalid selection."
             fi
             read -p "Test finished. Press Enter to continue..."
+            ;;
+        5)
+            if ensure_llvm_cov; then
+                log_message "Running test coverage..."
+                cargo llvm-cov --workspace --json --output-path coverage.json
+                echo -e "# Test Coverage Report\n\n\`\`\`text" > coverage.md
+                cargo llvm-cov --workspace >> coverage.md
+                echo -e "\`\`\`" >> coverage.md
+                log_message "Reports saved to coverage.json and coverage.md"
+            fi
+            read -p "Press Enter to continue..."
             ;;
         q)
             break

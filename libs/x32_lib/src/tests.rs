@@ -1,0 +1,25 @@
+#![allow(deprecated)]
+use super::*;
+
+#[path = "tests/async_methods.rs"]
+mod async_methods;
+#[path = "tests/common.rs"]
+mod common;
+#[path = "tests/error.rs"]
+mod error;
+#[path = "tests/main_bus.rs"]
+mod main_bus;
+#[path = "tests/output.rs"]
+mod output;
+
+#[test]
+fn test_create_socket_with_port() {
+    let socket = create_socket("127.0.0.1:10024", 1000).unwrap();
+    assert_eq!(socket.peer_addr().unwrap().port(), 10024);
+}
+
+#[test]
+fn test_create_socket_default_port() {
+    let socket = create_socket("127.0.0.1", 1000).unwrap();
+    assert_eq!(socket.peer_addr().unwrap().port(), 10023);
+}

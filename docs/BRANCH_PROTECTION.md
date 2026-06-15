@@ -1,12 +1,12 @@
-# Branch Protection Rules for the `master` Branch
+# Branch Protection Rules for the `main` Branch
 
-To maintain the stability and quality of our codebase, the `master` branch is protected by a set of rules. All contributions to the Rust code must be in idiomatic Rust, and all code should be platform-agnostic unless a specific justification is provided. This document outlines the branch protection rules, their purpose, and the process for contributing.
+To maintain the stability and quality of our codebase, the `main` branch is protected by a set of rules. All contributions to the Rust code must be in idiomatic Rust, and all code should be platform-agnostic unless a specific justification is provided. This document outlines the branch protection rules, their purpose, and the process for contributing.
 
 ## 1. Require a Pull Request Before Merging
 
-**Rule:** All changes must be made through a pull request (PR). Direct pushes to the `master` branch are disabled.
+**Rule:** All changes must be made through a pull request (PR). Direct pushes to the `main` branch are disabled.
 
-**Purpose:** This ensures that every change to the `master` branch is reviewed and verified before being merged. It creates an opportunity for collaboration and code review, which is essential for maintaining code quality.
+**Purpose:** This ensures that every change to the `main` branch is reviewed and verified before being merged. It creates an opportunity for collaboration and code review, which is essential for maintaining code quality.
 
 **Justification for Departure:** There are virtually no exceptions to this rule. In the rare case of a critical hotfix that needs to be deployed immediately, the change should still go through an expedited PR process.
 
@@ -43,7 +43,7 @@ To maintain the stability and quality of our codebase, the `master` branch is pr
 
 ## Common Contributor Scenarios
 
-*   **New Feature:** If you are adding a new feature, please create a new branch from `master`, make your changes, and then open a pull request. Make sure to include tests for your new feature.
+*   **New Feature:** If you are adding a new feature, please create a new branch from `main`, make your changes, and then open a pull request. Make sure to include tests for your new feature.
 *   **Bug Fix:** If you are fixing a bug, please follow the same process as for a new feature. Include a test that reproduces the bug and verifies that your fix works.
 *   **Documentation:** For changes to documentation, a pull request is still required. This allows for a review of the clarity and accuracy of the documentation.
 
@@ -82,7 +82,7 @@ The following JSON payload represents the branch protection rules described in t
 
 ### Applying the Ruleset with `curl`
 
-You can apply these rules to the `master` branch of your repository using the following `curl` command. Make sure to replace `YOUR_TOKEN`, `OWNER`, and `REPO` with your personal access token, the repository owner, and the repository name, respectively.
+You can apply these rules to the `main` branch of your repository using the following `curl` command. Make sure to replace `YOUR_TOKEN`, `OWNER`, and `REPO` with your personal access token, the repository owner, and the repository name, respectively.
 
 ```bash
 curl -L \
@@ -90,6 +90,6 @@ curl -L \
   -H "Accept: application/vnd.github+json" \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -H "X-GitHub-Api-Version: 2022-11-28" \
-  https://api.github.com/repos/OWNER/REPO/branches/master/protection \
+  https://api.github.com/repos/OWNER/REPO/branches/main/protection \
   -d @branch_protection.json
 ```
