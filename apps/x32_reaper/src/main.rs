@@ -1376,15 +1376,17 @@ fn parse_osc_packet(data: &[u8]) -> Result<OscMessage> {
                     }
                 }
                 b's' => {
-                    let str_end = data[arg_idx..]
-                        .iter()
-                        .position(|&b| b == 0)
-                        .map(|p| p + arg_idx)
-                        .unwrap_or(data.len());
-                    // ⚡ Bolt: Use `into_owned` instead of `to_string` to avoid Cow's Display formatting overhead
-                    let s = String::from_utf8_lossy(&data[arg_idx..str_end]).into_owned();
-                    args.push(OscArg::String(s));
-                    arg_idx = (str_end + 4) & !3;
+                    if arg_idx < data.len() {
+                        let str_end = data[arg_idx..]
+                            .iter()
+                            .position(|&b| b == 0)
+                            .map(|p| p + arg_idx)
+                            .unwrap_or(data.len());
+                        // ⚡ Bolt: Use `into_owned` instead of `to_string` to avoid Cow's Display formatting overhead
+                        let s = String::from_utf8_lossy(&data[arg_idx..str_end]).into_owned();
+                        args.push(OscArg::String(s));
+                        arg_idx = (str_end + 4) & !3;
+                    }
                 }
                 _ => {}
             }
@@ -1794,4 +1796,14 @@ fn extract_nth_segment(path: &str, n: usize) -> Option<&str> {
         return Some(&path[start_idx..]);
     }
     None
+}
+#[test]
+fn test_osc_missing_args_panic() {
+    let path = b"/test\0\0\0";
+    let tags = b",sss\0\0\0\0";
+    let mut data = Vec::new();
+    data.extend_from_slice(path);
+    data.extend_from_slice(tags);
+    // data has 2 string arguments missing!
+    let _ = crate::parse_osc_packet(&data);
 }
