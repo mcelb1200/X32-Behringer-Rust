@@ -174,7 +174,11 @@ show_main_menu() {
 if [ "$1" == "--coverage" ]; then
     ensure_llvm_cov non_interactive
     log_message "Running test coverage..."
-    cargo llvm-cov --workspace
+    cargo llvm-cov --workspace --json --output-path coverage.json
+    echo -e "# Test Coverage Report\n\n\`\`\`text" > coverage.md
+    cargo llvm-cov --workspace >> coverage.md
+    echo -e "\`\`\`" >> coverage.md
+    log_message "Reports saved to coverage.json and coverage.md"
     exit 0
 fi
 
@@ -237,7 +241,11 @@ while true; do
         5)
             if ensure_llvm_cov; then
                 log_message "Running test coverage..."
-                cargo llvm-cov --workspace
+                cargo llvm-cov --workspace --json --output-path coverage.json
+                echo -e "# Test Coverage Report\n\n\`\`\`text" > coverage.md
+                cargo llvm-cov --workspace >> coverage.md
+                echo -e "\`\`\`" >> coverage.md
+                log_message "Reports saved to coverage.json and coverage.md"
             fi
             read -p "Press Enter to continue..."
             ;;
