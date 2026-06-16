@@ -1,3 +1,5 @@
+//! x32_vocal_ducking standalone binary
+
 use anyhow::Result;
 use clap::Parser;
 
