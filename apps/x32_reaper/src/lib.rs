@@ -139,7 +139,12 @@ pub async fn run(args: Args) -> Result<()> {
 }
 
 /// Sends an OSC message to the X32, optionally with a delay.
-pub async fn send_to_x(sock: &UdpSocket, addr: SocketAddr, msg: &OscMessage, delay: u64) -> Result<()> {
+pub async fn send_to_x(
+    sock: &UdpSocket,
+    addr: SocketAddr,
+    msg: &OscMessage,
+    delay: u64,
+) -> Result<()> {
     let bytes = msg
         .to_bytes()
         .map_err(|e| anyhow::anyhow!("OSC error: {:?}", e))?;
