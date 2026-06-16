@@ -3,7 +3,7 @@ use crate::transport::MixerTransport;
 use async_trait::async_trait;
 use osc_lib::OscMessage;
 use std::sync::Arc;
-use tokio::sync::{mpsc, Mutex};
+use tokio::sync::{Mutex, mpsc};
 use tokio::time::Duration;
 
 pub struct MockTransport {
@@ -68,7 +68,10 @@ async fn test_mixer_client_send_message() {
     let (transport, _tx) = MockTransport::new();
     let client = MixerClient::new(transport.clone(), false);
 
-    client.send_message("/ch/01/mix/fader", vec![osc_lib::OscArg::Float(0.75)]).await.unwrap();
+    client
+        .send_message("/ch/01/mix/fader", vec![osc_lib::OscArg::Float(0.75)])
+        .await
+        .unwrap();
 
     let sent = transport.get_sent_messages().await;
     assert_eq!(sent.len(), 1);
@@ -89,7 +92,10 @@ async fn test_mixer_client_query_value() {
     let tx_clone = tx.clone();
     tokio::spawn(async move {
         tokio::time::sleep(Duration::from_millis(50)).await;
-        let response = OscMessage::new("/ch/01/mix/fader".to_string(), vec![osc_lib::OscArg::Float(0.5)]);
+        let response = OscMessage::new(
+            "/ch/01/mix/fader".to_string(),
+            vec![osc_lib::OscArg::Float(0.5)],
+        );
         tx_clone.send(response).await.unwrap();
     });
 
@@ -117,7 +123,10 @@ async fn test_mixer_client_query_node() {
     tokio::spawn(async move {
         tokio::time::sleep(Duration::from_millis(50)).await;
         // The mixer responds with `/node` followed by a single string of parameters
-        let response = OscMessage::new("node".to_string(), vec![osc_lib::OscArg::String("ch/01 ON 100".to_string())]);
+        let response = OscMessage::new(
+            "node".to_string(),
+            vec![osc_lib::OscArg::String("ch/01 ON 100".to_string())],
+        );
         tx_clone.send(response).await.unwrap();
     });
 
