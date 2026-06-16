@@ -9,8 +9,8 @@
 //! # Credits
 //!
 //! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
-//! *   **Additional concepts by:** [User]
-//! *   **Rust implementation by:** [User]
+//! *   **Additional concepts by:** mcelb1200
+//! *   **Rust implementation by:** mcelb1200
 
 use anyhow::Result;
 use clap::Parser;
@@ -24,16 +24,16 @@ use tokio::time::{self, Duration, Instant};
 /// Command-line arguments for `x32_replay`.
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
-struct Args {
+pub struct Args {
     /// IP address of the X32 console.
     #[arg(short, long, default_value = "192.168.0.64")]
-    ip: String,
+    pub ip: String,
     /// File to record to or play from.
     #[arg(short, long, default_value = "X32ReplayFile.bin")]
-    file: String,
+    pub file: String,
     /// Enable verbose output.
     #[arg(short, long)]
-    verbose: bool,
+    pub verbose: bool,
 }
 
 /// Represents the current operating mode of the application.
@@ -59,9 +59,7 @@ struct AppState {
 }
 
 /// The main entry point for the application.
-#[tokio::main]
-async fn main() -> Result<()> {
-    let args = Args::parse();
+pub async fn run(args: Args) -> Result<()> {
     let socket = UdpSocket::bind("0.0.0.0:0").await?;
     socket.connect(format!("{}:10023", args.ip)).await?;
     let socket = Arc::new(socket);
@@ -91,13 +89,48 @@ async fn main() -> Result<()> {
 
     // Stdin loop
     let stdin = std::io::stdin();
-    let mut line = String::new();
+    let mut stdin_lock = stdin.lock();
     loop {
-        line.clear();
-        if stdin.read_line(&mut line).is_err() {
-            break;
+        use std::io::{BufRead, Read};
+        let mut byte_buf = Vec::new();
+        match stdin_lock
+            .by_ref()
+            .take(4096)
+            .read_until(b'\n', &mut byte_buf)
+        {
+            Ok(0) | Err(_) => break,
+            Ok(len) => {
+                if len == 4096 && !byte_buf.ends_with(b"\n") {
+                    let mut discard = Vec::with_capacity(1024);
+                    loop {
+                        discard.clear();
+                        match stdin_lock
+                            .by_ref()
+                            .take(1024)
+                            .read_until(b'\n', &mut discard)
+                        {
+                            Ok(0) | Err(_) => break,
+                            Ok(_) => {
+                                if discard.ends_with(b"\n") {
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    eprintln!("Input line too long, discarded.");
+                    continue;
+                }
+            }
         }
-        let cmd = line.trim();
+
+        let line_str = match std::str::from_utf8(&byte_buf) {
+            Ok(s) => s,
+            Err(_) => {
+                eprintln!("Invalid UTF-8 sequence in input, discarded.");
+                continue;
+            }
+        };
+        let cmd = line_str.trim();
 
         let mut s = match state.lock() {
             Ok(guard) => guard,
@@ -140,7 +173,7 @@ async fn run_logic(state: Arc<Mutex<AppState>>, socket: Arc<UdpSocket>, default_
     let mut buf = [0u8; 2048];
     let mut last_xremote = Instant::now();
     let mut file_writer: Option<BufWriter<File>> = None;
-    let mut file_reader: Option<BufReader<File>> = None;
+    let mut file_reader: Option<BufReader<tokio::io::Take<File>>> = None;
 
     // Subscribe
     // Use proper OSC message construction or explicit bytes.
@@ -190,7 +223,8 @@ async fn run_logic(state: Arc<Mutex<AppState>>, socket: Arc<UdpSocket>, default_
                         let _ = w.write_u32_le(now.subsec_micros()).await;
                         let _ = w.write_u32_le(len as u32).await;
                         let _ = w.write_all(&buf[..len]).await;
-                        let _ = w.flush().await;
+                        // OPTIMIZATION: Removed `.flush().await` in this hot loop to allow `BufWriter` to
+                        // actually buffer writes, significantly reducing I/O syscall overhead during recording.
                     }
                 }
             }
@@ -199,6 +233,17 @@ async fn run_logic(state: Arc<Mutex<AppState>>, socket: Arc<UdpSocket>, default_
                 if file_reader.is_none() {
                     match File::open(&default_file).await {
                         Ok(f) => {
+                            // Check file size to prevent OOM / DoS from reading huge invalid files
+                            if let Ok(metadata) = f.metadata().await {
+                                if metadata.len() > 10 * 1024 * 1024 {
+                                    eprintln!("File too large to replay (max 10MB)");
+                                    if let Ok(mut s) = state.lock() {
+                                        s.mode = Mode::Idle;
+                                    }
+                                    continue;
+                                }
+                            }
+                            let f = f.take(10 * 1024 * 1024);
                             file_reader = Some(BufReader::new(f));
                             if let Ok(mut s) = state.lock() {
                                 s.start_time = None; // Reset timing
@@ -286,7 +331,9 @@ async fn run_logic(state: Arc<Mutex<AppState>>, socket: Arc<UdpSocket>, default_
                 }
             }
             Mode::Idle | Mode::Paused => {
-                file_writer = None;
+                if let Some(mut w) = file_writer.take() {
+                    let _ = w.flush().await;
+                }
                 file_reader = None;
                 time::sleep(Duration::from_millis(100)).await;
             }
