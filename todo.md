@@ -12,7 +12,6 @@ These TODOs are legacy markers from the original C codebase that was ported to R
 
 ## Remaining Legacy TODOs
 The following are all the remaining 'todo' items found in `c_origin/`:
-  - `//char* r_CS[] = { "INT", "AES50A", "AES50B", "CARD" };	//Todo: Validate "CARD"` from `X32DeskRestore.c:694`
   - `//// todo: validate if the use of the "/~~~" command would work here; is it` from `X32DeskRestore.c:794`
   - `////todo: one or 80 lines?` from `X32DeskRestore.c:981`
   - `////todo: ... Last one is a string, unknown for now... could it correspond to iQ/group???` from `X32DeskRestore.c:1057`

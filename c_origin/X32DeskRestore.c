@@ -691,7 +691,7 @@ int main(int argc, char **argv) {
 //int l_US = (sizeof(r_US) / sizeof(char*));
 //char* r_CR[] = { "48K", "44K1" };
 //int l_CR = (sizeof(r_CR) / sizeof(char*));
-//char* r_CS[] = { "INT", "AES50A", "AES50B", "CARD" };	//Todo: Validate "CARD"
+//char* r_CS[] = { "INT", "AES50A", "AES50B", "CARD" };
 //int l_CS = (sizeof(r_CS) / sizeof(char*));
 //char* r_SH[] = { "CUES", "SCENES", "SNIPPETS" };
 //int l_SH = (sizeof(r_SH) / sizeof(char*));
