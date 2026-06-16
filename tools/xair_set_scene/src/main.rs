@@ -4,5 +4,5 @@ use clap::Parser;
 #[tokio::main]
 async fn main() -> Result<()> {
     let args = xair_set_scene::Args::parse();
-    Ok(xair_set_scene::run(args).await?)
+    xair_set_scene::run(args).await
 }

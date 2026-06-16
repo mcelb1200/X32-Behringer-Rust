@@ -5,6 +5,12 @@ pub struct RpnCalculator {
     memory: f64,
 }
 
+impl Default for RpnCalculator {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl RpnCalculator {
     pub fn new() -> Self {
         Self { memory: 0.0 }

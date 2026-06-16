@@ -4,5 +4,5 @@ use clap::Parser;
 #[tokio::main]
 async fn main() -> Result<()> {
     let args = x32_udp::Args::parse();
-    Ok(x32_udp::run(args).await?)
+    x32_udp::run(args).await
 }

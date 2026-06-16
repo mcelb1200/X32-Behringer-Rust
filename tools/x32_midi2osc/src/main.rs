@@ -4,5 +4,5 @@ use clap::Parser;
 #[tokio::main]
 async fn main() -> Result<()> {
     let args = x32_midi2osc::Args::parse();
-    Ok(x32_midi2osc::run(args).await?)
+    x32_midi2osc::run(args).await
 }

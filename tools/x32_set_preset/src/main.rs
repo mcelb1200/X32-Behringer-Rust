@@ -4,5 +4,5 @@ use clap::Parser;
 #[tokio::main]
 async fn main() -> Result<()> {
     let args = x32_set_preset::Args::parse();
-    Ok(x32_set_preset::run(args).await?)
+    x32_set_preset::run(args).await
 }
