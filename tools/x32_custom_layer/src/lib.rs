@@ -206,15 +206,24 @@ async fn handle_set_command(client: &MixerClient, assignments_str: &[String]) ->
     println!("Saving states of source channels...");
     for a in &assignments {
         if let std::collections::hash_map::Entry::Vacant(e) = saved_strips.entry(a.src) {
-            let mut strip_data = Vec::new();
+            // ⚡ Bolt: Pre-allocate capacity for strip data vector to avoid N dynamic reallocations
+            let mut strip_data = if a.src <= 32 {
+                Vec::with_capacity(SCH_NODES.len())
+            } else {
+                Vec::with_capacity(ACH_NODES.len())
+            };
             if a.src <= 32 {
+                // ⚡ Bolt: Hoist string formatting outside the node loop to prevent O(N) allocations
+                let src_repl = format!("/{:02}/", a.src);
                 for &node in SCH_NODES.iter() {
-                    let formatted_node = node.replace("/01/", &format!("/{:02}/", a.src));
+                    let formatted_node = node.replace("/01/", &src_repl);
                     strip_data.push(get_node_state(client, &formatted_node).await?);
                 }
             } else {
+                // ⚡ Bolt: Hoist string formatting outside the node loop to prevent O(N) allocations
+                let src_repl = format!("/{:02}/", a.src - 32);
                 for &node in ACH_NODES.iter() {
-                    let formatted_node = node.replace("/01/", &format!("/{:02}/", a.src - 32));
+                    let formatted_node = node.replace("/01/", &src_repl);
                     strip_data.push(get_node_state(client, &formatted_node).await?);
                 }
             }
@@ -226,8 +235,10 @@ async fn handle_set_command(client: &MixerClient, assignments_str: &[String]) ->
     for a in &assignments {
         let strip_data = saved_strips.get(&a.src).unwrap();
         if a.dest <= 32 {
+            // ⚡ Bolt: Hoist string formatting outside the node loop to prevent O(N) allocations
+            let dest_repl = format!("/{:02}/", a.dest);
             for (i, &node) in SCH_NODES.iter().enumerate() {
-                let dest_node = node.replace("/01/", &format!("/{:02}/", a.dest));
+                let dest_node = node.replace("/01/", &dest_repl);
                 let mut state_to_apply = strip_data[i].clone();
                 if let Some(pos) = state_to_apply.find(' ') {
                     state_to_apply.replace_range(..pos, &dest_node);
@@ -254,8 +265,10 @@ async fn handle_set_command(client: &MixerClient, assignments_str: &[String]) ->
                 )
                 .await?;
         } else {
+            // ⚡ Bolt: Hoist string formatting outside the node loop to prevent O(N) allocations
+            let dest_repl = format!("/{:02}/", a.dest - 32);
             for (i, &node) in ACH_NODES.iter().enumerate() {
-                let dest_node = node.replace("/01/", &format!("/{:02}/", a.dest - 32));
+                let dest_node = node.replace("/01/", &dest_repl);
                 let mut state_to_apply = strip_data[i].clone();
                 if let Some(pos) = state_to_apply.find(' ') {
                     state_to_apply.replace_range(..pos, &dest_node);
@@ -293,16 +306,20 @@ async fn handle_save_command(client: &MixerClient, file_path: &str) -> Result<()
     writer.write_all(SNIP_HEAD.as_bytes())?;
 
     for i in 1..=32 {
+        // ⚡ Bolt: Hoist string formatting outside the node loop to prevent O(N) allocations
+        let src_repl = format!("/{:02}/", i);
         for &node in SCH_NODES.iter() {
-            let formatted_node = node.replace("/01/", &format!("/{:02}/", i));
+            let formatted_node = node.replace("/01/", &src_repl);
             let line = get_node_state(client, &formatted_node).await?;
             writer.write_all(line.as_bytes())?;
             writer.write_all(b"\n")?;
         }
     }
     for i in 1..=8 {
+        // ⚡ Bolt: Hoist string formatting outside the node loop to prevent O(N) allocations
+        let src_repl = format!("/{:02}/", i);
         for &node in ACH_NODES.iter() {
-            let formatted_node = node.replace("/01/", &format!("/{:02}/", i));
+            let formatted_node = node.replace("/01/", &src_repl);
             let line = get_node_state(client, &formatted_node).await?;
             writer.write_all(line.as_bytes())?;
             writer.write_all(b"\n")?;
