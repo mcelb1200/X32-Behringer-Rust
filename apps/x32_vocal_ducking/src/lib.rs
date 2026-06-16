@@ -1,14 +1,14 @@
 //! `x32_vocal_ducking` is a tool that implements dynamic EQ sidechaining
 //! and surgical frequency carving on an instrument bus to make space for vocals.
 
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
 use clap::Parser;
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use osc_lib::{OscArg, OscMessage};
-use rustfft::FftPlanner;
 use rustfft::num_complex::Complex;
-use std::sync::Arc;
+use rustfft::FftPlanner;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::mpsc;
 use tokio::time::sleep;
@@ -20,6 +20,7 @@ use x32_lib::MixerClient;
     version = "0.1.0",
     about = "Dynamic Vocal Ducking & Spectral Carver for X32"
 )]
+/// Command-line arguments.
 pub struct Cli {
     /// X32 IP Address
     #[arg(long, default_value = "192.168.1.50")]
@@ -100,6 +101,7 @@ fn list_devices() -> Result<()> {
     Ok(())
 }
 
+/// Main entry point.
 pub async fn run(cli: Cli) -> Result<()> {
     if cli.list_devices {
         return list_devices();
