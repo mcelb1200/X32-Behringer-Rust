@@ -4,5 +4,5 @@ use clap::Parser;
 #[tokio::main]
 async fn main() -> Result<()> {
     let args = x32_tapw::Args::parse();
-    Ok(x32_tapw::run(args).await?)
+    x32_tapw::run(args).await
 }

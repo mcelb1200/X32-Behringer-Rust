@@ -184,10 +184,10 @@ pub async fn run(cli: Cli) -> anyhow::Result<()> {
     };
 
     let result = match &cli.command {
-        Commands::Set { assignments } => handle_set_command(&client, &assignments).await,
-        Commands::Save { file } => handle_save_command(&client, &file).await,
-        Commands::Restore { file } => handle_restore_command(&client, &file).await,
-        Commands::Reset { channels } => handle_reset_command(&client, &channels).await,
+        Commands::Set { assignments } => handle_set_command(&client, assignments).await,
+        Commands::Save { file } => handle_save_command(&client, file).await,
+        Commands::Restore { file } => handle_restore_command(&client, file).await,
+        Commands::Reset { channels } => handle_reset_command(&client, channels).await,
         Commands::List => handle_list_command(&client).await,
     };
 

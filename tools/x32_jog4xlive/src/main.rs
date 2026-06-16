@@ -4,5 +4,5 @@ use clap::Parser;
 #[tokio::main]
 async fn main() -> Result<()> {
     let args = x32_jog4xlive::Args::parse();
-    Ok(x32_jog4xlive::run(args).await?)
+    x32_jog4xlive::run(args).await
 }

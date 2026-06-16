@@ -14,6 +14,12 @@ pub struct OscLevelDetector {
     beat_intervals_ms: VecDeque<u64>,
 }
 
+impl Default for OscLevelDetector {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl OscLevelDetector {
     pub fn new() -> Self {
         Self {

@@ -57,8 +57,6 @@ pub struct Args {
     pub silent: bool,
 }
 
-/// The main entry point of the application.
-
 /// The main logic of the application.
 ///
 /// This function finds and validates the input WAV files, creates the session directory
