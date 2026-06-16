@@ -1,0 +1,345 @@
+//! # x32_usb
+//!
+//! `x32_usb` is a command-line utility for managing the USB drive on a Behringer X32 or Midas M32
+//! digital mixer. It provides a shell-like interface for listing files, changing directories,
+//! loading scenes and presets, and controlling WAV file playback.
+//!
+//! This utility is a Rust rewrite of the original C program `X32USB.c` by Patrick-Gilles Maillot.
+//!
+//! # Credits
+//!
+//! *   **Original concept and work on the C library:** Patrick-Gilles Maillot
+//! *   **Additional concepts by:** mcelb1200
+//! *   **Rust implementation by:** mcelb1200
+
+use anyhow::{Result, anyhow};
+use clap::{Parser, Subcommand};
+use osc_lib::OscArg;
+use std::error::Error;
+use std::str::FromStr;
+use x32_lib::client::MixerClient;
+
+/// A custom error type for connection-related issues.
+#[derive(Debug)]
+struct ConnectionError(anyhow::Error);
+
+impl std::fmt::Display for ConnectionError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl Error for ConnectionError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        self.0.source()
+    }
+}
+
+#[derive(Parser, Debug)]
+#[command(author, version, about = "An X32 shell for remote managing USB files", long_about = None)]
+/// Command-line arguments for the x32_usb utility.
+pub struct Args {
+    #[arg(
+        short,
+        long,
+        default_value = "127.0.0.1",
+        help = "X32 console IP address"
+    )]
+    /// The IP address of the X32/M32 console.
+    pub ip: String,
+
+    #[command(subcommand)]
+    /// The subcommand to execute.
+    pub command: Commands,
+}
+
+#[derive(Subcommand, Debug)]
+/// Defines the available subcommands for the utility.
+pub enum Commands {
+    #[command(about = "List directory contents")]
+    /// Lists the files and directories in the current directory on the USB drive.
+    Ls,
+    #[command(about = "Change directory")]
+    /// Changes the current directory to the specified directory.
+    Cd {
+        #[arg(help = "Directory ID or name")]
+        /// The index or name of the directory to change to.
+        target: String,
+    },
+    #[command(about = "Load or run a file")]
+    /// Loads a scene, snippet, or other preset file.
+    Load {
+        #[arg(help = "File ID or name")]
+        /// The index or name of the file to load.
+        target: String,
+    },
+    #[command(about = "Unmount the USB drive")]
+    /// Unmounts the USB drive from the console.
+    Umount,
+    #[command(about = "Play a WAV file")]
+    /// Plays the specified WAV file.
+    Play {
+        #[arg(help = "File ID or name")]
+        /// The index or name of the WAV file to play.
+        target: String,
+    },
+    #[command(about = "Stop a currently playing WAV file")]
+    /// Stops the currently playing WAV file.
+    Stop,
+    #[command(about = "Pause a currently playing WAV file")]
+    /// Pauses the currently playing WAV file.
+    Pause,
+    #[command(about = "Resume a paused WAV file")]
+    /// Resumes playback of a paused WAV file.
+    Resume,
+}
+
+#[derive(Debug, PartialEq)]
+/// Represents the type of a file on the USB drive.
+enum FileType {
+    Unknown,
+    Volume,
+    Parent,
+    Directory,
+    Wav,
+    Show,
+    Scene,
+    Snippet,
+    Effects,
+    Preference,
+    Routing,
+    Channel,
+}
+
+impl FromStr for FileType {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self> {
+        if s == "[..]" {
+            return Ok(FileType::Parent);
+        }
+        if s == "[System Volume Information]" {
+            return Ok(FileType::Volume);
+        }
+        if s.starts_with('[') && s.ends_with(']') {
+            return Ok(FileType::Directory);
+        }
+
+        let extension = s.split('.').next_back().unwrap_or("");
+        match extension.to_lowercase().as_str() {
+            "wav" => Ok(FileType::Wav),
+            "shw" => Ok(FileType::Show),
+            "scn" => Ok(FileType::Scene),
+            "snp" => Ok(FileType::Snippet),
+            "efx" => Ok(FileType::Effects),
+            "prf" => Ok(FileType::Preference),
+            "rou" => Ok(FileType::Routing),
+            "chn" => Ok(FileType::Channel),
+            _ => Ok(FileType::Unknown),
+        }
+    }
+}
+
+#[derive(Debug)]
+/// Represents a file or directory on the USB drive.
+struct FileEntry {
+    /// The index of the file in the directory listing.
+    index: i32,
+    /// The name of the file.
+    name: String,
+    /// The type of the file.
+    file_type: FileType,
+}
+
+/// A wrapper for the asynchronous `MixerClient` from `x32_lib`.
+struct X32Client {
+    client: MixerClient,
+}
+
+impl X32Client {
+    /// Creates a new `X32Client` and connects to the console asynchronously.
+    ///
+    /// # Arguments
+    ///
+    /// * `ip_address` - The IP address of the console.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` containing the new client or an error.
+    async fn new(ip_address: &str) -> Result<Self> {
+        let client = MixerClient::connect(ip_address, true).await?;
+        Ok(Self { client })
+    }
+
+    /// Checks if a USB drive is mounted on the console.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` containing `true` if a drive is mounted, `false` otherwise.
+    async fn is_usb_mounted(&self) -> Result<bool> {
+        let response = self.client.query_value("/-stat/usbmounted").await?;
+        if let OscArg::Int(val) = response {
+            Ok(val == 1)
+        } else {
+            Ok(false)
+        }
+    }
+
+    /// Gets a list of files and directories in the current directory on the USB drive.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` containing a vector of `FileEntry` structs.
+    async fn get_file_list(&self) -> Result<Vec<FileEntry>> {
+        let response = self.client.query_value("/-usb/dir/maxpos").await?;
+        let num_files = if let OscArg::Int(val) = response {
+            val
+        } else {
+            return Err(anyhow!("Failed to get number of files from X32."));
+        };
+
+        let mut files = Vec::new();
+        for i in 1..=num_files {
+            let path = format!("/-usb/dir/{:03}/name", i);
+            let response = self.client.query_value(&path).await?;
+            if let OscArg::String(name) = response {
+                let file_type = FileType::from_str(&name)?;
+                files.push(FileEntry {
+                    index: i,
+                    name,
+                    file_type,
+                });
+            }
+        }
+        Ok(files)
+    }
+
+    /// Selects a file or directory on the USB drive.
+    ///
+    /// # Arguments
+    ///
+    /// * `file_index` - The index of the file to select.
+    async fn select_file(&self, file_index: i32) -> Result<()> {
+        self.client
+            .send_message("/-action/recselect", vec![OscArg::Int(file_index)])
+            .await?;
+        Ok(())
+    }
+
+    /// Finds a file or directory by its index or name.
+    ///
+    /// # Arguments
+    ///
+    /// * `target` - The index or name of the file to search for.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` containing the `FileEntry` if found.
+    async fn find_file(&self, target: &str) -> Result<FileEntry> {
+        let files = self.get_file_list().await?;
+        files
+            .into_iter()
+            .find(|f| {
+                if let Ok(index) = target.parse::<i32>() {
+                    f.index == index
+                } else {
+                    let name_to_compare = if f.file_type == FileType::Directory {
+                        &f.name[1..f.name.len() - 1]
+                    } else {
+                        &f.name
+                    };
+                    name_to_compare == target
+                }
+            })
+            .ok_or_else(|| anyhow!("File not found: {}", target))
+    }
+
+    /// Sets the playback state of the tape deck.
+    ///
+    /// # Arguments
+    ///
+    /// * `state` - The desired state (0=Stop, 1=Pause, 2=Play).
+    async fn set_tape_state(&self, state: i32) -> Result<()> {
+        self.client
+            .send_message("/-stat/tape/state", vec![OscArg::Int(state)])
+            .await?;
+        Ok(())
+    }
+
+    /// Unmounts the USB drive.
+    async fn unmount(&self) -> Result<()> {
+        self.client
+            .send_message("/-stat/usbmounted", vec![OscArg::Int(0)])
+            .await?;
+        Ok(())
+    }
+}
+
+/// The main logic for the utility.
+pub async fn run(args: Args) -> Result<()> {
+    let client = X32Client::new(&args.ip).await?;
+
+    if !client.is_usb_mounted().await.map_err(ConnectionError)? {
+        println!("USB drive is not mounted.");
+        return Ok(());
+    }
+
+    match &args.command {
+        Commands::Ls => {
+            let files = client.get_file_list().await?;
+            for file in files {
+                println!("{:?}", file);
+            }
+        }
+        Commands::Cd { target } => {
+            let file = client.find_file(target).await?;
+            if file.file_type == FileType::Directory || file.file_type == FileType::Parent {
+                client.select_file(file.index).await?;
+                println!("Changed directory to {}", file.name);
+            } else {
+                return Err(anyhow!("Not a directory: {}", file.name));
+            }
+        }
+        Commands::Load { target } => {
+            let file = client.find_file(target).await?;
+            match file.file_type {
+                FileType::Scene
+                | FileType::Snippet
+                | FileType::Effects
+                | FileType::Routing
+                | FileType::Channel => {
+                    client.select_file(file.index).await?;
+                    println!("Loaded file: {}", file.name);
+                }
+                _ => return Err(anyhow!("Not a loadable file: {}", file.name)),
+            }
+        }
+        Commands::Umount => {
+            client.unmount().await?;
+            println!("USB drive unmounted.");
+        }
+        Commands::Play { target } => {
+            let file = client.find_file(target).await?;
+            if file.file_type == FileType::Wav {
+                client.select_file(file.index).await?;
+                println!("Playing file: {}", file.name);
+            } else {
+                return Err(anyhow!("Not a WAV file: {}", file.name));
+            }
+        }
+        Commands::Stop => {
+            client.set_tape_state(0).await?;
+            println!("Playback stopped.");
+        }
+        Commands::Pause => {
+            client.set_tape_state(1).await?;
+            println!("Playback paused.");
+        }
+        Commands::Resume => {
+            client.set_tape_state(2).await?;
+            println!("Playback resumed.");
+        }
+    }
+
+    Ok(())
+}

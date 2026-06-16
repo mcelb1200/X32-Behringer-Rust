@@ -78,3 +78,24 @@ pub mod server {
     }
 }
 pub use x32_core::Mixer;
+
+use anyhow::Result;
+use clap::Parser;
+
+/// Command-line arguments for the `x32_emulator`.
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+pub struct Cli {
+    /// IP address to bind to.
+    #[arg(short, long, default_value_t = String::from("0.0.0.0"))]
+    pub ip: String,
+
+    /// Port number to bind to.
+    #[arg(short, long, default_value_t = 10023)]
+    pub port: u16,
+}
+
+pub fn run(cli: Cli) -> Result<()> {
+    let bind_addr = format!("{}:{}", cli.ip, cli.port);
+    server::run(&bind_addr, None, None)
+}

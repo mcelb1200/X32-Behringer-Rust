@@ -2386,7 +2386,44 @@ dependencies = [
  "anyhow",
  "clap",
  "tokio",
+ "x32_autobeat",
+ "x32_automix",
  "x32_command",
+ "x32_commander",
+ "x32_copy_fx",
+ "x32_cpxlivemarkers",
+ "x32_custom_layer",
+ "x32_desk_restore",
+ "x32_desk_save",
+ "x32_dump",
+ "x32_emulator",
+ "x32_fade",
+ "x32_geq2_cpy",
+ "x32_get_lib",
+ "x32_get_scene",
+ "x32_get_scene_name",
+ "x32_jog4xlive",
+ "x32_loudness",
+ "x32_midi2osc",
+ "x32_punch_control",
+ "x32_reaper",
+ "x32_replay",
+ "x32_set_lib",
+ "x32_set_preset",
+ "x32_set_scene",
+ "x32_ssavergw",
+ "x32_sync",
+ "x32_tap",
+ "x32_tapw",
+ "x32_tcp",
+ "x32_udp",
+ "x32_usb",
+ "x32_vocal_ducking",
+ "x32_wav_xlive",
+ "x32_xlive_wav",
+ "xair_command",
+ "xair_get_scene",
+ "xair_set_scene",
 ]
 
 [[package]]
@@ -2413,6 +2450,7 @@ dependencies = [
 name = "x32_automix"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "clap",
  "osc_lib",
  "tokio",
@@ -2450,6 +2488,7 @@ dependencies = [
 name = "x32_copy_fx"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "assert_cmd",
  "clap",
  "escargot",
@@ -2483,6 +2522,7 @@ dependencies = [
 name = "x32_custom_layer"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "clap",
  "criterion",
  "osc_lib",
@@ -2494,6 +2534,7 @@ dependencies = [
 name = "x32_desk_restore"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "assert_cmd",
  "clap",
  "escargot",
@@ -2507,6 +2548,7 @@ dependencies = [
 name = "x32_desk_save"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "assert_cmd",
  "clap",
  "escargot",
@@ -2590,6 +2632,7 @@ dependencies = [
 name = "x32_get_scene"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "clap",
  "osc_lib",
  "tokio",
@@ -2600,6 +2643,7 @@ dependencies = [
 name = "x32_get_scene_name"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "assert_cmd",
  "clap",
  "escargot",
@@ -2725,6 +2769,7 @@ dependencies = [
 name = "x32_set_scene"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "clap",
  "osc_lib",
  "tokio",
