@@ -139,7 +139,7 @@ pub async fn run(args: Args) -> Result<()> {
 }
 
 /// Sends an OSC message to the X32, optionally with a delay.
-async fn send_to_x(sock: &UdpSocket, addr: SocketAddr, msg: &OscMessage, delay: u64) -> Result<()> {
+pub async fn send_to_x(sock: &UdpSocket, addr: SocketAddr, msg: &OscMessage, delay: u64) -> Result<()> {
     let bytes = msg
         .to_bytes()
         .map_err(|e| anyhow::anyhow!("OSC error: {:?}", e))?;
@@ -280,7 +280,7 @@ async fn init_user_ctrl(
 }
 
 /// Updates the X32 channel strips to match the current bank's tracks from Reaper.
-async fn update_bk_ch(
+pub async fn update_bk_ch(
     sock: &UdpSocket,
     addr: SocketAddr,
     config: &Config,
@@ -349,14 +349,21 @@ async fn update_bk_ch(
         };
         send_to_x(sock, addr, &msg, config.delay_bank).await?;
 
+        let mut mixbus_msgs = Vec::with_capacity(16);
         for j in 1..=16 {
-            path_buf.clear();
-            write!(&mut path_buf, "/ch/{:02}/mix/{:02}/level", i, j).unwrap();
-            let msg = OscMessage {
-                path: path_buf.clone(),
+            let mut pb = String::with_capacity(32);
+            write!(&mut pb, "/ch/{:02}/mix/{:02}/level", i, j).unwrap();
+            mixbus_msgs.push(OscMessage {
+                path: pb,
                 args: vec![OscArg::Float(track.mixbus[j as usize - 1])],
-            };
-            send_to_x(sock, addr, &msg, config.delay_bank).await?;
+            });
+        }
+        let mixbus_futures = mixbus_msgs
+            .iter()
+            .map(|msg| send_to_x(sock, addr, msg, config.delay_bank));
+        let results = futures::future::join_all(mixbus_futures).await;
+        for r in results {
+            r?;
         }
 
         path_buf.clear();
