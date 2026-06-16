@@ -1,4 +1,4 @@
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
 use clap::{Parser, Subcommand, ValueEnum};
 use osc_lib::OscArg;
 use serde::{Deserialize, Serialize};
@@ -53,7 +53,7 @@ pub struct Cli {
 
 #[derive(ValueEnum, Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
-enum TransportType {
+pub enum TransportType {
     Auto,
     Osc,
     Usb,
@@ -61,7 +61,7 @@ enum TransportType {
 }
 
 #[derive(Subcommand, Debug, Clone)]
-enum Commands {
+pub enum Commands {
     /// Run calibration using the built-in pink noise generator
     Calibrate {
         /// Calibration target sound level in dBA SPL
@@ -84,7 +84,7 @@ enum Commands {
 
 #[derive(ValueEnum, Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
-enum LoudnessMode {
+pub enum LoudnessMode {
     Peq,
     Geq,
     Deq,
@@ -369,7 +369,7 @@ fn show_curve_calculation(
     Ok(())
 }
 
-pub async fn run(cli: Cli) -> Result<()> {
+pub async fn run(_cli: Cli) -> Result<()> {
     let cli = Cli::parse();
 
     // Handle offline commands first to avoid attempting to connect to a mixer
