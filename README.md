@@ -90,8 +90,8 @@ cargo build --release
 Compiled binaries are located in `target/release/`.
 
 ### Quick Start: Emulator & Command
-1. Start the emulator: `./target/release/x32-cli x32-emulator`
-2. Send a command: `./target/release/x32-cli command --ip 127.0.0.1 "/ch/01/mix/fader 0.75"`
+1. Start the emulator: `./target/release/x32_emulator`
+2. Send a command: `./target/release/x32_command --ip 127.0.0.1 "/ch/01/mix/fader 0.75"`
 
 ---
 
