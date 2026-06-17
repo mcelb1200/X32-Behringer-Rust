@@ -7,7 +7,11 @@ async fn main() -> Result<()> {
 
     if let Err(e) = x32_usb::run(args).await {
         let err_str = e.to_string().to_lowercase();
-        if err_str.contains("timeout") || err_str.contains("connect") || err_str.contains("connection") || err_str.contains("host is down") {
+        if err_str.contains("timeout")
+            || err_str.contains("connect")
+            || err_str.contains("connection")
+            || err_str.contains("host is down")
+        {
             println!("Not connected to X32.");
         } else {
             eprintln!("Error: {}", e);
