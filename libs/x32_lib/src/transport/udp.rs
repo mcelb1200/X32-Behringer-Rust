@@ -14,8 +14,13 @@ pub struct UdpTransport {
 impl UdpTransport {
     /// Connects a new UdpTransport to the given IP address.
     pub async fn connect(ip: &str) -> Result<Self> {
-        let full_ip = if (ip.contains(':') && !ip.starts_with('[')) || ip.contains("]:") {
+        let has_port = ip.contains("]:")
+            || (ip.contains(':') && ip.chars().filter(|&c| c == ':').count() == 1);
+
+        let full_ip = if has_port {
             ip.to_string()
+        } else if ip.contains(':') && !ip.starts_with('[') {
+            format!("[{}]:10023", ip)
         } else {
             format!("{}:10023", ip)
         };
@@ -48,5 +53,46 @@ impl MixerTransport for UdpTransport {
         let len = self.socket.recv(&mut buf).await?;
         let msg = OscMessage::from_bytes(&buf[..len])?;
         Ok(msg)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_connect_invalid_ip_format() {
+        let result = UdpTransport::connect("invalid_ip").await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_connect_ipv4() {
+        let result = UdpTransport::connect("127.0.0.1").await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_connect_ipv6() {
+        let result = UdpTransport::connect("::1").await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_connect_ipv6_with_brackets() {
+        let result = UdpTransport::connect("[::1]").await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_connect_with_port() {
+        let result = UdpTransport::connect("127.0.0.1:10024").await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_connect_ipv6_with_port() {
+        let result = UdpTransport::connect("[::1]:10024").await;
+        assert!(result.is_ok());
     }
 }

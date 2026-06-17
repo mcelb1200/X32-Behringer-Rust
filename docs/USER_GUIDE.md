@@ -8,19 +8,19 @@ Welcome to the X32 Tools User Guide. This document categorizes the workspace uti
 
 These tools are designed for real-time use during a performance.
 
-### `x32_autobeat`
+### `x32-cli x32-autobeat`
 Automatically detects the BPM of an incoming audio source (or via OSC meters) and synchronizes the delay time of X32 effects slots. Supports Energy and Spectral Flux detection algorithms.
 
-### `x32_tapw` (Interactive)
+### `x32-cli x32-tapw` (Interactive)
 A Terminal UI (TUI) tool for manually tapping tempo or using an automatic threshold. Displays levels and BPM in real-time.
 
-### `x32_automix`
+### `x32-cli x32-automix`
 A Rust implementation of the "Dugan-style" automixer. It monitors input levels and automatically adjusts faders to prevent feedback and manage gain across multiple active microphones.
 
-### `x32_fade`
+### `x32-cli x32-fade`
 Triggers smooth, timed fader transitions. Useful for automated scene changes or gradual fade-outs.
 
-### `x32_jog4xlive`
+### `x32-cli x32-jog4xlive`
 Maps user-assignable encoders on the X32 to act as a "jog wheel" for the X-Live! card, allowing you to seek through recordings with hardware knobs.
 
 ---
@@ -29,13 +29,13 @@ Maps user-assignable encoders on the X32 to act as a "jog wheel" for the X-Live!
 
 Tools for bridging the X32 with your recording environment.
 
-### `x32_reaper`
+### `x32-cli x32-reaper`
 A bidirectional bridge for the Reaper DAW. Synchronizes faders, mutes, and pans between the physical console and the DAW mixer.
 
-### `x32_punch_control`
+### `x32-cli x32-punch-control`
 Records and plays back automation "punches" synchronized via MIDI Time Code (MTC). Uses the `.xpc` binary format for precise automation data.
 
-### `x32_midi2osc`
+### `x32-cli x32-midi2osc`
 A flexible translation engine that converts MIDI messages (Note On/Off, CC, Program Change) into X32 OSC commands using a template-based configuration.
 
 ---
@@ -44,13 +44,13 @@ A flexible translation engine that converts MIDI messages (Note On/Off, CC, Prog
 
 Tools for managing console state, libraries, and files.
 
-### `x32_desk_save` / `x32_desk_restore`
+### `x32-cli x32-desk-save` / `x32-cli x32-desk-restore`
 Saves the entire state of the mixer (Scenes, Routing, Setup) to a human-readable text file and restores it. Optimized with `BufWriter` for high-speed I/O.
 
-### `x32_get_lib` / `x32_set_lib`
+### `x32-cli x32-get-lib` / `x32-cli x32-set-lib`
 Retrieves and uploads library presets (.chn, .efx, .rou) to the console's internal library slots.
 
-### `x32_copy_fx` / `x32_geq2_cpy`
+### `x32-cli x32-copy-fx` / `x32-cli x32-geq2-cpy`
 Specialized utilities for copying settings between FX slots or Graphic EQ bands.
 
 ---
@@ -59,18 +59,18 @@ Specialized utilities for copying settings between FX slots or Graphic EQ bands.
 
 Utilities for working with X-Live! sessions and WAV files.
 
-### `x32_wav_xlive`
+### `x32-cli x32-wav-xlive`
 Merges multiple mono WAV files into a single multi-channel session compatible with the X-Live! expansion card.
 
-### `x32_xlive_wav`
+### `x32-cli x32-xlive-wav`
 Extracts individual mono WAV files from an X-Live! multi-channel recording.
 
-### `x32_cpxlivemarkers`
+### `x32-cli x32-cpxlivemarkers`
 Extracts markers from X-Live! session files and converts them to Reaper or Audition marker formats.
 
 ---
 
-## 🛠️ Full Crate Index
+## 🛠️ Full CLI Subcommand Index
 
 | Crate | Logic | Description |
 | :--- | :--- | :--- |

@@ -3,6 +3,83 @@ mod tests {
     use crate::common::*;
 
     #[test]
+    fn test_command_format() {
+        let int_format = CommandFormat::Int;
+        let float_format = CommandFormat::Float;
+        let string_format = CommandFormat::String;
+        let list = &["A", "B"];
+        let string_list_format = CommandFormat::StringList(list);
+
+        let cloned_int = int_format.clone();
+        assert!(matches!(cloned_int, CommandFormat::Int));
+
+        let cloned_float = float_format.clone();
+        assert!(matches!(cloned_float, CommandFormat::Float));
+
+        let cloned_string = string_format.clone();
+        assert!(matches!(cloned_string, CommandFormat::String));
+
+        let cloned_string_list = string_list_format.clone();
+        if let CommandFormat::StringList(cloned_list) = cloned_string_list {
+            assert_eq!(cloned_list, list);
+        } else {
+            panic!("Expected CommandFormat::StringList");
+        }
+    }
+
+    #[test]
+    fn test_command_value() {
+        let int_val = CommandValue::Int(42);
+        let float_val = CommandValue::Float(3.14);
+        let str_val = CommandValue::String("hello".to_string());
+        let none_val = CommandValue::None;
+
+        if let CommandValue::Int(val) = int_val.clone() {
+            assert_eq!(val, 42);
+        } else {
+            panic!("Expected CommandValue::Int");
+        }
+
+        if let CommandValue::Float(val) = float_val.clone() {
+            assert_eq!(val, 3.14);
+        } else {
+            panic!("Expected CommandValue::Float");
+        }
+
+        if let CommandValue::String(val) = str_val.clone() {
+            assert_eq!(val, "hello");
+        } else {
+            panic!("Expected CommandValue::String");
+        }
+
+        assert!(matches!(none_val.clone(), CommandValue::None));
+    }
+
+    #[test]
+    fn test_command_flags() {
+        let flag_get = CommandFlags::F_GET;
+        let flag_set = CommandFlags::F_SET;
+        let flag_xet = CommandFlags::F_XET;
+        let flag_npr = CommandFlags::F_NPR;
+        let flag_fnd = CommandFlags::F_FND;
+
+        assert_eq!(flag_get.bits(), 0x0001);
+        assert_eq!(flag_set.bits(), 0x0002);
+        assert_eq!(flag_xet.bits(), 0x0003);
+        assert_eq!(flag_npr.bits(), 0x0004);
+        assert_eq!(flag_fnd.bits(), 0x0008);
+
+        // F_XET should contain F_GET and F_SET
+        assert!(flag_xet.contains(CommandFlags::F_GET));
+        assert!(flag_xet.contains(CommandFlags::F_SET));
+        assert_eq!(flag_xet, flag_get | flag_set);
+
+        // Derives test
+        assert_eq!(flag_get.clone(), CommandFlags::F_GET);
+        assert!(flag_get != flag_set);
+    }
+
+    #[test]
     fn test_on_enum() {
         assert_eq!(On::from_id(0), Some(On::Off));
         assert_eq!(On::from_id(1), Some(On::On));

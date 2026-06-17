@@ -12,6 +12,12 @@ The project is designed as a **decoupled workspace**. Logic is strictly separate
 2.  **Domain Logic (`x32_lib`):** Defines the X32/M32/XAir command set, parameter scaling, and the **`MixerClient` abstraction** that provides unified, async, multi-transport connections and query-response tracking.
 3.  **Application Layer (Binary Crates):** Specialized tools that use the libraries to perform specific tasks.
 
+### Unified `x32-cli` Monolith Architecture
+While the workspace contains many individual binary crates for development and testing isolation, the primary distribution and execution model is the **unified `x32-cli` monolith**.
+*   **Subcommand Routing:** All individual tools (e.g., `x32_emulator`, `x32_autobeat`, `x32_desk_save`) expose their core logic via library functions that are aggregated as `clap` subcommands within `tools/x32_cli`.
+*   **Shared Dependencies:** This monolithic approach significantly reduces final compile times and binary bloat by ensuring all tools share the exact same `tokio`, `clap`, and `osc_lib` instances statically linked into a single executable.
+*   **Execution:** Users invoke tools via `x32-cli <subcommand>` (e.g., `x32-cli x32-emulator`), simplifying PATH management and deployment.
+
 ---
 
 ## 📡 Networking & Connection Model
