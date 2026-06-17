@@ -3,8 +3,6 @@ use super::*;
 
 #[path = "tests/async_methods.rs"]
 mod async_methods;
-#[path = "tests/client.rs"]
-mod client;
 #[path = "tests/common.rs"]
 mod common;
 #[path = "tests/error.rs"]
