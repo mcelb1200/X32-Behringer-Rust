@@ -381,4 +381,76 @@ mod tests {
         assert!(parse_parameter(MixerModel::X32, "/main/m/mix/fader", "-10.0").is_some());
         assert!(parse_parameter(MixerModel::XR18, "/main/m/mix/fader", "-10.0").is_none());
     }
+
+    #[test]
+    fn test_parse_parameter_empty_arg() {
+        assert!(parse_parameter(MixerModel::X32, "/ch/01/mix/fader", "").is_none());
+    }
+
+    #[test]
+    fn test_parse_parameter_invalid_path() {
+        assert!(parse_parameter(MixerModel::X32, "/invalid/path", "0.0").is_none());
+        assert!(parse_parameter(MixerModel::X32, "", "0.0").is_none());
+        assert!(parse_parameter(MixerModel::X32, "/", "0.0").is_none());
+    }
+
+    #[test]
+    fn test_parse_parameter_xr16_limits() {
+        assert!(parse_parameter(MixerModel::XR16, "/ch/16/mix/fader", "0.0").is_some());
+        assert!(parse_parameter(MixerModel::XR16, "/ch/17/mix/fader", "0.0").is_none());
+        assert!(parse_parameter(MixerModel::XR16, "/bus/04/mix/fader", "0.0").is_some());
+        assert!(parse_parameter(MixerModel::XR16, "/bus/05/mix/fader", "0.0").is_none());
+    }
+
+    #[test]
+    fn test_parse_parameter_xr12_limits() {
+        assert!(parse_parameter(MixerModel::XR12, "/ch/12/mix/fader", "0.0").is_some());
+        assert!(parse_parameter(MixerModel::XR12, "/ch/13/mix/fader", "0.0").is_none());
+        assert!(parse_parameter(MixerModel::XR12, "/bus/02/mix/fader", "0.0").is_some());
+        assert!(parse_parameter(MixerModel::XR12, "/bus/03/mix/fader", "0.0").is_none());
+    }
+    #[test]
+    fn test_parse_parameter_string_quotes() {
+        let msg = parse_parameter(MixerModel::X32, "/ch/01/config/name", "\"My Vocals\"").unwrap();
+        assert_eq!(msg.args[0], OscArg::String("My Vocals".to_string()));
+
+        let msg2 = parse_parameter(MixerModel::X32, "/ch/01/config/name", "Guitar").unwrap();
+        assert_eq!(msg2.args[0], OscArg::String("Guitar".to_string()));
+    }
+
+    #[test]
+    fn test_parse_parameter_fader_edge_cases() {
+        let msg_oo = parse_parameter(MixerModel::X32, "/ch/01/mix/fader", "-oo").unwrap();
+        assert_eq!(msg_oo.args[0], OscArg::Float(0.0));
+
+        let msg_low = parse_parameter(MixerModel::X32, "/ch/01/mix/fader", "-70.0").unwrap();
+        if let OscArg::Float(f) = msg_low.args[0] {
+            assert!(f > 0.0 && f < 0.1);
+        } else {
+            panic!("Expected float");
+        }
+
+        assert!(parse_parameter(MixerModel::X32, "/ch/01/mix/fader", "invalid").is_none());
+    }
+
+    #[test]
+    fn test_parse_parameter_enum_bits() {
+        // Verifies the `%` prefix correctly invokes `parse_bits` for bitwise enum values.
+        let msg = parse_parameter(MixerModel::X32, "/ch/01/mix/on", "%1010").unwrap();
+        assert_eq!(msg.args[0], OscArg::Int(10));
+    }
+
+    #[test]
+    fn test_parse_parameter_frequency() {
+        let msg_k = parse_parameter(MixerModel::X32, "/ch/01/eq/1/f", "1k2").unwrap();
+        assert!(matches!(msg_k.args[0], OscArg::Float(_)));
+
+        assert!(parse_parameter(MixerModel::X32, "/ch/01/eq/1/f", "invalid").is_none());
+    }
+
+    #[test]
+    fn test_parse_parameter_invalid_links() {
+        assert!(parse_parameter(MixerModel::X32, "/config/chlink/31-33", "ON").is_none());
+        assert!(parse_parameter(MixerModel::X32, "/config/chlink/32-33", "ON").is_none());
+    }
 }
