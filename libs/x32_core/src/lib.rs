@@ -503,9 +503,12 @@ impl Mixer {
                     if item_type == "scene" || item_type == "snippet" {
                         let name_path = format!("/-show/showfile/{}/{:03}/name", item_type, idx);
                         let note_path = format!("/-show/showfile/{}/{:03}/note", item_type, idx);
+                        let hasdata_path =
+                            format!("/-show/showfile/{}/{:03}/hasdata", item_type, idx);
 
                         self.state.set(&name_path, OscArg::String(name.clone()));
                         self.state.set(&note_path, OscArg::String(note.clone()));
+                        self.state.set(&hasdata_path, OscArg::Int(1));
 
                         if let Ok(b) = OscMessage::serialize_to_bytes(
                             &name_path,
@@ -520,6 +523,14 @@ impl Mixer {
                             &note_path,
                             [&OscArg::String(note.clone())],
                         ) {
+                            let arc_b: Arc<[u8]> = b.into();
+                            for client in &self.clients {
+                                responses.push((client.0, arc_b.clone()));
+                            }
+                        }
+                        if let Ok(b) =
+                            OscMessage::serialize_to_bytes(&hasdata_path, [&OscArg::Int(1)])
+                        {
                             let arc_b: Arc<[u8]> = b.into();
                             for client in &self.clients {
                                 responses.push((client.0, arc_b.clone()));
@@ -587,9 +598,21 @@ impl Mixer {
                     if item_type == "scene" || item_type == "snippet" {
                         let name_path = format!("/-show/showfile/{}/{:03}/name", item_type, idx);
                         let note_path = format!("/-show/showfile/{}/{:03}/note", item_type, idx);
+                        let hasdata_path =
+                            format!("/-show/showfile/{}/{:03}/hasdata", item_type, idx);
 
                         self.state.set(&name_path, OscArg::String("".to_string()));
                         self.state.set(&note_path, OscArg::String("".to_string()));
+                        self.state.set(&hasdata_path, OscArg::Int(0));
+
+                        if let Ok(b) =
+                            OscMessage::serialize_to_bytes(&hasdata_path, [&OscArg::Int(0)])
+                        {
+                            let arc_b: Arc<[u8]> = b.into();
+                            for client in &self.clients {
+                                responses.push((client.0, arc_b.clone()));
+                            }
+                        }
 
                         if let Ok(b) = OscMessage::serialize_to_bytes(
                             &name_path,
