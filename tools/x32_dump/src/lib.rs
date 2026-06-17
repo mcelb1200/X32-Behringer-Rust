@@ -15,8 +15,8 @@ pub struct Args {
 
 use std::fmt::Write;
 
-fn dump_osc_message(msg: &OscMessage) {
-    let mut out = String::new();
+fn dump_osc_message(msg: &OscMessage, mut out: &mut String) {
+    out.clear();
     // format like Xdump.c:
     let _ = write!(
         &mut out,
@@ -144,6 +144,9 @@ fn process_stream<R: Read>(reader: R) -> Result<()> {
         anyhow::bail!("Input exceeds maximum allowed size (10MB)");
     }
 
+    // ⚡ Bolt: Pre-allocate string buffer outside hot loop to prevent O(N) heap allocations
+    let mut out_buffer = String::with_capacity(1024);
+
     let mut offset = 0;
     while offset < buffer.len() {
         if let Ok(msg) = OscMessage::from_bytes(&buffer[offset..]) {
@@ -155,7 +158,7 @@ fn process_stream<R: Read>(reader: R) -> Result<()> {
                 }
             };
 
-            dump_osc_message(&msg);
+            dump_osc_message(&msg, &mut out_buffer);
 
             offset += consumed;
 
@@ -195,7 +198,8 @@ mod tests {
             path: "/ch/01/mix/fader".to_string(),
             args: vec![OscArg::Float(0.75)],
         };
-        dump_osc_message(&msg);
+        let mut out = String::new();
+        dump_osc_message(&msg, &mut out);
     }
 
     #[test]
@@ -214,7 +218,8 @@ mod tests {
             path: path.to_string(),
             args: vec![OscArg::Blob(raw_bytes)],
         };
-        dump_osc_message(&msg);
+        let mut out = String::new();
+        dump_osc_message(&msg, &mut out);
     }
 
     #[test]
@@ -231,6 +236,7 @@ mod tests {
             path: path.to_string(),
             args: vec![OscArg::Blob(raw_bytes)],
         };
-        dump_osc_message(&msg);
+        let mut out = String::new();
+        dump_osc_message(&msg, &mut out);
     }
 }
