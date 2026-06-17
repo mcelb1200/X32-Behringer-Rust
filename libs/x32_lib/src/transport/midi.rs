@@ -112,7 +112,10 @@ impl MixerTransport for MidiTransport {
         sysex.extend_from_slice(&osc_bytes);
         sysex.push(0xF7);
 
-        let mut conn = self.conn_out.lock().unwrap();
+        let mut conn = self
+            .conn_out
+            .lock()
+            .map_err(|e| X32Error::Custom(format!("MIDI output mutex poisoned: {}", e)))?;
         conn.send(&sysex)
             .map_err(|e| X32Error::Custom(format!("MIDI send error: {}", e)))?;
         Ok(())
