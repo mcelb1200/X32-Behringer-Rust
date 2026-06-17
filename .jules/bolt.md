@@ -51,3 +51,6 @@
 ## 2024-11-20 - [Replace multiple push_str formatted strings with direct write! sequential mapping]
 **Learning:** Using `push_str(&format!(...))` allocates a new string on the heap. When combining bytes sequentially (e.g., mapping OSC blobs to a hex string inside a loop), allocating a new string `blob_str` and then appending it creates double the heap allocations. We can optimize this by formatting directly onto the target buffer via `write!(target, "{:02x}", byte)`.
 **Action:** In functions generating formatted text from arrays or slices (like OSC node formatting), replace intermediate string accumulations (like `String::new()` then `push_str`) with sequential direct `write!` invocations on the pre-existing final string buffer.
+## 2024-06-25 - [Pre-allocate String buffer for dynamic formatting in hot loops]
+**Learning:** Using `String::new()` inside a hot loop forces dynamic heap re-allocations as data is appended to it. Pre-allocating a `String` outside the loop and clearing it on each iteration avoids O(N) heap allocations.
+**Action:** When repeatedly allocating and discarding a string inside a hot loop (like a network parser or dump utility), pre-allocate the string buffer outside the loop with `String::with_capacity()`, pass it to the processing function as a mutable reference (`&mut String`), and use `out.clear()` to reuse the memory.
