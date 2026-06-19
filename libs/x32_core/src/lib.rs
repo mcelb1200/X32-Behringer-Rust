@@ -732,10 +732,7 @@ impl Mixer {
                             Some(format!("/-libs/fx/{:03}/", idx)),
                             Some("/fx/1/".to_string()), // Dummy fixed destination for simulation
                         ),
-                        "librout" => (
-                            Some(format!("/-libs/r/{:03}/", idx)),
-                            Some("/".to_string()),
-                        ),
+                        "librout" => (Some(format!("/-libs/r/{:03}/", idx)), Some("/".to_string())),
                         _ => (None, None),
                     };
 

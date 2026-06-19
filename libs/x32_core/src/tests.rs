@@ -224,7 +224,6 @@ mod tests {
         assert_eq!(response_msg.args, vec![OscArg::Float(0.5)]);
     }
 
-
     #[test]
     fn test_mixer_xremote_max_clients() {
         let mut mixer = Mixer::new();
@@ -476,10 +475,9 @@ mod tests {
             "/-show/showfile/scene/001/name",
             OscArg::String("Preset Scene".to_string()),
         );
-        mixer.state.set(
-            "/-show/showfile/scene/001/hasdata",
-            OscArg::Int(1),
-        );
+        mixer
+            .state
+            .set("/-show/showfile/scene/001/hasdata", OscArg::Int(1));
         mixer.state.set(
             "/-show/showfile/scene/001/ch/01/mix/fader",
             OscArg::Float(0.5),
@@ -491,10 +489,7 @@ mod tests {
 
         let msg = OscMessage {
             path: "/load".to_string(),
-            args: vec![
-                OscArg::String("scene".to_string()),
-                OscArg::Int(1),
-            ],
+            args: vec![OscArg::String("scene".to_string()), OscArg::Int(1)],
         };
         let bytes = msg.to_bytes().unwrap();
         let responses = mixer.dispatch(&bytes, test_addr(1234)).unwrap();
