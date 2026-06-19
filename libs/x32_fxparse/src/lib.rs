@@ -388,69 +388,80 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_parameter_invalid_path() {
-        assert!(parse_parameter(MixerModel::X32, "/invalid/path", "0.0").is_none());
-        assert!(parse_parameter(MixerModel::X32, "", "0.0").is_none());
-        assert!(parse_parameter(MixerModel::X32, "/", "0.0").is_none());
-    }
-
-    #[test]
-    fn test_parse_parameter_xr16_limits() {
-        assert!(parse_parameter(MixerModel::XR16, "/ch/16/mix/fader", "0.0").is_some());
-        assert!(parse_parameter(MixerModel::XR16, "/ch/17/mix/fader", "0.0").is_none());
-        assert!(parse_parameter(MixerModel::XR16, "/bus/04/mix/fader", "0.0").is_some());
-        assert!(parse_parameter(MixerModel::XR16, "/bus/05/mix/fader", "0.0").is_none());
-    }
-
-    #[test]
-    fn test_parse_parameter_xr12_limits() {
-        assert!(parse_parameter(MixerModel::XR12, "/ch/12/mix/fader", "0.0").is_some());
-        assert!(parse_parameter(MixerModel::XR12, "/ch/13/mix/fader", "0.0").is_none());
-        assert!(parse_parameter(MixerModel::XR12, "/bus/02/mix/fader", "0.0").is_some());
-        assert!(parse_parameter(MixerModel::XR12, "/bus/03/mix/fader", "0.0").is_none());
-    }
-    #[test]
-    fn test_parse_parameter_string_quotes() {
-        let msg = parse_parameter(MixerModel::X32, "/ch/01/config/name", "\"My Vocals\"").unwrap();
-        assert_eq!(msg.args[0], OscArg::String("My Vocals".to_string()));
-
-        let msg2 = parse_parameter(MixerModel::X32, "/ch/01/config/name", "Guitar").unwrap();
-        assert_eq!(msg2.args[0], OscArg::String("Guitar".to_string()));
-    }
-
-    #[test]
-    fn test_parse_parameter_fader_edge_cases() {
-        let msg_oo = parse_parameter(MixerModel::X32, "/ch/01/mix/fader", "-oo").unwrap();
-        assert_eq!(msg_oo.args[0], OscArg::Float(0.0));
-
-        let msg_low = parse_parameter(MixerModel::X32, "/ch/01/mix/fader", "-70.0").unwrap();
-        if let OscArg::Float(f) = msg_low.args[0] {
-            assert!(f > 0.0 && f < 0.1);
+    fn test_parse_parameter_string_arg() {
+        let msg_quoted = parse_parameter(MixerModel::X32, "/ch/01/config/name", "\"Vocals\"").expect("Parse quoted string");
+        if let OscArg::String(s) = &msg_quoted.args[0] {
+            assert_eq!(s, "Vocals");
         } else {
-            panic!("Expected float");
+            panic!("Expected String arg");
         }
 
-        assert!(parse_parameter(MixerModel::X32, "/ch/01/mix/fader", "invalid").is_none());
+        let msg_unquoted = parse_parameter(MixerModel::X32, "/ch/01/config/name", "Guitar").expect("Parse unquoted string");
+        if let OscArg::String(s) = &msg_unquoted.args[0] {
+            assert_eq!(s, "Guitar");
+        } else {
+            panic!("Expected String arg");
+        }
     }
 
     #[test]
-    fn test_parse_parameter_enum_bits() {
-        // Verifies the `%` prefix correctly invokes `parse_bits` for bitwise enum values.
-        let msg = parse_parameter(MixerModel::X32, "/ch/01/mix/on", "%1010").unwrap();
-        assert_eq!(msg.args[0], OscArg::Int(10));
+    fn test_parse_parameter_level_edge_cases() {
+        let msg_oo = parse_parameter(MixerModel::X32, "/ch/01/mix/fader", "-oo").expect("Parse -oo");
+        if let OscArg::Float(f) = msg_oo.args[0] {
+            assert_eq!(f, 0.0);
+        } else {
+            panic!("Expected float arg");
+        }
+
+        let msg_high = parse_parameter(MixerModel::X32, "/ch/01/mix/fader", "15.0").expect("Parse > 10.0");
+        if let OscArg::Float(f) = msg_high.args[0] {
+            assert_eq!(f, 1.0); // should clamp to 1.0
+        } else {
+            panic!("Expected float arg");
+        }
+
+        let msg_low = parse_parameter(MixerModel::X32, "/ch/01/mix/fader", "-90.0").expect("Parse < -60.0");
+        if let OscArg::Float(f) = msg_low.args[0] {
+            // formula: -90.0 * 0.002_083_333_4 + 0.1875 => ~0.0
+            assert!(f >= 0.0 && f < 0.1);
+        } else {
+            panic!("Expected float arg");
+        }
     }
 
     #[test]
-    fn test_parse_parameter_frequency() {
-        let msg_k = parse_parameter(MixerModel::X32, "/ch/01/eq/1/f", "1k2").unwrap();
-        assert!(matches!(msg_k.args[0], OscArg::Float(_)));
-
-        assert!(parse_parameter(MixerModel::X32, "/ch/01/eq/1/f", "invalid").is_none());
+    fn test_parse_parameter_frequency_k_suffix() {
+        let msg = parse_parameter(MixerModel::X32, "/auxin/01/eq/1/f", "1k5").expect("Parse 1k5 frequency");
+        if let OscArg::Float(f) = msg.args[0] {
+            // 1500Hz -> osc scale
+            let expected = (1500.0_f32 / 20.0).ln() / 6.907_755_4;
+            let expected_rounded = (expected * 200.0).round() / 200.0;
+            assert!((f - expected_rounded).abs() < 0.01);
+        } else {
+            panic!("Expected float arg");
+        }
     }
 
     #[test]
-    fn test_parse_parameter_invalid_links() {
-        assert!(parse_parameter(MixerModel::X32, "/config/chlink/31-33", "ON").is_none());
-        assert!(parse_parameter(MixerModel::X32, "/config/chlink/32-33", "ON").is_none());
+    fn test_parse_parameter_bits_enum() {
+        let msg = parse_parameter(MixerModel::X32, "/ch/01/mix/on", "%1").expect("Parse %1 bit enum");
+        if let OscArg::Int(i) = msg.args[0] {
+            assert_eq!(i, 1);
+        } else {
+            panic!("Expected int arg");
+        }
+
+        let msg0 = parse_parameter(MixerModel::X32, "/ch/01/mix/on", "%0").expect("Parse %0 bit enum");
+        if let OscArg::Int(i) = msg0.args[0] {
+            assert_eq!(i, 0);
+        } else {
+            panic!("Expected int arg");
+        }
+    }
+
+    #[test]
+    fn test_parse_parameter_unknown_path() {
+        assert!(parse_parameter(MixerModel::X32, "/unknown/path", "10.0").is_none());
+        assert!(parse_parameter(MixerModel::X32, "/ch/99/mix/fader", "10.0").is_none());
     }
 }

@@ -50,8 +50,6 @@ fn test_xair_get_scene_with_cli_args() {
 
     // Assert the output
     cmd.assert().success().stdout(predicate::str::contains(
-        "#2.1# \"TestScene\" \"TestNote\" %000000000 1 XAirGetScene V1.4 (c)2014 Patrick-Gilles Maillot"
-    )).stdout(predicate::str::contains(
-        "/ch/01/mix/fader 0.75"
+        "#2.1# \"TestScene\" \"TestNote\" %000000000 1 XAirGetScene V1.4 (c)2014 Patrick-Gilles Maillot\n\n/ch/01/mix/fader 0.75\n",
     ));
 }
