@@ -175,6 +175,9 @@ impl Mixer {
         // Expire old meters
         self.active_meters.retain(|_, expiry| now < *expiry);
 
+        // ⚡ Bolt: Pre-allocate a String buffer outside the loop to avoid repeated heap allocations
+        let mut path_buf = String::with_capacity(32);
+
         // Generate meter blobs for each active subscription
         for &(addr, meter_idx) in self.active_meters.keys() {
             // Number of floats expected per meter index (based on C code)
@@ -204,8 +207,11 @@ impl Mixer {
                 let blob_size = num_floats * 4;
                 let blob = vec![0u8; blob_size];
 
-                let path = format!("/meters/{}", meter_idx);
-                if let Ok(bytes) = OscMessage::serialize_to_bytes(&path, [&OscArg::Blob(blob)]) {
+                use std::fmt::Write;
+                path_buf.clear();
+                write!(&mut path_buf, "/meters/{}", meter_idx).unwrap();
+
+                if let Ok(bytes) = OscMessage::serialize_to_bytes(&path_buf, [&OscArg::Blob(blob)]) {
                     responses.push((addr, bytes.into()));
                 }
             }
