@@ -649,17 +649,137 @@ impl Mixer {
             return Ok(responses);
         }
 
-        // Note: The `/add` and `/load` commands are intentionally implemented as dummy stubs.
-        // They return an OSC success value (`1`) with the requested item type to satisfy
-        // remote clients that expect a response, but they do not modify the emulator's state.
-        // This formalizes the legacy "TODO: do a proper implementation" behavior from C.
-        if osc_msg.path == "/add" || osc_msg.path == "/load" {
-            if let Some(OscArg::String(ref item_type)) = osc_msg.args.first() {
-                let arg1 = OscArg::String(item_type.clone());
-                let arg2 = OscArg::Int(1);
-                let bytes = OscMessage::serialize_to_bytes(&osc_msg.path, [&arg1, &arg2])?;
-                responses.push((remote_addr, bytes.into()));
+        if osc_msg.path == "/add" {
+            let mut success = false;
+            if osc_msg.args.len() >= 3 {
+                if let (OscArg::String(item_type), OscArg::Int(idx), OscArg::String(name)) =
+                    (&osc_msg.args[0], &osc_msg.args[1], &osc_msg.args[2])
+                {
+                    let path_prefix = match item_type.as_str() {
+                        "scene" => Some(format!("/-show/showfile/scene/{:03}", idx)),
+                        "snippet" => Some(format!("/-show/showfile/snippet/{:03}", idx)),
+                        "cue" => Some(format!("/-show/showfile/cue/{:03}", idx)),
+                        "libchan" => Some(format!("/-libs/ch/{:03}", idx)),
+                        "libfx" => Some(format!("/-libs/fx/{:03}", idx)),
+                        "librout" => Some(format!("/-libs/r/{:03}", idx)),
+                        _ => None,
+                    };
+
+                    if let Some(prefix) = path_prefix {
+                        let name_path = format!("{}/name", prefix);
+                        let hasdata_path = format!("{}/hasdata", prefix);
+
+                        self.state.set(&name_path, OscArg::String(name.clone()));
+                        self.state.set(&hasdata_path, OscArg::Int(1));
+
+                        if let Ok(b) = OscMessage::serialize_to_bytes(
+                            &name_path,
+                            [&OscArg::String(name.clone())],
+                        ) {
+                            let arc_b: Arc<[u8]> = b.into();
+                            for client in &self.clients {
+                                responses.push((client.0, arc_b.clone()));
+                            }
+                        }
+                        if let Ok(b) =
+                            OscMessage::serialize_to_bytes(&hasdata_path, [&OscArg::Int(1)])
+                        {
+                            let arc_b: Arc<[u8]> = b.into();
+                            for client in &self.clients {
+                                responses.push((client.0, arc_b.clone()));
+                            }
+                        }
+                        success = true;
+                    }
+                }
             }
+
+            let arg_type = osc_msg
+                .args
+                .first()
+                .cloned()
+                .unwrap_or(OscArg::String("scene".to_string()));
+            let arg_res = OscArg::Int(if success { 1 } else { 0 });
+            let bytes = OscMessage::serialize_to_bytes(&osc_msg.path, [&arg_type, &arg_res])?;
+            responses.push((remote_addr, bytes.into()));
+            return Ok(responses);
+        }
+
+        if osc_msg.path == "/load" {
+            let mut success = false;
+            if osc_msg.args.len() >= 2 {
+                if let (OscArg::String(item_type), OscArg::Int(idx)) =
+                    (&osc_msg.args[0], &osc_msg.args[1])
+                {
+                    // For load, we simulate the hardware behavior by applying the preset state.
+                    // This mirrors the /copy command but moves data from the library to the root level.
+                    let (src_prefix, dst_prefix) = match item_type.as_str() {
+                        "scene" => (
+                            Some(format!("/-show/showfile/scene/{:03}/", idx)),
+                            Some("/".to_string()),
+                        ),
+                        "snippet" => (
+                            Some(format!("/-show/showfile/snippet/{:03}/", idx)),
+                            Some("/".to_string()),
+                        ),
+                        // Note: For libchan, the client usually passes mask parameters, but /load
+                        // doesn't have them in its standard OSC arguments, so we copy all applicable.
+                        "libchan" => (
+                            Some(format!("/-libs/ch/{:03}/", idx)),
+                            Some("/ch/01/".to_string()), // Dummy fixed destination for simulation unless specified
+                        ),
+                        "libfx" => (
+                            Some(format!("/-libs/fx/{:03}/", idx)),
+                            Some("/fx/1/".to_string()), // Dummy fixed destination for simulation
+                        ),
+                        "librout" => (Some(format!("/-libs/r/{:03}/", idx)), Some("/".to_string())),
+                        _ => (None, None),
+                    };
+
+                    if let (Some(src), Some(dst)) = (src_prefix, dst_prefix) {
+                        let mut to_copy = Vec::new();
+                        let mut new_key_buf = String::with_capacity(64);
+                        for (key, val) in self.state.values.iter() {
+                            if key.starts_with(&src) {
+                                let suffix = &key[src.len()..];
+                                // Don't copy metadata like name or note or hasdata back to root
+                                if suffix == "name" || suffix == "note" || suffix == "hasdata" {
+                                    continue;
+                                }
+
+                                new_key_buf.clear();
+                                use std::fmt::Write;
+                                if dst == "/" {
+                                    write!(&mut new_key_buf, "/{}", suffix).unwrap();
+                                } else {
+                                    write!(&mut new_key_buf, "{}{}", dst, suffix).unwrap();
+                                }
+                                to_copy.push((new_key_buf.clone(), val.clone()));
+                            }
+                        }
+
+                        for (k, v) in to_copy {
+                            self.state.set(&k, v.clone());
+                            if let Ok(b) = OscMessage::serialize_to_bytes(&k, [&v]) {
+                                let arc_b: Arc<[u8]> = b.into();
+                                for client in &self.clients {
+                                    responses.push((client.0, arc_b.clone()));
+                                }
+                            }
+                        }
+                        success = true;
+                    }
+                }
+            }
+
+            let arg_type = osc_msg
+                .args
+                .first()
+                .cloned()
+                .unwrap_or(OscArg::String("scene".to_string()));
+            let arg_res = OscArg::Int(if success { 1 } else { 0 });
+            let bytes = OscMessage::serialize_to_bytes(&osc_msg.path, [&arg_type, &arg_res])?;
+            responses.push((remote_addr, bytes.into()));
             return Ok(responses);
         }
 
