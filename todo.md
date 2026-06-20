@@ -3,7 +3,7 @@
 - Reconcile and merge all performance, security compliance, and porting PRs into `refactor/mixer-client-abstraction` (Completed)
 - Extract 'todo' items from reference C files in `c_origin/` and document them here for future work.
   - Evaluate `// TODO: How to select Master from REAPER???` from `X32Reaper.c`
-  - Evaluate `// TODO: do a proper implementation of the function` for `/add` and `/load` from `X32.c` (Completed)
+  - Evaluate `// TODO: do a proper implementation of the function` for `/add` and `/load` from `X32.c`
   - Evaluate `// TODO: implement 'libfx' and 'librout'` from `X32.c`
 
 ## Context
