@@ -196,6 +196,7 @@ fn parse_midi_hex(hex_str: &str) -> std::result::Result<Vec<u8>, anyhow::Error> 
     Ok(result)
 }
 
+
 #[derive(Debug, Clone)]
 pub enum CommandParam {
     Float(f64),
@@ -217,14 +218,8 @@ impl CommandParam {
     }
 }
 
-fn generate_rpn_nrpn(
-    is_nrpn: bool,
-    channel: u8,
-    param_msb: u8,
-    param_lsb: u8,
-    val_msb: u8,
-    val_lsb: Option<u8>,
-) -> Vec<u8> {
+
+fn generate_rpn_nrpn(is_nrpn: bool, channel: u8, param_msb: u8, param_lsb: u8, val_msb: u8, val_lsb: Option<u8>) -> Vec<u8> {
     let mut bytes = Vec::with_capacity(12);
     let cc_param_msb = if is_nrpn { 99 } else { 101 };
     let cc_param_lsb = if is_nrpn { 98 } else { 100 };
@@ -390,17 +385,11 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
                             "Match found for: {}. Triggering MIDI: {}",
                             incoming_msg.path, command.outgoing_command
                         );
-                        if command.outgoing_command.starts_with("NRPN ")
-                            || command.outgoing_command.starts_with("RPN ")
-                        {
+                        if command.outgoing_command.starts_with("NRPN ") || command.outgoing_command.starts_with("RPN ") {
                             let is_nrpn = command.outgoing_command.starts_with("NRPN ");
 
                             let slice_start = if is_nrpn { 5 } else { 4 };
-                            match expand_template(
-                                &command.outgoing_command[slice_start..],
-                                &mparam,
-                                &mut calc,
-                            ) {
+                            match expand_template(&command.outgoing_command[slice_start..], &mparam, &mut calc) {
                                 Ok(expanded) => {
                                     let parts: Vec<&str> = expanded.split_whitespace().collect();
                                     if parts.len() >= 4 {
@@ -408,20 +397,14 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
                                         let param_msb = parts[1].parse::<u8>().unwrap_or(0);
                                         let param_lsb = parts[2].parse::<u8>().unwrap_or(0);
                                         let val_msb = parts[3].parse::<u8>().unwrap_or(0);
-                                        let val_lsb =
-                                            parts.get(4).and_then(|s| s.parse::<u8>().ok());
+                                        let val_lsb = parts.get(4).and_then(|s| s.parse::<u8>().ok());
 
-                                        let bytes = generate_rpn_nrpn(
-                                            is_nrpn, channel, param_msb, param_lsb, val_msb,
-                                            val_lsb,
-                                        );
+                                        let bytes = generate_rpn_nrpn(is_nrpn, channel, param_msb, param_lsb, val_msb, val_lsb);
                                         if let Some(ref mut conn) = midi_conn {
                                             let _ = conn.send(&bytes);
                                         }
                                     } else {
-                                        eprintln!(
-                                            "Invalid RPN/NRPN format. Expected: channel param_msb param_lsb val_msb [val_lsb]"
-                                        );
+                                        eprintln!("Invalid RPN/NRPN format. Expected: channel param_msb param_lsb val_msb [val_lsb]");
                                     }
                                 }
                                 Err(e) => eprintln!("Failed to expand template: {}", e),
@@ -566,10 +549,7 @@ M~~~/ch/02/mix/fader|/ch/03/mix/fader ,f 0.75
     fn test_generate_rpn_nrpn() {
         // Test NRPN Channel 1 (0), Param MSB 1, LSB 2, Val MSB 3, LSB 4
         let bytes = generate_rpn_nrpn(true, 0, 1, 2, 3, Some(4));
-        assert_eq!(
-            bytes,
-            vec![0xB0, 99, 1, 0xB0, 98, 2, 0xB0, 6, 3, 0xB0, 38, 4]
-        );
+        assert_eq!(bytes, vec![0xB0, 99, 1, 0xB0, 98, 2, 0xB0, 6, 3, 0xB0, 38, 4]);
 
         // Test RPN Channel 2 (1), Param MSB 5, LSB 6, Val MSB 7, NO LSB
         let bytes = generate_rpn_nrpn(false, 1, 5, 6, 7, None);
