@@ -54,3 +54,7 @@
 ## 2024-06-25 - [Pre-allocate String buffer for dynamic formatting in hot loops]
 **Learning:** Using `String::new()` inside a hot loop forces dynamic heap re-allocations as data is appended to it. Pre-allocating a `String` outside the loop and clearing it on each iteration avoids O(N) heap allocations.
 **Action:** When repeatedly allocating and discarding a string inside a hot loop (like a network parser or dump utility), pre-allocate the string buffer outside the loop with `String::with_capacity()`, pass it to the processing function as a mutable reference (`&mut String`), and use `out.clear()` to reuse the memory.
+
+## 2024-11-20 - [Eliminate vector allocation in split tuple parsing]
+**Learning:** Using `s.split(',').collect::<Vec<&str>>()` to parse a string into exactly two parts (like a key-value or id-name pair) allocates a dynamically sized vector on the heap unnecessarily.
+**Action:** Always replace `.split(char).collect::<Vec<&str>>()` with `.split_once(char)` when parsing exact pairs. It returns an `Option<(&str, &str)>` and completely avoids the heap allocation.
