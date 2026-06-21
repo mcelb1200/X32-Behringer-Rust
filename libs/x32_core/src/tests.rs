@@ -678,7 +678,9 @@ mod tests {
             Some(&OscArg::Float(0.75))
         );
         assert_eq!(
-            mixer.state.get("/-show/showfile/scene/005/bus/01/mix/fader"),
+            mixer
+                .state
+                .get("/-show/showfile/scene/005/bus/01/mix/fader"),
             Some(&OscArg::Float(0.5))
         );
         assert_eq!(
@@ -726,7 +728,9 @@ mod tests {
         let mut mixer = Mixer::new();
 
         mixer.state.set("/ch/01/mix/fader", OscArg::Float(0.75));
-        mixer.state.set("/ch/01/config/name", OscArg::String("Kick".to_string()));
+        mixer
+            .state
+            .set("/ch/01/config/name", OscArg::String("Kick".to_string()));
 
         let msg = OscMessage {
             path: "/save".to_string(),
@@ -803,10 +807,7 @@ mod tests {
 
         mixer.dispatch(&bytes, test_addr(1234)).unwrap();
 
-        assert_eq!(
-            mixer.state.get("/-libs/fx/015/type"),
-            Some(&OscArg::Int(3))
-        );
+        assert_eq!(mixer.state.get("/-libs/fx/015/type"), Some(&OscArg::Int(3)));
         assert_eq!(
             mixer.state.get("/-libs/fx/015/par/01"),
             Some(&OscArg::Float(0.5))
