@@ -12,7 +12,9 @@ fn test_xair_get_scene_with_cli_args() {
         .local_addr()
         .expect("Failed to get local address");
 
-    mock_console.set_read_timeout(Some(Duration::from_millis(500))).unwrap();
+    mock_console
+        .set_read_timeout(Some(Duration::from_millis(500)))
+        .unwrap();
 
     thread::spawn(move || {
         let mut buf = [0; 512];
