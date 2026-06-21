@@ -96,3 +96,13 @@
 **Vulnerability:** In `MidiTransport::send` (`libs/x32_lib/src/transport/midi.rs`), the application used `.unwrap()` on a shared `Mutex` lock (`self.conn_out.lock().unwrap()`). If another thread or task panicked while holding the lock, the mutex would become "poisoned," causing this `.unwrap()` to also panic. This creates a cascading failure scenario where a single panic crashes other threads or the entire application (Denial of Service).
 **Learning:** Using `.unwrap()` on `Mutex::lock()` or similar synchronization primitives is unsafe in multi-threaded environments, particularly in long-running services or daemon tasks. A poisoned mutex should not inherently cause the entire system to crash if the component can gracefully report the error or recover.
 **Prevention:** Avoid `.unwrap()` on shared Mutex locks. Instead, handle the poisoning error gracefully using `.map_err()` to convert it into a domain-specific error type (e.g., `X32Error::Custom`) or by using `unwrap_or_else` if safe default behavior exists.
+
+## 2026-06-21 - [DoS via Panic on SystemTime::duration_since]
+**Vulnerability:** The `x32_replay` tool used `.unwrap()` on the result of `SystemTime::now().duration_since(UNIX_EPOCH)`. If the system clock is set to a time before the UNIX epoch (e.g. due to NTP failure or battery exhaustion on a local device), this operation returns an error, and the `.unwrap()` will panic, causing a Denial of Service (DoS) for the application.
+**Learning:** `SystemTime::duration_since` can fail. System clocks are external inputs that should not be implicitly trusted to be strictly monotonic or to exceed the UNIX epoch, especially on edge devices.
+**Prevention:** Avoid `.unwrap()` on time-based calculations. Use `.unwrap_or_default()` to fallback safely, or handle the `SystemTimeError` explicitly to prevent crashes.
+
+## 2026-06-21 - [DoS via Out-of-Bounds Network Slice Parsing]
+**Vulnerability:** Several tools (like `x32_reaper` and `x32_automix`) directly sliced network byte buffers (`&data[idx..idx + size]`) based on lengths extracted from the packet itself, without first validating that the buffer `data` was sufficiently large. A crafted or truncated OSC packet or network payload could cause the application to panic and crash (Denial of Service).
+**Learning:** External network lengths cannot be trusted. Slicing with `[]` on unvalidated ranges in Rust causes immediate thread panics, crashing the network listener.
+**Prevention:** When parsing network packets, use safe access methods like `data.get(idx..idx + size)` which return `Option<&[u8]>` instead of direct indexing, and gracefully handle or drop malformed/truncated packets.
