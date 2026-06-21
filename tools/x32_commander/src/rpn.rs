@@ -16,7 +16,7 @@ impl RpnCalculator {
         Self { memory: 0.0 }
     }
 
-    pub fn calculate(&mut self, expr: &str, mparam: &[f64]) -> Result<f64> {
+    pub fn calculate(&mut self, expr: &str, mparam: &[crate::CommandParam]) -> Result<f64> {
         let mut stack: Vec<f64> = Vec::new();
 
         let tokens = expr.split_whitespace();
@@ -25,7 +25,7 @@ impl RpnCalculator {
             if let Some(stripped) = token.strip_prefix('$') {
                 if let Ok(idx) = stripped.parse::<usize>() {
                     if idx < mparam.len() {
-                        stack.push(mparam[idx]);
+                        stack.push(mparam[idx].as_f64());
                     } else {
                         return Err(anyhow!("Parameter index out of bounds: {}", token));
                     }
@@ -165,7 +165,11 @@ mod tests {
     #[test]
     fn test_basic_arithmetic() {
         let mut calc = RpnCalculator::new();
-        let mparam = [0.0, 0.0, 0.0];
+        let mparam = [
+            crate::CommandParam::Float(0.0),
+            crate::CommandParam::Float(0.0),
+            crate::CommandParam::Float(0.0),
+        ];
         assert_eq!(calc.calculate("3 4 +", &mparam).unwrap(), 7.0);
         assert_eq!(calc.calculate("10 2 -", &mparam).unwrap(), 8.0);
         assert_eq!(calc.calculate("3 4 *", &mparam).unwrap(), 12.0);
@@ -175,7 +179,11 @@ mod tests {
     #[test]
     fn test_parameters() {
         let mut calc = RpnCalculator::new();
-        let mparam = [1.0, 7.0, 127.0];
+        let mparam = [
+            crate::CommandParam::Float(1.0),
+            crate::CommandParam::Float(7.0),
+            crate::CommandParam::Float(127.0),
+        ];
         assert_eq!(calc.calculate("$2 127 /", &mparam).unwrap(), 1.0);
         assert_eq!(calc.calculate("$1 3 +", &mparam).unwrap(), 10.0);
         assert_eq!(calc.calculate("$0", &mparam).unwrap(), 1.0);
@@ -184,7 +192,11 @@ mod tests {
     #[test]
     fn test_memory() {
         let mut calc = RpnCalculator::new();
-        let mparam = [0.0, 0.0, 0.0];
+        let mparam = [
+            crate::CommandParam::Float(0.0),
+            crate::CommandParam::Float(0.0),
+            crate::CommandParam::Float(0.0),
+        ];
         calc.calculate("5 M", &mparam).unwrap(); // memory = 5
         assert_eq!(calc.calculate("m 2 +", &mparam).unwrap(), 7.0);
         calc.calculate("Z", &mparam).unwrap(); // memory = 0
@@ -194,7 +206,11 @@ mod tests {
     #[test]
     fn test_bitwise() {
         let mut calc = RpnCalculator::new();
-        let mparam = [0.0, 0.0, 0.0];
+        let mparam = [
+            crate::CommandParam::Float(0.0),
+            crate::CommandParam::Float(0.0),
+            crate::CommandParam::Float(0.0),
+        ];
         assert_eq!(calc.calculate("5 3 &", &mparam).unwrap(), 1.0);
         assert_eq!(calc.calculate("5 3 |", &mparam).unwrap(), 7.0);
         assert_eq!(calc.calculate("5 3 ^", &mparam).unwrap(), 6.0);
