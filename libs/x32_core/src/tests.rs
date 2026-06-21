@@ -651,6 +651,45 @@ mod tests {
     }
 
     #[test]
+    fn test_mixer_dispatch_save_scene_snapshot() {
+        let mut mixer = Mixer::new();
+
+        mixer.state.set("/ch/01/mix/fader", OscArg::Float(0.75));
+        mixer.state.set("/bus/01/mix/fader", OscArg::Float(0.5));
+        mixer.state.set("/fx/1/type", OscArg::Int(3));
+
+        // Save scene format: /save ,siss "scene" idx name note
+        let msg = OscMessage {
+            path: "/save".to_string(),
+            args: vec![
+                OscArg::String("scene".to_string()),
+                OscArg::Int(5), // Scene idx 5
+                OscArg::String("My Scene".to_string()),
+                OscArg::String("My Note".to_string()),
+            ],
+        };
+        let bytes = msg.to_bytes().unwrap();
+
+        mixer.dispatch(&bytes, test_addr(1234)).unwrap();
+
+        // Ensure state is correctly snapshotted into scene
+        assert_eq!(
+            mixer.state.get("/-show/showfile/scene/005/ch/01/mix/fader"),
+            Some(&OscArg::Float(0.75))
+        );
+        assert_eq!(
+            mixer
+                .state
+                .get("/-show/showfile/scene/005/bus/01/mix/fader"),
+            Some(&OscArg::Float(0.5))
+        );
+        assert_eq!(
+            mixer.state.get("/-show/showfile/scene/005/fx/1/type"),
+            Some(&OscArg::Int(3))
+        );
+    }
+
+    #[test]
     fn test_mixer_dispatch_save_libchan() {
         let mut mixer = Mixer::new();
 
@@ -682,6 +721,37 @@ mod tests {
         assert_eq!(response_msg.args.len(), 2);
         assert_eq!(response_msg.args[0], OscArg::String("libchan".to_string()));
         assert_eq!(response_msg.args[1], OscArg::Int(1)); // Success
+    }
+
+    #[test]
+    fn test_mixer_dispatch_save_libchan_snapshot() {
+        let mut mixer = Mixer::new();
+
+        mixer.state.set("/ch/01/mix/fader", OscArg::Float(0.75));
+        mixer
+            .state
+            .set("/ch/01/config/name", OscArg::String("Kick".to_string()));
+
+        let msg = OscMessage {
+            path: "/save".to_string(),
+            args: vec![
+                OscArg::String("libchan".to_string()),
+                OscArg::Int(10), // Libchan idx 10
+                OscArg::String("My Channel Preset".to_string()),
+            ],
+        };
+        let bytes = msg.to_bytes().unwrap();
+
+        mixer.dispatch(&bytes, test_addr(1234)).unwrap();
+
+        assert_eq!(
+            mixer.state.get("/-libs/ch/010/mix/fader"),
+            Some(&OscArg::Float(0.75))
+        );
+        assert_eq!(
+            mixer.state.get("/-libs/ch/010/config/name"),
+            Some(&OscArg::String("Kick".to_string()))
+        );
     }
 
     #[test]
@@ -719,6 +789,32 @@ mod tests {
     }
 
     #[test]
+    fn test_mixer_dispatch_save_libfx_snapshot() {
+        let mut mixer = Mixer::new();
+
+        mixer.state.set("/fx/1/type", OscArg::Int(3));
+        mixer.state.set("/fx/1/par/01", OscArg::Float(0.5));
+
+        let msg = OscMessage {
+            path: "/save".to_string(),
+            args: vec![
+                OscArg::String("libfx".to_string()),
+                OscArg::Int(15), // Libfx idx 15
+                OscArg::String("My FX Preset".to_string()),
+            ],
+        };
+        let bytes = msg.to_bytes().unwrap();
+
+        mixer.dispatch(&bytes, test_addr(1234)).unwrap();
+
+        assert_eq!(mixer.state.get("/-libs/fx/015/type"), Some(&OscArg::Int(3)));
+        assert_eq!(
+            mixer.state.get("/-libs/fx/015/par/01"),
+            Some(&OscArg::Float(0.5))
+        );
+    }
+
+    #[test]
     fn test_mixer_dispatch_save_librout() {
         let mut mixer = Mixer::new();
 
@@ -750,6 +846,35 @@ mod tests {
         assert_eq!(response_msg.args.len(), 2);
         assert_eq!(response_msg.args[0], OscArg::String("librout".to_string()));
         assert_eq!(response_msg.args[1], OscArg::Int(1)); // Success
+    }
+
+    #[test]
+    fn test_mixer_dispatch_save_librout_snapshot() {
+        let mut mixer = Mixer::new();
+
+        mixer.state.set("/config/routing/IN/01", OscArg::Int(2));
+        mixer.state.set("/config/routing/OUT/01", OscArg::Int(4));
+
+        let msg = OscMessage {
+            path: "/save".to_string(),
+            args: vec![
+                OscArg::String("librout".to_string()),
+                OscArg::Int(5), // Librout idx 5
+                OscArg::String("My Routing Preset".to_string()),
+            ],
+        };
+        let bytes = msg.to_bytes().unwrap();
+
+        mixer.dispatch(&bytes, test_addr(1234)).unwrap();
+
+        assert_eq!(
+            mixer.state.get("/-libs/r/005/config/routing/IN/01"),
+            Some(&OscArg::Int(2))
+        );
+        assert_eq!(
+            mixer.state.get("/-libs/r/005/config/routing/OUT/01"),
+            Some(&OscArg::Int(4))
+        );
     }
 
     #[test]

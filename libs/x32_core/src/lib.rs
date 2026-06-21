@@ -536,6 +536,29 @@ impl Mixer {
                                 responses.push((client.0, arc_b.clone()));
                             }
                         }
+
+                        let dst_prefix = format!("/-show/showfile/{}/{:03}/", item_type, idx);
+                        let src_prefix = "/";
+                        let mut to_copy = Vec::new();
+                        let mut new_key_buf = String::with_capacity(64);
+                        for (key, val) in self.state.values.iter() {
+                            if key.starts_with(src_prefix)
+                                && !key.starts_with("/-show/")
+                                && !key.starts_with("/-stat/")
+                                && !key.starts_with("/-prefs/")
+                                && !key.starts_with("/-libs/")
+                            {
+                                let suffix = &key[src_prefix.len()..];
+                                new_key_buf.clear();
+                                use std::fmt::Write;
+                                write!(&mut new_key_buf, "{}{}", dst_prefix, suffix).unwrap();
+                                to_copy.push((new_key_buf.clone(), val.clone()));
+                            }
+                        }
+                        for (k, v) in to_copy {
+                            self.state.set(&k, v);
+                        }
+
                         success = true;
                     }
                 }
@@ -574,6 +597,36 @@ impl Mixer {
                                 responses.push((client.0, arc_b.clone()));
                             }
                         }
+
+                        let (src_prefix, dst_prefix) = match item_type.as_str() {
+                            "libchan" => (Some("/ch/01/"), Some(format!("/-libs/ch/{:03}/", idx))), // Dummy fixed source
+                            "libfx" => (Some("/fx/1/"), Some(format!("/-libs/fx/{:03}/", idx))), // Dummy fixed source
+                            "librout" => (Some("/"), Some(format!("/-libs/r/{:03}/", idx))),
+                            _ => (None, None),
+                        };
+
+                        if let (Some(src), Some(dst)) = (src_prefix, dst_prefix) {
+                            let mut to_copy = Vec::new();
+                            let mut new_key_buf = String::with_capacity(64);
+                            for (key, val) in self.state.values.iter() {
+                                if key.starts_with(src)
+                                    && !key.starts_with("/-show/")
+                                    && !key.starts_with("/-stat/")
+                                    && !key.starts_with("/-prefs/")
+                                    && !key.starts_with("/-libs/")
+                                {
+                                    let suffix = &key[src.len()..];
+                                    new_key_buf.clear();
+                                    use std::fmt::Write;
+                                    write!(&mut new_key_buf, "{}{}", dst, suffix).unwrap();
+                                    to_copy.push((new_key_buf.clone(), val.clone()));
+                                }
+                            }
+                            for (k, v) in to_copy {
+                                self.state.set(&k, v);
+                            }
+                        }
+
                         success = true;
                     }
                 }
