@@ -196,9 +196,66 @@ fn parse_midi_hex(hex_str: &str) -> std::result::Result<Vec<u8>, anyhow::Error> 
     Ok(result)
 }
 
+#[derive(Debug, Clone)]
+pub enum CommandParam {
+    Float(f64),
+    String(String),
+}
+
+impl CommandParam {
+    pub fn as_f64(&self) -> f64 {
+        match self {
+            CommandParam::Float(f) => *f,
+            CommandParam::String(_) => 0.0,
+        }
+    }
+    pub fn as_str(&self) -> &str {
+        match self {
+            CommandParam::Float(_) => "",
+            CommandParam::String(s) => s.as_str(),
+        }
+    }
+}
+
+fn generate_rpn_nrpn(
+    is_nrpn: bool,
+    channel: u8,
+    param_msb: u8,
+    param_lsb: u8,
+    val_msb: u8,
+    val_lsb: Option<u8>,
+) -> Vec<u8> {
+    let mut bytes = Vec::with_capacity(12);
+    let cc_param_msb = if is_nrpn { 99 } else { 101 };
+    let cc_param_lsb = if is_nrpn { 98 } else { 100 };
+
+    // Select Parameter
+    bytes.push(0xB0 | (channel & 0x0F));
+    bytes.push(cc_param_msb);
+    bytes.push(param_msb & 0x7F);
+
+    bytes.push(0xB0 | (channel & 0x0F));
+    bytes.push(cc_param_lsb);
+    bytes.push(param_lsb & 0x7F);
+
+    // Data Entry MSB
+    bytes.push(0xB0 | (channel & 0x0F));
+    bytes.push(6);
+    bytes.push(val_msb & 0x7F);
+
+    // Data Entry LSB (optional)
+    if let Some(lsb) = val_lsb {
+        bytes.push(0xB0 | (channel & 0x0F));
+        bytes.push(38);
+        bytes.push(lsb & 0x7F);
+    }
+
+    bytes
+}
+
 fn expand_template(
     template: &str,
-    mparam: &[f64],
+    mparam: &[CommandParam],
     calc: &mut RpnCalculator,
 ) -> Result<String, anyhow::Error> {
     let mut result = String::with_capacity(template.len());
@@ -213,6 +270,15 @@ fn expand_template(
                     break;
                 }
                 expr.push(chars.next().unwrap());
+            }
+
+            if let Some(stripped) = expr.strip_prefix("$s") {
+                if let Ok(idx) = stripped.parse::<usize>() {
+                    if idx < mparam.len() {
+                        result.push_str(mparam[idx].as_str());
+                        continue;
+                    }
+                }
             }
 
             let val = calc.calculate(&expr, mparam)?;
@@ -288,9 +354,10 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
                 let mut mparam = Vec::with_capacity(incoming_msg.args.len());
                 for arg in &incoming_msg.args {
                     match arg {
-                        OscArg::Int(i) => mparam.push(*i as f64),
-                        OscArg::Float(f) => mparam.push(*f as f64),
-                        _ => mparam.push(0.0), // Non-numeric args default to 0.0
+                        OscArg::Int(i) => mparam.push(CommandParam::Float(*i as f64)),
+                        OscArg::Float(f) => mparam.push(CommandParam::Float(*f as f64)),
+                        OscArg::String(s) => mparam.push(CommandParam::String(s.clone())),
+                        _ => mparam.push(CommandParam::Float(0.0)),
                     }
                 }
                 let mut calc = RpnCalculator::new();
@@ -323,15 +390,53 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
                             "Match found for: {}. Triggering MIDI: {}",
                             incoming_msg.path, command.outgoing_command
                         );
-                        match expand_template(&command.outgoing_command, &mparam, &mut calc) {
-                            Ok(expanded) => {
-                                if let Ok(bytes) = parse_midi_hex(&expanded) {
-                                    if let Some(ref mut conn) = midi_conn {
-                                        let _ = conn.send(&bytes);
+                        if command.outgoing_command.starts_with("NRPN ")
+                            || command.outgoing_command.starts_with("RPN ")
+                        {
+                            let is_nrpn = command.outgoing_command.starts_with("NRPN ");
+
+                            let slice_start = if is_nrpn { 5 } else { 4 };
+                            match expand_template(
+                                &command.outgoing_command[slice_start..],
+                                &mparam,
+                                &mut calc,
+                            ) {
+                                Ok(expanded) => {
+                                    let parts: Vec<&str> = expanded.split_whitespace().collect();
+                                    if parts.len() >= 4 {
+                                        let channel = parts[0].parse::<u8>().unwrap_or(0);
+                                        let param_msb = parts[1].parse::<u8>().unwrap_or(0);
+                                        let param_lsb = parts[2].parse::<u8>().unwrap_or(0);
+                                        let val_msb = parts[3].parse::<u8>().unwrap_or(0);
+                                        let val_lsb =
+                                            parts.get(4).and_then(|s| s.parse::<u8>().ok());
+
+                                        let bytes = generate_rpn_nrpn(
+                                            is_nrpn, channel, param_msb, param_lsb, val_msb,
+                                            val_lsb,
+                                        );
+                                        if let Some(ref mut conn) = midi_conn {
+                                            let _ = conn.send(&bytes);
+                                        }
+                                    } else {
+                                        eprintln!(
+                                            "Invalid RPN/NRPN format. Expected: channel param_msb param_lsb val_msb [val_lsb]"
+                                        );
                                     }
                                 }
+                                Err(e) => eprintln!("Failed to expand template: {}", e),
                             }
-                            Err(e) => eprintln!("Failed to expand template: {}", e),
+                        } else {
+                            match expand_template(&command.outgoing_command, &mparam, &mut calc) {
+                                Ok(expanded) => {
+                                    if let Ok(bytes) = parse_midi_hex(&expanded) {
+                                        if let Some(ref mut conn) = midi_conn {
+                                            let _ = conn.send(&bytes);
+                                        }
+                                    }
+                                }
+                                Err(e) => eprintln!("Failed to expand template: {}", e),
+                            }
                         }
                     }
                 }
@@ -435,12 +540,12 @@ M~~~/ch/02/mix/fader|/ch/03/mix/fader ,f 0.75
     #[test]
     fn test_expand_template_osc() -> anyhow::Result<()> {
         let mut calc = RpnCalculator::new();
-        let mparam = vec![0.5];
+        let mparam = vec![CommandParam::Float(0.5)];
         let template = "/ch/02/mix/fader ,f [$0 0.5 *]";
         let result = expand_template(template, &mparam, &mut calc)?;
         assert_eq!(result, "/ch/02/mix/fader ,f 0.25");
 
-        let mparam2 = vec![1.0, 2.0];
+        let mparam2 = vec![CommandParam::Float(1.0), CommandParam::Float(2.0)];
         let template2 = "/ch/02/mix/fader ,f [$1 $0 +]";
         let result2 = expand_template(template2, &mparam2, &mut calc)?;
         assert_eq!(result2, "/ch/02/mix/fader ,f 3");
@@ -448,9 +553,33 @@ M~~~/ch/02/mix/fader|/ch/03/mix/fader ,f 0.75
     }
 
     #[test]
+    fn test_expand_template_string() -> anyhow::Result<()> {
+        let mut calc = RpnCalculator::new();
+        let mparam = vec![CommandParam::String("Hello".to_string())];
+        let template = "/ch/02/config/name ,s [$s0]";
+        let result = expand_template(template, &mparam, &mut calc)?;
+        assert_eq!(result, "/ch/02/config/name ,s Hello");
+        Ok(())
+    }
+
+    #[test]
+    fn test_generate_rpn_nrpn() {
+        // Test NRPN Channel 1 (0), Param MSB 1, LSB 2, Val MSB 3, LSB 4
+        let bytes = generate_rpn_nrpn(true, 0, 1, 2, 3, Some(4));
+        assert_eq!(
+            bytes,
+            vec![0xB0, 99, 1, 0xB0, 98, 2, 0xB0, 6, 3, 0xB0, 38, 4]
+        );
+
+        // Test RPN Channel 2 (1), Param MSB 5, LSB 6, Val MSB 7, NO LSB
+        let bytes = generate_rpn_nrpn(false, 1, 5, 6, 7, None);
+        assert_eq!(bytes, vec![0xB1, 101, 5, 0xB1, 100, 6, 0xB1, 6, 7]);
+    }
+
+    #[test]
     fn test_expand_template_midi() -> anyhow::Result<()> {
         let mut calc = RpnCalculator::new();
-        let mparam = vec![0.5];
+        let mparam = vec![CommandParam::Float(0.5)];
         let template = "F0 00 [$0 127 *] F7";
         let result = expand_template(template, &mparam, &mut calc)?;
         assert_eq!(result, "F0 00 3F F7"); // 0.5 * 127 = 63.5 -> 63 -> 3F in hex
