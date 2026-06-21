@@ -57,7 +57,3 @@
 ## 2026-06-20 - [Avoid String::clone() after write! in hot loops]
 **Learning:** When trying to eliminate `format!` allocations in hot loops, hoisting a pre-allocated `String::with_capacity()` buffer and updating it via `write!` is highly effective. However, it only works if the downstream API accepts a borrowed `&str` (like `OscMessage::serialize_to_bytes`). If the target API requires an owned `String` (like constructing an `OscMessage` struct), you'll end up calling `.clone()`, which negates the optimization by moving the allocation elsewhere.
 **Action:** Before optimizing `format!` out of a loop, verify the target signature. If it requires an owned string and you cannot refactor the architecture to take a slice, `format!` might be equally performant and more readable.
-
-## 2024-11-20 - [Eliminate vector allocation in split tuple parsing]
-**Learning:** Using `s.split(',').collect::<Vec<&str>>()` to parse a string into exactly two parts (like a key-value or id-name pair) allocates a dynamically sized vector on the heap unnecessarily.
-**Action:** Always replace `.split(char).collect::<Vec<&str>>()` with `.split_once(char)` when parsing exact pairs. It returns an `Option<(&str, &str)>` and completely avoids the heap allocation.

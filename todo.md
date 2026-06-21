@@ -3,7 +3,7 @@
 - Reconcile and merge all performance, security compliance, and porting PRs into `refactor/mixer-client-abstraction` (Completed)
 - Extract 'todo' items from reference C files in `c_origin/` and document them here for future work.
   - Evaluate `// TODO: How to select Master from REAPER???` from `X32Reaper.c`
-  - Evaluate `// TODO: do a proper implementation of the function` for `/add` and `/load` from `X32.c` (Completed)
+  - Evaluate `// TODO: do a proper implementation of the function` for `/add` and `/load` from `X32.c`
   - Evaluate `// TODO: implement 'libfx' and 'librout'` from `X32.c`
 
 ## Context
@@ -18,7 +18,7 @@ The following are all the remaining 'todo' items found in `c_origin/`:
   - `////todo: ... Last one is a string, unknown for now... could it correspond to iQ/group???` from `X32DeskRestore.c:1057`
   - `////todo: Decay sent as a logf or as a float with 2 digits after decimal point?` from `X32DeskRestore.c:1107`
   - `// the same way as REW clicks but does not behave similarly... TODO therefore` from `X32PunchControl.c:357`
-  - `//todo` from `X32Commander.c:688` (Completed: Implemented string handling and RPN/NRPN generation)
+  - `//todo` from `X32Commander.c:688`
   - `// Effects defaults. The trailing zeroes are not necessary - No big deal but todo: remove them!` from `X32CopyFX.c:99`
   - `//						// TODO: 1 if any solosw is still on, 0 otherwise` from `X32.c:1186`
   - `s_len = Xsprint(s_buf, s_len, 's', ",b"); //todo - incorrect` from `X32.c:3006`
