@@ -58,3 +58,7 @@
 ## 2024-11-20 - [Eliminate vector allocation in split tuple parsing]
 **Learning:** Using `s.split(',').collect::<Vec<&str>>()` to parse a string into exactly two parts (like a key-value or id-name pair) allocates a dynamically sized vector on the heap unnecessarily.
 **Action:** Always replace `.split(char).collect::<Vec<&str>>()` with `.split_once(char)` when parsing exact pairs. It returns an `Option<(&str, &str)>` and completely avoids the heap allocation.
+
+## 2026-06-03 - [Eliminate vector allocation during string splitting]
+**Learning:** Using `s.split('/').collect::<Vec<&str>>()` inside performance-critical parsing functions allocates a heap vector dynamically. This overhead can be completely eliminated by manually tracking segments into a fixed-size stack array (e.g., `let mut parts_array = [""; 6];`) if the maximum depth is known, or by passing the `s.split()` iterator directly if random access isn't required.
+**Action:** When parsing paths or space-separated arguments, avoid `.collect::<Vec<&str>>()`. Use iterators directly (e.g., `.next()`) or collect into a fixed-size stack array to avoid heap allocations.
