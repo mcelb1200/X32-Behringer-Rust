@@ -631,6 +631,9 @@ impl Mixer {
                     }
                 }
             }
+
+            // Re-extract arg_type and arg_res for the final response because it was originally using
+            // scene as a default fallback instead of the actual requested type.
             let arg_type = osc_msg
                 .args
                 .first()
@@ -686,7 +689,39 @@ impl Mixer {
                             }
                         }
                         success = true;
-                    } else if item_type == "libchan" {
+                    } else if item_type == "libchan"
+                        || item_type == "libfx"
+                        || item_type == "librout"
+                    {
+                        let short_type = match item_type.as_str() {
+                            "libchan" => "ch",
+                            "libfx" => "fx",
+                            "librout" => "r",
+                            _ => unreachable!(),
+                        };
+                        let name_path = format!("/-libs/{}/{:03}/name", short_type, idx);
+                        let hasdata_path = format!("/-libs/{}/{:03}/hasdata", short_type, idx);
+
+                        self.state.set(&name_path, OscArg::String("".to_string()));
+                        self.state.set(&hasdata_path, OscArg::Int(0));
+
+                        if let Ok(b) = OscMessage::serialize_to_bytes(
+                            &name_path,
+                            [&OscArg::String("".to_string())],
+                        ) {
+                            let arc_b: Arc<[u8]> = b.into();
+                            for client in &self.clients {
+                                responses.push((client.0, arc_b.clone()));
+                            }
+                        }
+                        if let Ok(b) =
+                            OscMessage::serialize_to_bytes(&hasdata_path, [&OscArg::Int(0)])
+                        {
+                            let arc_b: Arc<[u8]> = b.into();
+                            for client in &self.clients {
+                                responses.push((client.0, arc_b.clone()));
+                            }
+                        }
                         success = true;
                     }
                 }
