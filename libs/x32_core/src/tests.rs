@@ -521,9 +521,10 @@ mod tests {
         let mut mixer = Mixer::new();
 
         // Setup some initial state
-        mixer
-            .state
-            .set("/-libs/ch/001/name", OscArg::String("LibChan 1".to_string()));
+        mixer.state.set(
+            "/-libs/ch/001/name",
+            OscArg::String("LibChan 1".to_string()),
+        );
         mixer.state.set("/-libs/ch/001/hasdata", OscArg::Int(1));
 
         mixer

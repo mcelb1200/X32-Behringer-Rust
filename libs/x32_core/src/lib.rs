@@ -689,7 +689,10 @@ impl Mixer {
                             }
                         }
                         success = true;
-                    } else if item_type == "libchan" || item_type == "libfx" || item_type == "librout" {
+                    } else if item_type == "libchan"
+                        || item_type == "libfx"
+                        || item_type == "librout"
+                    {
                         let short_type = match item_type.as_str() {
                             "libchan" => "ch",
                             "libfx" => "fx",
