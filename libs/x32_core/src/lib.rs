@@ -211,7 +211,8 @@ impl Mixer {
 
                 path_buf.clear();
                 let _ = write!(&mut path_buf, "/meters/{}", meter_idx);
-                if let Ok(bytes) = OscMessage::serialize_to_bytes(&path_buf, [&OscArg::Blob(blob)]) {
+                if let Ok(bytes) = OscMessage::serialize_to_bytes(&path_buf, [&OscArg::Blob(blob)])
+                {
                     responses.push((addr, bytes.into()));
                 }
             }
