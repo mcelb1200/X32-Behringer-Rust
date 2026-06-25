@@ -50,18 +50,17 @@ impl MusicCalculator {
             (clean_sub, ' ')
         };
 
-        let parts: Vec<&str> = frac_str.split('/').collect();
-        let multiplier = if parts.len() == 2 {
-            let num: f32 = parts[0].parse().unwrap_or(1.0);
-            let den: f32 = parts[1].parse().unwrap_or(1.0);
+        let multiplier = if let Some((num_str, den_str)) = frac_str.split_once('/') {
+            let num: f32 = num_str.parse().unwrap_or(1.0);
+            let den: f32 = den_str.parse().unwrap_or(1.0);
             // Base is relative to quarter note (1/4)
             // 1/4 = 1.0
             // 1/8 = 0.5
             // 1/1 = 4.0
             (num / den) * 4.0
-        } else if parts.len() == 1 {
+        } else if !frac_str.is_empty() {
             // Handle "1", "2" (bars)
-            let val: f32 = parts[0].parse().unwrap_or(1.0);
+            let val: f32 = frac_str.parse().unwrap_or(1.0);
             val * 4.0 // Assuming input is in Bars if no fraction? Or Whole notes?
         // Standard convention: "1/4" is a quarter. "1" is a whole note.
         // If input is "1", that is a whole note = 4 beats.

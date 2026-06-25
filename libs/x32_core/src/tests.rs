@@ -469,6 +469,193 @@ mod tests {
     }
 
     #[test]
+    fn test_mixer_dispatch_add() {
+        let mut mixer = Mixer::new();
+
+        let msg = OscMessage {
+            path: "/add".to_string(),
+            args: vec![
+                OscArg::String("cue".to_string()),
+                OscArg::Int(5),
+                OscArg::String("My Cue".to_string()),
+            ],
+        };
+        let bytes = msg.to_bytes().unwrap();
+        let responses = mixer.dispatch(&bytes, test_addr(1234)).unwrap();
+
+        assert_eq!(
+            mixer.state.get("/-show/showfile/cue/005/name"),
+            Some(&OscArg::String("My Cue".to_string()))
+        );
+        assert_eq!(
+            mixer.state.get("/-show/showfile/cue/005/hasdata"),
+            Some(&OscArg::Int(1))
+        );
+
+        assert!(responses.len() >= 1);
+        let response_msg = OscMessage::from_bytes(&responses.last().unwrap().1).unwrap();
+        assert_eq!(response_msg.path, "/add");
+        assert_eq!(response_msg.args.len(), 2);
+        assert_eq!(response_msg.args[0], OscArg::String("cue".to_string()));
+        assert_eq!(response_msg.args[1], OscArg::Int(1));
+    }
+
+    #[test]
+    fn test_mixer_dispatch_load() {
+        let mut mixer = Mixer::new();
+
+        mixer.state.set(
+            "/-show/showfile/scene/001/name",
+            OscArg::String("Preset Scene".to_string()),
+        );
+        mixer
+            .state
+            .set("/-show/showfile/scene/001/hasdata", OscArg::Int(1));
+        mixer.state.set(
+            "/-show/showfile/scene/001/ch/01/mix/fader",
+            OscArg::Float(0.5),
+        );
+        mixer.state.set(
+            "/-show/showfile/scene/001/ch/02/mix/fader",
+            OscArg::Float(0.75),
+        );
+
+        let msg = OscMessage {
+            path: "/load".to_string(),
+            args: vec![OscArg::String("scene".to_string()), OscArg::Int(1)],
+        };
+        let bytes = msg.to_bytes().unwrap();
+        let responses = mixer.dispatch(&bytes, test_addr(1234)).unwrap();
+
+        // Check that state was copied (with "/" prefix replacing the scene prefix)
+        assert_eq!(
+            mixer.state.get("/ch/01/mix/fader"),
+            Some(&OscArg::Float(0.5))
+        );
+        assert_eq!(
+            mixer.state.get("/ch/02/mix/fader"),
+            Some(&OscArg::Float(0.75))
+        );
+
+        // Name and hasdata should not be copied to root
+        assert_eq!(mixer.state.get("/name"), None);
+        assert_eq!(mixer.state.get("/hasdata"), None);
+
+        assert!(responses.len() >= 1);
+        let response_msg = OscMessage::from_bytes(&responses.last().unwrap().1).unwrap();
+        assert_eq!(response_msg.path, "/load");
+        assert_eq!(response_msg.args.len(), 2);
+        assert_eq!(response_msg.args[0], OscArg::String("scene".to_string()));
+        assert_eq!(response_msg.args[1], OscArg::Int(1));
+    }
+
+    #[test]
+    fn test_mixer_dispatch_delete_libs() {
+        let mut mixer = Mixer::new();
+
+        // Setup some initial state
+        mixer.state.set(
+            "/-libs/ch/001/name",
+            OscArg::String("LibChan 1".to_string()),
+        );
+        mixer.state.set("/-libs/ch/001/hasdata", OscArg::Int(1));
+
+        mixer
+            .state
+            .set("/-libs/fx/002/name", OscArg::String("LibFx 2".to_string()));
+        mixer.state.set("/-libs/fx/002/hasdata", OscArg::Int(1));
+
+        mixer
+            .state
+            .set("/-libs/r/003/name", OscArg::String("LibRout 3".to_string()));
+        mixer.state.set("/-libs/r/003/hasdata", OscArg::Int(1));
+
+        // Test delete libchan
+        let msg = OscMessage {
+            path: "/delete".to_string(),
+            args: vec![OscArg::String("libchan".to_string()), OscArg::Int(1)],
+        };
+        let bytes = msg.to_bytes().unwrap();
+        let responses = mixer.dispatch(&bytes, test_addr(1234)).unwrap();
+
+        assert_eq!(
+            mixer.state.get("/-libs/ch/001/name"),
+            Some(&OscArg::String("".to_string()))
+        );
+        assert_eq!(
+            mixer.state.get("/-libs/ch/001/hasdata"),
+            Some(&OscArg::Int(0))
+        );
+
+        let mut found_response = false;
+        for (_, resp_bytes) in &responses {
+            let resp = OscMessage::from_bytes(resp_bytes).unwrap();
+            if resp.path == "/delete" {
+                assert_eq!(resp.args[0], OscArg::String("libchan".to_string()));
+                assert_eq!(resp.args[1], OscArg::Int(1));
+                found_response = true;
+            }
+        }
+        assert!(found_response);
+
+        // Test delete libfx
+        let msg2 = OscMessage {
+            path: "/delete".to_string(),
+            args: vec![OscArg::String("libfx".to_string()), OscArg::Int(2)],
+        };
+        let bytes2 = msg2.to_bytes().unwrap();
+        let responses2 = mixer.dispatch(&bytes2, test_addr(1234)).unwrap();
+
+        assert_eq!(
+            mixer.state.get("/-libs/fx/002/name"),
+            Some(&OscArg::String("".to_string()))
+        );
+        assert_eq!(
+            mixer.state.get("/-libs/fx/002/hasdata"),
+            Some(&OscArg::Int(0))
+        );
+
+        let mut found_response2 = false;
+        for (_, resp_bytes) in &responses2 {
+            let resp = OscMessage::from_bytes(resp_bytes).unwrap();
+            if resp.path == "/delete" {
+                assert_eq!(resp.args[0], OscArg::String("libfx".to_string()));
+                assert_eq!(resp.args[1], OscArg::Int(1)); // success = 1
+                found_response2 = true;
+            }
+        }
+        assert!(found_response2);
+
+        // Test delete librout
+        let msg3 = OscMessage {
+            path: "/delete".to_string(),
+            args: vec![OscArg::String("librout".to_string()), OscArg::Int(3)],
+        };
+        let bytes3 = msg3.to_bytes().unwrap();
+        let responses3 = mixer.dispatch(&bytes3, test_addr(1234)).unwrap();
+
+        assert_eq!(
+            mixer.state.get("/-libs/r/003/name"),
+            Some(&OscArg::String("".to_string()))
+        );
+        assert_eq!(
+            mixer.state.get("/-libs/r/003/hasdata"),
+            Some(&OscArg::Int(0))
+        );
+
+        let mut found_response3 = false;
+        for (_, resp_bytes) in &responses3 {
+            let resp = OscMessage::from_bytes(resp_bytes).unwrap();
+            if resp.path == "/delete" {
+                assert_eq!(resp.args[0], OscArg::String("librout".to_string()));
+                assert_eq!(resp.args[1], OscArg::Int(1)); // success = 1
+                found_response3 = true;
+            }
+        }
+        assert!(found_response3);
+    }
+
+    #[test]
     fn test_mixer_dispatch_delete_scene_snippet() {
         let mut mixer = Mixer::new();
 
