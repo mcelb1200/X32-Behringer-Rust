@@ -33,7 +33,7 @@ impl AudioEngine {
     #[allow(unused_variables)]
     pub fn start(
         device_name_query: Option<String>,
-        target_channel: usize, // 1-based index
+        target_channels: Vec<usize>, // 1-based indices
         data_sender: Sender<Vec<f32>>,
     ) -> Result<(Self, u32)> {
         #[cfg(feature = "audio")]
@@ -55,12 +55,10 @@ impl AudioEngine {
 
             // println!("Starting audio on device: {}", device.name()?); // Don't print to stdout in TUI app
 
-            if target_channel > channels || target_channel == 0 {
-                anyhow::bail!(
-                    "Target channel {} is out of range (1-{})",
-                    target_channel,
-                    channels
-                );
+            for &tc in &target_channels {
+                if tc > channels || tc == 0 {
+                    anyhow::bail!("Target channel {} is out of range (1-{})", tc, channels);
+                }
             }
 
             let err_fn = |err| eprintln!("an error occurred on stream: {}", err);
@@ -70,8 +68,16 @@ impl AudioEngine {
                 move |data: &[f32], _: &_| {
                     let mut mono_chunk = Vec::with_capacity(data.len() / channels);
                     for frame in data.chunks(channels) {
-                        if let Some(&sample) = frame.get(target_channel - 1) {
-                            mono_chunk.push(sample);
+                        let mut sum = 0.0;
+                        let mut count = 0;
+                        for &tc in &target_channels {
+                            if let Some(&sample) = frame.get(tc - 1) {
+                                sum += sample;
+                                count += 1;
+                            }
+                        }
+                        if count > 0 {
+                            mono_chunk.push(sum / count as f32);
                         }
                     }
                     let _ = data_sender.send(mono_chunk);

@@ -197,8 +197,14 @@ mod tests {
     #[tokio::test]
     async fn test_combined_delay_handler_update() {
         let (tx, _) = unbounded();
-        if let Ok(network) =
-            NetworkManager::new("127.0.0.1:10023", Source::Channel(1), tx, "/btn", "/enc").await
+        if let Ok(network) = NetworkManager::new(
+            "127.0.0.1:10023",
+            vec![Source::Channel(1)],
+            tx,
+            "/btn",
+            "/enc",
+        )
+        .await
         {
             let handler = CombinedDelayHandler { is_modd: false };
             let config = EffectConfig {
@@ -213,8 +219,14 @@ mod tests {
     #[tokio::test]
     async fn test_combined_delay_handler_panic() {
         let (tx, _) = unbounded();
-        if let Ok(network) =
-            NetworkManager::new("127.0.0.1:10023", Source::Channel(1), tx, "/btn", "/enc").await
+        if let Ok(network) = NetworkManager::new(
+            "127.0.0.1:10023",
+            vec![Source::Channel(1)],
+            tx,
+            "/btn",
+            "/enc",
+        )
+        .await
         {
             let handler = CombinedDelayHandler { is_modd: false };
             let _res = handler.panic(&network, 1).await;
