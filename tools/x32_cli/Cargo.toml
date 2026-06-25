@@ -13,7 +13,7 @@ xair_set_scene = { path = "../xair_set_scene" }
 xair_get_scene = { path = "../xair_get_scene" }
 x32_set_scene = { path = "../x32_set_scene" }
 x32_get_scene = { path = "../x32_get_scene" }
-x32_get_scene_name = { path = "../x32_get_scene_name" }
+x32_get_scene_name = { version = "0.1.0", path = "../x32_get_scene_name" }
 x32_cpxlivemarkers = { path = "../x32_cpxlivemarkers" }
 x32_tcp = { path = "../x32_tcp" }
 x32_geq2_cpy = { path = "../x32_geq2_cpy" }
