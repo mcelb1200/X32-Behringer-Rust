@@ -22,19 +22,30 @@ fn test_server_e2e() -> Result<(), Box<dyn std::error::Error>> {
     let mock_x32_socket_clone = mock_x32_socket.try_clone()?;
     let mock_server_handle = thread::spawn(move || {
         let mut buf = [0; 1024];
-        let (len, src) = mock_x32_socket_clone.recv_from(&mut buf).unwrap();
-        let received_msg = OscMessage::from_bytes(&buf[..len]).unwrap();
+        let mut received_msg = None;
 
-        // Respond to the client
-        let response_msg = OscMessage::new(
-            "/info".to_string(),
-            vec![OscArg::String("X32 ROCKS".to_string())],
-        );
-        let response_bytes = response_msg.to_bytes().unwrap();
-        mock_x32_socket_clone.send_to(&response_bytes, src).unwrap();
+        loop {
+            let (len, src) = mock_x32_socket_clone.recv_from(&mut buf).unwrap();
+            let msg = OscMessage::from_bytes(&buf[..len]).unwrap();
+
+            if msg.path == "/info" {
+                received_msg = Some(msg);
+                // Respond to the client
+                let response_msg = OscMessage::new(
+                    "/info".to_string(),
+                    vec![OscArg::String("X32 ROCKS".to_string())],
+                );
+                let response_bytes = response_msg.to_bytes().unwrap();
+                mock_x32_socket_clone.send_to(&response_bytes, src).unwrap();
+                break;
+            } else if msg.path == "/xremote" {
+                // Ignore background heartbeat
+                continue;
+            }
+        }
 
         thread::sleep(Duration::from_millis(100)); // Give the server time to process the response
-        received_msg
+        received_msg.unwrap()
     });
 
     // 3. Connect a TCP client to the x32_tcp server
