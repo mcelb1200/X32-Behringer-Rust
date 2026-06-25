@@ -14,7 +14,7 @@
 use crate::audio::AudioEngine;
 use crate::compressor::CompressorHandler;
 use crate::detection::{BeatDetector, EnergyDetector, OscLevelDetector, SpectralFluxDetector};
-use crate::effects::{get_handler, EffectConfig, EffectHandler};
+use crate::effects::{EffectConfig, EffectHandler, get_handler};
 use crate::network::{NetworkEvent, NetworkManager, Source};
 use crate::ui::{AppState, Tui, UIEvent};
 use anyhow::Result;
@@ -301,7 +301,9 @@ pub async fn run(cli: Cli) -> Result<()> {
                                 .as_millis() as u64;
                             osc_detector.process_level(lvl, now);
                         }
-                        if lvl > last_level || last_ui_update.elapsed() > std::time::Duration::from_millis(100) {
+                        if lvl > last_level
+                            || last_ui_update.elapsed() > std::time::Duration::from_millis(100)
+                        {
                             last_level = lvl;
                         }
                     }
