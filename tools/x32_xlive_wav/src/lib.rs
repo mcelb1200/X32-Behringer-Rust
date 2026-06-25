@@ -107,9 +107,9 @@ pub fn run(args: Args) -> Result<()> {
     let mut writers = Vec::new();
     for i in 0..extract_channels {
         let name = if (i as usize) < args.channel_names.len() {
-            // ⚡ Bolt: Use `split_once` to avoid `Vec<&str>` heap allocation
-            if let Some((_, part2)) = args.channel_names[i as usize].split_once(',') {
-                part2.to_string()
+            let parts: Vec<&str> = args.channel_names[i as usize].split(',').collect();
+            if parts.len() == 2 {
+                parts[1].to_string()
             } else {
                 format!("Xlive_Wav_{}", i + 1)
             }

@@ -137,14 +137,17 @@ struct Assignment {
 fn parse_assignments(assignments_str: &[String]) -> Result<Vec<Assignment>> {
     let mut assignments = Vec::new();
     for a in assignments_str {
-        let (dest_str, src_str) = a
-            .split_once(':')
-            .ok_or_else(|| X32Error::Custom(format!("Invalid assignment format: {}", a)))?;
-
-        let dest = u8::from_str(dest_str)
-            .map_err(|_| X32Error::Custom(format!("Invalid destination channel: {}", dest_str)))?;
-        let src = u8::from_str(src_str)
-            .map_err(|_| X32Error::Custom(format!("Invalid source channel: {}", src_str)))?;
+        let parts: Vec<&str> = a.split(':').collect();
+        if parts.len() != 2 {
+            return Err(X32Error::Custom(format!(
+                "Invalid assignment format: {}",
+                a
+            )));
+        }
+        let dest = u8::from_str(parts[0])
+            .map_err(|_| X32Error::Custom(format!("Invalid destination channel: {}", parts[0])))?;
+        let src = u8::from_str(parts[1])
+            .map_err(|_| X32Error::Custom(format!("Invalid source channel: {}", parts[1])))?;
 
         if dest == 0 || dest > 40 {
             return Err(X32Error::Custom(format!(

@@ -88,20 +88,12 @@ fn parse_scene_line_internal(parser: &mut SceneParser, line: &str) -> Vec<OscMes
     }
 
     let mut messages = Vec::new();
-    let mut parts_array = [""; 16];
-    let mut parts_len = 0;
-    for p in path.trim_start_matches('/').split('/') {
-        if parts_len < 16 {
-            parts_array[parts_len] = p;
-            parts_len += 1;
-        }
-    }
-    let parts = &parts_array[..parts_len];
+    let parts: Vec<&str> = path.trim_start_matches('/').split('/').collect();
     if parts.is_empty() {
         return messages;
     }
 
-    match parts {
+    match parts.as_slice() {
         // --- FX Types and Sources ---
         ["fx", slot, "type"] => {
             if let Ok(s) = slot.parse::<usize>() {

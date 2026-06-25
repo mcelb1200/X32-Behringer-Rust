@@ -3,8 +3,8 @@
 - Reconcile and merge all performance, security compliance, and porting PRs into `refactor/mixer-client-abstraction` (Completed)
 - Extract 'todo' items from reference C files in `c_origin/` and document them here for future work.
   - Evaluate `// TODO: How to select Master from REAPER???` from `X32Reaper.c`
-  - Evaluate `// TODO: do a proper implementation of the function` for `/add` and `/load` from `X32.c` (Completed)
-  - Evaluate `// TODO: implement 'libfx' and 'librout'` from `X32.c` (Completed)
+  - Evaluate `// TODO: do a proper implementation of the function` for `/add` and `/load` from `X32.c`
+  - Evaluate `// TODO: implement 'libfx' and 'librout'` from `X32.c`
 
 ## Context
 These TODOs are legacy markers from the original C codebase that was ported to Rust. Future agents should review these items to verify whether the ported Rust components (like `x32_reaper` and `x32_core`) fully implement the intended functionality or if additional logic is needed to resolve the original author's comments.
@@ -18,7 +18,7 @@ The following are all the remaining 'todo' items found in `c_origin/`:
   - `////todo: ... Last one is a string, unknown for now... could it correspond to iQ/group???` from `X32DeskRestore.c:1057`
   - `////todo: Decay sent as a logf or as a float with 2 digits after decimal point?` from `X32DeskRestore.c:1107`
   - `// the same way as REW clicks but does not behave similarly... TODO therefore` from `X32PunchControl.c:357`
-  - `//todo` from `X32Commander.c:688` (Completed: Implemented string handling and RPN/NRPN generation)
+  - `//todo` from `X32Commander.c:688`
   - `// Effects defaults. The trailing zeroes are not necessary - No big deal but todo: remove them!` from `X32CopyFX.c:99`
   - `//						// TODO: 1 if any solosw is still on, 0 otherwise` from `X32.c:1186`
   - `s_len = Xsprint(s_buf, s_len, 's', ",b"); //todo - incorrect` from `X32.c:3006`
@@ -28,12 +28,12 @@ The following are all the remaining 'todo' items found in `c_origin/`:
   - `strcpy(s_buf + s_len, " TODO");` from `X32.c:4516`
   - `XClientMeters[i] = *Client_ip_pt;			// remember requesting IP client TODO: not the right approach` from `X32.c:4842`
   - `// Ignored for now / Todo` from `X32.c:4956`
-  - `// TODO: 'scene', 'libfx', 'librout' should be implemented` from `X32.c:5022` (Completed: Implemented `/copy` and `/delete` for these types in `x32_core`)
-  - `// todo: this is not actually done here!` from `X32.c:5177` (Completed: Implemented `hasdata` updates for `/save` and `/delete` in `x32_core`)
+  - `// TODO: 'scene', 'libfx', 'librout' should be implemented` from `X32.c:5022`
+  - `// todo: this is not actually done here!` from `X32.c:5177`
   - `// TODO At this time the last two <string><int> parameters are ignored` from `X32.c:5213`
-  - `// todo: this is not actually done here!` from `X32.c:5221` (Completed: Implemented `hasdata` updates for `/save` and `/delete` in `x32_core`)
-  - `// todo: this is not actually done here!` from `X32.c:5281` (Completed: Implemented `hasdata` updates for `/save` and `/delete` in `x32_core`)
-  - `// todo: this is not actually done here!` from `X32.c:5315` (Completed: Implemented `hasdata` updates for `/save` and `/delete` in `x32_core`)
+  - `// todo: this is not actually done here!` from `X32.c:5221`
+  - `// todo: this is not actually done here!` from `X32.c:5281`
+  - `// todo: this is not actually done here!` from `X32.c:5315`
   - `// !! TODO find Master track REAPER numbering` from `X32Reaper.c:1522`
 
 ## Future Enhancements

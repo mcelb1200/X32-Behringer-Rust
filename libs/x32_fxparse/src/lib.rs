@@ -238,18 +238,7 @@ pub fn parse_parameter(model: MixerModel, path: &str, arg_str: &str) -> Option<O
         },
     };
 
-    let path_trimmed = path.trim_start_matches('/');
-    let mut parts_array = [""; 6];
-    let mut parts_len = 0;
-    for (i, p) in path_trimmed.split('/').enumerate() {
-        if i < 6 {
-            parts_array[i] = p;
-            parts_len += 1;
-        } else {
-            return None; // Max depth exceeded
-        }
-    }
-    let parts = &parts_array[..parts_len];
+    let parts: Vec<&str> = path.trim_start_matches('/').split('/').collect();
 
     match model {
         MixerModel::X32 => {
@@ -278,9 +267,13 @@ pub fn parse_fx_par(ifx: usize, arg_str: &str, path: &str) -> Option<OscMessage>
         return None;
     }
 
-    let mut parts = arg_str.split_whitespace().peekable();
-    parts.peek()?;
+    let parts: Vec<&str> = arg_str.split_whitespace().collect();
+    if parts.is_empty() {
+        return None;
+    }
+
     let mut args = Vec::new();
+    let mut i = 0;
 
     include!(concat!(env!("OUT_DIR"), "/fx_parameters_gen.rs"));
 
