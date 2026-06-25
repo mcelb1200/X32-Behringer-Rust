@@ -108,10 +108,9 @@ fn parse_channels(s: &str) -> Vec<usize> {
     for part in s.split(',') {
         let part = part.trim();
         if part.contains('-') {
-            let ranges: Vec<&str> = part.split('-').collect();
-            if ranges.len() == 2 {
+            if let Some((start_str, end_str)) = part.split_once('-') {
                 if let (Ok(start), Ok(end)) =
-                    (ranges[0].parse::<usize>(), ranges[1].parse::<usize>())
+                    (start_str.parse::<usize>(), end_str.parse::<usize>())
                 {
                     for i in start..=end {
                         channels.push(i);
@@ -129,10 +128,9 @@ fn parse_slots(s: &str) -> Vec<usize> {
     for part in s.split(',') {
         let part = part.trim();
         if part.contains('-') {
-            let ranges: Vec<&str> = part.split('-').collect();
-            if ranges.len() == 2 {
+            if let Some((start_str, end_str)) = part.split_once('-') {
                 if let (Ok(start), Ok(end)) =
-                    (ranges[0].parse::<usize>(), ranges[1].parse::<usize>())
+                    (start_str.parse::<usize>(), end_str.parse::<usize>())
                 {
                     for i in start..=end {
                         if (1..=8).contains(&i) {
