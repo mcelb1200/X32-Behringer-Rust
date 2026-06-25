@@ -18,7 +18,7 @@ The following are all the remaining 'todo' items found in `c_origin/`:
   - `////todo: ... Last one is a string, unknown for now... could it correspond to iQ/group???` from `X32DeskRestore.c:1057`
   - `////todo: Decay sent as a logf or as a float with 2 digits after decimal point?` from `X32DeskRestore.c:1107`
   - `// the same way as REW clicks but does not behave similarly... TODO therefore` from `X32PunchControl.c:357`
-  - `//todo` from `X32Commander.c:688`
+  - `//todo` from `X32Commander.c:688` (Completed: Implemented string handling and RPN/NRPN generation)
   - `// Effects defaults. The trailing zeroes are not necessary - No big deal but todo: remove them!` from `X32CopyFX.c:99`
   - `//						// TODO: 1 if any solosw is still on, 0 otherwise` from `X32.c:1186`
   - `s_len = Xsprint(s_buf, s_len, 's', ",b"); //todo - incorrect` from `X32.c:3006`
