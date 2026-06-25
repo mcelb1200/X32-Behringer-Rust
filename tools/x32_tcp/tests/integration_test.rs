@@ -40,7 +40,6 @@ fn test_server_e2e() -> Result<(), Box<dyn std::error::Error>> {
 
                 thread::sleep(Duration::from_millis(100)); // Give the server time to process the response
                 return received_msg;
-              
             } else if msg.path == "/xremote" {
                 // Ignore background heartbeat
                 continue;
