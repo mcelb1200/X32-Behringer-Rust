@@ -94,7 +94,7 @@ pub struct NetworkManager {
     #[allow(dead_code)]
     panic_subscribed: Arc<AtomicBool>,
     // We need to know which source to parse from the meter blob
-    sources: Vec<Source>,
+    source: Source,
     panic_btn_path: String,
     preset_enc_path: String,
 }
@@ -102,7 +102,7 @@ pub struct NetworkManager {
 impl NetworkManager {
     pub async fn new(
         ip: &str,
-        sources: Vec<Source>,
+        source: Source,
         event_sender: Sender<NetworkEvent>,
         panic_btn_path: &str,
         preset_enc_path: &str,
@@ -116,7 +116,7 @@ impl NetworkManager {
             connected: Arc::new(AtomicBool::new(false)),
             event_sender,
             panic_subscribed: Arc::new(AtomicBool::new(false)),
-            sources,
+            source,
             panic_btn_path: panic_btn_path.to_string(),
             preset_enc_path: preset_enc_path.to_string(),
         })
@@ -138,7 +138,7 @@ impl NetworkManager {
         let client = self.client.clone();
         let sender = self.event_sender.clone();
         let is_connected = self.connected.clone();
-        let sources = self.sources.clone();
+        let source = self.source;
         let panic_path = self.panic_btn_path.clone();
         let enc_path = self.preset_enc_path.clone();
 
@@ -148,17 +148,11 @@ impl NetworkManager {
             let mut meter_interval = time::interval(Duration::from_millis(50));
             let mut fx_interval = time::interval(Duration::from_secs(2));
 
-            let mut meter_paths = vec![];
-            for source in &sources {
-                let path = match source {
-                    Source::Channel(_) => "/meters/1",
-                    Source::Bus(_) | Source::MainL | Source::MainR => "/meters/2",
-                    Source::Aux(_) => "/meters/0",
-                };
-                if !meter_paths.contains(&path) {
-                    meter_paths.push(path);
-                }
-            }
+            let meter_path = match source {
+                Source::Channel(_) => "/meters/1",
+                Source::Bus(_) | Source::MainL | Source::MainR => "/meters/2",
+                Source::Aux(_) => "/meters/0",
+            };
 
             loop {
                 if !is_connected.load(Ordering::Relaxed) {
@@ -168,9 +162,7 @@ impl NetworkManager {
 
                 tokio::select! {
                     _ = meter_interval.tick() => {
-                        for path in &meter_paths {
-                            let _ = client.send_message("/meters", vec![osc_lib::OscArg::String(path.to_string())]).await;
-                        }
+                        let _ = client.send_message("/meters", vec![osc_lib::OscArg::String(meter_path.to_string())]).await;
                     }
                     _ = fx_interval.tick() => {
                         for slot in 1..=8 {
@@ -182,7 +174,7 @@ impl NetworkManager {
                     msg_res = rx.recv() => {
                         match msg_res {
                             Ok(msg) => {
-                                Self::handle_message(msg, &sender, &sources, &panic_path, &enc_path);
+                                Self::handle_message(msg, &sender, source, &panic_path, &enc_path);
                             }
                             Err(RecvError::Lagged(_)) => continue,
                             Err(RecvError::Closed) => break,
@@ -196,43 +188,29 @@ impl NetworkManager {
     fn handle_message(
         msg: OscMessage,
         sender: &Sender<NetworkEvent>,
-        sources: &[Source],
+        source: Source,
         panic_path: &str,
         enc_path: &str,
     ) {
-        if msg.path.starts_with("/meters/") {
+        let (expected_path, offset_idx) = match source {
+            Source::Channel(ch) => ("/meters/1", ch - 1),
+            Source::Bus(b) => ("/meters/2", b - 1),
+            Source::MainL => ("/meters/2", 22),
+            Source::MainR => ("/meters/2", 23),
+            Source::Aux(a) => ("/meters/0", 32 + (a - 1)),
+        };
+
+        if msg.path == expected_path {
             if let Some(osc_lib::OscArg::Blob(data)) = msg.args.first() {
-                let mut max_level = 0.0_f32;
-                let mut found_any = false;
-
-                for source in sources {
-                    let (expected_path, offset_idx) = match source {
-                        Source::Channel(ch) => ("/meters/1", ch - 1),
-                        Source::Bus(b) => ("/meters/2", b - 1),
-                        Source::MainL => ("/meters/2", 22),
-                        Source::MainR => ("/meters/2", 23),
-                        Source::Aux(a) => ("/meters/0", 32 + (a - 1)),
-                    };
-
-                    if msg.path == expected_path {
-                        let start = offset_idx * 4;
-                        let end = start + 4;
-                        if data.len() >= end {
-                            let mut bytes = [0u8; 4];
-                            if let Some(slice) = data.get(start..end) {
-                                bytes.copy_from_slice(slice);
-                                let level = f32::from_le_bytes(bytes);
-                                if level > max_level {
-                                    max_level = level;
-                                }
-                                found_any = true;
-                            }
-                        }
+                let start = offset_idx * 4;
+                let end = start + 4;
+                if data.len() >= end {
+                    let mut bytes = [0u8; 4];
+                    if let Some(slice) = data.get(start..end) {
+                        bytes.copy_from_slice(slice);
+                        let level = f32::from_le_bytes(bytes);
+                        let _ = sender.send(NetworkEvent::MeterLevel(level));
                     }
-                }
-
-                if found_any {
-                    let _ = sender.send(NetworkEvent::MeterLevel(max_level));
                 }
             }
         } else if msg.path.starts_with("/fx/") && msg.path.ends_with("/type") {
