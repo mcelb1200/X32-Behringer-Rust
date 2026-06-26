@@ -14,7 +14,7 @@
 use crate::audio::AudioEngine;
 use crate::compressor::CompressorHandler;
 use crate::detection::{BeatDetector, EnergyDetector, OscLevelDetector, SpectralFluxDetector};
-use crate::effects::{EffectConfig, EffectHandler, get_handler};
+use crate::effects::{get_handler, EffectConfig, EffectHandler};
 use crate::network::{NetworkEvent, NetworkManager, Source};
 use crate::ui::{AppState, Tui, UIEvent};
 use anyhow::Result;
@@ -49,8 +49,8 @@ pub struct Cli {
     pub device: Option<String>,
 
     /// Audio source for beat detection (e.g. "ch1", "bus8", "aux2", "main", or "1")
-    #[arg(long, default_value = "ch1", value_delimiter = ',')]
-    pub channels: Vec<String>,
+    #[arg(long, default_value = "ch1")]
+    pub channel: String,
 
     /// Target Effect Slot(s) (1-8, e.g. "1", "1,2", "1-4").
     #[arg(long, default_value = "1")]
@@ -160,23 +160,20 @@ pub async fn run(cli: Cli) -> Result<()> {
     let (audio_sender, audio_receiver) = unbounded::<Vec<f32>>();
     let (net_sender, net_receiver) = unbounded::<NetworkEvent>();
 
-    let mut sources = Vec::new();
-    let mut local_audio_indices = Vec::new();
-    for ch_str in &cli.channels {
-        let src: Source = ch_str.parse().map_err(|e: String| anyhow::anyhow!(e))?;
-        let local_audio_idx = match src {
-            Source::Channel(ch) => ch,
-            Source::Bus(b) => b,
-            Source::Aux(a) => a,
-            Source::MainL => 1,
-            Source::MainR => 2,
-        };
-        sources.push(src);
-        local_audio_indices.push(local_audio_idx);
-    }
+    let source: Source = cli
+        .channel
+        .parse()
+        .map_err(|e: String| anyhow::anyhow!(e))?;
+    let local_audio_idx = match source {
+        Source::Channel(ch) => ch - 1,
+        Source::Bus(b) => b - 1,
+        Source::Aux(a) => a - 1,
+        Source::MainL => 0,
+        Source::MainR => 1,
+    };
 
     // Initialize Audio
-    let audio_result = AudioEngine::start(cli.device.clone(), local_audio_indices, audio_sender);
+    let audio_result = AudioEngine::start(cli.device.clone(), local_audio_idx + 1, audio_sender);
 
     let mut audio_sample_rate = 48000; // Default fallback
     let audio_started = match &audio_result {
@@ -196,14 +193,7 @@ pub async fn run(cli: Cli) -> Result<()> {
 
     // Initialize Network
     let network = Arc::new(
-        NetworkManager::new(
-            &cli.ip,
-            sources.clone(),
-            net_sender,
-            &cli.panic_btn,
-            &cli.preset_enc,
-        )
-        .await?,
+        NetworkManager::new(&cli.ip, source, net_sender, &cli.panic_btn, &cli.preset_enc).await?,
     );
 
     network.connect()?;
@@ -297,14 +287,7 @@ pub async fn run(cli: Cli) -> Result<()> {
                                 .as_millis() as u64;
                             osc_detector.process_level(lvl, now);
                         }
-                        // Basic peak hold decay:
-                        // If new level is higher, update immediately.
-                        // Otherwise, manually decay the level so it doesn't get stuck.
-                        if lvl > last_level {
-                            last_level = lvl;
-                        } else {
-                            last_level = last_level * 0.9;
-                        }
+                        last_level = lvl;
                     }
                 }
                 NetworkEvent::PanicTriggered => {
@@ -315,9 +298,7 @@ pub async fn run(cli: Cli) -> Result<()> {
                             let _ = h.panic(&network, i + 1).await;
                         }
                     }
-                    for src in &sources {
-                        let _ = network.set_scribble_text(*src, "PANIC!").await;
-                    }
+                    let _ = network.set_scribble_text(source, "PANIC!").await;
                 }
                 NetworkEvent::EncoderTurned(val) => {
                     let cfg = &mut effect_configs[selected_slot];
@@ -417,11 +398,7 @@ pub async fn run(cli: Cli) -> Result<()> {
         // 5. UI Update & Input
         if last_ui_update.elapsed() > Duration::from_millis(50) {
             let state = AppState {
-                source: sources
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect::<Vec<_>>()
-                    .join(", "),
+                source: source.to_string(),
                 current_bpm: active_bpm,
                 input_level: last_level,
                 active_effects: active_effects.clone(),
@@ -523,9 +500,7 @@ pub async fn run(cli: Cli) -> Result<()> {
 
                 let cfg = &effect_configs[selected_slot];
                 let text = format!("FX{}:{}", selected_slot + 1, cfg.subdivision);
-                for src in &sources {
-                    let _ = network.set_scribble_text(*src, &text).await;
-                }
+                let _ = network.set_scribble_text(source, &text).await;
             }
 
             last_ui_update = Instant::now();

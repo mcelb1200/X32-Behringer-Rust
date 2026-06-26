@@ -20,7 +20,7 @@ List available system audio inputs:
 ### 3. Launch Tool
 Run the application specifying your mixer's IP, target input channel, and audio device index/name:
 ```bash
-./x32_autobeat --ip 192.168.1.50 --channels ch1 --device "Built-in Audio"
+./x32_autobeat --ip 192.168.1.50 --channel 1 --device "Built-in Audio"
 ```
 *(If `--device` is omitted, the tool automatically falls back to OSC network-level monitoring.)*
 
@@ -44,7 +44,7 @@ Instead of manually tapping tempos during a live set, `x32_autobeat` listens to 
 
 ### Visual Screen Layout
 *   **BPM**: Displays the currently detected music tempo.
-*   **Level Bar**: Shows incoming audio volume. If flat, check connection or selected input channels.
+*   **Level Bar**: Shows incoming audio volume. If flat, check connection or selected input channel.
 *   **Algorithm Status**:
     *   *Audio OK*: Tool is analyzing crisp, high-fidelity system audio.
     *   *Fallback (OSC)*: No system audio detected. Tool is monitoring network volume packets instead.
@@ -83,7 +83,7 @@ System Audio Input Active?
 ```text
   --ip <IP>                      X32/X-Air Mixer IP Address [default: 192.168.1.50]
   --device <DEVICE>              Audio Device Name or Substring [optional]
-  --channels <CHANNELS>          Audio sources for beat detection, comma separated (e.g. "ch1,bus8,main") [default: "ch1"]
+  --channel <CHANNEL>            Console Input Channel (1-32) [default: 1]
   --slot <SLOT>                  Default FX Slot (1-8) [default: 1]
   --panic-btn <PANIC_PATH>       OSC path to trigger Panic remotely [default: "A/btn/5"]
   --preset-enc <ENC_PATH>        OSC path to assignable encoder for preset style [default: "A/enc/5"]
@@ -99,7 +99,7 @@ You can map X32 assignable controls to interact with `x32_autobeat` over the net
 2.  **Preset Style Encoder**: Map an assignable rotary encoder to `--preset-enc`. Turning it cycles FX preset styles (Tight, Natural, etc.).
 3.  **Beat Feedback LED**: The assignable button LED at `--btn-led-path` flashes dynamically on every detected beat.
 4.  **BPM / Style Display**: The target scribble strip at `--info-scribble-path` (e.g. Channel 32) displays the current BPM and active style (e.g. `120BPM TIGHT`).
-5.  **Input Channels Scribble Strip**: The scribble strips of the configured input channels dynamically update to show the selected FX Slot and subdivision (e.g. `FX1:1/8d`).
+5.  **Input Channel Scribble Strip**: The scribble strip of the configured input channel dynamically updates to show the selected FX Slot and subdivision (e.g. `FX1:1/8d`).
 
 ### Compressor Envelope Synchronization
 Use `--target-channels` to automatically adjust the `Hold` and `Release` parameters of target channel compressors relative to detected BPM.

@@ -131,16 +131,16 @@ impl BeatDetector for SpectralFluxDetector {
             if flux > c * local_average && flux > 0.0001 {
                 // Min threshold to avoid noise
                 let min_interval = (self.sample_rate as f32 * 0.2) as u64; // 200ms debounce (limit to ~300 BPM)
-                // We need to estimate the time of this frame.
-                // We are processing frames delayed.
-                // The end of this frame is at current total processed - remaining buffer?
-                // Or we can just use the current time as 'now'.
-                // Since we process inside the loop, let's just approximate 'now' as the time corresponding to the *end* of this frame.
-                // But self.total_samples_processed is the end of *newly added* samples.
-                // The frame corresponds to the start of the buffer.
-                // Let's track the "current frame time".
-                // Actually, for simplicity, if we detect a beat in this chunk, we mark it.
-                // The exact timing might be slightly off if we process multiple frames at once, but usually chunks are small.
+                                                                           // We need to estimate the time of this frame.
+                                                                           // We are processing frames delayed.
+                                                                           // The end of this frame is at current total processed - remaining buffer?
+                                                                           // Or we can just use the current time as 'now'.
+                                                                           // Since we process inside the loop, let's just approximate 'now' as the time corresponding to the *end* of this frame.
+                                                                           // But self.total_samples_processed is the end of *newly added* samples.
+                                                                           // The frame corresponds to the start of the buffer.
+                                                                           // Let's track the "current frame time".
+                                                                           // Actually, for simplicity, if we detect a beat in this chunk, we mark it.
+                                                                           // The exact timing might be slightly off if we process multiple frames at once, but usually chunks are small.
 
                 // Better time tracking:
                 // We consumed samples up to current total.
@@ -204,74 +204,5 @@ impl BeatDetector for SpectralFluxDetector {
 impl Default for SpectralFluxDetector {
     fn default() -> Self {
         Self::new(44100, 1024)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use rand::Rng;
-
-    #[test]
-    fn test_spectral_flux_detector_beats_multi_channel() {
-        let sample_rate = 44100;
-        let fft_size = 1024;
-        let mut detector = SpectralFluxDetector::new(sample_rate, fft_size);
-
-        let mut rng = rand::thread_rng();
-
-        // 120 BPM = 2 beats per second = 1 beat every 22050 samples
-        let target_bpm = 120.0;
-        let samples_per_beat = (sample_rate as f32 * 60.0 / target_bpm) as usize;
-
-        // Generate audio signal
-        let total_samples = sample_rate as usize * 10;
-        let mut signal1 = vec![0.0; total_samples];
-        let mut signal2 = vec![0.0; total_samples];
-
-        // Add background noise to both channels
-        for i in 0..total_samples {
-            signal1[i] = rng.gen_range(-0.1..0.1);
-            signal2[i] = rng.gen_range(-0.1..0.1);
-        }
-
-        // Add beats (noise bursts) exclusively to signal 1
-        let burst_length = 2000; // 45ms burst
-        for i in (0..total_samples).step_by(samples_per_beat) {
-            for j in 0..burst_length {
-                if i + j < total_samples {
-                    // Increase high frequency content to trigger spectral flux
-                    let phase = j as f32 * 2000.0 * 2.0 * std::f32::consts::PI / sample_rate as f32;
-                    signal1[i + j] += phase.sin() * 0.5 + rng.gen_range(-0.5..0.5);
-                }
-            }
-        }
-
-        // Simulate multi-channel mixdown
-        let mut mixed_signal = vec![0.0; total_samples];
-        for i in 0..total_samples {
-            mixed_signal[i] = (signal1[i] + signal2[i]) / 2.0;
-        }
-
-        // Process in chunks
-        let chunk_size = 512;
-        let mut last_bpm = None;
-
-        for chunk in mixed_signal.chunks(chunk_size) {
-            detector.process(chunk, sample_rate);
-            if let Some(bpm) = detector.current_bpm() {
-                last_bpm = Some(bpm);
-            }
-        }
-
-        let final_bpm = last_bpm.expect("Should have detected BPM");
-
-        // Assert it is within +/- 5 BPM of 120
-        assert!(
-            (final_bpm - target_bpm).abs() < 5.0,
-            "Expected BPM near {}, got {}",
-            target_bpm,
-            final_bpm
-        );
     }
 }

@@ -16,7 +16,7 @@ use std::io::Read;
 use std::path::PathBuf;
 use std::time::Duration;
 use tokio::time::sleep;
-use x32_lib::{MixerClient, get_parameter_async};
+use x32_lib::{get_parameter_async, MixerClient};
 
 /// A command-line tool to control and fade X32 faders.
 #[derive(Parser, Debug)]
@@ -292,8 +292,8 @@ pub async fn run(args: Args) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::Arc;
     use std::sync::atomic::{AtomicBool, Ordering};
+    use std::sync::Arc;
     use std::time::Instant;
 
     #[tokio::test]

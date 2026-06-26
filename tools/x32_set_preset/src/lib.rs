@@ -12,7 +12,7 @@
 //! *   **Additional concepts by:** mcelb1200
 //! *   **Rust implementation by:** mcelb1200
 
-use anyhow::{Context, Result, anyhow};
+use anyhow::{anyhow, Context, Result};
 use clap::Parser;
 use osc_lib::{OscArg, OscMessage};
 use std::fs::File;
