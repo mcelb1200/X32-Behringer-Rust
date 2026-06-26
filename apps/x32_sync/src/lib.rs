@@ -102,33 +102,56 @@ pub async fn run(args: Args) -> Result<()> {
 
     println!("Starting sync between {} and {}", ip_a, ip_b);
 
-    let client_a = Arc::new(MixerClient::connect(&ip_a, true).await?);
-    let client_b = Arc::new(MixerClient::connect(&ip_b, true).await?);
+    loop {
+        let client_a = match MixerClient::connect(&ip_a, true).await {
+            Ok(client) => Arc::new(client),
+            Err(e) => {
+                eprintln!("Failed to connect to Console A ({}): {}", ip_a, e);
+                tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+                continue;
+            }
+        };
 
-    // Spawn proxy A -> B
-    let state_a = state.clone();
-    let client_a_clone = client_a.clone();
-    let client_b_clone = client_b.clone();
-    let handle_a = tokio::spawn(async move {
-        run_proxy(client_a_clone, client_b_clone, state_a).await;
-    });
+        let client_b = match MixerClient::connect(&ip_b, true).await {
+            Ok(client) => Arc::new(client),
+            Err(e) => {
+                eprintln!("Failed to connect to Console B ({}): {}", ip_b, e);
+                tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+                continue;
+            }
+        };
 
-    // Spawn proxy B -> A
-    let state_b = state.clone();
-    let client_a_clone = client_a.clone();
-    let client_b_clone = client_b.clone();
-    let handle_b = tokio::spawn(async move {
-        run_proxy(client_b_clone, client_a_clone, state_b).await;
-    });
+        println!("Connected to both consoles. Synchronizing...");
 
-    // Wait for both proxies (they loop indefinitely).
-    // If either fails or exits, we terminate the whole process.
-    tokio::select! {
-        _ = handle_a => {},
-        _ = handle_b => {},
+        // Spawn proxy A -> B
+        let state_a = state.clone();
+        let client_a_clone = client_a.clone();
+        let client_b_clone = client_b.clone();
+        let handle_a = tokio::spawn(async move {
+            run_proxy(client_a_clone, client_b_clone, state_a).await;
+        });
+
+        // Spawn proxy B -> A
+        let state_b = state.clone();
+        let client_a_clone = client_a.clone();
+        let client_b_clone = client_b.clone();
+        let handle_b = tokio::spawn(async move {
+            run_proxy(client_b_clone, client_a_clone, state_b).await;
+        });
+
+        // Wait for both proxies (they loop indefinitely).
+        // If either fails or exits, we catch it and reconnect.
+        tokio::select! {
+            res = handle_a => {
+                eprintln!("Proxy A -> B task stopped (result: {:?}). Attempting reconnection...", res);
+            },
+            res = handle_b => {
+                eprintln!("Proxy B -> A task stopped (result: {:?}). Attempting reconnection...", res);
+            },
+        }
+
+        tokio::time::sleep(std::time::Duration::from_secs(2)).await;
     }
-
-    Ok(())
 }
 
 #[cfg(test)]
