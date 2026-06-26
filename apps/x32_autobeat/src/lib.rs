@@ -107,15 +107,11 @@ fn parse_channels(s: &str) -> Vec<usize> {
     let mut channels = Vec::new();
     for part in s.split(',') {
         let part = part.trim();
-        if part.contains('-') {
-            let ranges: Vec<&str> = part.split('-').collect();
-            if ranges.len() == 2 {
-                if let (Ok(start), Ok(end)) =
-                    (ranges[0].parse::<usize>(), ranges[1].parse::<usize>())
-                {
-                    for i in start..=end {
-                        channels.push(i);
-                    }
+        if let Some((start_str, end_str)) = part.split_once('-') {
+            // ⚡ Bolt: Use `split_once` instead of `split().collect::<Vec<_>>()` to prevent dynamic heap allocation
+            if let (Ok(start), Ok(end)) = (start_str.parse::<usize>(), end_str.parse::<usize>()) {
+                for i in start..=end {
+                    channels.push(i);
                 }
             }
         } else if let Ok(n) = part.parse::<usize>() {
@@ -128,16 +124,12 @@ fn parse_slots(s: &str) -> Vec<usize> {
     let mut slots = Vec::new();
     for part in s.split(',') {
         let part = part.trim();
-        if part.contains('-') {
-            let ranges: Vec<&str> = part.split('-').collect();
-            if ranges.len() == 2 {
-                if let (Ok(start), Ok(end)) =
-                    (ranges[0].parse::<usize>(), ranges[1].parse::<usize>())
-                {
-                    for i in start..=end {
-                        if (1..=8).contains(&i) {
-                            slots.push(i - 1); // convert to 0-indexed internally
-                        }
+        if let Some((start_str, end_str)) = part.split_once('-') {
+            // ⚡ Bolt: Use `split_once` instead of `split().collect::<Vec<_>>()` to prevent dynamic heap allocation
+            if let (Ok(start), Ok(end)) = (start_str.parse::<usize>(), end_str.parse::<usize>()) {
+                for i in start..=end {
+                    if (1..=8).contains(&i) {
+                        slots.push(i - 1); // convert to 0-indexed internally
                     }
                 }
             }
@@ -307,7 +299,7 @@ pub async fn run(cli: Cli) -> Result<()> {
                         if lvl > last_level {
                             last_level = lvl;
                         } else {
-                            last_level = last_level * 0.9;
+                            last_level *= 0.9;
                         }
                     }
                 }
