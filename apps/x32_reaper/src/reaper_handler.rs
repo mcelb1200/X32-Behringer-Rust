@@ -21,8 +21,7 @@ pub async fn handle_reaper_message(
             if idx + 4 > len {
                 break;
             }
-            let size_val =
-                i32::from_be_bytes([buf[idx], buf[idx + 1], buf[idx + 2], buf[idx + 3]]);
+            let size_val = i32::from_be_bytes([buf[idx], buf[idx + 1], buf[idx + 2], buf[idx + 3]]);
             // Prevent integer overflow and DoS panics by rejecting malicious negative size values
             if size_val < 0 {
                 break;
