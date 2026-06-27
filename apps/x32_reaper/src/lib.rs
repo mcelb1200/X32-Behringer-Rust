@@ -979,8 +979,12 @@ async fn process_reaper_message(
             if idx + 4 > data.len() {
                 break;
             }
-            let size = u32::from_be_bytes([data[idx], data[idx + 1], data[idx + 2], data[idx + 3]])
-                as usize;
+            let size_val = i32::from_be_bytes([data[idx], data[idx + 1], data[idx + 2], data[idx + 3]]);
+            // Prevent integer overflow and DoS panics by rejecting malicious negative size values
+            if size_val < 0 {
+                break;
+            }
+            let size = size_val as usize;
             idx += 4;
             if idx + size > data.len() {
                 break;
