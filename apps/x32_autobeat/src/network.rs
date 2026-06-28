@@ -237,9 +237,9 @@ impl NetworkManager {
             }
         } else if msg.path.starts_with("/fx/") && msg.path.ends_with("/type") {
             // Path is /fx/n/type
-            let chars: Vec<char> = msg.path.chars().collect();
-            if chars.len() >= 5 {
-                if let Some(digit) = chars[4].to_digit(10) {
+            // ⚡ Bolt: Avoid creating intermediate Vec simply to get the 5th char
+            if let Some(c) = msg.path.chars().nth(4) {
+                if let Some(digit) = c.to_digit(10) {
                     let slot = digit as usize;
                     if let Some(osc_lib::OscArg::String(s)) = msg.args.first() {
                         let _ = sender.send(NetworkEvent::EffectLoaded(slot, s.clone()));

@@ -66,3 +66,7 @@
 ## 2024-06-25 - [Use split_once for two-part splits]
 **Learning:** Using `s.split(':').collect::<Vec<&str>>()` inside performance-critical parsing functions to extract two parts allocates a heap vector dynamically and evaluates an iterator. `split_once(':')` directly returns an `Option<(&str, &str)>` without memory allocation and avoids evaluating the rest of the string.
 **Action:** When parsing paths or string formats that have exactly two parts, use `.split_once(char)` to avoid heap allocations.
+
+## 2024-05-18 - [Vec Reallocation in Hot String Parsing]
+**Learning:** In string parsing tasks across this codebase (like parsing ranges or indexing single characters), `.collect::<Vec<_>>()` was overused, introducing unnecessary heap allocations for tasks that could be handled natively via iterators (`nth()`) or `split_once()`.
+**Action:** When extracting a single character, prefer `.chars().nth()`. When separating exactly two values by a delimiter, prefer `split_once()`. Avoid `.collect()` on hot network loops or frequent parsing tasks.
