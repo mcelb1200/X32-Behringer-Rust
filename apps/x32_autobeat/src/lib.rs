@@ -107,8 +107,8 @@ fn parse_channels(s: &str) -> Vec<usize> {
     let mut channels = Vec::new();
     for part in s.split(',') {
         let part = part.trim();
+        // ⚡ Bolt: Use split_once instead of collect::<Vec<&str>>() to avoid heap allocation
         if let Some((start_str, end_str)) = part.split_once('-') {
-            // ⚡ Bolt: Use `split_once` instead of `split().collect::<Vec<_>>()` to prevent dynamic heap allocation
             if let (Ok(start), Ok(end)) = (start_str.parse::<usize>(), end_str.parse::<usize>()) {
                 for i in start..=end {
                     channels.push(i);
@@ -124,8 +124,8 @@ fn parse_slots(s: &str) -> Vec<usize> {
     let mut slots = Vec::new();
     for part in s.split(',') {
         let part = part.trim();
+        // ⚡ Bolt: Use split_once instead of collect::<Vec<&str>>() to avoid heap allocation
         if let Some((start_str, end_str)) = part.split_once('-') {
-            // ⚡ Bolt: Use `split_once` instead of `split().collect::<Vec<_>>()` to prevent dynamic heap allocation
             if let (Ok(start), Ok(end)) = (start_str.parse::<usize>(), end_str.parse::<usize>()) {
                 for i in start..=end {
                     if (1..=8).contains(&i) {
