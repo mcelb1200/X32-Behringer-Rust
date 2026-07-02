@@ -187,7 +187,11 @@ impl OscMessage {
                     args.push(OscArg::String(val));
                 }
                 'b' => {
-                    let len = cursor.read_i32::<BigEndian>()? as usize;
+                    let len_i32 = cursor.read_i32::<BigEndian>()?;
+                    if len_i32 < 0 {
+                        return Err(OscError::ParseError("Negative blob length".to_string()));
+                    }
+                    let len = len_i32 as usize;
 
                     // OPTIMIZATION: Instead of allocating a zero-initialized buffer `vec![0; len]`
                     // and calling `cursor.read_exact(&mut buf)`, directly slice the underlying buffer
