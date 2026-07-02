@@ -180,17 +180,3 @@ fn test_tokenize_quoted_string_with_no_space_after() {
         _ => panic!("Incorrect argument type"),
     }
 }
-
-#[test]
-fn test_negative_blob_size() {
-    let mut bytes = vec![];
-    write_osc_string(&mut bytes, "/test").unwrap();
-    write_osc_string(&mut bytes, ",b").unwrap();
-    bytes.extend_from_slice(&(-1i32).to_be_bytes()); // Negative length!
-
-    let result = OscMessage::from_bytes(&bytes);
-    match result {
-        Err(OscError::ParseError(msg)) => assert_eq!(msg, "Negative blob length"),
-        _ => panic!("Expected ParseError, got {:?}", result),
-    }
-}

@@ -73,3 +73,7 @@
 ## 2024-11-20 - [Hoist invariant string operations outside hot render loops]
 **Learning:** In UI or network loop updates (like the 50ms TUI tick in `x32_autobeat`), iterating over an invariant array (e.g., `sources`) to `.map(|s| s.to_string()).collect::<Vec<_>>().join(", ")` introduces repeated `String` and `Vec` heap allocations on every iteration.
 **Action:** When updating TUI state or processing fast loops, pre-calculate display strings or configurations that don't change outside the loop, and `.clone()` them into the state instead of building them dynamically.
+
+## 2024-11-20 - [Fix integration test flake on Windows]
+**Learning:** `x32_usb` integration test was failing on Windows CI due to a small `thread::sleep` duration (200ms) that didn't allow the UDP emulator mock server enough time to reliably start before sending requests.
+**Action:** Always use a minimum of 1000ms delay or implement active polling/retry when waiting for local UDP servers to bind and become ready during integration tests to prevent flakes on slower CI nodes.

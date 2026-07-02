@@ -17,7 +17,8 @@ where
         )
         .unwrap();
     });
-    thread::sleep(Duration::from_millis(200));
+    // Increased sleep to allow mock server more time to start on slower CI environments like Windows
+    thread::sleep(Duration::from_millis(1000));
     (handle, tx)
 }
 
