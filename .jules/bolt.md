@@ -70,3 +70,6 @@
 ## 2024-05-18 - [Vec Reallocation in Hot String Parsing]
 **Learning:** In string parsing tasks across this codebase (like parsing ranges or indexing single characters), `.collect::<Vec<_>>()` was overused, introducing unnecessary heap allocations for tasks that could be handled natively via iterators (`nth()`) or `split_once()`.
 **Action:** When extracting a single character, prefer `.chars().nth()`. When separating exactly two values by a delimiter, prefer `split_once()`. Avoid `.collect()` on hot network loops or frequent parsing tasks.
+## 2024-11-20 - [Hoist invariant string operations outside hot render loops]
+**Learning:** In UI or network loop updates (like the 50ms TUI tick in `x32_autobeat`), iterating over an invariant array (e.g., `sources`) to `.map(|s| s.to_string()).collect::<Vec<_>>().join(", ")` introduces repeated `String` and `Vec` heap allocations on every iteration.
+**Action:** When updating TUI state or processing fast loops, pre-calculate display strings or configurations that don't change outside the loop, and `.clone()` them into the state instead of building them dynamically.

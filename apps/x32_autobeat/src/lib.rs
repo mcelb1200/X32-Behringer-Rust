@@ -256,6 +256,12 @@ pub async fn run(cli: Cli) -> Result<()> {
     let mut last_sent_bpm: Option<u32> = None;
     let mut last_sent_style = String::new();
 
+    let sources_str = sources
+        .iter()
+        .map(|s| s.to_string())
+        .collect::<Vec<_>>()
+        .join(", ");
+
     loop {
         // 1. Process Audio Data (Primary)
         let mut audio_received_this_frame = false;
@@ -413,11 +419,7 @@ pub async fn run(cli: Cli) -> Result<()> {
         // 5. UI Update & Input
         if last_ui_update.elapsed() > Duration::from_millis(50) {
             let state = AppState {
-                source: sources
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect::<Vec<_>>()
-                    .join(", "),
+                source: sources_str.clone(),
                 current_bpm: active_bpm,
                 input_level: last_level,
                 active_effects: active_effects.clone(),
