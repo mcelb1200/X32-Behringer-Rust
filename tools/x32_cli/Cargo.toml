@@ -19,6 +19,8 @@ x32_tcp = { path = "../x32_tcp" }
 x32_geq2_cpy = { path = "../x32_geq2_cpy" }
 x32_jog4xlive = { path = "../x32_jog4xlive" }
 x32_dump = { path = "../x32_dump" }
+
+x32_crossfade = { path = "../../apps/x32_crossfade" }
 x32_xlive_wav = { path = "../x32_xlive_wav" }
 xair_command = { path = "../xair_command" }
 x32_copy_fx = { path = "../x32_copy_fx" }

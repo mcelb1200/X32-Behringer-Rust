@@ -1,0 +1,16 @@
+[package]
+name = "x32_crossfade"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+x32_lib = { path = "../../libs/x32_lib" }
+osc_lib = { path = "../../libs/osc_lib" }
+clap = { version = "4.4.11", features = ["derive"] }
+tokio = { version = "1.34", features = ["full"] }
+anyhow = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+futures = "0.3"
+
+[dev-dependencies]
+tempfile = "3.27.0"
