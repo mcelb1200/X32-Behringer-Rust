@@ -1,12 +1,26 @@
-1. **Optimize string splitting in `apps/x32_autobeat/src/lib.rs`**
-   - In `parse_channels` and `parse_slots`, replace `.split('-').collect::<Vec<&str>>()` with `.split_once('-')` to avoid unnecessary heap allocations when parsing ranges.
-   - This directly aligns with Bolt's `.jules/bolt.md` teachings on eliminating O(N) allocations for string parsing by avoiding `collect::<Vec<&str>>()`.
-2. **Add a journal entry to `.jules/bolt.md`**
-   - Record the learning if it's not already covered in exactly this context, though it looks like it is covered under `,` splitting. We don't strictly need a new entry if the rule already exists, but I will make sure I add comments explaining the optimization. Actually I will verify if I need to add one. "Avoid using `.split('-').collect::<Vec<&str>>()` for parsing ranges. Use `.split_once('-')` to avoid heap allocations."
-3. **Verify the change**
-   - Run `cargo fmt`, `cargo clippy`, and `cargo test`.
-4. **Pre-commit step**
-   - Run `pre_commit_instructions` tool to ensure all required checks are done.
-5. **Submit the change**
-   - PR Title: `⚡ Bolt: [performance improvement] Eliminate heap allocation in range parsing`
-   - Description containing What, Why, Impact, and Measurement.
+1.  **Analyze `AppState` string joining in `x32_autobeat` loop:**
+    *   Currently, inside the `last_ui_update.elapsed() > Duration::from_millis(50)` loop block, `AppState::source` is generated via:
+        ```rust
+        source: sources
+            .iter()
+            .map(|s| s.to_string())
+            .collect::<Vec<_>>()
+            .join(", ")
+        ```
+    *   This is evaluated every ~50ms and allocates multiple `String` instances and a `Vec`, then joins them into another `String`, doing O(N) heap allocations.
+    *   However, `sources` is initialized *before* the main event loop and is completely static during the loop.
+
+2.  **Move computation outside the loop:**
+    *   We will compute the `sources_str` once before the `loop { ... }`.
+    *   Inside the loop, we simply `clone()` this pre-computed string: `source: sources_str.clone(),`.
+
+3.  **Ensure compliance with PR formatting and tests:**
+    *   We'll use `cargo check` and `cargo test --workspace` to ensure things pass.
+    *   We'll run `cargo clippy --workspace -- -D warnings`.
+    *   We'll document the performance win in `.jules/bolt.md` based on the system memory directives.
+    *   We'll format PR as `⚡ Bolt: [performance improvement]`.
+
+4.  **Perform pre-commit checks**
+    *   Ensure proper testing, verification, review, and reflection are done.
+
+5.  **Submit changes.**
