@@ -70,3 +70,6 @@
 ## 2024-05-18 - [Vec Reallocation in Hot String Parsing]
 **Learning:** In string parsing tasks across this codebase (like parsing ranges or indexing single characters), `.collect::<Vec<_>>()` was overused, introducing unnecessary heap allocations for tasks that could be handled natively via iterators (`nth()`) or `split_once()`.
 **Action:** When extracting a single character, prefer `.chars().nth()`. When separating exactly two values by a delimiter, prefer `split_once()`. Avoid `.collect()` on hot network loops or frequent parsing tasks.
+## 2024-11-20 - [Eliminate vector allocation in string splitting when parsing config lines]
+**Learning:** Using `s.splitn(2, ',').collect::<Vec<&str>>()` to parse a string into two parts allocates a dynamically sized vector on the heap twice (once for the vector, once for the underlying array), even though exactly two elements are expected. This is a common bottleneck when parsing configuration files or command-line seeds line-by-line.
+**Action:** Always replace `.splitn(2, char).collect::<Vec<&str>>()` with `.split_once(char)` when parsing lines into exact pairs. It returns an `Option<(&str, &str)>` and completely avoids the heap allocation.

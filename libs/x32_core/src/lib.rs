@@ -217,13 +217,11 @@ impl Mixer {
     /// Seeds the mixer's state from a vector of OSC command strings.
     pub fn seed_from_lines(&mut self, lines: Vec<&str>) {
         for line in lines {
-            let parts: Vec<&str> = line.splitn(2, ',').collect();
-            if parts.len() == 2 {
-                let path = parts[0].trim();
-                let arg_parts: Vec<&str> = parts[1].trim().splitn(2, '\t').collect();
-                if arg_parts.len() == 2 {
-                    let arg_type = arg_parts[0];
-                    let arg_value = arg_parts[1];
+            // ⚡ Bolt: Eliminate two heap vector allocations per line by replacing
+            // `splitn(2, ...).collect::<Vec<&str>>()` with `split_once()`.
+            if let Some((path_part, arg_part)) = line.split_once(',') {
+                let path = path_part.trim();
+                if let Some((arg_type, arg_value)) = arg_part.trim().split_once('\t') {
                     let arg = match arg_type {
                         "i" => arg_value.parse().ok().map(OscArg::Int),
                         "f" => arg_value.parse().ok().map(OscArg::Float),
