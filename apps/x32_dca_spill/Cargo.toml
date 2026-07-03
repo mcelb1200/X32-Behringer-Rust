@@ -1,0 +1,13 @@
+[package]
+name = "x32_dca_spill"
+version = "0.1.0"
+edition = "2021"
+authors = ["Jules <jules@example.com>"]
+description = "Automatically spill DCA members onto a custom fader bank for quick access"
+
+[dependencies]
+x32_lib = { path = "../../libs/x32_lib" }
+osc_lib = { path = "../../libs/osc_lib" }
+anyhow = "1.0"
+clap = { version = "4.0", features = ["derive"] }
+tokio = { version = "1.0", features = ["full"] }
