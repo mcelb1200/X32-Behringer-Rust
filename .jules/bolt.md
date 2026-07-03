@@ -73,3 +73,7 @@
 ## 2024-11-20 - [Eliminate vector allocation in string splitting when parsing config lines]
 **Learning:** Using `s.splitn(2, ',').collect::<Vec<&str>>()` to parse a string into two parts allocates a dynamically sized vector on the heap twice (once for the vector, once for the underlying array), even though exactly two elements are expected. This is a common bottleneck when parsing configuration files or command-line seeds line-by-line.
 **Action:** Always replace `.splitn(2, char).collect::<Vec<&str>>()` with `.split_once(char)` when parsing lines into exact pairs. It returns an `Option<(&str, &str)>` and completely avoids the heap allocation.
+
+## 2024-07-04 - [Hoist invariant string operations from TUI render loop]
+**Learning:** When updating TUI state (like `AppState` in `x32_autobeat`), dynamically generating display strings inside the `duration_since` tick loop via iterators mapping to strings, collecting to vectors, and joining forces redundant O(N) heap allocations.
+**Action:** Always hoist invariant string constructions (e.g., creating display arrays of static sources) out of hot render loops. Pre-calculate the result outside the loop and pass a cloned copy (or reference) into the state structure to avoid rapid, repeated vector and string allocations.
