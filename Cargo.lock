@@ -2442,6 +2442,7 @@ dependencies = [
  "x32_commander",
  "x32_copy_fx",
  "x32_cpxlivemarkers",
+ "x32_crossfade",
  "x32_custom_layer",
  "x32_desk_restore",
  "x32_desk_save",
