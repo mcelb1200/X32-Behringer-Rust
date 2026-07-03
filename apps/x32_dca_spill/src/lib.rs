@@ -163,7 +163,9 @@ async fn spill_dca(
         let path = format!("/-prefs/custom_bank/{}", i + 1);
         // Note: Some docs say `/-prefs/custom_bank/{bank}/{channel}`. The memory just says `/-prefs/custom_bank/`.
         // Let's assume it's `/-prefs/custom_bank/{1..24}`.
-        client.send_message(&path, vec![OscArg::Int(source_id)]).await?;
+        client
+            .send_message(&path, vec![OscArg::Int(source_id)])
+            .await?;
     }
 
     println!("Spill complete.");
