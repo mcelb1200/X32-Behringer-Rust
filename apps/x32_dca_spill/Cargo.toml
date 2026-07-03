@@ -2,7 +2,7 @@
 name = "x32_dca_spill"
 version = "0.1.0"
 edition = "2021"
-authors = ["Jules <jules@example.com>"]
+authors = ["mcelb1200"]
 description = "Automatically spill DCA members onto a custom fader bank for quick access"
 
 [dependencies]
