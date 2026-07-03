@@ -1,12 +1,15 @@
 use anyhow::{Context, Result};
 use clap::Parser;
-use osc_lib::{OscArg, OscMessage};
+use futures::future::join_all;
+use osc_lib::OscArg;
+use osc_lib::OscMessage;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::Read;
 use std::path::PathBuf;
 use std::time::Duration;
 use tokio::time::interval;
+use tokio::time::sleep;
 use x32_lib::{scene_parse::SceneParser, MixerClient};
 
 #[derive(Parser, Debug)]
@@ -88,7 +91,10 @@ pub async fn run(args: Args) -> Result<()> {
         }
     }
 
-    println!("Found {} float parameters to interpolate.", transitions.len());
+    println!(
+        "Found {} float parameters to interpolate.",
+        transitions.len()
+    );
 
     println!("Connecting to mixer at {}", args.ip);
     let (client, _transport) = MixerClient::connect_with_transport(
@@ -110,26 +116,55 @@ pub async fn run(args: Args) -> Result<()> {
     for step in 0..=steps {
         interval.tick().await;
 
-        let progress = if steps == 0 { 1.0 } else { step as f32 / steps as f32 };
+        let progress = if steps == 0 {
+            1.0
+        } else {
+            step as f32 / steps as f32
+        };
 
         if !discrete_sent && step >= discrete_step {
-            for msg in &scene2.discrete {
-                let _ = client.send_message(&msg.path, msg.args.clone()).await;
-            }
+            let discrete_futures = scene2.discrete.iter().enumerate().map(|(idx, msg)| {
+                let client = &client;
+                let path = msg.path.clone();
+                let args = msg.args.clone();
+                async move {
+                    sleep(Duration::from_millis((idx * 2) as u64)).await;
+                    let _ = client.send_message(&path, args).await;
+                }
+            });
+            join_all(discrete_futures).await;
             discrete_sent = true;
         }
 
-        for (path, val1, val2) in &transitions {
-            let current = val1 + (val2 - val1) * progress;
-            let _ = client.send_message(path, vec![OscArg::Float(current)]).await;
-        }
+        let float_futures = transitions
+            .iter()
+            .enumerate()
+            .map(|(idx, (path, val1, val2))| {
+                let client = &client;
+                let current = val1 + (val2 - val1) * progress;
+                let path = path.clone();
+                async move {
+                    sleep(Duration::from_micros((idx * 500) as u64)).await;
+                    let _ = client
+                        .send_message(&path, vec![OscArg::Float(current)])
+                        .await;
+                }
+            });
+        join_all(float_futures).await;
     }
 
     // Ensure discrete sent if duration was 0 or discrete_at > 1.0
     if !discrete_sent {
-        for msg in &scene2.discrete {
-            let _ = client.send_message(&msg.path, msg.args.clone()).await;
-        }
+        let discrete_futures = scene2.discrete.iter().enumerate().map(|(idx, msg)| {
+            let client = &client;
+            let path = msg.path.clone();
+            let args = msg.args.clone();
+            async move {
+                sleep(Duration::from_millis((idx * 2) as u64)).await;
+                let _ = client.send_message(&path, args).await;
+            }
+        });
+        join_all(discrete_futures).await;
     }
 
     println!("Crossfade complete.");
@@ -165,13 +200,25 @@ mod tests {
 
         assert_eq!(scene_data.discrete.len(), 3);
 
-        let on1 = scene_data.discrete.iter().find(|m| m.path == "/ch/01/mix/on").unwrap();
+        let on1 = scene_data
+            .discrete
+            .iter()
+            .find(|m| m.path == "/ch/01/mix/on")
+            .unwrap();
         assert_eq!(on1.args[0], OscArg::Int(1));
 
-        let on2 = scene_data.discrete.iter().find(|m| m.path == "/ch/02/mix/on").unwrap();
+        let on2 = scene_data
+            .discrete
+            .iter()
+            .find(|m| m.path == "/ch/02/mix/on")
+            .unwrap();
         assert_eq!(on2.args[0], OscArg::Int(0));
 
-        let name = scene_data.discrete.iter().find(|m| m.path == "/ch/01/config/name").unwrap();
+        let name = scene_data
+            .discrete
+            .iter()
+            .find(|m| m.path == "/ch/01/config/name")
+            .unwrap();
         assert_eq!(name.args[0], OscArg::String("Vocal".to_string()));
     }
 
