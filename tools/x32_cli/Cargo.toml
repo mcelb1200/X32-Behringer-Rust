@@ -45,3 +45,4 @@ x32_vocal_ducking = { path = "../../apps/x32_vocal_ducking" }
 x32_usb = { path = "../x32_usb" }
 x32_midi2osc = { path = "../x32_midi2osc" }
 x32_emulator = { path = "../x32_emulator" }
+x32_crossfade = { path = "../../apps/x32_crossfade" }

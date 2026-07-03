@@ -1,0 +1,11 @@
+[package]
+name = "x32_crossfade"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow.workspace = true
+clap.workspace = true
+tokio.workspace = true
+x32_lib.workspace = true
+osc_lib.workspace = true

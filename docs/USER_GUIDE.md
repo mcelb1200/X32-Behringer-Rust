@@ -17,6 +17,9 @@ A Terminal UI (TUI) tool for manually tapping tempo or using an automatic thresh
 ### `x32-cli x32-automix`
 A Rust implementation of the "Dugan-style" automixer. It monitors input levels and automatically adjusts faders to prevent feedback and manage gain across multiple active microphones.
 
+### `x32-cli x32-crossfade`
+Smoothly interpolates faders, EQs, and dynamics parameters between two scenes (`.scn`). Continuous values fade over time, while discrete values snap at a specified progress threshold.
+
 ### `x32-cli x32-fade`
 Triggers smooth, timed fader transitions. Useful for automated scene changes or gradual fade-outs.
 
