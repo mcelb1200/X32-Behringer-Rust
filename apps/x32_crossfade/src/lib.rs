@@ -2,9 +2,9 @@ use anyhow::{Context, Result};
 use clap::Parser;
 use osc_lib::OscArg;
 use std::collections::HashMap;
-use tokio::time::{interval, Duration};
-use x32_lib::scene_parse::SceneParser;
+use tokio::time::{Duration, interval};
 use x32_lib::MixerClient;
+use x32_lib::scene_parse::SceneParser;
 
 #[derive(Parser, Debug, Clone)]
 #[command(
@@ -46,7 +46,10 @@ pub async fn run(args: Args) -> Result<()> {
 
     let plan = plan_crossfade(&map_a, &map_b);
 
-    println!("Starting crossfade to {} over {}s...", args.ip, args.duration);
+    println!(
+        "Starting crossfade to {} over {}s...",
+        args.ip, args.duration
+    );
 
     // Connect to X32 using automatic keep-alive via true heartbeat
     let client = MixerClient::connect(&args.ip, true).await?;
@@ -72,7 +75,9 @@ pub async fn run(args: Args) -> Result<()> {
         // Send float updates
         for (path, (start, end)) in &plan.floats {
             let current_val = start + (end - start) * progress;
-            client.send_message(path, vec![OscArg::Float(current_val)]).await?;
+            client
+                .send_message(path, vec![OscArg::Float(current_val)])
+                .await?;
         }
 
         // Check if we need to send discrete updates
@@ -120,7 +125,10 @@ struct CrossfadePlan {
     pub discrete: HashMap<String, (OscArg, OscArg)>,
 }
 
-fn plan_crossfade(scene_a: &HashMap<String, OscArg>, scene_b: &HashMap<String, OscArg>) -> CrossfadePlan {
+fn plan_crossfade(
+    scene_a: &HashMap<String, OscArg>,
+    scene_b: &HashMap<String, OscArg>,
+) -> CrossfadePlan {
     let mut floats = HashMap::new();
     let mut discrete = HashMap::new();
 
@@ -157,19 +165,28 @@ mod tests {
         // As per memory, parsing true floats yields scaled representations,
         // /ch/01/mix/fader 0.5 yields 0.7625
         assert_eq!(map.get("/ch/01/mix/fader").unwrap(), &OscArg::Float(0.7625));
-        assert_eq!(map.get("/ch/01/config/name").unwrap(), &OscArg::String("Lead".to_string()));
+        assert_eq!(
+            map.get("/ch/01/config/name").unwrap(),
+            &OscArg::String("Lead".to_string())
+        );
     }
 
     #[test]
     fn test_plan_crossfade() {
         let mut map_a = HashMap::new();
         map_a.insert("/ch/01/mix/fader".to_string(), OscArg::Float(0.0));
-        map_a.insert("/ch/01/config/name".to_string(), OscArg::String("Vox".to_string()));
+        map_a.insert(
+            "/ch/01/config/name".to_string(),
+            OscArg::String("Vox".to_string()),
+        );
         map_a.insert("/ch/02/mix/on".to_string(), OscArg::Int(0));
 
         let mut map_b = HashMap::new();
         map_b.insert("/ch/01/mix/fader".to_string(), OscArg::Float(1.0));
-        map_b.insert("/ch/01/config/name".to_string(), OscArg::String("Lead Vox".to_string()));
+        map_b.insert(
+            "/ch/01/config/name".to_string(),
+            OscArg::String("Lead Vox".to_string()),
+        );
         map_b.insert("/ch/02/mix/on".to_string(), OscArg::Int(1));
 
         let plan = plan_crossfade(&map_a, &map_b);
@@ -178,19 +195,34 @@ mod tests {
         assert_eq!(plan.floats.get("/ch/01/mix/fader"), Some(&(0.0, 1.0)));
 
         assert_eq!(plan.discrete.len(), 2);
-        assert_eq!(plan.discrete.get("/ch/01/config/name"), Some(&(OscArg::String("Vox".to_string()), OscArg::String("Lead Vox".to_string()))));
-        assert_eq!(plan.discrete.get("/ch/02/mix/on"), Some(&(OscArg::Int(0), OscArg::Int(1))));
+        assert_eq!(
+            plan.discrete.get("/ch/01/config/name"),
+            Some(&(
+                OscArg::String("Vox".to_string()),
+                OscArg::String("Lead Vox".to_string())
+            ))
+        );
+        assert_eq!(
+            plan.discrete.get("/ch/02/mix/on"),
+            Some(&(OscArg::Int(0), OscArg::Int(1)))
+        );
     }
 
     #[tokio::test]
     async fn test_tick_loop() {
         let mut map_a = HashMap::new();
         map_a.insert("/ch/01/mix/fader".to_string(), OscArg::Float(0.0));
-        map_a.insert("/ch/01/config/name".to_string(), OscArg::String("Vox".to_string()));
+        map_a.insert(
+            "/ch/01/config/name".to_string(),
+            OscArg::String("Vox".to_string()),
+        );
 
         let mut map_b = HashMap::new();
         map_b.insert("/ch/01/mix/fader".to_string(), OscArg::Float(1.0));
-        map_b.insert("/ch/01/config/name".to_string(), OscArg::String("Lead Vox".to_string()));
+        map_b.insert(
+            "/ch/01/config/name".to_string(),
+            OscArg::String("Lead Vox".to_string()),
+        );
 
         let plan = plan_crossfade(&map_a, &map_b);
 
