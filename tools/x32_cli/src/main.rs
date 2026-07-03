@@ -91,6 +91,8 @@ enum Commands {
     X32Midi2osc(x32_midi2osc::Args),
     /// Run x32_emulator
     X32Emulator(x32_emulator::Cli),
+    /// Run x32_crossfade
+    X32Crossfade(x32_crossfade::Args),
 }
 
 #[tokio::main]
@@ -147,5 +149,6 @@ async fn main() -> Result<()> {
         Commands::X32Usb(args) => x32_usb::run(args).await.map_err(anyhow::Error::msg),
         Commands::X32Midi2osc(args) => x32_midi2osc::run(args).await.map_err(anyhow::Error::msg),
         Commands::X32Emulator(args) => x32_emulator::run(args).map_err(anyhow::Error::msg),
+        Commands::X32Crossfade(args) => x32_crossfade::run(args).await.map_err(anyhow::Error::msg),
     }
 }
