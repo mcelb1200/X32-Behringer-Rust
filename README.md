@@ -28,7 +28,7 @@ graph TD;
     subgraph Binaries
         direction TB
         subgraph Live_Performance
-            x32_autobeat; x32_automix; x32_tapw; x32_tap; x32_fade; x32_jog4xlive;
+            x32_autobeat; x32_automix; x32_tapw; x32_tap; x32_crossfade; x32_fade; x32_jog4xlive;
         end
         subgraph DAW_Integration
             x32_reaper; x32_punch_control; x32_midi2osc;
@@ -67,6 +67,7 @@ graph TD;
 | Crate | Category | Description |
 | :--- | :--- | :--- |
 | `x32_autobeat` | **Live** | Automatic BPM detection (Energy/Spectral) and effect synchronization. |
+| `x32_crossfade` | **Live** | Smooth interpolation and scene transition engine for live shows. |
 | `x32_tapw` | **Live** | Interactive TUI for setting delay tap tempo with auto-thresholding. |
 | `x32_reaper` | **Studio** | Bidirectional bridge between X32 and Reaper DAW (Faders, Mutes, Pans). |
 | `x32_punch_control`| **Studio** | MIDI-sync'd automation recording/playback via `.xpc` format. |

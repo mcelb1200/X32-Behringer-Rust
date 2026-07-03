@@ -2570,6 +2570,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "x32_crossfade"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "osc_lib",
+ "tokio",
+ "x32_lib",
+]
+
+[[package]]
 name = "x32_custom_layer"
 version = "0.1.0"
 dependencies = [
