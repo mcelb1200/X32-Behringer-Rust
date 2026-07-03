@@ -2442,6 +2442,7 @@ dependencies = [
  "x32_commander",
  "x32_copy_fx",
  "x32_cpxlivemarkers",
+ "x32_crossfade",
  "x32_custom_layer",
  "x32_desk_restore",
  "x32_desk_save",
@@ -2567,6 +2568,17 @@ dependencies = [
  "clap",
  "predicates",
  "tempfile",
+]
+
+[[package]]
+name = "x32_crossfade"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "osc_lib",
+ "tokio",
+ "x32_lib",
 ]
 
 [[package]]
