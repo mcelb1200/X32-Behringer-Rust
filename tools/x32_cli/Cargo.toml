@@ -40,6 +40,7 @@ x32_sync = { path = "../../apps/x32_sync" }
 x32_tap = { path = "../x32_tap" }
 x32_tapw = { path = "../../apps/x32_tapw" }
 x32_autobeat = { path = "../../apps/x32_autobeat" }
+x32_dca_spill = { path = "../../apps/x32_dca_spill" }
 x32_reaper = { path = "../../apps/x32_reaper" }
 x32_vocal_ducking = { path = "../../apps/x32_vocal_ducking" }
 x32_usb = { path = "../x32_usb" }

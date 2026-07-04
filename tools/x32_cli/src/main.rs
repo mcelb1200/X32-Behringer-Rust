@@ -81,6 +81,8 @@ enum Commands {
     X32Tapw(x32_tapw::Args),
     /// Run x32_autobeat
     X32Autobeat(x32_autobeat::Cli),
+    /// Run x32_dca_spill
+    X32DcaSpill(x32_dca_spill::Args),
     /// Run x32_reaper
     X32Reaper(x32_reaper::Args),
     /// Run x32_vocal_ducking
@@ -142,6 +144,7 @@ async fn main() -> Result<()> {
         Commands::X32Tap(args) => x32_tap::run(args).await.map_err(anyhow::Error::msg),
         Commands::X32Tapw(args) => x32_tapw::run(args).await.map_err(anyhow::Error::msg),
         Commands::X32Autobeat(args) => x32_autobeat::run(args).await.map_err(anyhow::Error::msg),
+        Commands::X32DcaSpill(args) => x32_dca_spill::run(args).await.map_err(anyhow::Error::msg),
         Commands::X32Reaper(args) => x32_reaper::run(args).await.map_err(anyhow::Error::msg),
         Commands::X32VocalDucking(args) => x32_vocal_ducking::run(args)
             .await

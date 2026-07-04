@@ -2444,6 +2444,7 @@ dependencies = [
  "x32_cpxlivemarkers",
  "x32_crossfade",
  "x32_custom_layer",
+ "x32_dca_spill",
  "x32_desk_restore",
  "x32_desk_save",
  "x32_dump",
@@ -2588,6 +2589,17 @@ dependencies = [
  "anyhow",
  "clap",
  "criterion",
+ "osc_lib",
+ "tokio",
+ "x32_lib",
+]
+
+[[package]]
+name = "x32_dca_spill"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
  "osc_lib",
  "tokio",
  "x32_lib",
