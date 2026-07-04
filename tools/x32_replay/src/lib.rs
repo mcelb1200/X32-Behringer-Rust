@@ -220,7 +220,10 @@ async fn run_logic(state: Arc<Mutex<AppState>>, socket: Arc<UdpSocket>, default_
                     if let Some(w) = &mut file_writer {
                         let now = SystemTime::now()
                             .duration_since(UNIX_EPOCH)
-                            .unwrap_or_default();
+                            .unwrap_or_else(|e| {
+                                eprintln!("Warning: System clock drifted backward or is before UNIX EPOCH ({}). Proceeding with duration zero.", e);
+                                Duration::ZERO
+                            });
                         let _ = w.write_u64_le(now.as_secs()).await;
                         let _ = w.write_u32_le(now.subsec_micros()).await;
                         let _ = w.write_u32_le(len as u32).await;

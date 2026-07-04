@@ -246,6 +246,7 @@ pub async fn run(cli: Cli) -> Result<()> {
     let mut last_ui_update = Instant::now();
     let mut last_level = 0.0;
     let mut last_audio_packet = Instant::now();
+    let time_anchor = tokio::time::Instant::now();
 
     let mut selected_algorithm = Algorithm::Energy;
 
@@ -294,9 +295,8 @@ pub async fn run(cli: Cli) -> Result<()> {
                 NetworkEvent::MeterLevel(lvl) => {
                     if use_fallback {
                         if !is_panic {
-                            let now = std::time::SystemTime::now()
-                                .duration_since(std::time::UNIX_EPOCH)
-                                .unwrap_or_default()
+                            let now = tokio::time::Instant::now()
+                                .duration_since(time_anchor)
                                 .as_millis() as u64;
                             osc_detector.process_level(lvl, now);
                         }
