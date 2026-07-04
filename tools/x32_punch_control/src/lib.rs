@@ -103,7 +103,10 @@ pub async fn run(args: Args) -> Result<()> {
                                 1 => {
                                     // REW
                                     println!("REW requested");
-                                    lock.t_rew = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default() + Duration::from_secs(1);
+                                    lock.t_rew = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_else(|e| {
+                                        eprintln!("Warning: System clock drifted backward or is before UNIX EPOCH ({}). Proceeding with duration zero.", e);
+                                        Duration::ZERO
+                                    }) + Duration::from_secs(1);
                                 },
                                 2 => {
                                     // PLAY
@@ -119,7 +122,10 @@ pub async fn run(args: Args) -> Result<()> {
                                 4 => {
                                     // FF
                                     println!("FF requested");
-                                    lock.t_ff = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default() + Duration::from_secs(1);
+                                    lock.t_ff = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_else(|e| {
+                                        eprintln!("Warning: System clock drifted backward or is before UNIX EPOCH ({}). Proceeding with duration zero.", e);
+                                        Duration::ZERO
+                                    }) + Duration::from_secs(1);
                                 },
                                 5 => {
                                     // PUNCH IN/OUT
@@ -215,7 +221,10 @@ async fn run_logic(
         if s.xplay && !s.xpause {
             let now = SystemTime::now()
                 .duration_since(UNIX_EPOCH)
-                .unwrap_or_default();
+                .unwrap_or_else(|e| {
+                    eprintln!("Warning: System clock drifted backward or is before UNIX EPOCH ({}). Proceeding with duration zero.", e);
+                    Duration::ZERO
+                });
             if s.t_play.is_zero() {
                 s.t_play = now;
             }
