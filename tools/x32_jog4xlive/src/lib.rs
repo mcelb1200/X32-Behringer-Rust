@@ -12,10 +12,10 @@
 
 use anyhow::Result;
 use clap::Parser;
+use osc_lib::OscArg;
 use std::time::Duration;
 use tokio::time::timeout;
 use x32_lib::MixerClient;
-use osc_lib::OscArg;
 
 /// Command-line arguments for the `x32_jog4xlive` tool.
 #[derive(Parser, Debug)]
@@ -51,15 +51,31 @@ pub async fn run(args: Args) -> Result<()> {
 
     // Initialize User Assign section bank C encoders 1 and 3
     // Set X32 Bank C Encoder 1 to its default value: 64
-    client.send_message("/config/userctrl/C/enc/1", vec![OscArg::String("MP13000".to_string())]).await?;
-    client.send_message("/-stat/userpar/33/value", vec![OscArg::Int(64)]).await?;
+    client
+        .send_message(
+            "/config/userctrl/C/enc/1",
+            vec![OscArg::String("MP13000".to_string())],
+        )
+        .await?;
+    client
+        .send_message("/-stat/userpar/33/value", vec![OscArg::Int(64)])
+        .await?;
 
     // Set X32 Bank C Encoder 3 to its default value: 0
-    client.send_message("/config/userctrl/C/enc/3", vec![OscArg::String("MP14000".to_string())]).await?;
-    client.send_message("/-stat/userpar/35/value", vec![OscArg::Int(0)]).await?;
+    client
+        .send_message(
+            "/config/userctrl/C/enc/3",
+            vec![OscArg::String("MP14000".to_string())],
+        )
+        .await?;
+    client
+        .send_message("/-stat/userpar/35/value", vec![OscArg::Int(0)])
+        .await?;
 
     // Select X32 Bank C
-    client.send_message("/-stat/userbank", vec![OscArg::Int(2)]).await?;
+    client
+        .send_message("/-stat/userbank", vec![OscArg::Int(2)])
+        .await?;
 
     if args.verbose {
         println!("Initialization complete.");
@@ -86,7 +102,10 @@ pub async fn run(args: Args) -> Result<()> {
                             let remaining = tensofms % 6000;
                             let seconds = remaining / 100;
                             let tenths = remaining % 100;
-                            println!("Time between tics: {:02}m{:02}s{:02}", minutes, seconds, tenths);
+                            println!(
+                                "Time between tics: {:02}m{:02}s{:02}",
+                                minutes, seconds, tenths
+                            );
                         }
                     }
                 }
@@ -124,7 +143,9 @@ async fn handle_jog_move(client: &MixerClient, move_val: i32, delta_time: i32) -
 
                         let start2 = std::time::Instant::now();
                         while start2.elapsed() < timeout_duration {
-                            if let Ok(Ok(msg2)) = timeout(Duration::from_millis(50), rx.recv()).await {
+                            if let Ok(Ok(msg2)) =
+                                timeout(Duration::from_millis(50), rx.recv()).await
+                            {
                                 if msg2.path == "/-stat/urec/etime" {
                                     if let Some(OscArg::Int(etime)) = msg2.args.first() {
                                         let mut new_etime = *etime;
@@ -136,16 +157,20 @@ async fn handle_jog_move(client: &MixerClient, move_val: i32, delta_time: i32) -
                                         new_etime += 1;
 
                                         // Set new position
-                                        client.send_message(
-                                            "/-action/setposition",
-                                            vec![OscArg::Int(new_etime)],
-                                        ).await?;
+                                        client
+                                            .send_message(
+                                                "/-action/setposition",
+                                                vec![OscArg::Int(new_etime)],
+                                            )
+                                            .await?;
 
                                         // Reset rotary cursor
-                                        client.send_message(
-                                            "/-stat/userpar/33/value",
-                                            vec![OscArg::Int(64)],
-                                        ).await?;
+                                        client
+                                            .send_message(
+                                                "/-stat/userpar/33/value",
+                                                vec![OscArg::Int(64)],
+                                            )
+                                            .await?;
 
                                         return Ok(());
                                     }
@@ -176,52 +201,64 @@ mod tests {
     }
 }
 
-    #[tokio::test]
-    async fn test_handle_jog_move() {
-        let port = 44444;
-        let addr = format!("127.0.0.1:{}", port);
+#[tokio::test]
+async fn test_handle_jog_move() {
+    let port = 44444;
+    let addr = format!("127.0.0.1:{}", port);
 
-        // Setup mock server
-        let mock_server = tokio::net::UdpSocket::bind(&addr).await.unwrap();
+    // Setup mock server
+    let mock_server = tokio::net::UdpSocket::bind(&addr).await.unwrap();
 
-        let client = MixerClient::connect(&addr, false).await.unwrap();
-        let client = std::sync::Arc::new(client);
+    let client = MixerClient::connect(&addr, false).await.unwrap();
+    let client = std::sync::Arc::new(client);
 
-        // Spawn jog handler
-        let client_clone = client.clone();
-        tokio::spawn(async move {
-            let _ = handle_jog_move(&client_clone, 65, 10).await;
-        });
+    // Spawn jog handler
+    let client_clone = client.clone();
+    tokio::spawn(async move {
+        let _ = handle_jog_move(&client_clone, 65, 10).await;
+    });
 
-        let mut buf = vec![0u8; 1024];
+    let mut buf = vec![0u8; 1024];
 
-        // Expect /state query
-        let (len, peer) = mock_server.recv_from(&mut buf).await.unwrap();
-        let query_msg = osc_lib::OscMessage::from_bytes(&buf[..len]).unwrap();
-        assert_eq!(query_msg.path, "/-stat/urec/state");
+    // Expect /state query
+    let (len, peer) = mock_server.recv_from(&mut buf).await.unwrap();
+    let query_msg = osc_lib::OscMessage::from_bytes(&buf[..len]).unwrap();
+    assert_eq!(query_msg.path, "/-stat/urec/state");
 
-        // Reply with play state
-        let reply_msg = osc_lib::OscMessage::new("/-stat/urec/state".to_string(), vec![osc_lib::OscArg::Int(2)]);
-        mock_server.send_to(&reply_msg.to_bytes().unwrap(), peer).await.unwrap();
+    // Reply with play state
+    let reply_msg = osc_lib::OscMessage::new(
+        "/-stat/urec/state".to_string(),
+        vec![osc_lib::OscArg::Int(2)],
+    );
+    mock_server
+        .send_to(&reply_msg.to_bytes().unwrap(), peer)
+        .await
+        .unwrap();
 
-        // Expect /etime query
-        let (len, peer) = mock_server.recv_from(&mut buf).await.unwrap();
-        let query_msg2 = osc_lib::OscMessage::from_bytes(&buf[..len]).unwrap();
-        assert_eq!(query_msg2.path, "/-stat/urec/etime");
+    // Expect /etime query
+    let (len, peer) = mock_server.recv_from(&mut buf).await.unwrap();
+    let query_msg2 = osc_lib::OscMessage::from_bytes(&buf[..len]).unwrap();
+    assert_eq!(query_msg2.path, "/-stat/urec/etime");
 
-        // Reply with etime
-        let reply_msg2 = osc_lib::OscMessage::new("/-stat/urec/etime".to_string(), vec![osc_lib::OscArg::Int(500)]);
-        mock_server.send_to(&reply_msg2.to_bytes().unwrap(), peer).await.unwrap();
+    // Reply with etime
+    let reply_msg2 = osc_lib::OscMessage::new(
+        "/-stat/urec/etime".to_string(),
+        vec![osc_lib::OscArg::Int(500)],
+    );
+    mock_server
+        .send_to(&reply_msg2.to_bytes().unwrap(), peer)
+        .await
+        .unwrap();
 
-        // Expect /action/setposition
-        let (len, _) = mock_server.recv_from(&mut buf).await.unwrap();
-        let set_msg = osc_lib::OscMessage::from_bytes(&buf[..len]).unwrap();
-        assert_eq!(set_msg.path, "/-action/setposition");
-        assert_eq!(set_msg.args[0], osc_lib::OscArg::Int(511));
+    // Expect /action/setposition
+    let (len, _) = mock_server.recv_from(&mut buf).await.unwrap();
+    let set_msg = osc_lib::OscMessage::from_bytes(&buf[..len]).unwrap();
+    assert_eq!(set_msg.path, "/-action/setposition");
+    assert_eq!(set_msg.args[0], osc_lib::OscArg::Int(511));
 
-        // Expect cursor reset
-        let (len, _) = mock_server.recv_from(&mut buf).await.unwrap();
-        let reset_msg = osc_lib::OscMessage::from_bytes(&buf[..len]).unwrap();
-        assert_eq!(reset_msg.path, "/-stat/userpar/33/value");
-        assert_eq!(reset_msg.args[0], osc_lib::OscArg::Int(64));
-    }
+    // Expect cursor reset
+    let (len, _) = mock_server.recv_from(&mut buf).await.unwrap();
+    let reset_msg = osc_lib::OscMessage::from_bytes(&buf[..len]).unwrap();
+    assert_eq!(reset_msg.path, "/-stat/userpar/33/value");
+    assert_eq!(reset_msg.args[0], osc_lib::OscArg::Int(64));
+}
