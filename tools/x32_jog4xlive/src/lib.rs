@@ -13,6 +13,7 @@
 use anyhow::Result;
 use clap::Parser;
 
+
 use osc_lib::OscArg;
 use x32_lib::MixerClient;
 
@@ -52,31 +53,15 @@ pub async fn run(args: Args) -> Result<()> {
 
     // Initialize User Assign section bank C encoders 1 and 3
     // Set X32 Bank C Encoder 1 to its default value: 64
-    client
-        .send_message(
-            "/config/userctrl/C/enc/1",
-            vec![OscArg::String("MP13000".to_string())],
-        )
-        .await?;
-    client
-        .send_message("/-stat/userpar/33/value", vec![OscArg::Int(64)])
-        .await?;
+    client.send_message("/config/userctrl/C/enc/1", vec![OscArg::String("MP13000".to_string())]).await?;
+    client.send_message("/-stat/userpar/33/value", vec![OscArg::Int(64)]).await?;
 
     // Set X32 Bank C Encoder 3 to its default value: 0
-    client
-        .send_message(
-            "/config/userctrl/C/enc/3",
-            vec![OscArg::String("MP14000".to_string())],
-        )
-        .await?;
-    client
-        .send_message("/-stat/userpar/35/value", vec![OscArg::Int(0)])
-        .await?;
+    client.send_message("/config/userctrl/C/enc/3", vec![OscArg::String("MP14000".to_string())]).await?;
+    client.send_message("/-stat/userpar/35/value", vec![OscArg::Int(0)]).await?;
 
     // Select X32 Bank C
-    client
-        .send_message("/-stat/userbank", vec![OscArg::Int(2)])
-        .await?;
+    client.send_message("/-stat/userbank", vec![OscArg::Int(2)]).await?;
 
     if args.verbose {
         println!("Initialization complete.");
@@ -101,10 +86,7 @@ pub async fn run(args: Args) -> Result<()> {
                             let remaining = tensofms % 6000;
                             let seconds = remaining / 100;
                             let tenths = remaining % 100;
-                            println!(
-                                "Time between tics: {:02}m{:02}s{:02}",
-                                minutes, seconds, tenths
-                            );
+                            println!("Time between tics: {:02}m{:02}s{:02}", minutes, seconds, tenths);
                         }
                     }
                 }
@@ -133,12 +115,8 @@ async fn handle_jog_move(client: &MixerClient, move_val: i32, delta_time: i32) -
                 }
                 new_etime += 1;
 
-                client
-                    .send_message("/-action/setposition", vec![OscArg::Int(new_etime)])
-                    .await?;
-                client
-                    .send_message("/-stat/userpar/33/value", vec![OscArg::Int(64)])
-                    .await?;
+                client.send_message("/-action/setposition", vec![OscArg::Int(new_etime)]).await?;
+                client.send_message("/-stat/userpar/33/value", vec![OscArg::Int(64)]).await?;
             }
         }
     }

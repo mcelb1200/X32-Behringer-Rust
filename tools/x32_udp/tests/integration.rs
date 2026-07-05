@@ -17,14 +17,9 @@ fn test_x32_udp_communication() {
         loop {
             if let Ok((len, peer_addr)) = server.recv_from(&mut buf) {
                 if len >= 12 && &buf[0..7] == b"/status" {
-                    let msg = osc_lib::OscMessage::new(
-                        "/status".to_string(),
-                        vec![osc_lib::OscArg::String("active".to_string())],
-                    );
+                    let msg = osc_lib::OscMessage::new("/status".to_string(), vec![osc_lib::OscArg::String("active".to_string())]);
                     let response = msg.to_bytes().unwrap();
-                    server
-                        .send_to(&response, peer_addr)
-                        .expect("Mock server failed to send response");
+                    server.send_to(&response, peer_addr).expect("Mock server failed to send response");
                     break;
                 }
             } else {
