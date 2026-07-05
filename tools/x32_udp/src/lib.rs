@@ -3,8 +3,8 @@ use clap::Parser;
 use osc_lib::OscMessage;
 use std::str::FromStr;
 use std::time::Duration;
-use x32_lib::MixerClient;
 use tokio::time::timeout;
+use x32_lib::MixerClient;
 
 /// A simple UDP client for sending OSC messages to the X32 mixer and receiving responses.
 #[derive(Parser, Debug)]
@@ -45,7 +45,10 @@ pub async fn run(args: Args) -> Result<()> {
         }
     };
 
-    let payload_len = msg.to_bytes().context("Failed to serialize OSC message")?.len();
+    let payload_len = msg
+        .to_bytes()
+        .context("Failed to serialize OSC message")?
+        .len();
 
     match client.send_message(&msg.path, msg.args).await {
         Ok(_) => {
