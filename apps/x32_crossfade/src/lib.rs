@@ -41,21 +41,21 @@ pub async fn run(args: Args) -> Result<()> {
     let f_a = std::fs::File::open(&args.scene_a)
         .with_context(|| format!("Failed to open scene a: {}", args.scene_a))?;
     let mut scn_a_content = String::new();
-    f_a.take(1024 * 1024 + 1)
+    f_a.take(256 * 1024 + 1)
         .read_to_string(&mut scn_a_content)
         .with_context(|| format!("Failed to read scene a: {}", args.scene_a))?;
-    if scn_a_content.len() > 1024 * 1024 {
-        anyhow::bail!("Scene A file is too large (exceeds 1MB)");
+    if scn_a_content.len() > 256 * 1024 {
+        anyhow::bail!("Scene A file is too large (exceeds 256KB)");
     }
 
     let f_b = std::fs::File::open(&args.scene_b)
         .with_context(|| format!("Failed to open scene b: {}", args.scene_b))?;
     let mut scn_b_content = String::new();
-    f_b.take(1024 * 1024 + 1)
+    f_b.take(256 * 1024 + 1)
         .read_to_string(&mut scn_b_content)
         .with_context(|| format!("Failed to read scene b: {}", args.scene_b))?;
-    if scn_b_content.len() > 1024 * 1024 {
-        anyhow::bail!("Scene B file is too large (exceeds 1MB)");
+    if scn_b_content.len() > 256 * 1024 {
+        anyhow::bail!("Scene B file is too large (exceeds 256KB)");
     }
 
     let map_a = parse_scene_to_map(&scn_a_content);
