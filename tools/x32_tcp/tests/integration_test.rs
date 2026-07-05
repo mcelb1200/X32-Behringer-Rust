@@ -9,17 +9,24 @@ fn test_server_e2e() -> Result<(), Box<dyn std::error::Error>> {
     // 1. Start the x32_tcp server in a separate process
     let bin = escargot::CargoBuild::new().bin("x32_tcp").run()?;
     let mut cmd = bin.command();
+    // Find a free TCP port for x32_tcp to listen on
+    let tcp_listener = std::net::TcpListener::bind("127.0.0.1:0")?;
+    let tcp_port = tcp_listener.local_addr()?.port();
+    drop(tcp_listener);
+
+    // 2. Run a mock UDP server to act as the X32 mixer
+    let mock_x32_socket = UdpSocket::bind("127.0.0.1:0")?;
+    let udp_port = mock_x32_socket.local_addr()?.port();
+    let mock_x32_socket_clone = mock_x32_socket.try_clone()?;
+
     let mut server_process = cmd
         .arg("-p")
-        .arg("10043")
+        .arg(tcp_port.to_string())
         .arg("-i")
-        .arg("127.0.0.1:10025")
+        .arg(format!("127.0.0.1:{}", udp_port))
         .spawn()?;
     thread::sleep(Duration::from_secs(1)); // Wait for the server to start
 
-    // 2. Run a mock UDP server to act as the X32 mixer
-    let mock_x32_socket = UdpSocket::bind("127.0.0.1:10025")?;
-    let mock_x32_socket_clone = mock_x32_socket.try_clone()?;
     let mock_server_handle = thread::spawn(move || {
         let mut buf = [0; 1024];
         loop {
@@ -44,7 +51,7 @@ fn test_server_e2e() -> Result<(), Box<dyn std::error::Error>> {
     });
 
     // 3. Connect a TCP client to the x32_tcp server
-    let mut client_stream = TcpStream::connect("127.0.0.1:10043")?;
+    let mut client_stream = TcpStream::connect(format!("127.0.0.1:{}", tcp_port))?;
     let mut reader = BufReader::new(client_stream.try_clone()?);
 
     // 4. Send a command from the client
