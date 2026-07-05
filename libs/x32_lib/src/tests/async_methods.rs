@@ -5,15 +5,20 @@ use tokio::time::Duration;
 
 #[tokio::test]
 async fn test_async_methods() {
+    let mock_x32_socket = std::net::UdpSocket::bind("127.0.0.1:0").unwrap();
+    let udp_port = mock_x32_socket.local_addr().unwrap().port();
+    drop(mock_x32_socket); // Free the port so the emulator can use it
+
     // Start the emulator in a separate thread
-    thread::spawn(|| {
-        x32_emulator::server::run("127.0.0.1:10025", None, None).unwrap();
+    let bind_addr = format!("127.0.0.1:{}", udp_port);
+    thread::spawn(move || {
+        x32_emulator::server::run(&bind_addr, None, None).unwrap();
     });
 
     // Give emulator a moment to start
     tokio::time::sleep(Duration::from_millis(100)).await;
 
-    let client = MixerClient::connect("127.0.0.1:10025", false)
+    let client = MixerClient::connect(&format!("127.0.0.1:{}", udp_port), false)
         .await
         .unwrap();
 
