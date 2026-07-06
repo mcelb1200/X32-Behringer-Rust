@@ -69,15 +69,14 @@ impl Config {
 
         // Line 1: width height verbose delayb delayg xxsend xrsend
         let line1 = next_line()?;
-        let parts1: Vec<&str> = line1.split_whitespace().collect();
-        if parts1.len() < 7 {
-            anyhow::bail!("Invalid format in line 1");
-        }
-        let verbose = parts1[2].parse::<i32>()? != 0;
-        let delay_bank = parts1[3].parse::<u64>()?;
-        let delay_generic = parts1[4].parse::<u64>()?;
-        let xx_send_mask = parts1[5].parse::<i32>()?;
-        let xr_send_mask = parts1[6].parse::<i32>()?;
+        let mut parts1 = line1.split_whitespace();
+        let _ = parts1.next(); // width
+        let _ = parts1.next(); // height
+        let verbose = parts1.next().context("Missing verbose in line 1")?.parse::<i32>()? != 0;
+        let delay_bank = parts1.next().context("Missing delay_bank in line 1")?.parse::<u64>()?;
+        let delay_generic = parts1.next().context("Missing delay_generic in line 1")?.parse::<u64>()?;
+        let xx_send_mask = parts1.next().context("Missing xx_send_mask in line 1")?.parse::<i32>()?;
+        let xr_send_mask = parts1.next().context("Missing xr_send_mask in line 1")?.parse::<i32>()?;
 
         // Line 2: X32 IP
         let x32_ip = next_line()?;
@@ -93,66 +92,56 @@ impl Config {
 
         // Line 6: flags
         let line6 = next_line()?;
-        let parts6: Vec<&str> = line6.split_whitespace().collect();
-        if parts6.len() < 6 {
-            anyhow::bail!("Invalid format in line 6");
-        }
-        let transport_on = parts6[0].parse::<i32>()? != 0;
-        let ch_bank_on = parts6[1].parse::<i32>()? != 0;
-        let marker_btn_on = parts6[2].parse::<i32>()? != 0;
-        let bank_c_color = parts6[3].parse::<i32>()?;
-        let eq_ctrl_on = parts6[4].parse::<i32>()? != 0;
-        let master_on = parts6[5].parse::<i32>()? != 0;
+        let mut parts6 = line6.split_whitespace();
+        let transport_on = parts6.next().context("Missing transport_on in line 6")?.parse::<i32>()? != 0;
+        let ch_bank_on = parts6.next().context("Missing ch_bank_on in line 6")?.parse::<i32>()? != 0;
+        let marker_btn_on = parts6.next().context("Missing marker_btn_on in line 6")?.parse::<i32>()? != 0;
+        let bank_c_color = parts6.next().context("Missing bank_c_color in line 6")?.parse::<i32>()?;
+        let eq_ctrl_on = parts6.next().context("Missing eq_ctrl_on in line 6")?.parse::<i32>()? != 0;
+        let master_on = parts6.next().context("Missing master_on in line 6")?.parse::<i32>()? != 0;
 
         // Line 7: Ranges
         let line7 = next_line()?;
-        let parts7: Vec<&str> = line7.split_whitespace().collect();
-        if parts7.len() < 11 {
-            anyhow::bail!("Invalid format in line 7");
-        }
-        let trk_min = parts7[0].parse::<i32>()?;
-        let trk_max = parts7[1].parse::<i32>()?;
-        let aux_min = parts7[2].parse::<i32>()?;
-        let aux_max = parts7[3].parse::<i32>()?;
-        let fxr_min = parts7[4].parse::<i32>()?;
-        let fxr_max = parts7[5].parse::<i32>()?;
-        let bus_min = parts7[6].parse::<i32>()?;
-        let bus_max = parts7[7].parse::<i32>()?;
-        let dca_min = parts7[8].parse::<i32>()?;
-        let dca_max = parts7[9].parse::<i32>()?;
-        let track_send_offset = parts7[10].parse::<i32>()?;
+        let mut parts7 = line7.split_whitespace();
+        let trk_min = parts7.next().context("Missing trk_min in line 7")?.parse::<i32>()?;
+        let trk_max = parts7.next().context("Missing trk_max in line 7")?.parse::<i32>()?;
+        let aux_min = parts7.next().context("Missing aux_min in line 7")?.parse::<i32>()?;
+        let aux_max = parts7.next().context("Missing aux_max in line 7")?.parse::<i32>()?;
+        let fxr_min = parts7.next().context("Missing fxr_min in line 7")?.parse::<i32>()?;
+        let fxr_max = parts7.next().context("Missing fxr_max in line 7")?.parse::<i32>()?;
+        let bus_min = parts7.next().context("Missing bus_min in line 7")?.parse::<i32>()?;
+        let bus_max = parts7.next().context("Missing bus_max in line 7")?.parse::<i32>()?;
+        let dca_min = parts7.next().context("Missing dca_min in line 7")?.parse::<i32>()?;
+        let dca_max = parts7.next().context("Missing dca_max in line 7")?.parse::<i32>()?;
+        let track_send_offset = parts7.next().context("Missing track_send_offset in line 7")?.parse::<i32>()?;
 
         // Next 8 lines: RDCA ranges
         let mut rdca = Vec::new();
         for _ in 0..8 {
             let line = next_line()?;
-            let parts: Vec<&str> = line.split_whitespace().collect();
-            if parts.len() < 2 {
-                anyhow::bail!("Invalid format in RDCA line");
-            }
-            rdca.push((parts[0].parse::<i32>()?, parts[1].parse::<i32>()?));
+            let mut parts = line.split_whitespace();
+            let p0 = parts.next().context("Missing RDCA param 1")?.parse::<i32>()?;
+            let p1 = parts.next().context("Missing RDCA param 2")?.parse::<i32>()?;
+            rdca.push((p0, p1));
         }
 
         // Last line: Bank controls
         let line_last = next_line()?;
-        let parts_last: Vec<&str> = line_last.split_whitespace().collect();
-        if parts_last.len() < 5 {
-            anyhow::bail!("Invalid format in last line");
-        }
-        let mut bank_up = parts_last[0].parse::<i32>()?;
-        let mut bank_dn = parts_last[1].parse::<i32>()?;
-        let marker_btn = parts_last[2].parse::<i32>()?;
-        let ch_bank_offset = parts_last[3].parse::<i32>()?;
-        let bank_size = parts_last[4].parse::<i32>()?;
+        let mut parts_last = line_last.split_whitespace();
+        let mut bank_up = parts_last.next().context("Missing bank_up")?.parse::<i32>()?;
+        let mut bank_dn = parts_last.next().context("Missing bank_dn")?.parse::<i32>()?;
+        let marker_btn = parts_last.next().context("Missing marker_btn")?.parse::<i32>()?;
+        let ch_bank_offset = parts_last.next().context("Missing ch_bank_offset")?.parse::<i32>()?;
+        let bank_size = parts_last.next().context("Missing bank_size")?.parse::<i32>()?;
 
         // If transport_on is OFF, check if there are extra bank buttons in the file?
         if ch_bank_on && !transport_on {
             // Try to read one more line
             if let Some(Ok(line)) = lines.next() {
-                let parts: Vec<&str> = line.split_whitespace().collect();
-                if parts.len() >= 2 {
-                    bank_up = parts[0].parse::<i32>()?;
-                    bank_dn = parts[1].parse::<i32>()?;
+                let mut parts = line.split_whitespace();
+                if let (Some(p0), Some(p1)) = (parts.next(), parts.next()) {
+                    bank_up = p0.parse::<i32>()?;
+                    bank_dn = p1.parse::<i32>()?;
                 }
             }
         }
