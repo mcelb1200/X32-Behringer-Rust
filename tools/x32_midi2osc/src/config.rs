@@ -58,7 +58,9 @@ pub fn parse_file(path: &str) -> Result<Vec<MidiOscCommand>> {
             let p2 = parts.next();
             let p3 = parts.next();
 
-            if let (Some(status_str), Some(channel_str), Some(data1_str), Some(data2_str)) = (p0, p1, p2, p3) {
+            if let (Some(status_str), Some(channel_str), Some(data1_str), Some(data2_str)) =
+                (p0, p1, p2, p3)
+            {
                 // ⚡ Bolt: Parse midi_status hex manually instead of using u8::from_str_radix
                 // This avoids overhead of slice creation, generic parsing, and utf8 checks,
                 // which improves configuration loading speed for a better UX.

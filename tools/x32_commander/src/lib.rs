@@ -409,13 +409,18 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
                                     let p3 = parts.next();
                                     let p4 = parts.next();
 
-                                    if let (Some(channel_str), Some(param_msb_str), Some(param_lsb_str), Some(val_msb_str)) = (p0, p1, p2, p3) {
+                                    if let (
+                                        Some(channel_str),
+                                        Some(param_msb_str),
+                                        Some(param_lsb_str),
+                                        Some(val_msb_str),
+                                    ) = (p0, p1, p2, p3)
+                                    {
                                         let channel = channel_str.parse::<u8>().unwrap_or(0);
                                         let param_msb = param_msb_str.parse::<u8>().unwrap_or(0);
                                         let param_lsb = param_lsb_str.parse::<u8>().unwrap_or(0);
                                         let val_msb = val_msb_str.parse::<u8>().unwrap_or(0);
-                                        let val_lsb =
-                                            p4.and_then(|s| s.parse::<u8>().ok());
+                                        let val_lsb = p4.and_then(|s| s.parse::<u8>().ok());
 
                                         let bytes = generate_rpn_nrpn(
                                             is_nrpn, channel, param_msb, param_lsb, val_msb,

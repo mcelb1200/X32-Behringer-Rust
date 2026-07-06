@@ -72,11 +72,27 @@ impl Config {
         let mut parts1 = line1.split_whitespace();
         let _ = parts1.next(); // width
         let _ = parts1.next(); // height
-        let verbose = parts1.next().context("Missing verbose in line 1")?.parse::<i32>()? != 0;
-        let delay_bank = parts1.next().context("Missing delay_bank in line 1")?.parse::<u64>()?;
-        let delay_generic = parts1.next().context("Missing delay_generic in line 1")?.parse::<u64>()?;
-        let xx_send_mask = parts1.next().context("Missing xx_send_mask in line 1")?.parse::<i32>()?;
-        let xr_send_mask = parts1.next().context("Missing xr_send_mask in line 1")?.parse::<i32>()?;
+        let verbose = parts1
+            .next()
+            .context("Missing verbose in line 1")?
+            .parse::<i32>()?
+            != 0;
+        let delay_bank = parts1
+            .next()
+            .context("Missing delay_bank in line 1")?
+            .parse::<u64>()?;
+        let delay_generic = parts1
+            .next()
+            .context("Missing delay_generic in line 1")?
+            .parse::<u64>()?;
+        let xx_send_mask = parts1
+            .next()
+            .context("Missing xx_send_mask in line 1")?
+            .parse::<i32>()?;
+        let xr_send_mask = parts1
+            .next()
+            .context("Missing xr_send_mask in line 1")?
+            .parse::<i32>()?;
 
         // Line 2: X32 IP
         let x32_ip = next_line()?;
@@ -93,46 +109,123 @@ impl Config {
         // Line 6: flags
         let line6 = next_line()?;
         let mut parts6 = line6.split_whitespace();
-        let transport_on = parts6.next().context("Missing transport_on in line 6")?.parse::<i32>()? != 0;
-        let ch_bank_on = parts6.next().context("Missing ch_bank_on in line 6")?.parse::<i32>()? != 0;
-        let marker_btn_on = parts6.next().context("Missing marker_btn_on in line 6")?.parse::<i32>()? != 0;
-        let bank_c_color = parts6.next().context("Missing bank_c_color in line 6")?.parse::<i32>()?;
-        let eq_ctrl_on = parts6.next().context("Missing eq_ctrl_on in line 6")?.parse::<i32>()? != 0;
-        let master_on = parts6.next().context("Missing master_on in line 6")?.parse::<i32>()? != 0;
+        let transport_on = parts6
+            .next()
+            .context("Missing transport_on in line 6")?
+            .parse::<i32>()?
+            != 0;
+        let ch_bank_on = parts6
+            .next()
+            .context("Missing ch_bank_on in line 6")?
+            .parse::<i32>()?
+            != 0;
+        let marker_btn_on = parts6
+            .next()
+            .context("Missing marker_btn_on in line 6")?
+            .parse::<i32>()?
+            != 0;
+        let bank_c_color = parts6
+            .next()
+            .context("Missing bank_c_color in line 6")?
+            .parse::<i32>()?;
+        let eq_ctrl_on = parts6
+            .next()
+            .context("Missing eq_ctrl_on in line 6")?
+            .parse::<i32>()?
+            != 0;
+        let master_on = parts6
+            .next()
+            .context("Missing master_on in line 6")?
+            .parse::<i32>()?
+            != 0;
 
         // Line 7: Ranges
         let line7 = next_line()?;
         let mut parts7 = line7.split_whitespace();
-        let trk_min = parts7.next().context("Missing trk_min in line 7")?.parse::<i32>()?;
-        let trk_max = parts7.next().context("Missing trk_max in line 7")?.parse::<i32>()?;
-        let aux_min = parts7.next().context("Missing aux_min in line 7")?.parse::<i32>()?;
-        let aux_max = parts7.next().context("Missing aux_max in line 7")?.parse::<i32>()?;
-        let fxr_min = parts7.next().context("Missing fxr_min in line 7")?.parse::<i32>()?;
-        let fxr_max = parts7.next().context("Missing fxr_max in line 7")?.parse::<i32>()?;
-        let bus_min = parts7.next().context("Missing bus_min in line 7")?.parse::<i32>()?;
-        let bus_max = parts7.next().context("Missing bus_max in line 7")?.parse::<i32>()?;
-        let dca_min = parts7.next().context("Missing dca_min in line 7")?.parse::<i32>()?;
-        let dca_max = parts7.next().context("Missing dca_max in line 7")?.parse::<i32>()?;
-        let track_send_offset = parts7.next().context("Missing track_send_offset in line 7")?.parse::<i32>()?;
+        let trk_min = parts7
+            .next()
+            .context("Missing trk_min in line 7")?
+            .parse::<i32>()?;
+        let trk_max = parts7
+            .next()
+            .context("Missing trk_max in line 7")?
+            .parse::<i32>()?;
+        let aux_min = parts7
+            .next()
+            .context("Missing aux_min in line 7")?
+            .parse::<i32>()?;
+        let aux_max = parts7
+            .next()
+            .context("Missing aux_max in line 7")?
+            .parse::<i32>()?;
+        let fxr_min = parts7
+            .next()
+            .context("Missing fxr_min in line 7")?
+            .parse::<i32>()?;
+        let fxr_max = parts7
+            .next()
+            .context("Missing fxr_max in line 7")?
+            .parse::<i32>()?;
+        let bus_min = parts7
+            .next()
+            .context("Missing bus_min in line 7")?
+            .parse::<i32>()?;
+        let bus_max = parts7
+            .next()
+            .context("Missing bus_max in line 7")?
+            .parse::<i32>()?;
+        let dca_min = parts7
+            .next()
+            .context("Missing dca_min in line 7")?
+            .parse::<i32>()?;
+        let dca_max = parts7
+            .next()
+            .context("Missing dca_max in line 7")?
+            .parse::<i32>()?;
+        let track_send_offset = parts7
+            .next()
+            .context("Missing track_send_offset in line 7")?
+            .parse::<i32>()?;
 
         // Next 8 lines: RDCA ranges
         let mut rdca = Vec::new();
         for _ in 0..8 {
             let line = next_line()?;
             let mut parts = line.split_whitespace();
-            let p0 = parts.next().context("Missing RDCA param 1")?.parse::<i32>()?;
-            let p1 = parts.next().context("Missing RDCA param 2")?.parse::<i32>()?;
+            let p0 = parts
+                .next()
+                .context("Missing RDCA param 1")?
+                .parse::<i32>()?;
+            let p1 = parts
+                .next()
+                .context("Missing RDCA param 2")?
+                .parse::<i32>()?;
             rdca.push((p0, p1));
         }
 
         // Last line: Bank controls
         let line_last = next_line()?;
         let mut parts_last = line_last.split_whitespace();
-        let mut bank_up = parts_last.next().context("Missing bank_up")?.parse::<i32>()?;
-        let mut bank_dn = parts_last.next().context("Missing bank_dn")?.parse::<i32>()?;
-        let marker_btn = parts_last.next().context("Missing marker_btn")?.parse::<i32>()?;
-        let ch_bank_offset = parts_last.next().context("Missing ch_bank_offset")?.parse::<i32>()?;
-        let bank_size = parts_last.next().context("Missing bank_size")?.parse::<i32>()?;
+        let mut bank_up = parts_last
+            .next()
+            .context("Missing bank_up")?
+            .parse::<i32>()?;
+        let mut bank_dn = parts_last
+            .next()
+            .context("Missing bank_dn")?
+            .parse::<i32>()?;
+        let marker_btn = parts_last
+            .next()
+            .context("Missing marker_btn")?
+            .parse::<i32>()?;
+        let ch_bank_offset = parts_last
+            .next()
+            .context("Missing ch_bank_offset")?
+            .parse::<i32>()?;
+        let bank_size = parts_last
+            .next()
+            .context("Missing bank_size")?
+            .parse::<i32>()?;
 
         // If transport_on is OFF, check if there are extra bank buttons in the file?
         if ch_bank_on && !transport_on {
