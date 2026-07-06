@@ -18,7 +18,8 @@ use std::sync::{Arc, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::fs::File;
 use tokio::io::{AsyncReadExt, AsyncWriteExt, BufReader, BufWriter};
-use tokio::net::UdpSocket;
+use x32_lib::MixerClient;
+use osc_lib::OscMessage;
 use tokio::time::{self, Duration, Instant};
 
 /// Command-line arguments for `x32_replay`.
@@ -60,9 +61,8 @@ struct AppState {
 
 /// The main entry point for the application.
 pub async fn run(args: Args) -> Result<()> {
-    let socket = UdpSocket::bind("0.0.0.0:0").await?;
-    socket.connect(format!("{}:10023", args.ip)).await?;
-    let socket = Arc::new(socket);
+    let addr = format!("{}:10023", args.ip);
+    let client = Arc::new(MixerClient::connect(&addr, false).await?);
 
     if args.verbose {
         println!("Verbose mode enabled.");
@@ -80,11 +80,11 @@ pub async fn run(args: Args) -> Result<()> {
 
     // Background task for logic
     let state_clone = state.clone();
-    let socket_clone = socket.clone();
+    let client_clone = client.clone();
     let file_path = args.file.clone();
 
     tokio::spawn(async move {
-        run_logic(state_clone, socket_clone, file_path).await;
+        run_logic(state_clone, client_clone, file_path).await;
     });
 
     // Stdin loop
@@ -169,16 +169,14 @@ pub async fn run(args: Args) -> Result<()> {
 /// This function runs in a background task and switches behavior based on the `AppState`.
 /// - **Recording**: Captures packets from UDP, timestamps them, and writes to file.
 /// - **Playing**: Reads packets from file, sleeps for the correct duration, and sends to UDP.
-async fn run_logic(state: Arc<Mutex<AppState>>, socket: Arc<UdpSocket>, default_file: String) {
-    let mut buf = [0u8; 2048];
+async fn run_logic(state: Arc<Mutex<AppState>>, client: Arc<MixerClient>, default_file: String) {
     let mut last_xremote = Instant::now();
     let mut file_writer: Option<BufWriter<File>> = None;
     let mut file_reader: Option<BufReader<tokio::io::Take<File>>> = None;
 
-    // Subscribe
-    // Use proper OSC message construction or explicit bytes.
-    // Assuming simple bytes are intended here for minimal overhead or legacy reasons.
-    if let Err(e) = socket.send(b"/info\0\0\0,").await {
+    let mut rx = client.subscribe();
+
+    if let Err(e) = client.send_message("/info", vec![]).await {
         eprintln!("Failed to send subscription: {}", e);
     }
 
@@ -206,30 +204,33 @@ async fn run_logic(state: Arc<Mutex<AppState>>, socket: Arc<UdpSocket>, default_
 
                 // Send /xremote keepalive
                 if last_xremote.elapsed() > Duration::from_secs(9) {
-                    if let Err(e) = socket.send(b"/xremote\0\0\0\0,").await {
+                    if let Err(e) = client.send_message("/xremote", vec![]).await {
                         eprintln!("Failed to send keepalive: {}", e);
                     }
                     last_xremote = Instant::now();
                 }
 
                 // Recv with timeout
-                if let Ok(Ok(len)) =
-                    time::timeout(Duration::from_millis(100), socket.recv(&mut buf)).await
+                if let Ok(Ok(msg)) =
+                    time::timeout(Duration::from_millis(100), rx.recv()).await
                 {
-                    // Write timestamp + len + data
-                    if let Some(w) = &mut file_writer {
-                        let now = SystemTime::now()
-                            .duration_since(UNIX_EPOCH)
-                            .unwrap_or_else(|e| {
-                                eprintln!("Warning: System clock drifted backward or is before UNIX EPOCH ({}). Proceeding with duration zero.", e);
-                                Duration::ZERO
-                            });
-                        let _ = w.write_u64_le(now.as_secs()).await;
-                        let _ = w.write_u32_le(now.subsec_micros()).await;
-                        let _ = w.write_u32_le(len as u32).await;
-                        let _ = w.write_all(&buf[..len]).await;
-                        // OPTIMIZATION: Removed `.flush().await` in this hot loop to allow `BufWriter` to
-                        // actually buffer writes, significantly reducing I/O syscall overhead during recording.
+                    if let Ok(bytes) = msg.to_bytes() {
+                        let len = bytes.len();
+                        // Write timestamp + len + data
+                        if let Some(w) = &mut file_writer {
+                            let now = SystemTime::now()
+                                .duration_since(UNIX_EPOCH)
+                                .unwrap_or_else(|e| {
+                                    eprintln!("Warning: System clock drifted backward or is before UNIX EPOCH ({}). Proceeding with duration zero.", e);
+                                    Duration::ZERO
+                                });
+                            let _ = w.write_u64_le(now.as_secs()).await;
+                            let _ = w.write_u32_le(now.subsec_micros()).await;
+                            let _ = w.write_u32_le(len as u32).await;
+                            let _ = w.write_all(&bytes).await;
+                            // OPTIMIZATION: Removed `.flush().await` in this hot loop to allow `BufWriter` to
+                            // actually buffer writes, significantly reducing I/O syscall overhead during recording.
+                        }
                     }
                 }
             }
@@ -317,7 +318,9 @@ async fn run_logic(state: Arc<Mutex<AppState>>, socket: Arc<UdpSocket>, default_
                                         time::sleep(dur).await;
                                     }
 
-                                    let _ = socket.send(&data).await;
+                                    if let Ok(msg) = OscMessage::from_bytes(&data) {
+                                        let _ = client.send_message(&msg.path, msg.args).await;
+                                    }
                                 }
                             }
                         }
