@@ -14,13 +14,13 @@
 
 use anyhow::Result;
 use clap::Parser;
+use osc_lib::OscMessage;
 use std::sync::{Arc, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::fs::File;
 use tokio::io::{AsyncReadExt, AsyncWriteExt, BufReader, BufWriter};
-use x32_lib::MixerClient;
-use osc_lib::OscMessage;
 use tokio::time::{self, Duration, Instant};
+use x32_lib::MixerClient;
 
 /// Command-line arguments for `x32_replay`.
 #[derive(Parser, Debug)]
@@ -211,9 +211,7 @@ async fn run_logic(state: Arc<Mutex<AppState>>, client: Arc<MixerClient>, defaul
                 }
 
                 // Recv with timeout
-                if let Ok(Ok(msg)) =
-                    time::timeout(Duration::from_millis(100), rx.recv()).await
-                {
+                if let Ok(Ok(msg)) = time::timeout(Duration::from_millis(100), rx.recv()).await {
                     if let Ok(bytes) = msg.to_bytes() {
                         let len = bytes.len();
                         // Write timestamp + len + data

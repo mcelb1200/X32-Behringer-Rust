@@ -51,7 +51,8 @@ fn test_ssavergw_connection_timeout() {
 
     cmd.assert()
         .failure()
-        .failure().stderr(predicate::str::contains("Check IP"));
+        .failure()
+        .stderr(predicate::str::contains("Check IP"));
 }
 
 #[test]

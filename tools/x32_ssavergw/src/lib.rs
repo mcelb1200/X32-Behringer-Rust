@@ -12,11 +12,11 @@
 
 use anyhow::Result;
 use clap::Parser;
-use osc_lib::{OscArg};
+use osc_lib::OscArg;
 use std::sync::Arc;
-use x32_lib::MixerClient;
 use tokio::sync::Mutex;
 use tokio::time::{self, Duration};
+use x32_lib::MixerClient;
 
 pub mod state;
 use state::AppState;
@@ -108,10 +108,7 @@ async fn save_and_dim(client: &MixerClient, state: &mut AppState) -> Result<()> 
     println!("Saving brightness and dimming...");
 
     // Ask for current values
-    let paths = vec![
-        "/-prefs/lcd/bright",
-        "/-prefs/led/bright",
-    ];
+    let paths = vec!["/-prefs/lcd/bright", "/-prefs/led/bright"];
 
     for path in &paths {
         if let Ok(OscArg::Float(val)) = client.query_value(path).await {
