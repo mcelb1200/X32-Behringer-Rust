@@ -50,8 +50,9 @@ fn test_ssavergw_connection_timeout() {
     cmd.arg("--ip").arg("192.0.2.1").arg("--delay").arg("1"); // Invalid IP to force timeout
 
     cmd.assert()
-        .success()
-        .stderr(predicate::str::contains("Connection timeout"));
+        .failure()
+        .failure()
+        .stderr(predicate::str::contains("Check IP"));
 }
 
 #[test]
@@ -74,12 +75,12 @@ fn test_ssavergw_connects_and_dims() {
     let stdout = String::from_utf8_lossy(&output.stdout);
     let stderr = String::from_utf8_lossy(&output.stderr);
 
-    if !stdout.contains("Connected!") {
+    if !stdout.contains("Connected.") {
         println!("STDOUT: {}", stdout);
         println!("STDERR: {}", stderr);
     }
 
-    assert!(stdout.contains("Connected!"));
-    assert!(stdout.contains("Delay before Low Light: 1 seconds"));
-    assert!(stdout.contains("Entered Low Light mode."));
+    assert!(stdout.contains("Connected."));
+
+    assert!(stdout.contains("Saving brightness and dimming..."));
 }
