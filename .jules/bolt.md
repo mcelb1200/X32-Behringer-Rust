@@ -77,3 +77,6 @@
 ## 2024-07-04 - [Hoist invariant string operations from TUI render loop]
 **Learning:** When updating TUI state (like `AppState` in `x32_autobeat`), dynamically generating display strings inside the `duration_since` tick loop via iterators mapping to strings, collecting to vectors, and joining forces redundant O(N) heap allocations.
 **Action:** Always hoist invariant string constructions (e.g., creating display arrays of static sources) out of hot render loops. Pre-calculate the result outside the loop and pass a cloned copy (or reference) into the state structure to avoid rapid, repeated vector and string allocations.
+## 2024-11-20 - [Eliminate vector allocation during whitespace splitting]
+**Learning:** Using `s.split_whitespace().collect::<Vec<&str>>()[index]` parses lines by allocating a dynamic heap vector, even when only iterating sequentially or accessing predefined fields. This creates bottlenecks in config parsing and networking command paths.
+**Action:** Instead of `.collect::<Vec<&str>>()`, bind the `.split_whitespace()` iterator directly and call `.next()` to parse values without intermediate heap allocations.

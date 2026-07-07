@@ -52,53 +52,59 @@ pub fn parse_file(path: &str) -> Result<Vec<MidiOscCommand>> {
         if let Some((midi_part, osc_part)) = line.split_once('|') {
             let osc_command = osc_part.trim().to_string();
 
-            let parts: Vec<&str> = midi_part.split_whitespace().collect();
-            if parts.len() < 4 {
+            let mut parts = midi_part.split_whitespace();
+            let p0 = parts.next();
+            let p1 = parts.next();
+            let p2 = parts.next();
+            let p3 = parts.next();
+
+            if let (Some(status_str), Some(channel_str), Some(data1_str), Some(data2_str)) =
+                (p0, p1, p2, p3)
+            {
+                // ⚡ Bolt: Parse midi_status hex manually instead of using u8::from_str_radix
+                // This avoids overhead of slice creation, generic parsing, and utf8 checks,
+                // which improves configuration loading speed for a better UX.
+                if status_str.len() > 2 || status_str.is_empty() {
+                    return Err(anyhow!("Invalid midi status hex length"));
+                }
+                let mut midi_status = 0u8;
+                for &b in status_str.as_bytes() {
+                    let v = match b {
+                        b'0'..=b'9' => b - b'0',
+                        b'a'..=b'f' => b - b'a' + 10,
+                        b'A'..=b'F' => b - b'A' + 10,
+                        _ => {
+                            return Err(anyhow!(
+                                "Failed to parse midi status hex: invalid char '{}'",
+                                b as char
+                            ));
+                        }
+                    };
+                    midi_status = (midi_status << 4) | v;
+                }
+
+                let midi_channel: u8 = channel_str
+                    .parse()
+                    .map_err(|e| anyhow!("Failed to parse midi channel: {}", e))?;
+
+                let data1: i32 = data1_str
+                    .parse()
+                    .map_err(|e| anyhow!("Failed to parse data1: {}", e))?;
+
+                let data2: i32 = data2_str
+                    .parse()
+                    .map_err(|e| anyhow!("Failed to parse data2: {}", e))?;
+
+                commands.push(MidiOscCommand {
+                    midi_status,
+                    midi_channel,
+                    data1,
+                    data2,
+                    osc_command,
+                });
+            } else {
                 return Err(anyhow!("Invalid MIDI command format: {}", midi_part));
             }
-
-            // ⚡ Bolt: Parse midi_status hex manually instead of using u8::from_str_radix
-            // This avoids overhead of slice creation, generic parsing, and utf8 checks,
-            // which improves configuration loading speed for a better UX.
-            let status_str = parts[0];
-            if status_str.len() > 2 || status_str.is_empty() {
-                return Err(anyhow!("Invalid midi status hex length"));
-            }
-            let mut midi_status = 0u8;
-            for &b in status_str.as_bytes() {
-                let v = match b {
-                    b'0'..=b'9' => b - b'0',
-                    b'a'..=b'f' => b - b'a' + 10,
-                    b'A'..=b'F' => b - b'A' + 10,
-                    _ => {
-                        return Err(anyhow!(
-                            "Failed to parse midi status hex: invalid char '{}'",
-                            b as char
-                        ));
-                    }
-                };
-                midi_status = (midi_status << 4) | v;
-            }
-
-            let midi_channel: u8 = parts[1]
-                .parse()
-                .map_err(|e| anyhow!("Failed to parse midi channel: {}", e))?;
-
-            let data1: i32 = parts[2]
-                .parse()
-                .map_err(|e| anyhow!("Failed to parse data1: {}", e))?;
-
-            let data2: i32 = parts[3]
-                .parse()
-                .map_err(|e| anyhow!("Failed to parse data2: {}", e))?;
-
-            commands.push(MidiOscCommand {
-                midi_status,
-                midi_channel,
-                data1,
-                data2,
-                osc_command,
-            });
         }
     }
 
