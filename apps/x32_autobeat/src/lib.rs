@@ -264,6 +264,8 @@ pub async fn run(cli: Cli) -> Result<()> {
         .collect::<Vec<_>>()
         .join(", ");
 
+    let mut tab_titles: [String; 8] = core::array::from_fn(|i| format!("FX{}: EMPTY", i + 1));
+
     loop {
         // 1. Process Audio Data (Primary)
         let mut audio_received_this_frame = false;
@@ -342,6 +344,8 @@ pub async fn run(cli: Cli) -> Result<()> {
                         if active_effects[idx] != name {
                             active_effects[idx] = name.clone();
                             effect_handlers[idx] = get_handler(&name);
+                            let short_name = if name.is_empty() { "EMPTY" } else { &name };
+                            tab_titles[idx] = format!("FX{}: {}", idx + 1, short_name);
                         }
                     }
                 }
@@ -419,12 +423,23 @@ pub async fn run(cli: Cli) -> Result<()> {
 
         // 5. UI Update & Input
         if last_ui_update.elapsed() > Duration::from_millis(50) {
+            let msg = if use_fallback {
+                "Fallback (OSC)"
+            } else {
+                "Audio OK"
+            };
+
+            let algo_str = match selected_algorithm {
+                Algorithm::Energy => "Energy",
+                Algorithm::Spectral => "Spectral",
+            };
+
             let state = AppState {
-                source: sources_str.clone(),
+                source: &sources_str,
                 current_bpm: active_bpm,
                 input_level: last_level,
-                active_effects: active_effects.clone(),
-                effect_configs: effect_configs.clone(),
+                active_effects: &active_effects,
+                effect_configs: &effect_configs,
                 is_supported: {
                     let mut is_supp = [false; 8];
                     #[allow(clippy::needless_range_loop)]
@@ -436,12 +451,9 @@ pub async fn run(cli: Cli) -> Result<()> {
                 selected_slot,
                 is_fallback: use_fallback,
                 is_panic,
-                message: if use_fallback {
-                    "Fallback (OSC)".to_string()
-                } else {
-                    "Audio OK".to_string()
-                },
-                algorithm: selected_algorithm.to_string(),
+                message: msg,
+                algorithm: algo_str,
+                tab_titles: &tab_titles,
             };
 
             tui.draw(&state)?;

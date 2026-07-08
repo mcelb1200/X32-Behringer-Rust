@@ -12,12 +12,11 @@
 
 use anyhow::Result;
 use clap::Parser;
-use osc_lib::{OscArg, OscMessage};
-use std::net::SocketAddr;
+use osc_lib::OscArg;
 use std::sync::Arc;
-use tokio::net::UdpSocket;
 use tokio::sync::Mutex;
-use tokio::time::{self, Duration, Instant};
+use tokio::time::{self, Duration};
+use x32_lib::MixerClient;
 
 pub mod state;
 use state::AppState;
@@ -36,232 +35,110 @@ pub struct Args {
 }
 
 pub async fn run(args: Args) -> Result<()> {
-    let x32_addr: SocketAddr = format!("{}:10023", args.ip).parse()?;
-    // We bind with tokio UdpSocket, avoiding `connect` to permit proper `send_to` usage later,
-    // as macOS UDP sockets return "Socket is already connected (os error 56)" when using `send_to` on a `connect`ed socket.
-    let bind_addr = if x32_addr.is_ipv4() {
-        "0.0.0.0:0"
-    } else {
-        "[::]:0"
-    };
-    let socket = UdpSocket::bind(bind_addr).await?;
-
-    let state = Arc::new(Mutex::new(AppState::new(args.delay)));
+    let addr = format!("{}:10023", args.ip);
+    let client = MixerClient::connect(&addr, true).await?;
 
     println!("X32Ssaver - Rust Rewrite");
     println!("Connecting to X32 at {}...", args.ip);
 
-    // Connect phase
-    let info_msg = OscMessage {
-        path: "/info".to_string(),
-        args: vec![],
-    };
-    let info_bytes = info_msg
-        .to_bytes()
-        .map_err(|e| anyhow::anyhow!("OSC Error: {}", e))?;
-    socket.send_to(&info_bytes, x32_addr).await?;
-
-    let mut connected = false;
-    let connect_start = Instant::now();
-    let mut buf = [0u8; 1024];
-
-    while connect_start.elapsed() < Duration::from_secs(1) {
-        if let Ok(Ok((len, _))) =
-            time::timeout(Duration::from_millis(100), socket.recv_from(&mut buf)).await
-        {
-            let data = &buf[..len];
-            // ⚡ Bolt: Check for /info using byte slice instead of String::from_utf8_lossy to avoid string allocation.
-            if data.starts_with(b"/info") {
-                state.lock().await.is_connected = true;
-                connected = true;
-                println!("Connected!");
-                break;
-            }
-        }
+    if client.probe().await {
+        println!(
+            "Connected. Waiting {}s before activating screen saver...",
+            args.delay
+        );
+    } else {
+        return Err(anyhow::anyhow!(
+            "No response from X32 at {}. Check IP.",
+            args.ip
+        ));
     }
 
-    if !connected {
-        eprintln!("Connection timeout. Make sure the X32 is powered on and the IP is correct.");
-        return Ok(());
-    }
+    let mut rx = client.subscribe();
+    let state = Arc::new(Mutex::new(AppState::new(args.delay)));
 
-    println!("Delay before Low Light: {} seconds", args.delay);
-    println!("Press Ctrl+C to exit.");
-
-    let mut interval_xremote = time::interval(Duration::from_secs(9)); // /xremote timeout is 10s
-    let mut interval_check = time::interval(Duration::from_millis(100)); // check screen saver state
-
-    // Set up Ctrl+C handler to restore settings on exit
-    let state_clone = Arc::clone(&state);
-    let socket_clone = Arc::new(socket);
-    let socket_ctrlc = Arc::clone(&socket_clone);
-    let addr_clone = x32_addr;
-
+    let state_clone = state.clone();
+    let addr_clone = addr.clone();
     tokio::spawn(async move {
-        tokio::signal::ctrl_c().await.unwrap();
-        println!("Exiting... restoring screen brightness.");
-        let mut st = state_clone.lock().await;
-        if st.is_dimmed {
-            restore_brightness(&socket_ctrlc, addr_clone, &st)
-                .await
-                .unwrap_or_else(|e| eprintln!("Failed to restore brightness: {}", e));
-            st.is_dimmed = false;
+        if tokio::signal::ctrl_c().await.is_ok() {
+            println!("Shutting down... Restoring brightness.");
+            let st = state_clone.lock().await;
+            if st.is_dimmed {
+                if let Ok(client) = MixerClient::connect(&addr_clone, false).await {
+                    let _ = restore_brightness(&client, &st).await;
+                }
+            }
+            std::process::exit(0);
         }
-        std::process::exit(0);
     });
 
-    let xremote_msg = OscMessage::new("/xremote".to_string(), vec![]);
-    let xremote_bytes = xremote_msg
-        .to_bytes()
-        .unwrap_or_else(|_| b"/xremote\0\0\0\0".to_vec());
+    let mut check_interval = time::interval(Duration::from_millis(500));
 
     loop {
         tokio::select! {
-            _ = interval_xremote.tick() => {
-                let _ = socket_clone.send_to(&xremote_bytes, x32_addr).await;
+            res = rx.recv() => {
+                match res {
+                    Ok(msg) => {
+                        if !msg.path.starts_with("/-") && msg.path != "/xremote" {
+                            // Activity!
+                            let mut st = state.lock().await;
+                            st.mark_activity();
+                            if st.is_dimmed {
+                                restore_brightness(&client, &st).await?;
+                                st.is_dimmed = false;
+                            }
+                        }
+                    }
+                    Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => continue,
+                    Err(_) => break,
+                }
             }
-
-            _ = interval_check.tick() => {
+            _ = check_interval.tick() => {
                 let mut st = state.lock().await;
                 if st.should_dim() {
-                    // Enter screen saver
-                    if !st.is_dimmed {
-                        if let Err(e) = save_and_dim(&socket_clone, x32_addr, &mut st).await {
-                            eprintln!("Error saving/dimming: {}", e);
-                        } else {
-                            println!("Entered Low Light mode.");
-                        }
-                    }
-                } else if st.should_restore() {
-                    // Restore screen saver
-                    if st.is_dimmed {
-                        if let Err(e) = restore_brightness(&socket_clone, x32_addr, &st).await {
-                            eprintln!("Error restoring brightness: {}", e);
-                        } else {
-                            println!("Restored normal brightness.");
-                            st.is_dimmed = false;
-                        }
-                    }
-                }
-            }
-
-            Ok((len, _addr)) = socket_clone.recv_from(&mut buf) => {
-                let data = &buf[..len];
-
-                // If the message is not just a response to our own /xremote or screen dimming
-                // Note: /xremote responses are actually just state changes from the desk.
-                // We consider any packet other than our own polling responses as activity.
-                // Actually, just receiving any state change (not requested by us) is activity.
-                // The C code resets the timer on ANY receive EXCEPT the responses to its own requests
-                // during dimming.
-
-                // ⚡ Bolt: Checking prefixes via byte slice matching instead of string allocation.
-                let is_bright_resp = data.starts_with(b"/-prefs/bright") || data.starts_with(b"/-prefs/ledbright");
-                if !is_bright_resp {
-                    let mut st = state.lock().await;
-                    st.mark_activity();
+                    save_and_dim(&client, &mut st).await?;
+                    st.is_dimmed = true;
                 }
             }
         }
     }
-}
-
-async fn save_and_dim(socket: &UdpSocket, addr: SocketAddr, state: &mut AppState) -> Result<()> {
-    // 1. Get current LCD bright
-    let req_lcd = OscMessage {
-        path: "/-prefs/bright".to_string(),
-        args: vec![],
-    };
-    let req_lcd_bytes = req_lcd
-        .to_bytes()
-        .map_err(|e| anyhow::anyhow!("OSC Error: {}", e))?;
-    socket.send_to(&req_lcd_bytes, addr).await?;
-
-    // Wait for response, ignoring background traffic
-    let mut buf = [0u8; 1024];
-    let start_wait = Instant::now();
-    while start_wait.elapsed() < Duration::from_millis(500) {
-        if let Ok(Ok((len, _))) =
-            time::timeout(Duration::from_millis(100), socket.recv_from(&mut buf)).await
-        {
-            if let Ok(msg) = OscMessage::from_bytes(&buf[..len]) {
-                if msg.path == "/-prefs/bright" {
-                    if let Some(OscArg::Float(f)) = msg.args.first() {
-                        state.saved_lcd_bright = *f;
-                        break;
-                    }
-                }
-            }
-        }
-    }
-
-    // 2. Get current LED bright
-    let req_led = OscMessage {
-        path: "/-prefs/ledbright".to_string(),
-        args: vec![],
-    };
-    let req_led_bytes = req_led
-        .to_bytes()
-        .map_err(|e| anyhow::anyhow!("OSC Error: {}", e))?;
-    socket.send_to(&req_led_bytes, addr).await?;
-
-    let start_wait = Instant::now();
-    while start_wait.elapsed() < Duration::from_millis(500) {
-        if let Ok(Ok((len, _))) =
-            time::timeout(Duration::from_millis(100), socket.recv_from(&mut buf)).await
-        {
-            if let Ok(msg) = OscMessage::from_bytes(&buf[..len]) {
-                if msg.path == "/-prefs/ledbright" {
-                    if let Some(OscArg::Float(f)) = msg.args.first() {
-                        state.saved_led_bright = *f;
-                        break;
-                    }
-                }
-            }
-        }
-    }
-
-    // 3. Set both to lowest values (0.0)
-    let set_lcd = OscMessage {
-        path: "/-prefs/bright".to_string(),
-        args: vec![OscArg::Float(0.0)],
-    };
-    let set_lcd_bytes = set_lcd
-        .to_bytes()
-        .map_err(|e| anyhow::anyhow!("OSC Error: {}", e))?;
-    socket.send_to(&set_lcd_bytes, addr).await?;
-
-    let set_led = OscMessage {
-        path: "/-prefs/ledbright".to_string(),
-        args: vec![OscArg::Float(0.0)],
-    };
-    let set_led_bytes = set_led
-        .to_bytes()
-        .map_err(|e| anyhow::anyhow!("OSC Error: {}", e))?;
-    socket.send_to(&set_led_bytes, addr).await?;
-
-    state.is_dimmed = true;
     Ok(())
 }
 
-async fn restore_brightness(socket: &UdpSocket, addr: SocketAddr, state: &AppState) -> Result<()> {
-    let set_lcd = OscMessage {
-        path: "/-prefs/bright".to_string(),
-        args: vec![OscArg::Float(state.saved_lcd_bright)],
-    };
-    let set_lcd_bytes = set_lcd
-        .to_bytes()
-        .map_err(|e| anyhow::anyhow!("OSC Error: {}", e))?;
-    socket.send_to(&set_lcd_bytes, addr).await?;
+async fn save_and_dim(client: &MixerClient, state: &mut AppState) -> Result<()> {
+    println!("Saving brightness and dimming...");
 
-    let set_led = OscMessage {
-        path: "/-prefs/ledbright".to_string(),
-        args: vec![OscArg::Float(state.saved_led_bright)],
-    };
-    let set_led_bytes = set_led
-        .to_bytes()
-        .map_err(|e| anyhow::anyhow!("OSC Error: {}", e))?;
-    socket.send_to(&set_led_bytes, addr).await?;
+    // Ask for current values
+    let paths = vec!["/-prefs/lcd/bright", "/-prefs/led/bright"];
+
+    for path in &paths {
+        if let Ok(OscArg::Float(val)) = client.query_value(path).await {
+            match *path {
+                "/-prefs/lcd/bright" => state.saved_lcd_bright = val,
+                "/-prefs/led/bright" => state.saved_led_bright = val,
+                _ => {}
+            }
+        }
+    }
+
+    // Now set them to 0.0
+    for path in &paths {
+        client.send_message(path, vec![OscArg::Float(0.0)]).await?;
+    }
+
+    Ok(())
+}
+
+async fn restore_brightness(client: &MixerClient, state: &AppState) -> Result<()> {
+    println!("Activity detected. Restoring brightness...");
+
+    let map = vec![
+        ("/-prefs/lcd/bright", state.saved_lcd_bright),
+        ("/-prefs/led/bright", state.saved_led_bright),
+    ];
+
+    for (path, val) in map {
+        client.send_message(path, vec![OscArg::Float(val)]).await?;
+    }
 
     Ok(())
 }

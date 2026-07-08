@@ -15,18 +15,19 @@ use ratatui::{
 };
 use std::{io, time::Duration};
 
-pub struct AppState {
-    pub source: String,
+pub struct AppState<'a> {
+    pub source: &'a str,
     pub current_bpm: Option<f32>,
     pub input_level: f32,
-    pub active_effects: [String; 8], // Names of loaded effects
-    pub effect_configs: [EffectConfig; 8],
+    pub active_effects: &'a [String; 8], // Names of loaded effects
+    pub effect_configs: &'a [EffectConfig; 8],
     pub is_supported: [bool; 8],
     pub selected_slot: usize, // 0-7 (FX 1-8)
     pub is_fallback: bool,
     pub is_panic: bool,
-    pub message: String,
-    pub algorithm: String,
+    pub message: &'a str,
+    pub algorithm: &'a str,
+    pub tab_titles: &'a [String; 8],
 }
 
 pub struct Tui {
@@ -43,7 +44,7 @@ impl Tui {
         Ok(Self { terminal })
     }
 
-    pub fn draw(&mut self, state: &AppState) -> Result<()> {
+    pub fn draw(&mut self, state: &AppState<'_>) -> Result<()> {
         self.terminal.draw(|f| {
             let chunks = Layout::default()
                 .direction(Direction::Vertical)
@@ -76,7 +77,7 @@ impl Tui {
                 .active_effects
                 .iter()
                 .enumerate()
-                .map(|(i, name)| {
+                .map(|(i, _name)| {
                     let style = if i == state.selected_slot {
                         Style::default()
                             .fg(Color::Cyan)
@@ -84,8 +85,7 @@ impl Tui {
                     } else {
                         Style::default().fg(Color::White)
                     };
-                    let short_name = if name.is_empty() { "EMPTY" } else { name };
-                    Line::styled(format!("FX{}: {}", i + 1, short_name), style)
+                    Line::styled(state.tab_titles[i].as_str(), style)
                 })
                 .collect();
 
