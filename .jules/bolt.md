@@ -80,3 +80,7 @@
 ## 2024-11-20 - [Eliminate vector allocation during whitespace splitting]
 **Learning:** Using `s.split_whitespace().collect::<Vec<&str>>()[index]` parses lines by allocating a dynamic heap vector, even when only iterating sequentially or accessing predefined fields. This creates bottlenecks in config parsing and networking command paths.
 **Action:** Instead of `.collect::<Vec<&str>>()`, bind the `.split_whitespace()` iterator directly and call `.next()` to parse values without intermediate heap allocations.
+
+## 2026-07-08 - AppState Lifetimes
+**Learning:** When passing large pre-calculated string arrays (like `tab_titles`) or invariant state fields to a UI render function on every tick, adding lifetimes to the state struct (e.g. `AppState<'a>`) to borrow variables from the main loop scope completely eliminates the overhead of deeply cloning owned `String`s into the state on every frame.
+**Action:** Use borrowed lifetimes (`&'a str`, `&'a [String]`) instead of `String` for invariant display states passed into hot UI loops.
