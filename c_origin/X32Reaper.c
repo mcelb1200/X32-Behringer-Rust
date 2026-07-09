@@ -1520,6 +1520,7 @@ void X32ParseX32Message() {
 			else if ((cnum > 72) && (cnum < 81) && (Xdca_max > 0))
 				i = cnum + Xdca_min - 73;
 			// !! TODO find Master track REAPER numbering
+			// Rust implementation: apps/x32_reaper/src/lib.rs (lines 715-721, 1220-1256)
 			sprintf(tmp, "/track/%d/solo", i);
 			Rb_ls = Xfprint(Rb_s, 0, tmp, 'f', &endian.ff);
 		} else if ((Xb_r[Xb_i] == 'r') && (Xb_r[Xb_i + 1] == 'p')) {
