@@ -5,6 +5,8 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::net::UdpSocket;
 
+use x32_lib::MixerClient;
+
 pub async fn handle_x32_message(
     buf: &[u8],
     len: usize,

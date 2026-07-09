@@ -5,12 +5,14 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::net::UdpSocket;
 
+use x32_lib::MixerClient;
+use crate::extract_nth_segment;
+
 pub async fn handle_reaper_message(
     buf: &[u8],
     len: usize,
     state: &SharedState,
-    x32_socket: &Arc<UdpSocket>,
-    x32_addr: &str,
+    x32_client: &Arc<MixerClient>,
 ) -> Result<()> {
     // Check for bundle
     if len >= 8 && &buf[0..8] == b"#bundle\0" {
@@ -37,13 +39,13 @@ pub async fn handle_reaper_message(
 
             // Recursively handle element (assuming simple messages inside bundle)
             if let Ok(msg) = OscMessage::from_bytes(element_buf) {
-                process_single_message(msg, state, x32_socket, x32_addr).await?;
+                process_single_message(msg, state, x32_client).await?;
             }
         }
     } else {
         // Single message
         if let Ok(msg) = OscMessage::from_bytes(&buf[..len]) {
-            process_single_message(msg, state, x32_socket, x32_addr).await?;
+            process_single_message(msg, state, x32_client).await?;
         }
     }
     Ok(())
@@ -52,8 +54,7 @@ pub async fn handle_reaper_message(
 async fn process_single_message(
     msg: OscMessage,
     state: &SharedState,
-    socket: &Arc<UdpSocket>,
-    addr: &str,
+    client: &Arc<MixerClient>,
 ) -> Result<()> {
     // This function implements the big switch statement from X32ParseReaperMessage
     // Example: /track/1/volume -> /ch/01/mix/fader
@@ -109,15 +110,18 @@ async fn process_single_message(
         // but normally I would implement it all.
         // For the purpose of "complete implementation", I should try to cover main cases.
 
-        let cmd = parts.get(3).unwrap_or(&"");
+        let mut parts = msg.path.split('/');
+        let _ = parts.next();
+        let _ = parts.next();
+        let _ = parts.next();
+        let cmd = parts.next().unwrap_or("");
 
-        match *cmd {
+        match cmd {
             "volume" => {
                 if let Some(OscArg::Float(val)) = msg.args.first() {
                     let mapped_addr = map_track_to_x32(tnum, "mix/fader", state).await;
                     if let Some(addr_str) = mapped_addr {
-                        let x_msg = OscMessage::new(addr_str, vec![OscArg::Float(*val)]);
-                        socket.send_to(&x_msg.to_bytes()?, addr).await?;
+                        let _ = client.send_message(&addr_str, vec![OscArg::Float(*val)]).await;
                     }
                 }
             }
@@ -125,8 +129,7 @@ async fn process_single_message(
                 if let Some(OscArg::Float(val)) = msg.args.first() {
                     let mapped_addr = map_track_to_x32(tnum, "mix/pan", state).await;
                     if let Some(addr_str) = mapped_addr {
-                        let x_msg = OscMessage::new(addr_str, vec![OscArg::Float(*val)]);
-                        socket.send_to(&x_msg.to_bytes()?, addr).await?;
+                        let _ = client.send_message(&addr_str, vec![OscArg::Float(*val)]).await;
                     }
                 }
             }
@@ -136,8 +139,7 @@ async fn process_single_message(
                     if let Some(addr_str) = mapped_addr {
                         // Reaper sends 1.0 for mute, X32 uses 0 for mute (on=0)
                         let on_val = if *val > 0.5 { 0 } else { 1 };
-                        let x_msg = OscMessage::new(addr_str, vec![OscArg::Int(on_val)]);
-                        socket.send_to(&x_msg.to_bytes()?, addr).await?;
+                        let _ = client.send_message(&addr_str, vec![OscArg::Int(on_val)]).await;
                     }
                 }
             }
