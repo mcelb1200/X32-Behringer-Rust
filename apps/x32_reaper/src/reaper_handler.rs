@@ -5,8 +5,8 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::net::UdpSocket;
 
-use x32_lib::MixerClient;
 use crate::extract_nth_segment;
+use x32_lib::MixerClient;
 
 pub async fn handle_reaper_message(
     buf: &[u8],
@@ -121,7 +121,9 @@ async fn process_single_message(
                 if let Some(OscArg::Float(val)) = msg.args.first() {
                     let mapped_addr = map_track_to_x32(tnum, "mix/fader", state).await;
                     if let Some(addr_str) = mapped_addr {
-                        let _ = client.send_message(&addr_str, vec![OscArg::Float(*val)]).await;
+                        let _ = client
+                            .send_message(&addr_str, vec![OscArg::Float(*val)])
+                            .await;
                     }
                 }
             }
@@ -129,7 +131,9 @@ async fn process_single_message(
                 if let Some(OscArg::Float(val)) = msg.args.first() {
                     let mapped_addr = map_track_to_x32(tnum, "mix/pan", state).await;
                     if let Some(addr_str) = mapped_addr {
-                        let _ = client.send_message(&addr_str, vec![OscArg::Float(*val)]).await;
+                        let _ = client
+                            .send_message(&addr_str, vec![OscArg::Float(*val)])
+                            .await;
                     }
                 }
             }
@@ -139,7 +143,9 @@ async fn process_single_message(
                     if let Some(addr_str) = mapped_addr {
                         // Reaper sends 1.0 for mute, X32 uses 0 for mute (on=0)
                         let on_val = if *val > 0.5 { 0 } else { 1 };
-                        let _ = client.send_message(&addr_str, vec![OscArg::Int(on_val)]).await;
+                        let _ = client
+                            .send_message(&addr_str, vec![OscArg::Int(on_val)])
+                            .await;
                     }
                 }
             }
