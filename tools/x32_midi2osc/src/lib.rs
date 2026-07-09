@@ -7,8 +7,6 @@ use midir::{Ignore, MidiInput};
 use osc_lib::{OscArg, OscMessage};
 use rpn::RpnCalculator;
 use std::sync::Arc;
-use tokio::net::UdpSocket;
-use tokio::time::{self, Duration, Instant};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -31,7 +29,7 @@ fn execute_template(
     template: &str,
     mparam: &[f64; 3],
     calculator: &mut RpnCalculator,
-) -> Result<Vec<u8>> {
+) -> Result<OscMessage> {
     // OPTIMIZATION: Pre-allocate path buffer to avoid re-allocation during hot loops.
     let mut path = String::with_capacity(32);
     // OPTIMIZATION: Most OSC messages have <8 arguments. Pre-allocating capacity
@@ -143,9 +141,7 @@ fn execute_template(
         }
     }
 
-    let msg = OscMessage::new(path, args);
-    msg.to_bytes()
-        .map_err(|e| anyhow::anyhow!("Failed to serialize OscMessage: {}", e))
+    Ok(OscMessage::new(path, args))
 }
 
 #[cfg(test)]
@@ -158,9 +154,8 @@ mod tests {
         let mparam = [1.0, 12.0, 63.5];
 
         let template = "/ch/01/mix/fader ,f [$2 127.0 /]";
-        let out = execute_template(template, &mparam, &mut calc).unwrap();
+        let msg = execute_template(template, &mparam, &mut calc).unwrap();
 
-        let msg = OscMessage::from_bytes(&out).unwrap();
         assert_eq!(msg.path, "/ch/01/mix/fader");
         assert_eq!(msg.args.len(), 1);
         if let OscArg::Float(f) = msg.args[0] {
@@ -176,9 +171,8 @@ mod tests {
         let mparam = [1.0, 12.0, 1.0];
 
         let template = "/ch/01/mix/on ,i [$2 0 >]";
-        let out = execute_template(template, &mparam, &mut calc).unwrap();
+        let msg = execute_template(template, &mparam, &mut calc).unwrap();
 
-        let msg = OscMessage::from_bytes(&out).unwrap();
         assert_eq!(msg.path, "/ch/01/mix/on");
         assert_eq!(msg.args.len(), 1);
         if let OscArg::Int(i) = msg.args[0] {
@@ -195,9 +189,8 @@ mod tests {
 
         // test mixing RPN and standard arguments
         let template = "/ch/01/config/name ,sif MyChannel [$1 2 *] [$2 128.0 /]";
-        let out = execute_template(template, &mparam, &mut calc).unwrap();
+        let msg = execute_template(template, &mparam, &mut calc).unwrap();
 
-        let msg = OscMessage::from_bytes(&out).unwrap();
         assert_eq!(msg.path, "/ch/01/config/name");
         assert_eq!(msg.args.len(), 3);
 
@@ -229,15 +222,8 @@ pub async fn run(args: Args) -> Result<()> {
         args.ip.clone()
     };
 
-    let x32_addr = format!("{}:10023", ip);
-    let socket: std::net::UdpSocket = std::net::UdpSocket::bind("0.0.0.0:0")?;
-    socket.set_nonblocking(true)?;
-    let socket = UdpSocket::from_std(socket)?;
-    socket.connect(&x32_addr).await?;
-    let socket = Arc::new(socket);
-
-    // Initial keepalive
-    socket.send(b"/xremote\0\0\0\0").await?;
+    let client = x32_lib::MixerClient::connect(&ip, true).await?;
+    let client = Arc::new(client);
 
     let mut midi_in = MidiInput::new("x32_midi2osc")?;
     midi_in.ignore(Ignore::None);
@@ -272,11 +258,11 @@ pub async fn run(args: Args) -> Result<()> {
     };
 
     let rules_clone = Arc::new(rules);
-    let socket_clone = socket.clone();
+    let client_clone = client.clone();
 
     // Use a multi-producer, single-consumer channel to send matching OSC payloads
     // from the synchronous midi thread to the async tokio thread
-    let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel::<Vec<u8>>();
+    let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel::<OscMessage>();
 
     let _conn_in = match midi_in.connect(
         &in_port,
@@ -324,10 +310,8 @@ pub async fn run(args: Args) -> Result<()> {
                         mparam[2] = (rule.data2 & 0x7F) as f64;
                     }
 
-                    if let Ok(payload) =
-                        execute_template(&rule.osc_command, &mparam, &mut calculator)
-                    {
-                        let _ = tx.send(payload);
+                    if let Ok(msg) = execute_template(&rule.osc_command, &mparam, &mut calculator) {
+                        let _ = tx.send(msg);
                     }
                 }
             }
@@ -338,19 +322,9 @@ pub async fn run(args: Args) -> Result<()> {
         Err(e) => return Err(anyhow::anyhow!("Error connecting to MIDI port: {}", e)),
     };
 
-    let mut last_xremote = Instant::now();
-
-    loop {
-        tokio::select! {
-            _ = time::sleep_until(last_xremote + Duration::from_secs(9)) => {
-                let _ = socket_clone.send(b"/xremote\0\0\0\0").await;
-                last_xremote = Instant::now();
-            }
-            recv_result = rx.recv() => {
-                if let Some(payload) = recv_result {
-                    let _ = socket_clone.send(&payload).await;
-                }
-            }
-        }
+    while let Some(msg) = rx.recv().await {
+        let _ = client_clone.send_message(&msg.path, msg.args).await;
     }
+
+    Ok(())
 }
