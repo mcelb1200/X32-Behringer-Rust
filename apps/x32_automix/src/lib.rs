@@ -14,7 +14,7 @@
 use clap::Parser;
 use osc_lib::OscArg;
 use std::time::Duration;
-use x32_lib::{MixerClient, error::Result};
+use x32_lib::{error::Result, MixerClient};
 
 /// A utility to provide automixing functionality for the Behringer X32/X-Air consoles.
 #[derive(Parser, Debug)]
@@ -146,14 +146,16 @@ async fn run_automix(args: Args, client: MixerClient) -> Result<()> {
                         let gains = if args.nom {
                             let levels_slice = &current_levels[start_ch..stop_ch];
                             let calculated = calculate_dugan_gains(levels_slice, args.sensitivity);
-                            let mut full_gains = vec![0.0; 32];
+                            let mut full_gains = [0.0; 32];
                             for (i, &g) in calculated.iter().enumerate() {
-                                full_gains[start_ch + i] = g;
+                                if start_ch + i < 32 {
+                                    full_gains[start_ch + i] = g;
+                                }
                             }
                             full_gains
                         } else {
                             // Legacy simple threshold (0.75 represents unity gain on X32, 1.0 represents +10dB which can cause feedback)
-                            let mut full_gains = vec![0.0; 32];
+                            let mut full_gains = [0.0; 32];
                             for ch in start_ch..stop_ch {
                                 if current_levels[ch] > args.sensitivity {
                                     full_gains[ch] = 0.75;
@@ -217,25 +219,31 @@ fn db_to_level(db: f32) -> f32 {
 /// preventing feedback and noise buildup.
 ///
 /// We also apply priority ducking by only including channels above the noise_floor.
-fn calculate_dugan_gains(levels: &[f32], noise_floor: f32) -> Vec<f32> {
-    let mut weights = Vec::with_capacity(levels.len());
+fn calculate_dugan_gains(levels: &[f32], noise_floor: f32) -> [f32; 32] {
+    let mut weights = [0.0; 32];
     let mut sum_weights = 0.0;
 
-    for &level in levels {
+    for (i, &level) in levels.iter().enumerate() {
+        if i >= 32 {
+            break;
+        }
         if level > noise_floor {
             let db = level_to_db(level);
             // Convert dB to linear weight. 10^(dB/20) gives voltage gain,
             // which works well for Dugan sum.
             let weight = 10.0_f32.powf(db / 20.0);
-            weights.push(weight);
+            weights[i] = weight;
             sum_weights += weight;
         } else {
-            weights.push(0.0);
+            weights[i] = 0.0;
         }
     }
 
-    let mut gains = Vec::with_capacity(levels.len());
-    for weight in weights {
+    let mut gains = [0.0; 32];
+    for (i, &weight) in weights.iter().enumerate() {
+        if i >= levels.len() || i >= 32 {
+            break;
+        }
         if sum_weights > 0.0 && weight > 0.0 {
             // G_i = W_i / W_sum
             let gain_linear = weight / sum_weights;
@@ -246,9 +254,9 @@ fn calculate_dugan_gains(levels: &[f32], noise_floor: f32) -> Vec<f32> {
             // Map the Dugan target gain to the X32 fader curve where 0dB = 0.75 float.
             // We assume a base unity mix (0dB). If we want to be safe, Dugan max is 0dB -> 0.75 fader.
             let fader_level = db_to_level(gain_db);
-            gains.push(fader_level);
+            gains[i] = fader_level;
         } else {
-            gains.push(0.0); // Full attenuation if below noise floor or no signal
+            gains[i] = 0.0; // Full attenuation if below noise floor or no signal
         }
     }
 
