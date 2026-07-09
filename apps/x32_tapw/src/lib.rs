@@ -22,8 +22,8 @@ use std::{
     sync::{Arc, Mutex},
     time::{Duration, Instant},
 };
-use tokio::net::UdpSocket;
 use tokio::sync::mpsc;
+use x32_lib::MixerClient;
 
 /// A Rust implementation of the X32Tap utility with a Text User Interface.
 #[derive(Parser, Debug)]
@@ -70,10 +70,9 @@ pub async fn run(_args: Args) -> Result<()> {
 }
 
 async fn run_network(app: Arc<Mutex<AppState>>, mut rx: mpsc::Receiver<OscMessage>) -> Result<()> {
-    let socket = UdpSocket::bind("0.0.0.0:0").await?;
     let mut current_ip = String::new();
-    let mut addr = None;
-    let mut buf = [0u8; 1024];
+    let mut client: Option<Arc<MixerClient>> = None;
+    let mut osc_rx: Option<tokio::sync::broadcast::Receiver<OscMessage>> = None;
 
     let mut last_keepalive = Instant::now() - Duration::from_secs(10);
 
@@ -85,31 +84,25 @@ async fn run_network(app: Arc<Mutex<AppState>>, mut rx: mpsc::Receiver<OscMessag
 
         if ip != current_ip {
             current_ip = ip.clone();
-            if let Ok(parsed_addr) = format!("{}:10023", current_ip).parse::<std::net::SocketAddr>()
-            {
-                addr = Some(parsed_addr);
-                // Connect check
-                if let Some(a) = addr {
-                    let info_msg = OscMessage::new("/info".to_string(), vec![]);
-                    if let Ok(bytes) = info_msg.to_bytes() {
-                        let _ = socket.send_to(&bytes, a).await;
-                    }
-                }
+
+            // Connect check
+            if let Ok(c) = MixerClient::connect(&current_ip, true).await {
+                app.lock().unwrap_or_else(|e| e.into_inner()).is_connected = true;
+                app.lock().unwrap_or_else(|e| e.into_inner()).log("Connected!".to_string());
+                let arc_client = Arc::new(c);
+                osc_rx = Some(arc_client.subscribe());
+                client = Some(arc_client);
             } else {
-                addr = None;
+                client = None;
+                osc_rx = None;
             }
         }
 
-        if let Some(target_addr) = addr {
-            // Keepalive / meter subscription in auto mode
+        if let (Some(c), Some(ref mut c_rx)) = (client.as_ref(), osc_rx.as_mut()) {
+            // meter subscription in auto mode
             if is_auto {
                 let now = Instant::now();
                 if now.duration_since(last_keepalive).as_secs() >= 9 {
-                    let xremote = OscMessage::new("/xremote".to_string(), vec![]);
-                    if let Ok(bytes) = xremote.to_bytes() {
-                        let _ = socket.send_to(&bytes, target_addr).await;
-                    }
-
                     let meter_req = OscMessage::new(
                         "/meters".to_string(),
                         vec![
@@ -119,9 +112,7 @@ async fn run_network(app: Arc<Mutex<AppState>>, mut rx: mpsc::Receiver<OscMessag
                             OscArg::Int((channel - 1) as i32),
                         ],
                     );
-                    if let Ok(bytes) = meter_req.to_bytes() {
-                        let _ = socket.send_to(&bytes, target_addr).await;
-                    }
+                    let _ = c.send_message(&meter_req.path, meter_req.args).await;
                     last_keepalive = now;
                 }
             }
@@ -129,18 +120,13 @@ async fn run_network(app: Arc<Mutex<AppState>>, mut rx: mpsc::Receiver<OscMessag
             tokio::select! {
                 // Process outgoing messages from UI
                 Some(msg) = rx.recv() => {
-                    if let Ok(bytes) = msg.to_bytes() {
-                        let _ = socket.send_to(&bytes, target_addr).await;
-                    }
+                    let _ = c.send_message(&msg.path, msg.args).await;
                 }
                 // Process incoming UDP packets
-                result = tokio::time::timeout(Duration::from_millis(50), socket.recv_from(&mut buf)) => {
-                    if let Ok(Ok((len, _))) = result {
-                        if let Ok(msg) = OscMessage::from_bytes(&buf[..len]) {
-                            if msg.path == "/info" {
-                                app.lock().unwrap_or_else(|e| e.into_inner()).is_connected = true;
-                                app.lock().unwrap_or_else(|e| e.into_inner()).log("Connected!".to_string());
-                            } else if msg.path == "/meters/6" {
+                result = c_rx.recv() => {
+                    match result {
+                        Ok(msg) => {
+                            if msg.path == "/meters/6" {
                                 if let Some(OscArg::Blob(data)) = msg.args.first() {
                                     if let Some(level) = AppState::parse_meter_blob(data) {
                                         let maybe_msg = {
@@ -162,9 +148,7 @@ async fn run_network(app: Arc<Mutex<AppState>>, mut rx: mpsc::Receiver<OscMessag
                                             }
                                         };
                                         if let Some(msg) = maybe_msg {
-                                            if let Ok(bytes) = msg.to_bytes() {
-                                                let _ = socket.send_to(&bytes, target_addr).await;
-                                            }
+                                            let _ = c.send_message(&msg.path, msg.args).await;
                                         }
                                     }
                                 }
@@ -174,6 +158,8 @@ async fn run_network(app: Arc<Mutex<AppState>>, mut rx: mpsc::Receiver<OscMessag
                                 }
                             }
                         }
+                        Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => continue,
+                        Err(tokio::sync::broadcast::error::RecvError::Closed) => break,
                     }
                 }
             }
@@ -183,6 +169,7 @@ async fn run_network(app: Arc<Mutex<AppState>>, mut rx: mpsc::Receiver<OscMessag
             tokio::time::sleep(Duration::from_millis(100)).await;
         }
     }
+    Ok(())
 }
 
 async fn run_app<B: Backend>(
