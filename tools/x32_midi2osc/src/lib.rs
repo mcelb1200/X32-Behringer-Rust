@@ -310,9 +310,7 @@ pub async fn run(args: Args) -> Result<()> {
                         mparam[2] = (rule.data2 & 0x7F) as f64;
                     }
 
-                    if let Ok(msg) =
-                        execute_template(&rule.osc_command, &mparam, &mut calculator)
-                    {
+                    if let Ok(msg) = execute_template(&rule.osc_command, &mparam, &mut calculator) {
                         let _ = tx.send(msg);
                     }
                 }
