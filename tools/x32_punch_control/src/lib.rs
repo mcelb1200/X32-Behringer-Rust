@@ -11,12 +11,12 @@
 
 use anyhow::Result;
 use clap::Parser;
+use osc_lib::OscMessage;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::sync::Mutex;
 use tokio::time::{self, Duration};
 use x32_lib::MixerClient;
-use osc_lib::OscMessage;
 
 pub mod config;
 pub mod format;
@@ -84,56 +84,56 @@ pub async fn run(args: Args) -> Result<()> {
                             if bnum > base_id && bnum <= base_id + 8 {
                                 let btn = bnum - base_id;
                                 match btn {
-                                1 => {
-                                    // REW
-                                    println!("REW requested");
-                                    lock.t_rew = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_else(|e| {
+                                    1 => {
+                                        // REW
+                                        println!("REW requested");
+                                        lock.t_rew = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_else(|e| {
                                         eprintln!("Warning: System clock drifted backward or is before UNIX EPOCH ({}). Proceeding with duration zero.", e);
                                         Duration::ZERO
                                     }) + Duration::from_secs(1);
-                                },
-                                2 => {
-                                    // PLAY
-                                    lock.xplay = true;
-                                    lock.xpause = false;
-                                    println!("PLAY requested");
-                                },
-                                3 => {
-                                    // PAUSE
-                                    lock.xpause = !lock.xpause;
-                                    println!("PAUSE requested ({})", lock.xpause);
-                                },
-                                4 => {
-                                    // FF
-                                    println!("FF requested");
-                                    lock.t_ff = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_else(|e| {
+                                    }
+                                    2 => {
+                                        // PLAY
+                                        lock.xplay = true;
+                                        lock.xpause = false;
+                                        println!("PLAY requested");
+                                    }
+                                    3 => {
+                                        // PAUSE
+                                        lock.xpause = !lock.xpause;
+                                        println!("PAUSE requested ({})", lock.xpause);
+                                    }
+                                    4 => {
+                                        // FF
+                                        println!("FF requested");
+                                        lock.t_ff = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_else(|e| {
                                         eprintln!("Warning: System clock drifted backward or is before UNIX EPOCH ({}). Proceeding with duration zero.", e);
                                         Duration::ZERO
                                     }) + Duration::from_secs(1);
-                                },
-                                5 => {
-                                    // PUNCH IN/OUT
-                                    lock.xpunch = !lock.xpunch;
-                                    println!("PUNCH requested ({})", lock.xpunch);
-                                },
-                                6 => {
-                                    // MERGE
-                                    lock.xmerge = !lock.xmerge;
-                                    println!("MERGE requested ({})", lock.xmerge);
-                                },
-                                7 => {
-                                    // STOP
-                                    lock.xplay = false;
-                                    lock.xpause = false;
-                                    lock.xpunch = false;
-                                    lock.xrecord = false;
-                                    println!("STOP requested");
-                                },
+                                    }
+                                    5 => {
+                                        // PUNCH IN/OUT
+                                        lock.xpunch = !lock.xpunch;
+                                        println!("PUNCH requested ({})", lock.xpunch);
+                                    }
+                                    6 => {
+                                        // MERGE
+                                        lock.xmerge = !lock.xmerge;
+                                        println!("MERGE requested ({})", lock.xmerge);
+                                    }
+                                    7 => {
+                                        // STOP
+                                        lock.xplay = false;
+                                        lock.xpause = false;
+                                        lock.xpunch = false;
+                                        lock.xrecord = false;
+                                        println!("STOP requested");
+                                    }
                                     8 => {
                                         // RECORD
                                         lock.xrecord = true;
                                         println!("RECORD requested");
-                                    },
+                                    }
                                     _ => {}
                                 }
                             }

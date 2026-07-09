@@ -88,7 +88,9 @@ async fn run_network(app: Arc<Mutex<AppState>>, mut rx: mpsc::Receiver<OscMessag
             // Connect check
             if let Ok(c) = MixerClient::connect(&current_ip, true).await {
                 app.lock().unwrap_or_else(|e| e.into_inner()).is_connected = true;
-                app.lock().unwrap_or_else(|e| e.into_inner()).log("Connected!".to_string());
+                app.lock()
+                    .unwrap_or_else(|e| e.into_inner())
+                    .log("Connected!".to_string());
                 let arc_client = Arc::new(c);
                 osc_rx = Some(arc_client.subscribe());
                 client = Some(arc_client);
