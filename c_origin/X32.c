@@ -1184,7 +1184,6 @@ void Xsend(int who_to) {
 //					if (strncmp(s_buf, "/-stat/solosw/", 14) == 0) {
 //						// a solosw command was issued, follow with a /-stat/solo command
 //						// TODO: 1 if any solosw is still on, 0 otherwise
-//						// Rust implementation: libs/x32_core/src/lib.rs (lines 891-900)
 //						sendto(Xfd, "/-stat/solo\0,i\0\0\0\0\0\1", 20, 0, &(X32Client[i].sock), Client_ip_len);
 //					}
 				}
@@ -5021,7 +5020,6 @@ int function_copy() {
 //
 // At present time, /copy only implements 'libchan'
 // TODO: 'scene', 'libfx', 'librout' should be implemented
-// Rust implementation: libs/x32_core/src/lib.rs (lines 393-408, 802-820)
 // 'snippet' is not supported on X32
 	i = 0;
 	if (strcmp(r_buf + 16, "libchan") == 0) {

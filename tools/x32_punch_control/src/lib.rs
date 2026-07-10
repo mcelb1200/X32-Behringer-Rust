@@ -11,12 +11,11 @@
 
 use anyhow::Result;
 use clap::Parser;
-use osc_lib::OscMessage;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
+use tokio::net::UdpSocket;
 use tokio::sync::Mutex;
-use tokio::time::{self, Duration};
-use x32_lib::MixerClient;
+use tokio::time::{self, Duration, Instant};
 
 pub mod config;
 pub mod format;
@@ -50,102 +49,117 @@ pub async fn run(args: Args) -> Result<()> {
     println!("X32PunchControl - Rust Rewrite");
     println!("Connecting to X32 at {}", config.xip_str);
 
-    let client = MixerClient::connect(&config.xip_str, true).await?;
-    let client = Arc::new(client);
-    let mut receiver = client.subscribe();
+    let socket = UdpSocket::bind("0.0.0.0:0").await?;
+    let x32_addr = format!("{}:10023", config.xip_str);
+    socket.connect(&x32_addr).await?;
+    let socket = Arc::new(socket);
+
+    // Initial connection subscription
+    socket.send(b"/xremote").await?;
 
     let state = Arc::new(Mutex::new(AppState::default()));
 
     // Background task to handle time-based playback/merge
     let bg_state = state.clone();
-    let bg_client = client.clone();
+    let bg_sock = socket.clone();
     let config_clone = config.clone();
     let bg_file = args.file.clone();
 
     tokio::spawn(async move {
-        run_logic(bg_state, bg_client, config_clone, bg_file).await;
+        run_logic(bg_state, bg_sock, config_clone, bg_file).await;
     });
 
+    let mut buf = [0u8; 2048];
+    let mut last_xremote = Instant::now();
+
     loop {
-        match receiver.recv().await {
-            Ok(msg) => {
-                if msg.path.starts_with("/-stat/userpar/") {
-                    let mut lock = state.lock().await;
+        tokio::select! {
+            // Keepalive
+            _ = time::sleep_until(last_xremote + Duration::from_secs(9)) => {
+                let _ = socket.send(b"/xremote").await;
+                last_xremote = Instant::now();
+            }
+            res = socket.recv(&mut buf) => {
+                if let Ok(len) = res {
+                    let data = &buf[..len];
 
-                    if let Some(slice) = msg.path.get(15..17) {
+                    // Parse User Bank inputs (buttons mapped to play/stop/rew/etc)
+                    // ⚡ Bolt: Use byte slice operations instead of String::from_utf8_lossy to avoid allocations.
+                    if data.starts_with(b"/-stat/userpar/") && data.len() >= 17 {
+                        let mut lock = state.lock().await;
+
+                        if let Some(slice) = data.get(15..17) {
                         #[allow(clippy::collapsible_if)]
-                        if let Ok(bnum) = slice.parse::<u32>() {
-                            // In c_origin: bnum = ((int)Xbank - 65) * 8 + i + 1;
-                            // where Xbank is 'A', 'B', 'C'. A=65. So if Xbank='A', bnum is 1..8.
-                            let bank_idx = (config.xbank as u32).saturating_sub(65);
-                            let base_id = bank_idx * 8;
+                        if let Ok(bnum) = std::str::from_utf8(slice).unwrap_or("").parse::<u32>() {
+                        // In c_origin: bnum = ((int)Xbank - 65) * 8 + i + 1;
+                        // where Xbank is 'A', 'B', 'C'. A=65. So if Xbank='A', bnum is 1..8.
+                        let bank_idx = (config.xbank as u32).saturating_sub(65);
+                        let base_id = bank_idx * 8;
 
-                            // we ignore "press in" by checking value, but here we just toggle simply based on receiving OSC
-                            if bnum > base_id && bnum <= base_id + 8 {
-                                let btn = bnum - base_id;
-                                match btn {
-                                    1 => {
-                                        // REW
-                                        println!("REW requested");
-                                        lock.t_rew = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_else(|e| {
+                        // we ignore "press in" by checking value, but here we just toggle simply based on receiving OSC
+                        if bnum > base_id && bnum <= base_id + 8 {
+                            let btn = bnum - base_id;
+                            match btn {
+                                1 => {
+                                    // REW
+                                    println!("REW requested");
+                                    lock.t_rew = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_else(|e| {
                                         eprintln!("Warning: System clock drifted backward or is before UNIX EPOCH ({}). Proceeding with duration zero.", e);
                                         Duration::ZERO
                                     }) + Duration::from_secs(1);
-                                    }
-                                    2 => {
-                                        // PLAY
-                                        lock.xplay = true;
-                                        lock.xpause = false;
-                                        println!("PLAY requested");
-                                    }
-                                    3 => {
-                                        // PAUSE
-                                        lock.xpause = !lock.xpause;
-                                        println!("PAUSE requested ({})", lock.xpause);
-                                    }
-                                    4 => {
-                                        // FF
-                                        println!("FF requested");
-                                        lock.t_ff = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_else(|e| {
+                                },
+                                2 => {
+                                    // PLAY
+                                    lock.xplay = true;
+                                    lock.xpause = false;
+                                    println!("PLAY requested");
+                                },
+                                3 => {
+                                    // PAUSE
+                                    lock.xpause = !lock.xpause;
+                                    println!("PAUSE requested ({})", lock.xpause);
+                                },
+                                4 => {
+                                    // FF
+                                    println!("FF requested");
+                                    lock.t_ff = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_else(|e| {
                                         eprintln!("Warning: System clock drifted backward or is before UNIX EPOCH ({}). Proceeding with duration zero.", e);
                                         Duration::ZERO
                                     }) + Duration::from_secs(1);
-                                    }
-                                    5 => {
-                                        // PUNCH IN/OUT
-                                        lock.xpunch = !lock.xpunch;
-                                        println!("PUNCH requested ({})", lock.xpunch);
-                                    }
-                                    6 => {
-                                        // MERGE
-                                        lock.xmerge = !lock.xmerge;
-                                        println!("MERGE requested ({})", lock.xmerge);
-                                    }
-                                    7 => {
-                                        // STOP
-                                        lock.xplay = false;
-                                        lock.xpause = false;
-                                        lock.xpunch = false;
-                                        lock.xrecord = false;
-                                        println!("STOP requested");
-                                    }
+                                },
+                                5 => {
+                                    // PUNCH IN/OUT
+                                    lock.xpunch = !lock.xpunch;
+                                    println!("PUNCH requested ({})", lock.xpunch);
+                                },
+                                6 => {
+                                    // MERGE
+                                    lock.xmerge = !lock.xmerge;
+                                    println!("MERGE requested ({})", lock.xmerge);
+                                },
+                                7 => {
+                                    // STOP
+                                    lock.xplay = false;
+                                    lock.xpause = false;
+                                    lock.xpunch = false;
+                                    lock.xrecord = false;
+                                    println!("STOP requested");
+                                },
                                     8 => {
                                         // RECORD
                                         lock.xrecord = true;
                                         println!("RECORD requested");
-                                    }
+                                    },
                                     _ => {}
                                 }
+                        }
                             }
                         }
                     }
                 }
             }
-            Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => continue,
-            Err(tokio::sync::broadcast::error::RecvError::Closed) => break,
         }
     }
-    Ok(())
 }
 
 use format::{PunchReader, PunchRecord, PunchWriter};
@@ -153,7 +167,7 @@ use tokio::fs::File;
 
 async fn run_logic(
     state: Arc<Mutex<AppState>>,
-    client: Arc<MixerClient>,
+    socket: Arc<UdpSocket>,
     _config: Config,
     file_path: Option<String>,
 ) {
@@ -234,9 +248,7 @@ async fn run_logic(
                         }
 
                         if should_send {
-                            if let Ok(msg) = OscMessage::from_bytes(&record.data) {
-                                let _ = client.send_message(&msg.path, msg.args).await;
-                            }
+                            let _ = socket.send(&record.data).await;
                         }
 
                         // Always write to the new file, following C logic XWriteAndSend()

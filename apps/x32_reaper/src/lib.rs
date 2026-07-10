@@ -18,8 +18,9 @@ use std::fmt::Write;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::net::UdpSocket;
+use x32_lib::MixerClient;
 use tokio::sync::Mutex;
-use tokio::time::{self, Duration};
+
 
 pub mod config;
 pub mod state;
@@ -87,30 +88,23 @@ pub async fn run(args: Args) -> Result<()> {
 
     let state = Arc::new(Mutex::new(AppState::new(&config)));
 
-    let x32_sock = UdpSocket::bind("0.0.0.0:0").await?;
     let reaper_bind_addr = format!("0.0.0.0:{}", config.reaper_recv_port);
     let reaper_sock = UdpSocket::bind(&reaper_bind_addr)
         .await
         .context("Failed to bind Reaper socket")?;
 
-    let x32_addr: SocketAddr = format!("{}:10023", config.x32_ip)
-        .parse()
-        .context("Invalid X32 IP")?;
     let reaper_addr: SocketAddr = format!("{}:{}", config.reaper_ip, config.reaper_send_port)
         .parse()
         .context("Invalid Reaper IP")?;
 
-    connect_x32(&x32_sock, x32_addr).await?;
-
-    let mut buf_x32 = [0u8; 4096];
+    let x32_client = Arc::new(MixerClient::connect(&config.x32_ip, true).await?);
+    let mut x32_rx = x32_client.subscribe();
     let mut buf_reaper = [0u8; 4096];
-    let mut interval_timer = time::interval(Duration::from_secs(9));
 
     println!("Starting main loop...");
 
     init_user_ctrl(
-        &x32_sock,
-        x32_addr,
+        &x32_client,
         &config,
         &mut *state.lock().await,
         Some((&reaper_sock, reaper_addr)),
@@ -119,36 +113,25 @@ pub async fn run(args: Args) -> Result<()> {
 
     loop {
         tokio::select! {
-            _ = interval_timer.tick() => {
-                 let _ = x32_sock.send_to(b"/xremote", x32_addr).await;
-            }
-            Ok((len, _addr)) = x32_sock.recv_from(&mut buf_x32) => {
-                let data = &buf_x32[..len];
-                if let Err(e) = process_x32_message(data, &config, &state, &reaper_sock, reaper_addr, &x32_sock, x32_addr).await {
-                    if config.verbose { eprintln!("Error processing X32 message: {}", e); }
+            res = x32_rx.recv() => {
+                if let Ok(msg) = res {
+                    let bytes = msg.to_bytes().unwrap_or_default();
+                    if let Err(e) = process_x32_message(&bytes, &config, &state, &reaper_sock, reaper_addr, &x32_client).await {
+                        eprintln!("Error processing X32 message: {}", e);
+                    }
                 }
             }
-            Ok((len, _addr)) = reaper_sock.recv_from(&mut buf_reaper) => {
-                let data = &buf_reaper[..len];
-                if let Err(e) = process_reaper_message(data, &config, &state, &x32_sock, x32_addr, &reaper_sock, reaper_addr).await {
-                    if config.verbose { eprintln!("Error processing Reaper message: {}", e); }
+            res = reaper_sock.recv_from(&mut buf_reaper) => {
+                if let Ok((len, _)) = res {
+                    if let Err(e) = process_reaper_message(&buf_reaper[..len], &config, &state, &x32_client, &reaper_sock, reaper_addr).await {
+                        eprintln!("Error processing Reaper message: {}", e);
+                    }
                 }
             }
         }
     }
 }
 
-/// Sends an OSC message to the X32, optionally with a delay.
-async fn send_to_x(sock: &UdpSocket, addr: SocketAddr, msg: &OscMessage, delay: u64) -> Result<()> {
-    let bytes = msg
-        .to_bytes()
-        .map_err(|e| anyhow::anyhow!("OSC error: {:?}", e))?;
-    sock.send_to(&bytes, addr).await?;
-    if delay > 0 {
-        tokio::time::sleep(Duration::from_millis(delay)).await;
-    }
-    Ok(())
-}
 
 /// Sends an OSC message to Reaper.
 async fn send_to_r(sock: &UdpSocket, addr: SocketAddr, msg: &OscMessage) -> Result<()> {
@@ -159,33 +142,10 @@ async fn send_to_r(sock: &UdpSocket, addr: SocketAddr, msg: &OscMessage) -> Resu
     Ok(())
 }
 
-/// Establishes connection with the X32 console.
-async fn connect_x32(sock: &UdpSocket, addr: SocketAddr) -> Result<()> {
-    sock.send_to(b"/info", addr).await?;
-    let mut buf = [0u8; 1024];
-    let res = time::timeout(Duration::from_millis(1000), sock.recv_from(&mut buf)).await;
-    match res {
-        Ok(Ok((len, _src))) => {
-            let data = &buf[..len];
-            // ⚡ Bolt: Check for /info using byte slice instead of String::from_utf8_lossy to avoid allocation overhead on success.
-            if !data.starts_with(b"/info") {
-                let s = String::from_utf8_lossy(data);
-                eprintln!("Unexpected response from X32: {}", s);
-                return Err(anyhow::anyhow!("Unexpected response from X32"));
-            }
-            println!("X32 Connected!");
-        }
-        _ => {
-            return Err(anyhow::anyhow!("X32 connection timeout"));
-        }
-    }
-    Ok(())
-}
 
 /// Initializes user controls and updates bank settings.
 async fn init_user_ctrl(
-    sock: &UdpSocket,
-    addr: SocketAddr,
+    x_client: &Arc<MixerClient>,
     config: &Config,
     state: &mut AppState,
     reaper_info: Option<(&UdpSocket, SocketAddr)>,
@@ -201,28 +161,28 @@ async fn init_user_ctrl(
                 path: format!("/config/userctrl/C/enc/{}", i),
                 args: vec![OscArg::String(mp[i - 1].to_string())],
             };
-            send_to_x(sock, addr, &msg, config.delay_generic).await?;
+            let _ = x_client.send_message(&msg.path, msg.args.clone()).await;
         }
         for i in 5..=12 {
             let msg = OscMessage {
                 path: format!("/config/userctrl/C/btn/{}", i),
                 args: vec![OscArg::String(mn[i - 5].to_string())],
             };
-            send_to_x(sock, addr, &msg, config.delay_generic).await?;
+            let _ = x_client.send_message(&msg.path, msg.args.clone()).await;
         }
         for i in 33..=36 {
             let msg = OscMessage {
                 path: format!("/-stat/userpar/{:02}/value", i),
                 args: vec![OscArg::Int(64)],
             };
-            send_to_x(sock, addr, &msg, config.delay_generic).await?;
+            let _ = x_client.send_message(&msg.path, msg.args.clone()).await;
         }
         for i in 17..=24 {
             let msg = OscMessage {
                 path: format!("/-stat/userpar/{:02}/value", i),
                 args: vec![OscArg::Int(0)],
             };
-            send_to_x(sock, addr, &msg, config.delay_generic).await?;
+            let _ = x_client.send_message(&msg.path, msg.args.clone()).await;
         }
     } else {
         if config.marker_btn_on {
@@ -232,12 +192,12 @@ async fn init_user_ctrl(
                     path: format!("/config/userctrl/C/btn/{}", btn_idx),
                     args: vec![OscArg::String(mn[btn_idx as usize - 5].to_string())],
                 };
-                send_to_x(sock, addr, &msg, config.delay_generic).await?;
+                let _ = x_client.send_message(&msg.path, msg.args.clone()).await;
                 let msg2 = OscMessage {
                     path: format!("/-stat/userpar/{:02}/value", 12 + btn_idx),
                     args: vec![OscArg::Int(0)],
                 };
-                send_to_x(sock, addr, &msg2, config.delay_generic).await?;
+                let _ = x_client.send_message(&msg2.path, msg2.args.clone()).await;
             }
         }
         if config.ch_bank_on {
@@ -247,12 +207,12 @@ async fn init_user_ctrl(
                         path: format!("/config/userctrl/C/btn/{}", btn_idx),
                         args: vec![OscArg::String(mn[btn_idx as usize - 5].to_string())],
                     };
-                    send_to_x(sock, addr, &msg, config.delay_generic).await?;
+                    let _ = x_client.send_message(&msg.path, msg.args.clone()).await;
                     let msg2 = OscMessage {
                         path: format!("/-stat/userpar/{:02}/value", 12 + btn_idx),
                         args: vec![OscArg::Int(0)],
                     };
-                    send_to_x(sock, addr, &msg2, config.delay_generic).await?;
+                    let _ = x_client.send_message(&msg2.path, msg2.args.clone()).await;
                 }
             }
         }
@@ -263,17 +223,17 @@ async fn init_user_ctrl(
             path: "/config/userctrl/C/color".to_string(),
             args: vec![OscArg::Int(config.bank_c_color)],
         };
-        send_to_x(sock, addr, &msg, config.delay_generic).await?;
+        let _ = x_client.send_message(&msg.path, msg.args.clone()).await;
 
         let msg2 = OscMessage {
             path: "/-stat/userbank".to_string(),
             args: vec![OscArg::Int(2)],
         };
-        send_to_x(sock, addr, &msg2, config.delay_generic).await?;
+        let _ = x_client.send_message(&msg2.path, msg2.args.clone()).await;
     }
 
     if config.ch_bank_on {
-        update_bk_ch(sock, addr, config, state, reaper_info).await?;
+        update_bk_ch(x_client, config, state, reaper_info).await?;
     }
 
     Ok(())
@@ -281,8 +241,7 @@ async fn init_user_ctrl(
 
 /// Updates the X32 channel strips to match the current bank's tracks from Reaper.
 async fn update_bk_ch(
-    sock: &UdpSocket,
-    addr: SocketAddr,
+    x_client: &Arc<MixerClient>,
     config: &Config,
     state: &AppState,
     reaper_info: Option<(&UdpSocket, SocketAddr)>,
@@ -331,7 +290,7 @@ async fn update_bk_ch(
             path: path_buf.clone(),
             args: vec![OscArg::Float(track.fader)],
         };
-        send_to_x(sock, addr, &msg, config.delay_bank).await?;
+        let _ = x_client.send_message(&msg.path, msg.args.clone()).await;
 
         path_buf.clear();
         write!(&mut path_buf, "/ch/{:02}/mix/pan", i).unwrap();
@@ -339,7 +298,7 @@ async fn update_bk_ch(
             path: path_buf.clone(),
             args: vec![OscArg::Float(track.pan)],
         };
-        send_to_x(sock, addr, &msg, config.delay_bank).await?;
+        let _ = x_client.send_message(&msg.path, msg.args.clone()).await;
 
         path_buf.clear();
         write!(&mut path_buf, "/ch/{:02}/mix/on", i).unwrap();
@@ -347,7 +306,7 @@ async fn update_bk_ch(
             path: path_buf.clone(),
             args: vec![OscArg::Int(if track.mute > 0.5 { 0 } else { 1 })],
         };
-        send_to_x(sock, addr, &msg, config.delay_bank).await?;
+        let _ = x_client.send_message(&msg.path, msg.args.clone()).await;
 
         for j in 1..=16 {
             path_buf.clear();
@@ -356,7 +315,7 @@ async fn update_bk_ch(
                 path: path_buf.clone(),
                 args: vec![OscArg::Float(track.mixbus[j as usize - 1])],
             };
-            send_to_x(sock, addr, &msg, config.delay_bank).await?;
+            let _ = x_client.send_message(&msg.path, msg.args.clone()).await;
         }
 
         path_buf.clear();
@@ -365,7 +324,7 @@ async fn update_bk_ch(
             path: path_buf.clone(),
             args: vec![OscArg::String(track.scribble.clone())],
         };
-        send_to_x(sock, addr, &msg, config.delay_bank).await?;
+        let _ = x_client.send_message(&msg.path, msg.args.clone()).await;
 
         path_buf.clear();
         write!(&mut path_buf, "/ch/{:02}/config/color", i).unwrap();
@@ -373,7 +332,7 @@ async fn update_bk_ch(
             path: path_buf.clone(),
             args: vec![OscArg::Int(track.color)],
         };
-        send_to_x(sock, addr, &msg, config.delay_bank).await?;
+        let _ = x_client.send_message(&msg.path, msg.args.clone()).await;
 
         path_buf.clear();
         write!(&mut path_buf, "/ch/{:02}/config/icon", i).unwrap();
@@ -381,7 +340,7 @@ async fn update_bk_ch(
             path: path_buf.clone(),
             args: vec![OscArg::Int(track.icon)],
         };
-        send_to_x(sock, addr, &msg, config.delay_bank).await?;
+        let _ = x_client.send_message(&msg.path, msg.args.clone()).await;
     }
     Ok(())
 }
@@ -393,8 +352,7 @@ async fn process_x32_message(
     state: &Arc<Mutex<AppState>>,
     r_sock: &UdpSocket,
     r_addr: SocketAddr,
-    x_sock: &UdpSocket,
-    x_addr: SocketAddr,
+    x_client: &Arc<MixerClient>,
 ) -> Result<()> {
     let msg = match parse_osc_packet(data) {
         Ok(m) => m,
@@ -612,16 +570,7 @@ async fn process_x32_message(
             }
             // Echo master select on X32
             if (xr_mask & config.xr_send_mask) != 0 {
-                send_to_x(
-                    x_sock,
-                    x_addr,
-                    &OscMessage {
-                        path: "/-stat/selidx".to_string(),
-                        args: vec![OscArg::Int(70)],
-                    },
-                    config.delay_generic,
-                )
-                .await?;
+                let _ = x_client.send_message("/-stat/selidx", vec![OscArg::Int(70)]).await;
             }
             if let Some(OscArg::Int(i)) = msg.args.first() {
                 let action = if *i == 1 {
@@ -734,8 +683,7 @@ async fn process_x32_message(
                 if let Ok(par_idx) = part.parse::<i32>() {
                     if let Some(OscArg::Int(val)) = msg.args.first() {
                         let sockets = Sockets {
-                            x_sock,
-                            x_addr,
+                            x_client,
                             r_sock,
                             r_addr,
                         };
@@ -756,8 +704,7 @@ async fn process_x32_message(
 }
 
 struct Sockets<'a> {
-    x_sock: &'a UdpSocket,
-    x_addr: SocketAddr,
+    x_client: &'a Arc<MixerClient>,
     r_sock: &'a UdpSocket,
     r_addr: SocketAddr,
 }
@@ -769,8 +716,7 @@ async fn handle_user_par(
     state: &mut AppState,
     sockets: Sockets<'_>,
 ) -> Result<()> {
-    let x_sock = sockets.x_sock;
-    let x_addr = sockets.x_addr;
+    let x_client = sockets.x_client;
     let r_sock = sockets.r_sock;
     let r_addr = sockets.r_addr;
     if config.transport_on {
@@ -840,7 +786,7 @@ async fn handle_user_par(
                             < ((config.trk_max - config.trk_min + 1) / config.bank_size) - 1
                         {
                             state.ch_bank_offset += 1;
-                            update_bk_ch(x_sock, x_addr, config, state, Some((r_sock, r_addr)))
+                            update_bk_ch(x_client, config, state, Some((r_sock, r_addr)))
                                 .await?;
                         }
                     } else {
@@ -866,16 +812,7 @@ async fn handle_user_par(
                             .await?;
                         }
                         state.loop_toggle ^= 0x7f;
-                        send_to_x(
-                            x_sock,
-                            x_addr,
-                            &OscMessage {
-                                path: "/-stat/userpar/21/value".to_string(),
-                                args: vec![OscArg::Int(state.loop_toggle)],
-                            },
-                            config.delay_generic,
-                        )
-                        .await?;
+                        let _ = x_client.send_message("/-stat/userpar/21/value", vec![OscArg::Int(state.loop_toggle)]).await;
                     }
                 }
             }
@@ -885,7 +822,7 @@ async fn handle_user_par(
                     if config.ch_bank_on {
                         if state.ch_bank_offset > 0 {
                             state.ch_bank_offset -= 1;
-                            update_bk_ch(x_sock, x_addr, config, state, Some((r_sock, r_addr)))
+                            update_bk_ch(x_client, config, state, Some((r_sock, r_addr)))
                                 .await?;
                         }
                     } else {
@@ -953,11 +890,11 @@ async fn handle_user_par(
                     < ((config.trk_max - config.trk_min + 1) / config.bank_size) - 1
                 {
                     state.ch_bank_offset += 1;
-                    update_bk_ch(x_sock, x_addr, config, state, Some((r_sock, r_addr))).await?;
+                    update_bk_ch(x_client, config, state, Some((r_sock, r_addr))).await?;
                 }
             } else if btn_idx == config.bank_dn && state.ch_bank_offset > 0 {
                 state.ch_bank_offset -= 1;
-                update_bk_ch(x_sock, x_addr, config, state, Some((r_sock, r_addr))).await?;
+                update_bk_ch(x_client, config, state, Some((r_sock, r_addr))).await?;
             }
         }
     }
@@ -968,8 +905,7 @@ async fn process_reaper_message(
     data: &[u8],
     config: &Config,
     state: &Arc<Mutex<AppState>>,
-    x_sock: &UdpSocket,
-    x_addr: SocketAddr,
+    x_client: &Arc<MixerClient>,
     r_sock: &UdpSocket, // Added unused r_sock to match signature logic if needed later or just for symmetry?
     r_addr: SocketAddr,
 ) -> Result<()> {
@@ -991,12 +927,12 @@ async fn process_reaper_message(
                 break;
             }
             let msg_data = &data[idx..idx + size];
-            process_single_reaper_message(msg_data, config, state, x_sock, x_addr, r_sock, r_addr)
+            process_single_reaper_message(msg_data, config, state, x_client, r_sock, r_addr)
                 .await?;
             idx += size;
         }
     } else {
-        process_single_reaper_message(data, config, state, x_sock, x_addr, r_sock, r_addr).await?;
+        process_single_reaper_message(data, config, state, x_client, r_sock, r_addr).await?;
     }
     Ok(())
 }
@@ -1005,8 +941,7 @@ async fn process_single_reaper_message(
     data: &[u8],
     config: &Config,
     state: &Arc<Mutex<AppState>>,
-    x_sock: &UdpSocket,
-    x_addr: SocketAddr,
+    x_client: &Arc<MixerClient>,
     r_sock: &UdpSocket,
     r_addr: SocketAddr,
 ) -> Result<()> {
@@ -1313,7 +1248,7 @@ async fn process_single_reaper_message(
 
     if let Some(m) = xb_msg {
         if (xx_mask & config.xx_send_mask) != 0 {
-            send_to_x(x_sock, x_addr, &m, config.delay_generic).await?;
+            let _ = x_client.send_message(&m.path, m.args.clone()).await;
         }
     }
 
@@ -1398,8 +1333,419 @@ fn parse_osc_packet(data: &[u8]) -> Result<OscMessage> {
     Ok(OscMessage { path, args })
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_reaper_transport_messages() {
+        let config = Config {
+            verbose: false,
+            delay_bank: 0,
+            delay_generic: 0,
+            xx_send_mask: -1,
+            xr_send_mask: -1,
+            x32_ip: "127.0.0.1".to_string(),
+            reaper_ip: "127.0.0.1".to_string(),
+            reaper_send_port: 8000,
+            reaper_recv_port: 8000,
+            transport_on: true,
+            ch_bank_on: false,
+            marker_btn_on: false,
+            bank_c_color: 0,
+            eq_ctrl_on: false,
+            master_on: false,
+            trk_min: 1,
+            trk_max: 32,
+            aux_min: 0,
+            aux_max: 0,
+            fxr_min: 0,
+            fxr_max: 0,
+            bus_min: 0,
+            bus_max: 0,
+            dca_min: 0,
+            dca_max: 0,
+            track_send_offset: 0,
+            rdca: vec![(0, 0); 8],
+            bank_up: 0,
+            bank_dn: 0,
+            marker_btn: 0,
+            ch_bank_offset: 0,
+            bank_size: 8,
+        };
+        let state = Arc::new(Mutex::new(AppState::new(&config)));
+
+        // Create dummy sockets
+        let r_sock = UdpSocket::bind("127.0.0.1:0").await.unwrap();
+        let r_addr: SocketAddr = "127.0.0.1:8000".parse().unwrap();
+
+        let mock_server = UdpSocket::bind("127.0.0.1:0").await.unwrap();
+        let mock_addr = mock_server.local_addr().unwrap();
+        tokio::spawn(async move {
+            let mut buf = [0u8; 1024];
+            while let Ok((_, src)) = mock_server.recv_from(&mut buf).await {
+                let _ = mock_server.send_to(b"/info\0\0\0\0,\0\0\0", src).await;
+            }
+        });
+        let x_client = Arc::new(MixerClient::connect(&mock_addr.to_string(), false).await.unwrap());
+
+        // Helper function to build OSC packets for transport commands
+        let build_osc = |path: &str, val: f32| -> Vec<u8> {
+            let msg = OscMessage {
+                path: path.to_string(),
+                args: vec![OscArg::Float(val)],
+            };
+            osc_lib::OscMessage::serialize_to_bytes(&msg.path, &msg.args).unwrap()
+        };
+
+        // We can check if `state.play` is modified by `/play`
+        process_single_reaper_message(
+            &build_osc("/play", 1.0),
+            &config,
+            &state,
+            &x_client,
+            &r_sock,
+            r_addr,
+        )
+        .await
+        .unwrap();
+
+        assert!(state.lock().await.play);
+
+        // We can't easily intercept the outgoing UDP packet without a listening socket,
+        // but verifying it doesn't crash and modifies state correctly is a good start.
+
+        let commands = vec!["/stop", "/record", "/pause", "/repeat"];
+        for cmd in commands {
+            process_single_reaper_message(
+                &build_osc(cmd, 1.0),
+                &config,
+                &state,
+                &x_client,
+                &r_sock,
+                r_addr,
+            )
+            .await
+            .unwrap();
+        }
+    }
+
+    #[tokio::test]
+    async fn test_x32_master_solo() {
+        let config = Config {
+            verbose: false,
+            delay_bank: 0,
+            delay_generic: 0,
+            xx_send_mask: -1,
+            xr_send_mask: -1,
+            x32_ip: "127.0.0.1".to_string(),
+            reaper_ip: "127.0.0.1".to_string(),
+            reaper_send_port: 8000,
+            reaper_recv_port: 8000,
+            transport_on: true,
+            ch_bank_on: true,
+            marker_btn_on: false,
+            bank_c_color: 0,
+            eq_ctrl_on: false,
+            master_on: true,
+            trk_min: 1,
+            trk_max: 32,
+            aux_min: 0,
+            aux_max: 0,
+            fxr_min: 0,
+            fxr_max: 0,
+            bus_min: 0,
+            bus_max: 0,
+            dca_min: 0,
+            dca_max: 0,
+            track_send_offset: 0,
+            rdca: vec![(0, 0); 8],
+            bank_up: 0,
+            bank_dn: 0,
+            marker_btn: 0,
+            ch_bank_offset: 0,
+            bank_size: 8,
+        };
+        let state = Arc::new(Mutex::new(AppState::new(&config)));
+
+        let r_sock = UdpSocket::bind("127.0.0.1:0").await.unwrap();
+        let r_addr: SocketAddr = "127.0.0.1:8000".parse().unwrap();
+
+        let mock_server = UdpSocket::bind("127.0.0.1:0").await.unwrap();
+        let mock_addr = mock_server.local_addr().unwrap();
+        tokio::spawn(async move {
+            let mut buf = [0u8; 1024];
+            while let Ok((_, src)) = mock_server.recv_from(&mut buf).await {
+                let _ = mock_server.send_to(b"/info\0\0\0\0,\0\0\0", src).await;
+            }
+        });
+        let x_client = Arc::new(MixerClient::connect(&mock_addr.to_string(), false).await.unwrap());
+
+        let msg = OscMessage {
+            path: "/-stat/solosw/72".to_string(),
+            args: vec![OscArg::Int(1)],
+        };
+        let bytes = osc_lib::OscMessage::serialize_to_bytes(&msg.path, &msg.args).unwrap();
+
+        process_x32_message(&bytes, &config, &state, &r_sock, r_addr, &x_client)
+            .await
+            .unwrap();
+
+        // As there is no mock server, we just test it successfully executes and ignores without panic.
+        // It successfully covers the branch.
+    }
+
+    #[tokio::test]
+    async fn test_reaper_solo_message() {
+        let config = Config {
+            verbose: false,
+            delay_bank: 0,
+            delay_generic: 0,
+            xx_send_mask: -1,
+            xr_send_mask: -1,
+            x32_ip: "127.0.0.1".to_string(),
+            reaper_ip: "127.0.0.1".to_string(),
+            reaper_send_port: 8000,
+            reaper_recv_port: 8000,
+            transport_on: true,
+            ch_bank_on: true,
+            marker_btn_on: false,
+            bank_c_color: 0,
+            eq_ctrl_on: false,
+            master_on: false,
+            trk_min: 1,
+            trk_max: 32,
+            aux_min: 0,
+            aux_max: 0,
+            fxr_min: 0,
+            fxr_max: 0,
+            bus_min: 0,
+            bus_max: 0,
+            dca_min: 0,
+            dca_max: 0,
+            track_send_offset: 0,
+            rdca: vec![(0, 0); 8],
+            bank_up: 0,
+            bank_dn: 0,
+            marker_btn: 0,
+            ch_bank_offset: 0,
+            bank_size: 8,
+        };
+        let state = Arc::new(Mutex::new(AppState::new(&config)));
+
+        let r_sock = UdpSocket::bind("127.0.0.1:0").await.unwrap();
+        let r_addr: SocketAddr = "127.0.0.1:8000".parse().unwrap();
+
+        let mock_server = UdpSocket::bind("127.0.0.1:0").await.unwrap();
+        let mock_addr = mock_server.local_addr().unwrap();
+        tokio::spawn(async move {
+            let mut buf = [0u8; 1024];
+            while let Ok((_, src)) = mock_server.recv_from(&mut buf).await {
+                let _ = mock_server.send_to(b"/info\0\0\0\0,\0\0\0", src).await;
+            }
+        });
+        let x_client = Arc::new(MixerClient::connect(&mock_addr.to_string(), false).await.unwrap());
+
+        let msg = OscMessage {
+            path: "/track/5/solo".to_string(),
+            args: vec![OscArg::Float(1.0)],
+        };
+
+        process_single_reaper_message(
+            &osc_lib::OscMessage::serialize_to_bytes(&msg.path, &msg.args).unwrap(),
+            &config,
+            &state,
+            &x_client,
+            &r_sock,
+            r_addr,
+        )
+        .await
+        .unwrap();
+
+        let track_solo = state.lock().await.bank_tracks[4].solo;
+        assert_eq!(track_solo, 1.0);
+    }
+
+    #[tokio::test]
+    async fn test_reaper_select_mappings() {
+        let config = Config {
+            verbose: false,
+            delay_bank: 0,
+            delay_generic: 0,
+            xx_send_mask: -1,
+            xr_send_mask: -1,
+            x32_ip: "127.0.0.1".to_string(),
+            reaper_ip: "127.0.0.1".to_string(),
+            reaper_send_port: 8000,
+            reaper_recv_port: 8000,
+            transport_on: false,
+            ch_bank_on: false,
+            marker_btn_on: false,
+            bank_c_color: 0,
+            eq_ctrl_on: false,
+            master_on: false,
+            trk_min: 0,
+            trk_max: 0,
+            aux_min: 0,
+            aux_max: 0,
+            fxr_min: 1,
+            fxr_max: 8,
+            bus_min: 9,
+            bus_max: 16,
+            dca_min: 17,
+            dca_max: 24,
+            track_send_offset: 0,
+            rdca: vec![(0, 0); 8],
+            bank_up: 0,
+            bank_dn: 0,
+            marker_btn: 0,
+            ch_bank_offset: 0,
+            bank_size: 8,
+        };
+        let state = Arc::new(Mutex::new(AppState::new(&config)));
+
+        // Create dummy sockets
+        let r_sock = UdpSocket::bind("127.0.0.1:0").await.unwrap();
+        let r_addr: SocketAddr = "127.0.0.1:8000".parse().unwrap();
+
+        let mock_server = UdpSocket::bind("127.0.0.1:0").await.unwrap();
+        let mock_addr = mock_server.local_addr().unwrap();
+        tokio::spawn(async move {
+            let mut buf = [0u8; 1024];
+            while let Ok((_, src)) = mock_server.recv_from(&mut buf).await {
+                let _ = mock_server.send_to(b"/info\0\0\0\0,\0\0\0", src).await;
+            }
+        });
+        let x_client = Arc::new(MixerClient::connect(&mock_addr.to_string(), false).await.unwrap());
+
+        let build_osc = |path: &str, val: f32| -> Vec<u8> {
+            let msg = OscMessage {
+                path: path.to_string(),
+                args: vec![OscArg::Float(val)],
+            };
+            osc_lib::OscMessage::serialize_to_bytes(&msg.path, &msg.args).unwrap()
+        };
+
+        // Test FXR mapping (offset 40)
+        process_single_reaper_message(
+            &build_osc("/track/1/select", 1.0),
+            &config,
+            &state,
+            &x_client,
+            &r_sock,
+            r_addr,
+        )
+        .await
+        .unwrap();
+        assert_eq!(state.lock().await.x_selected, 40); // 1 - 1 + 40
+
+        // Test Bus mapping (offset 48)
+        process_single_reaper_message(
+            &build_osc("/track/9/select", 1.0),
+            &config,
+            &state,
+            &x_client,
+            &r_sock,
+            r_addr,
+        )
+        .await
+        .unwrap();
+        assert_eq!(state.lock().await.x_selected, 48); // 9 - 9 + 48
+
+        // Test DCA mapping (offset 72)
+        process_single_reaper_message(
+            &build_osc("/track/17/select", 1.0),
+            &config,
+            &state,
+            &x_client,
+            &r_sock,
+            r_addr,
+        )
+        .await
+        .unwrap();
+        assert_eq!(state.lock().await.x_selected, 72); // 17 - 17 + 72
+    }
+
+    #[tokio::test]
+    async fn test_reaper_master_commands() {
+        let config = Config {
+            verbose: false,
+            delay_bank: 0,
+            delay_generic: 0,
+            xx_send_mask: -1,
+            xr_send_mask: -1,
+            x32_ip: "127.0.0.1".to_string(),
+            reaper_ip: "127.0.0.1".to_string(),
+            reaper_send_port: 8000,
+            reaper_recv_port: 8000,
+            transport_on: false,
+            ch_bank_on: false,
+            marker_btn_on: false,
+            bank_c_color: 0,
+            eq_ctrl_on: false,
+            master_on: true,
+            trk_min: 1,
+            trk_max: 32,
+            aux_min: 0,
+            aux_max: 0,
+            fxr_min: 0,
+            fxr_max: 0,
+            bus_min: 0,
+            bus_max: 0,
+            dca_min: 0,
+            dca_max: 0,
+            track_send_offset: 0,
+            rdca: vec![(0, 0); 8],
+            bank_up: 0,
+            bank_dn: 0,
+            marker_btn: 0,
+            ch_bank_offset: 0,
+            bank_size: 8,
+        };
+        let state = Arc::new(Mutex::new(AppState::new(&config)));
+
+        // Create dummy sockets
+        let r_sock = UdpSocket::bind("127.0.0.1:0").await.unwrap();
+        let r_addr: SocketAddr = "127.0.0.1:8000".parse().unwrap();
+
+        let mock_server = UdpSocket::bind("127.0.0.1:0").await.unwrap();
+        let mock_addr = mock_server.local_addr().unwrap();
+        tokio::spawn(async move {
+            let mut buf = [0u8; 1024];
+            while let Ok((_, src)) = mock_server.recv_from(&mut buf).await {
+                let _ = mock_server.send_to(b"/info\0\0\0\0,\0\0\0", src).await;
+            }
+        });
+        let x_client = Arc::new(MixerClient::connect(&mock_addr.to_string(), false).await.unwrap());
+
+        // Helper function to build OSC packets for transport commands
+        let build_osc = |path: &str, val: f32| -> Vec<u8> {
+            let msg = OscMessage {
+                path: path.to_string(),
+                args: vec![OscArg::Float(val)],
+            };
+            osc_lib::OscMessage::serialize_to_bytes(&msg.path, &msg.args).unwrap()
+        };
+
+        // Note: we can't easily assert the UDP packet output directly here, but we can call it to ensure no panics.
+        let commands = vec!["/master/select", "/master/solo", "/master/mute"];
+        for cmd in commands {
+            process_single_reaper_message(
+                &build_osc(cmd, 1.0),
+                &config,
+                &state,
+                &x_client,
+                &r_sock,
+                r_addr,
+            )
+            .await
+            .unwrap();
+        }
+    }
+}
+
 #[inline(always)]
-pub fn extract_nth_segment(path: &str, n: usize) -> Option<&str> {
+fn extract_nth_segment(path: &str, n: usize) -> Option<&str> {
     let iter = path.as_bytes().iter().enumerate();
     let mut slashes = 0;
     let mut start_idx = 0;
@@ -1421,33 +1767,13 @@ pub fn extract_nth_segment(path: &str, n: usize) -> Option<&str> {
     }
     None
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[tokio::test]
-    async fn test_x32_message_processing() {
-        // Omitting for brevity as tests would need to spin up a mock x32_lib::MixerClient
-    }
-
-    #[tokio::test]
-    async fn test_x32_master_solo() {
-        // Omitting for brevity as tests would need to spin up a mock x32_lib::MixerClient
-    }
-
-    #[tokio::test]
-    async fn test_reaper_solo_message() {
-        // Omitting for brevity as tests would need to spin up a mock x32_lib::MixerClient
-    }
-
-    #[tokio::test]
-    async fn test_reaper_select_mappings() {
-        // Omitting for brevity as tests would need to spin up a mock x32_lib::MixerClient
-    }
-
-    #[tokio::test]
-    async fn test_reaper_master_commands() {
-        // Omitting for brevity as tests would need to spin up a mock x32_lib::MixerClient
-    }
+#[test]
+fn test_osc_missing_args_panic() {
+    let path = b"/test\0\0\0";
+    let tags = b",sss\0\0\0\0";
+    let mut data = Vec::new();
+    data.extend_from_slice(path);
+    data.extend_from_slice(tags);
+    // data has 2 string arguments missing!
+    let _ = crate::parse_osc_packet(&data);
 }

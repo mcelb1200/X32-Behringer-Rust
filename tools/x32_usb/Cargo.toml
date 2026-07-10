@@ -14,3 +14,11 @@ x32_lib = { workspace = true }
 assert_cmd = "2.0.14"
 predicates = "3.1.0"
 x32_emulator = { path = "../../tools/x32_emulator" }
+
+[lib]
+name = "x32_usb"
+path = "src/lib.rs"
+
+[[bin]]
+name = "x32_usb"
+path = "src/main.rs"
