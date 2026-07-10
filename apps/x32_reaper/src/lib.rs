@@ -18,9 +18,8 @@ use std::fmt::Write;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::net::UdpSocket;
-use x32_lib::MixerClient;
 use tokio::sync::Mutex;
-
+use x32_lib::MixerClient;
 
 pub mod config;
 pub mod state;
@@ -132,7 +131,6 @@ pub async fn run(args: Args) -> Result<()> {
     }
 }
 
-
 /// Sends an OSC message to Reaper.
 async fn send_to_r(sock: &UdpSocket, addr: SocketAddr, msg: &OscMessage) -> Result<()> {
     let bytes = msg
@@ -141,7 +139,6 @@ async fn send_to_r(sock: &UdpSocket, addr: SocketAddr, msg: &OscMessage) -> Resu
     sock.send_to(&bytes, addr).await?;
     Ok(())
 }
-
 
 /// Initializes user controls and updates bank settings.
 async fn init_user_ctrl(
@@ -570,7 +567,9 @@ async fn process_x32_message(
             }
             // Echo master select on X32
             if (xr_mask & config.xr_send_mask) != 0 {
-                let _ = x_client.send_message("/-stat/selidx", vec![OscArg::Int(70)]).await;
+                let _ = x_client
+                    .send_message("/-stat/selidx", vec![OscArg::Int(70)])
+                    .await;
             }
             if let Some(OscArg::Int(i)) = msg.args.first() {
                 let action = if *i == 1 {
@@ -786,8 +785,7 @@ async fn handle_user_par(
                             < ((config.trk_max - config.trk_min + 1) / config.bank_size) - 1
                         {
                             state.ch_bank_offset += 1;
-                            update_bk_ch(x_client, config, state, Some((r_sock, r_addr)))
-                                .await?;
+                            update_bk_ch(x_client, config, state, Some((r_sock, r_addr))).await?;
                         }
                     } else {
                         if state.loop_toggle != 0 {
@@ -812,7 +810,12 @@ async fn handle_user_par(
                             .await?;
                         }
                         state.loop_toggle ^= 0x7f;
-                        let _ = x_client.send_message("/-stat/userpar/21/value", vec![OscArg::Int(state.loop_toggle)]).await;
+                        let _ = x_client
+                            .send_message(
+                                "/-stat/userpar/21/value",
+                                vec![OscArg::Int(state.loop_toggle)],
+                            )
+                            .await;
                     }
                 }
             }
@@ -822,8 +825,7 @@ async fn handle_user_par(
                     if config.ch_bank_on {
                         if state.ch_bank_offset > 0 {
                             state.ch_bank_offset -= 1;
-                            update_bk_ch(x_client, config, state, Some((r_sock, r_addr)))
-                                .await?;
+                            update_bk_ch(x_client, config, state, Some((r_sock, r_addr))).await?;
                         }
                     } else {
                         send_to_r(
@@ -1387,7 +1389,11 @@ mod tests {
                 let _ = mock_server.send_to(b"/info\0\0\0\0,\0\0\0", src).await;
             }
         });
-        let x_client = Arc::new(MixerClient::connect(&mock_addr.to_string(), false).await.unwrap());
+        let x_client = Arc::new(
+            MixerClient::connect(&mock_addr.to_string(), false)
+                .await
+                .unwrap(),
+        );
 
         // Helper function to build OSC packets for transport commands
         let build_osc = |path: &str, val: f32| -> Vec<u8> {
@@ -1479,7 +1485,11 @@ mod tests {
                 let _ = mock_server.send_to(b"/info\0\0\0\0,\0\0\0", src).await;
             }
         });
-        let x_client = Arc::new(MixerClient::connect(&mock_addr.to_string(), false).await.unwrap());
+        let x_client = Arc::new(
+            MixerClient::connect(&mock_addr.to_string(), false)
+                .await
+                .unwrap(),
+        );
 
         let msg = OscMessage {
             path: "/-stat/solosw/72".to_string(),
@@ -1544,7 +1554,11 @@ mod tests {
                 let _ = mock_server.send_to(b"/info\0\0\0\0,\0\0\0", src).await;
             }
         });
-        let x_client = Arc::new(MixerClient::connect(&mock_addr.to_string(), false).await.unwrap());
+        let x_client = Arc::new(
+            MixerClient::connect(&mock_addr.to_string(), false)
+                .await
+                .unwrap(),
+        );
 
         let msg = OscMessage {
             path: "/track/5/solo".to_string(),
@@ -1616,7 +1630,11 @@ mod tests {
                 let _ = mock_server.send_to(b"/info\0\0\0\0,\0\0\0", src).await;
             }
         });
-        let x_client = Arc::new(MixerClient::connect(&mock_addr.to_string(), false).await.unwrap());
+        let x_client = Arc::new(
+            MixerClient::connect(&mock_addr.to_string(), false)
+                .await
+                .unwrap(),
+        );
 
         let build_osc = |path: &str, val: f32| -> Vec<u8> {
             let msg = OscMessage {
@@ -1716,7 +1734,11 @@ mod tests {
                 let _ = mock_server.send_to(b"/info\0\0\0\0,\0\0\0", src).await;
             }
         });
-        let x_client = Arc::new(MixerClient::connect(&mock_addr.to_string(), false).await.unwrap());
+        let x_client = Arc::new(
+            MixerClient::connect(&mock_addr.to_string(), false)
+                .await
+                .unwrap(),
+        );
 
         // Helper function to build OSC packets for transport commands
         let build_osc = |path: &str, val: f32| -> Vec<u8> {
