@@ -1,0 +1,15 @@
+[package]
+name = "x32_speech_mode"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+x32_lib = { path = "../../libs/x32_lib" }
+osc_lib = { path = "../../libs/osc_lib" }
+tokio = { version = "1.28", features = ["full"] }
+anyhow = "1.0"
+clap = { version = "4.3", features = ["derive"] }
+x32_fxparse.workspace = true
+
+[dev-dependencies]
+x32_core = { path = "../../libs/x32_core" }
