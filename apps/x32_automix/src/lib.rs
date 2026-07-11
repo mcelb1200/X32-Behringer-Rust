@@ -83,19 +83,14 @@ async fn run_automix(args: Args, client: MixerClient) -> Result<()> {
     let attack_coef = 0.8;
     let release_coef = 0.2;
 
-    let fader_addresses: Vec<(String, String)> = (1..=32)
-        .map(|ch| {
-            let base = format!("/ch/{:02}", ch);
-            if args.use_bus {
-                (
-                    format!("{}/mix/{:02}/level", base, args.bus_number),
-                    format!("{}/mix/{:02}/level", base, args.bus_number),
-                )
-            } else {
-                (format!("{}/mix/fader", base), format!("{}/mix/fader", base))
-            }
-        })
-        .collect();
+    let fader_addresses: [String; 32] = core::array::from_fn(|i| {
+        let ch = i + 1;
+        if args.use_bus {
+            format!("/ch/{:02}/mix/{:02}/level", ch, args.bus_number)
+        } else {
+            format!("/ch/{:02}/mix/fader", ch)
+        }
+    });
 
     let mut rx = client.subscribe();
     let mut meter_interval = tokio::time::interval(Duration::from_secs(9));
@@ -171,7 +166,7 @@ async fn run_automix(args: Args, client: MixerClient) -> Result<()> {
                                 last_sent_levels[ch] = new_gain;
                                 if let Some(addr) = fader_addresses.get(ch) {
                                     client.send_message(
-                                        &addr.0,
+                                        addr,
                                         vec![OscArg::Float(new_gain)],
                                     ).await?;
                                 }
@@ -281,22 +276,18 @@ mod tests {
             nom: false,
         };
 
-        let fader_addresses = (1..=32)
-            .map(|ch| {
-                let base = format!("/ch/{:02}", ch);
-                if args.use_bus {
-                    (
-                        format!("{}/mix/{:02}/level", base, args.bus_number),
-                        format!("{}/mix/{:02}/level", base, args.bus_number),
-                    )
-                } else {
-                    (format!("{}/mix/fader", base), format!("{}/mix/fader", base))
-                }
-            })
-            .collect::<Vec<(String, String)>>();
+        let fader_addresses: [String; 32] = core::array::from_fn(|i| {
+            let ch = i + 1;
+            let base = format!("/ch/{:02}", ch);
+            if args.use_bus {
+                format!("{}/mix/{:02}/level", base, args.bus_number)
+            } else {
+                format!("{}/mix/fader", base)
+            }
+        });
 
-        assert_eq!(fader_addresses[0].0, "/ch/01/mix/fader");
-        assert_eq!(fader_addresses[31].0, "/ch/32/mix/fader");
+        assert_eq!(fader_addresses[0], "/ch/01/mix/fader");
+        assert_eq!(fader_addresses[31], "/ch/32/mix/fader");
     }
 
     #[test]
@@ -313,22 +304,18 @@ mod tests {
             nom: false,
         };
 
-        let fader_addresses = (1..=32)
-            .map(|ch| {
-                let base = format!("/ch/{:02}", ch);
-                if args.use_bus {
-                    (
-                        format!("{}/mix/{:02}/level", base, args.bus_number),
-                        format!("{}/mix/{:02}/level", base, args.bus_number),
-                    )
-                } else {
-                    (format!("{}/mix/fader", base), format!("{}/mix/fader", base))
-                }
-            })
-            .collect::<Vec<(String, String)>>();
+        let fader_addresses: [String; 32] = core::array::from_fn(|i| {
+            let ch = i + 1;
+            let base = format!("/ch/{:02}", ch);
+            if args.use_bus {
+                format!("{}/mix/{:02}/level", base, args.bus_number)
+            } else {
+                format!("{}/mix/fader", base)
+            }
+        });
 
-        assert_eq!(fader_addresses[0].0, "/ch/01/mix/05/level");
-        assert_eq!(fader_addresses[31].0, "/ch/32/mix/05/level");
+        assert_eq!(fader_addresses[0], "/ch/01/mix/05/level");
+        assert_eq!(fader_addresses[31], "/ch/32/mix/05/level");
     }
 
     #[test]
