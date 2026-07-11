@@ -2462,6 +2462,7 @@ dependencies = [
  "x32_reaper",
  "x32_replay",
  "x32_safe_mute",
+ "x32_scene_checker",
  "x32_set_lib",
  "x32_set_preset",
  "x32_set_scene",
@@ -2834,6 +2835,7 @@ dependencies = [
 
 [[package]]
 name = "x32_safe_mute"
+name = "x32_scene_checker"
 version = "0.1.0"
 dependencies = [
  "anyhow",
@@ -2841,6 +2843,7 @@ dependencies = [
  "crossterm",
  "osc_lib",
  "scopeguard",
+ "osc_lib",
  "tokio",
  "x32_lib",
 ]

@@ -49,3 +49,4 @@ x32_emulator = { path = "../x32_emulator" }
 x32_crossfade = { path = "../../apps/x32_crossfade" }
 x32_auto_gain = { path = "../../apps/x32_auto_gain" }
 x32_safe_mute = { version = "0.1.0", path = "../../apps/x32_safe_mute" }
+x32_scene_checker = { path = "../../apps/x32_scene_checker" }
