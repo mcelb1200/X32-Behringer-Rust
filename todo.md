@@ -453,3 +453,48 @@ Before handing the system to a volunteer, an experienced engineer sets up:
 > the speaker finishes, the volunteer taps "MUTED" on the speaker channel and unmutes the
 > worship leader. An alert pops up: *"🟡 Guitar level is low — consider raising fader."*
 > They nudge it up. The entire evening runs smoothly without touching a single EQ knob.
+
+---
+
+## 8. Automated System Tuning (Oscillator-Assisted)
+
+### Why this matters (plain language)
+Tuning a sound system to a room ("ringing out the mains") and verifying that all speakers are working correctly is usually a job for a professional audio engineer with a calibrated measurement microphone. This feature automates the process using the X32's built-in signal generator (oscillator). It safely tests speaker outputs and can even tune the room using the regular stage microphones if a calibrated mic isn't available, giving volunteers confidence that the system sounds great before the band even arrives.
+
+### How it works — technical approach
+
+#### Phase 1: Guided Output Verification
+1. **Routing Check**: The system automatically sweeps a pink noise signal (`/config/osc/type` = 1) across each main and matrix output one by one.
+2. **Visual Feedback**: The TUI highlights which speaker *should* be making noise (e.g., "Left Main", "Subwoofer", "Delay Fill"). The volunteer simply confirms "Yes, I hear it" or "No sound."
+
+#### Phase 2: Assisted Gain Staging
+1. The oscillator generates a steady sine wave (`/config/osc/type` = 0) or pink noise at a safe reference level (e.g., -18 dBFS).
+2. The volunteer is instructed to physically adjust the amplifier or powered speaker volume knobs until the sound reaches a comfortable listening level, ensuring the physical amps are properly matched to the console's digital output.
+
+#### Phase 3: Room Tuning and Pre-Ringing
+- **Option A (Calibrated Measurement Mic)**:
+  1. The operator places a measurement mic in the center of the room.
+  2. The system plays pink noise through the Main L/R.
+  3. A Rust background task performs FFT analysis on the mic's USB return stream, calculates an inverse EQ curve to flatten the room response, and applies it to the Main L/R graphic EQ (`/geq/XX/*`) or parametric EQ.
+- **Option B (No Measurement Mic / Stage Mic Sweep)**:
+  1. The system uses the existing vocal microphones already set up on stage.
+  2. The oscillator sweeps a sine wave (`/config/osc/f1`) slowly from 20 Hz to 20 kHz through the PA.
+  3. The system listens to the stage mics using the **Feedback Detection** algorithm (see §1). If a specific frequency resonates wildly in the room and feeds back into the stage mics, the system automatically inserts a notch filter on the Main L/R EQ to tame that room mode.
+
+### X32 OSC paths involved
+- `/config/osc/active` — turn oscillator on/off (0 or 1)
+- `/config/osc/type` — 0 = Sine, 1 = Pink Noise, 2 = White Noise
+- `/config/osc/dest` — target bus/matrix/main output
+- `/config/osc/level` — signal level (float, 0.0 to 1.0)
+- `/config/osc/f1` — sine wave frequency for sweeps
+- `/main/st/eq/*` — main stereo parametric EQ
+- `/geq/*` — graphic EQ (if inserted on mains)
+
+### Safety guardrails
+- **Strict Level Limits**: The oscillator `/config/osc/level` is hard-capped in software to never exceed -18 dBFS to prevent speaker damage.
+- **Auto-Timeout**: The oscillator automatically turns off (`/config/osc/active` = 0) after 30 seconds of inactivity or if network connection is lost.
+- **Instant Kill Switch**: The Panic Button (§5) immediately disables the oscillator.
+- **Volume Fade-In**: The system always starts the oscillator at -∞ dB and ramps up slowly to the target level.
+
+### Real-world use case
+> A high school drama teacher is setting up the PA in a reverberant gymnasium. They don't have a measurement mic, but they have three chorus mics on stage. They select "Auto-Tune Room" on the TUI. The system plays a slow, sweeping tone through the main speakers. At 250 Hz and 4 kHz, the gym echoes loudly into the chorus mics. The system detects this, automatically cuts those frequencies on the Main EQ, and turns off the tone. The teacher's PA is now tuned for maximum volume without feedback.
