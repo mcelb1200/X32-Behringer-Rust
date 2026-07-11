@@ -3,9 +3,9 @@ use clap::Parser;
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use ringbuf::HeapRb;
 use std::sync::Arc;
-use std::time::{Duration, Instant};
 use tokio::sync::Mutex;
 use x32_lib::MixerClient;
+use std::time::{Instant, Duration};
 
 pub mod detector;
 pub mod mixer;
@@ -30,9 +30,7 @@ pub struct Args {
 pub async fn run(args: Args) -> Result<()> {
     // 1. Set up audio capture using cpal
     let host = cpal::default_host();
-    let device = host
-        .default_input_device()
-        .context("No input device available")?;
+    let device = host.default_input_device().context("No input device available")?;
     let config: cpal::StreamConfig = device.default_input_config()?.into();
     let sample_rate = config.sample_rate.0;
 
@@ -104,10 +102,9 @@ pub async fn run(args: Args) -> Result<()> {
                     }
                 }
             } else if last_tick.elapsed() > Duration::from_secs(2)
-                && status.contains("Feedback detected")
-            {
-                status = "Listening...".to_string();
-            }
+                && status.contains("Feedback detected") {
+                     status = "Listening...".to_string();
+                }
         }
 
         // Draw TUI
