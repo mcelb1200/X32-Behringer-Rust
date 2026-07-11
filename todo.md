@@ -481,6 +481,12 @@ Tuning a sound system to a room ("ringing out the mains") and verifying that all
   2. The oscillator sweeps a sine wave (`/config/osc/f1`) slowly from 20 Hz to 20 kHz through the PA.
   3. The system listens to the stage mics using the **Feedback Detection** algorithm (see §1). If a specific frequency resonates wildly in the room and feeds back into the stage mics, the system automatically inserts a notch filter on the Main L/R EQ to tame that room mode.
 
+#### Phase 4: Monitor / Foldback Ringing (Oscillator-Assisted)
+1. The operator selects a monitor bus (e.g., Bus 01 "Monitor L") to ring out.
+2. The system routes the oscillator specifically to that bus (`/config/osc/dest`).
+3. The oscillator slowly sweeps a sine wave (`/config/osc/type` = 0) or plays pink noise while gradually increasing the level.
+4. The system listens through the vocal microphones placed in front of the foldback wedges. When feedback or strong resonances are detected (via the Feedback Detection algorithm in §1), the system identifies the frequency and applies a surgical parametric EQ notch to the corresponding bus EQ (`/bus/XX/eq/N/*`).
+
 ### X32 OSC paths involved
 - `/config/osc/active` — turn oscillator on/off (0 or 1)
 - `/config/osc/type` — 0 = Sine, 1 = Pink Noise, 2 = White Noise
@@ -489,6 +495,7 @@ Tuning a sound system to a room ("ringing out the mains") and verifying that all
 - `/config/osc/f1` — sine wave frequency for sweeps
 - `/main/st/eq/*` — main stereo parametric EQ
 - `/geq/*` — graphic EQ (if inserted on mains)
+- `/bus/XX/eq/N/*` — bus parametric EQ for foldback notch insertion
 
 ### Safety guardrails
 - **Strict Level Limits**: The oscillator `/config/osc/level` is hard-capped in software to never exceed -18 dBFS to prevent speaker damage.
@@ -497,4 +504,4 @@ Tuning a sound system to a room ("ringing out the mains") and verifying that all
 - **Volume Fade-In**: The system always starts the oscillator at -∞ dB and ramps up slowly to the target level.
 
 ### Real-world use case
-> A high school drama teacher is setting up the PA in a reverberant gymnasium. They don't have a measurement mic, but they have three chorus mics on stage. They select "Auto-Tune Room" on the TUI. The system plays a slow, sweeping tone through the main speakers. At 250 Hz and 4 kHz, the gym echoes loudly into the chorus mics. The system detects this, automatically cuts those frequencies on the Main EQ, and turns off the tone. The teacher's PA is now tuned for maximum volume without feedback.
+> A high school drama teacher is setting up the PA in a reverberant gymnasium. They don't have a measurement mic, but they have three chorus mics on stage. They select "Auto-Tune Room" on the TUI. The system plays a slow, sweeping tone through the main speakers. At 250 Hz and 4 kHz, the gym echoes loudly into the chorus mics. The system detects this, automatically cuts those frequencies on the Main EQ. Next, they select "Ring Monitors". The system routes the sweeping tone to the stage wedges, catches a 3.1 kHz ring building up, inserts a notch on the monitor bus EQ, and turns off the tone. The teacher's PA and monitors are now tuned for maximum volume without feedback.
