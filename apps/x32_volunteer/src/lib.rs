@@ -4,14 +4,14 @@ pub mod ui;
 
 use anyhow::Result;
 use clap::Parser;
-use std::time::{Duration, Instant};
 use network::ChannelState;
+use osc_lib::OscArg;
 use state::AppState;
+use std::sync::Arc;
+use std::time::{Duration, Instant};
 use ui::{Tui, UIEvent};
 use x32_lib::MixerClient;
-use osc_lib::OscArg;
-use std::sync::Arc;
-use x32_lib::transport::{udp::UdpTransport, MixerTransport};
+use x32_lib::transport::{MixerTransport, udp::UdpTransport};
 
 #[derive(Parser, Debug, Clone)]
 #[command(author, version, about = "Simplified TUI Dashboard (Volunteer Mode)")]
@@ -44,7 +44,11 @@ pub async fn run(args: Args) -> Result<()> {
             let part = part.trim().to_lowercase();
             if let Some(stripped) = part.strip_prefix("ch") {
                 if let Ok(num) = stripped.parse::<u32>() {
-                    configured_channels.push(ChannelState::new(format!("/ch/{:02}", num), false, num));
+                    configured_channels.push(ChannelState::new(
+                        format!("/ch/{:02}", num),
+                        false,
+                        num,
+                    ));
                 }
             } else if let Some(stripped) = part.strip_prefix("dca") {
                 if let Ok(num) = stripped.parse::<u32>() {
@@ -78,11 +82,19 @@ async fn run_tui_loop(
 ) -> Result<()> {
     // Initial state request
     for ch in &state.channels {
-        network.send_message(format!("{}/mix/fader", ch.osc_prefix).as_str(), vec![]).await?;
-        network.send_message(format!("{}/mix/on", ch.osc_prefix).as_str(), vec![]).await?;
-        network.send_message(format!("{}/config/name", ch.osc_prefix).as_str(), vec![]).await?;
+        network
+            .send_message(format!("{}/mix/fader", ch.osc_prefix).as_str(), vec![])
+            .await?;
+        network
+            .send_message(format!("{}/mix/on", ch.osc_prefix).as_str(), vec![])
+            .await?;
+        network
+            .send_message(format!("{}/config/name", ch.osc_prefix).as_str(), vec![])
+            .await?;
     }
-    network.send_message("/meters", vec![OscArg::String("/meters/1".to_string())]).await?;
+    network
+        .send_message("/meters", vec![OscArg::String("/meters/1".to_string())])
+        .await?;
 
     let mut last_ui_update = Instant::now();
     let mut last_meter_req = Instant::now();
@@ -98,16 +110,23 @@ async fn run_tui_loop(
                     if let Some(OscArg::Float(v)) = msg.args.first() {
                         ch.fader = *v;
                     }
-                } else if path == format!("{}/mix/on", ch.osc_prefix) || path == format!("{}/on", ch.osc_prefix) { // Handle DCA vs CH on
-                     let mut found = false;
-                     if path.starts_with("/ch/") && path.ends_with("/mix/on") { found = true; }
-                     if path.starts_with("/dca/") && path.ends_with("/on") { found = true; }
+                } else if path == format!("{}/mix/on", ch.osc_prefix)
+                    || path == format!("{}/on", ch.osc_prefix)
+                {
+                    // Handle DCA vs CH on
+                    let mut found = false;
+                    if path.starts_with("/ch/") && path.ends_with("/mix/on") {
+                        found = true;
+                    }
+                    if path.starts_with("/dca/") && path.ends_with("/on") {
+                        found = true;
+                    }
 
-                     if found {
+                    if found {
                         if let Some(OscArg::Int(v)) = msg.args.first() {
                             ch.muted = *v == 0;
                         }
-                     }
+                    }
                 } else if path == format!("{}/config/name", ch.osc_prefix) {
                     if let Some(OscArg::String(s)) = msg.args.first() {
                         if !s.is_empty() {
@@ -126,7 +145,8 @@ async fn run_tui_loop(
                             let idx = (ch.num - 1) as usize;
                             let start = 4 + idx * 4;
                             if start + 4 <= data.len() {
-                                let bytes: [u8; 4] = data[start..start+4].try_into().unwrap_or([0; 4]);
+                                let bytes: [u8; 4] =
+                                    data[start..start + 4].try_into().unwrap_or([0; 4]);
                                 let float_val = f32::from_le_bytes(bytes);
                                 // The X32 returns level in linear format 0.0-1.0
                                 let mut db = -144.0;
@@ -143,18 +163,22 @@ async fn run_tui_loop(
 
         // Request meters periodically
         if last_meter_req.elapsed() > Duration::from_millis(50) {
-            network.send_message("/meters", vec![OscArg::String("/meters/1".to_string())]).await?;
+            network
+                .send_message("/meters", vec![OscArg::String("/meters/1".to_string())])
+                .await?;
             last_meter_req = Instant::now();
         }
 
         // Draw UI
         if last_ui_update.elapsed() > Duration::from_millis(30) {
-
             // Update alerts based on actual metered level
             state.alerts.clear();
             for ch in &state.channels {
                 if !ch.muted && ch.level_db > -5.0 && !ch.is_dca {
-                    state.alerts.push(format!("🟡 {} level is high — consider lowering fader.", ch.name));
+                    state.alerts.push(format!(
+                        "🟡 {} level is high — consider lowering fader.",
+                        ch.name
+                    ));
                 }
             }
 
@@ -164,18 +188,36 @@ async fn run_tui_loop(
                 match event {
                     UIEvent::Quit => break,
                     UIEvent::MuteAll => {
-                         for ch in &state.channels {
-                             let mute_path = if ch.is_dca { format!("{}/on", ch.osc_prefix) } else { format!("{}/mix/on", ch.osc_prefix) };
-                             network.send_message(&mute_path, vec![OscArg::Int(0)]).await?;
-                         }
-                    },
+                        for ch in &state.channels {
+                            let mute_path = if ch.is_dca {
+                                format!("{}/on", ch.osc_prefix)
+                            } else {
+                                format!("{}/mix/on", ch.osc_prefix)
+                            };
+                            network
+                                .send_message(&mute_path, vec![OscArg::Int(0)])
+                                .await?;
+                        }
+                    }
                     UIEvent::Panic => {
-                         for ch in &state.channels {
-                             let mute_path = if ch.is_dca { format!("{}/on", ch.osc_prefix) } else { format!("{}/mix/on", ch.osc_prefix) };
-                             network.send_message(&mute_path, vec![OscArg::Int(0)]).await?;
-                             let fader_path = if ch.is_dca { format!("{}/fader", ch.osc_prefix) } else { format!("{}/mix/fader", ch.osc_prefix) };
-                             network.send_message(&fader_path, vec![OscArg::Float(0.0)]).await?;
-                         }
+                        for ch in &state.channels {
+                            let mute_path = if ch.is_dca {
+                                format!("{}/on", ch.osc_prefix)
+                            } else {
+                                format!("{}/mix/on", ch.osc_prefix)
+                            };
+                            network
+                                .send_message(&mute_path, vec![OscArg::Int(0)])
+                                .await?;
+                            let fader_path = if ch.is_dca {
+                                format!("{}/fader", ch.osc_prefix)
+                            } else {
+                                format!("{}/mix/fader", ch.osc_prefix)
+                            };
+                            network
+                                .send_message(&fader_path, vec![OscArg::Float(0.0)])
+                                .await?;
+                        }
                     }
                 }
             }

@@ -57,7 +57,10 @@ impl Tui {
                 Status::Problem => "🔴 PROBLEM",
             };
 
-            let header_text = format!("  🎛️  SOUND DESK — Volunteer Mode              {}", status_text);
+            let header_text = format!(
+                "  🎛️  SOUND DESK — Volunteer Mode              {}",
+                status_text
+            );
             let header = Paragraph::new(header_text)
                 .style(
                     Style::default()
@@ -71,7 +74,11 @@ impl Tui {
             let channel_chunks = Layout::default()
                 .direction(Direction::Horizontal)
                 .constraints(
-                    state.channels.iter().map(|_| Constraint::Ratio(1, state.channels.len() as u32)).collect::<Vec<_>>()
+                    state
+                        .channels
+                        .iter()
+                        .map(|_| Constraint::Ratio(1, state.channels.len() as u32))
+                        .collect::<Vec<_>>(),
                 )
                 .split(chunks[1]);
 
@@ -107,12 +114,18 @@ impl Tui {
             }
 
             // 3. Alerts
-            let mut alert_lines = vec![Line::from(Span::styled("ALERTS", Style::default().fg(Color::Red).add_modifier(Modifier::BOLD)))];
+            let mut alert_lines = vec![Line::from(Span::styled(
+                "ALERTS",
+                Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
+            ))];
             for alert in &state.alerts {
                 alert_lines.push(Line::from(format!("• {}", alert)));
             }
             if state.alerts.is_empty() {
-                alert_lines.push(Line::from(Span::styled("No active alerts", Style::default().fg(Color::DarkGray))));
+                alert_lines.push(Line::from(Span::styled(
+                    "No active alerts",
+                    Style::default().fg(Color::DarkGray),
+                )));
             }
             let alerts = Paragraph::new(alert_lines).block(Block::default().borders(Borders::ALL));
             f.render_widget(alerts, chunks[2]);
@@ -121,7 +134,6 @@ impl Tui {
             let footer = Paragraph::new("  [M]ute all  [P]anic  [Q]uit")
                 .block(Block::default().borders(Borders::ALL));
             f.render_widget(footer, chunks[3]);
-
         })?;
         Ok(())
     }
