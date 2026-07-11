@@ -95,7 +95,10 @@ pub struct ChannelState {
 }
 
 /// Fetches the current fader levels and mute states for all target paths
-pub async fn capture_state(client: &MixerClient, paths: &[String]) -> Result<HashMap<String, ChannelState>> {
+pub async fn capture_state(
+    client: &MixerClient,
+    paths: &[String],
+) -> Result<HashMap<String, ChannelState>> {
     let mut state = HashMap::new();
     for path in paths {
         let mut cstate = ChannelState { fader: 0.0, on: 0 };
@@ -117,7 +120,11 @@ pub async fn capture_state(client: &MixerClient, paths: &[String]) -> Result<Has
 }
 
 /// Executes a rapid fade out and hard mute
-pub async fn execute_panic(client: &MixerClient, paths: &[String], state: &HashMap<String, ChannelState>) -> Result<()> {
+pub async fn execute_panic(
+    client: &MixerClient,
+    paths: &[String],
+    state: &HashMap<String, ChannelState>,
+) -> Result<()> {
     // 250ms fade down, step size 50ms (5 steps)
     let steps = 5;
     let mut interval = interval(Duration::from_millis(50));
@@ -131,27 +138,39 @@ pub async fn execute_panic(client: &MixerClient, paths: &[String], state: &HashM
         for path in paths {
             if let Some(initial_state) = state.get(path) {
                 let current_val = initial_state.fader * factor;
-                let _ = client.send_message(&format!("{}/fader", path), vec![OscArg::Float(current_val)]).await;
+                let _ = client
+                    .send_message(&format!("{}/fader", path), vec![OscArg::Float(current_val)])
+                    .await;
             }
         }
     }
 
     // Hard mute (set /on to 0)
     for path in paths {
-        let _ = client.send_message(&format!("{}/on", path), vec![OscArg::Int(0)]).await;
+        let _ = client
+            .send_message(&format!("{}/on", path), vec![OscArg::Int(0)])
+            .await;
         // ensure fader is fully at 0
-        let _ = client.send_message(&format!("{}/fader", path), vec![OscArg::Float(0.0)]).await;
+        let _ = client
+            .send_message(&format!("{}/fader", path), vec![OscArg::Float(0.0)])
+            .await;
     }
 
     Ok(())
 }
 
 /// Executes a slow fade in back to the stored state
-pub async fn execute_restore(client: &MixerClient, paths: &[String], state: &HashMap<String, ChannelState>) -> Result<()> {
+pub async fn execute_restore(
+    client: &MixerClient,
+    paths: &[String],
+    state: &HashMap<String, ChannelState>,
+) -> Result<()> {
     // Unmute based on stored state
     for path in paths {
         if let Some(cstate) = state.get(path) {
-            let _ = client.send_message(&format!("{}/on", path), vec![OscArg::Int(cstate.on)]).await;
+            let _ = client
+                .send_message(&format!("{}/on", path), vec![OscArg::Int(cstate.on)])
+                .await;
         }
     }
 
@@ -167,7 +186,9 @@ pub async fn execute_restore(client: &MixerClient, paths: &[String], state: &Has
         for path in paths {
             if let Some(cstate) = state.get(path) {
                 let current_val = cstate.fader * factor;
-                let _ = client.send_message(&format!("{}/fader", path), vec![OscArg::Float(current_val)]).await;
+                let _ = client
+                    .send_message(&format!("{}/fader", path), vec![OscArg::Float(current_val)])
+                    .await;
             }
         }
     }
@@ -178,7 +199,9 @@ pub async fn execute_restore(client: &MixerClient, paths: &[String], state: &Has
 /// Main entry point for the tool
 pub async fn run(args: Args) -> Result<()> {
     let paths = resolve_target_paths(&args.mode, &args.dcas);
-    let transport = UdpTransport::connect(&args.ip).await.context("Failed to connect UDP transport")?;
+    let transport = UdpTransport::connect(&args.ip)
+        .await
+        .context("Failed to connect UDP transport")?;
     let mut client = MixerClient::new(Arc::new(transport), true);
     run_ui_loop(&args, &mut client, &paths).await?;
     Ok(())
@@ -239,7 +262,9 @@ pub async fn run_ui_loop(args: &Args, client: &mut MixerClient, paths: &[String]
                                                 confirm = true;
                                                 break;
                                             }
-                                            KeyCode::Char('n') | KeyCode::Char('N') | KeyCode::Esc => {
+                                            KeyCode::Char('n')
+                                            | KeyCode::Char('N')
+                                            | KeyCode::Esc => {
                                                 break;
                                             }
                                             _ => {}
