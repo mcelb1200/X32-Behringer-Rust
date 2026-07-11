@@ -14,5 +14,4 @@ rustfft = "6.1"
 num-complex = "0.4"
 ratatui = { workspace = true }
 crossterm = { workspace = true }
-crossbeam-channel = { workspace = true }
 ringbuf = "0.3"

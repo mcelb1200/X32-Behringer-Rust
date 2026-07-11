@@ -2,14 +2,14 @@ use anyhow::Result;
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyModifiers},
     execute,
-    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
+    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use ratatui::{
-    Terminal,
     backend::CrosstermBackend,
     layout::{Constraint, Direction, Layout},
     style::{Color, Style},
     widgets::{Block, Borders, Paragraph},
+    Terminal,
 };
 use std::{io, time::Duration};
 
@@ -69,11 +69,8 @@ impl AppTui {
                 }
             }
 
-            let notch_p = Paragraph::new(notch_text).block(
-                Block::default()
-                    .title("Active Notches")
-                    .borders(Borders::ALL),
-            );
+            let notch_p = Paragraph::new(notch_text)
+                .block(Block::default().title("Active Notches").borders(Borders::ALL));
             f.render_widget(notch_p, chunks[1]);
         })?;
         Ok(())

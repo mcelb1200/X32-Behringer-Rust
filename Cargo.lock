@@ -2692,7 +2692,6 @@ dependencies = [
  "anyhow",
  "clap",
  "cpal",
- "crossbeam-channel",
  "crossterm",
  "num-complex",
  "osc_lib",

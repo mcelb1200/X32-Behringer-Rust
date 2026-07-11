@@ -53,8 +53,7 @@ impl FeedbackDetector {
             .map(|&s| Complex::new(s, 0.0))
             .collect();
 
-        self.fft
-            .process_with_scratch(&mut buffer, &mut self.scratch);
+        self.fft.process_with_scratch(&mut buffer, &mut self.scratch);
 
         let mut magnitudes = Vec::with_capacity(self.fft_size / 2);
         for c in buffer.iter().take(self.fft_size / 2) {
