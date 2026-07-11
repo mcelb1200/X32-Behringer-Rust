@@ -4,10 +4,10 @@
 use anyhow::Result;
 use clap::Parser;
 use osc_lib::OscArg;
-use std::collections::HashMap;
 use std::time::Duration;
 use tokio::time::interval;
 use x32_lib::MixerClient;
+use std::collections::HashMap;
 
 #[derive(Parser, Debug, Clone)]
 #[command(author, version, about = "Auto-Gain / Smart Gain Staging for X32/M32", long_about = None)]
@@ -54,11 +54,7 @@ pub async fn run(args: Args) -> Result<()> {
     }
 
     println!("Connecting to {}...", args.ip);
-    let ip = if args.ip.contains(':') {
-        args.ip.clone()
-    } else {
-        format!("{}:10023", args.ip)
-    };
+    let ip = if args.ip.contains(':') { args.ip.clone() } else { format!("{}:10023", args.ip) };
     let client = MixerClient::connect(&ip, true).await?;
     println!("Connected. Monitoring channels: {:?}", channels);
 
