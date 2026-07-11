@@ -89,11 +89,14 @@ impl MixerState {
             }
 
             if let Some(band) = free_band {
-                (band, AppliedNotch {
-                    frequency,
-                    depth: -3.0,
-                    q: 10.0, // High Q
-                })
+                (
+                    band,
+                    AppliedNotch {
+                        frequency,
+                        depth: -3.0,
+                        q: 10.0, // High Q
+                    },
+                )
             } else {
                 return Ok(());
             }
@@ -104,26 +107,36 @@ impl MixerState {
 
         // 1. Set type to PEQ (3)
         let path_type = format!("/ch/{}/eq/{}/type", ch_str, band_to_use);
-        self.client.send_message(&path_type, vec![OscArg::Int(3)]).await?;
+        self.client
+            .send_message(&path_type, vec![OscArg::Int(3)])
+            .await?;
 
         // 2. Set Frequency
         let path_freq = format!("/ch/{}/eq/{}/freq", ch_str, band_to_use);
         let freq_val = Self::freq_to_float(new_notch.frequency);
-        self.client.send_message(&path_freq, vec![OscArg::Float(freq_val)]).await?;
+        self.client
+            .send_message(&path_freq, vec![OscArg::Float(freq_val)])
+            .await?;
 
         // 3. Set Gain
         let path_gain = format!("/ch/{}/eq/{}/gain", ch_str, band_to_use);
         let gain_val = Self::gain_to_float(new_notch.depth);
-        self.client.send_message(&path_gain, vec![OscArg::Float(gain_val)]).await?;
+        self.client
+            .send_message(&path_gain, vec![OscArg::Float(gain_val)])
+            .await?;
 
         // 4. Set Q
         let path_q = format!("/ch/{}/eq/{}/q", ch_str, band_to_use);
         let q_val = Self::q_to_float(new_notch.q);
-        self.client.send_message(&path_q, vec![OscArg::Float(q_val)]).await?;
+        self.client
+            .send_message(&path_q, vec![OscArg::Float(q_val)])
+            .await?;
 
         // 5. Ensure EQ block is on
         let path_on = format!("/ch/{}/eq/on", ch_str);
-        self.client.send_message(&path_on, vec![OscArg::Int(1)]).await?;
+        self.client
+            .send_message(&path_on, vec![OscArg::Int(1)])
+            .await?;
 
         self.applied_notches.insert(band_to_use, new_notch);
 
@@ -137,7 +150,9 @@ impl MixerState {
             let path_gain = format!("/ch/{}/eq/{}/gain", ch_str, band);
             // Reset to 0 dB
             let gain_val = Self::gain_to_float(0.0);
-            self.client.send_message(&path_gain, vec![OscArg::Float(gain_val)]).await?;
+            self.client
+                .send_message(&path_gain, vec![OscArg::Float(gain_val)])
+                .await?;
         }
 
         self.applied_notches.clear();
