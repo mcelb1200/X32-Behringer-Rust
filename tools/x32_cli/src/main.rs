@@ -99,8 +99,6 @@ enum Commands {
     X32AutoGain(x32_auto_gain::Args),
     /// Run x32_safe_mute
     X32SafeMute(x32_safe_mute::Args),
-    /// Run x32_scene_checker
-    X32SceneChecker(x32_scene_checker::Args),
 }
 
 #[tokio::main]
@@ -161,8 +159,5 @@ async fn main() -> Result<()> {
         Commands::X32Crossfade(args) => x32_crossfade::run(args).await.map_err(anyhow::Error::msg),
         Commands::X32AutoGain(args) => x32_auto_gain::run(args).await.map_err(anyhow::Error::msg),
         Commands::X32SafeMute(args) => x32_safe_mute::run(args).await.map_err(anyhow::Error::msg),
-        Commands::X32SceneChecker(args) => x32_scene_checker::run(args)
-            .await
-            .map_err(anyhow::Error::msg),
     }
 }
