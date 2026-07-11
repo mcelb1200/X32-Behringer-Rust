@@ -3,8 +3,6 @@ resolver = "2"
 members = [
     "libs/*",
     "apps/*",
-    "apps/x32_sync",
-    "apps/x32_scene_checker",
     "tools/*",
 ]
 
@@ -12,24 +10,34 @@ members = [
 # Core Runtime
 tokio = { version = "1.36", features = ["full"] }
 anyhow = "1.0"
+crossbeam-channel = "0.5"
 async-trait = "0.1"
 
 # CLI & UX
 clap = { version = "4.5", features = ["derive"] }
+ratatui = "0.24"
+crossterm = "0.27"
+indicatif = "0.17"
 
 # Serialization & Logic
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+regex = "1.10"
+lazy_static = "1.4"
 byteorder = "1.5"
 
 # System & Audio
 cpal = "0.15"
+hound = "3.5"
 midir = "0.10"
+alsa = "0.9"
 
 # Workspace Internal (Path Aliases)
 osc_lib = { path = "libs/osc_lib" }
 x32_lib = { path = "libs/x32_lib" }
 x32_core = { path = "libs/x32_core" }
+x32_fxparse = { path = "libs/x32_fxparse" }
+x32_dump = { path = "tools/x32_dump" }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"
