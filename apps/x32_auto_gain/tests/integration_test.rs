@@ -1,9 +1,9 @@
 use anyhow::Result;
 use clap::Parser;
+use osc_lib::OscArg;
 use std::time::Duration;
 use tokio::time::sleep;
 use x32_auto_gain::{Args, run};
-use osc_lib::OscArg;
 
 // A simple local mock
 use tokio::net::UdpSocket;
@@ -31,9 +31,21 @@ async fn run_mock_server() -> Result<(String, tokio::task::JoinHandle<()>)> {
                         // send initial states
                         let mut resp = Vec::new();
                         let state1 = state.get("/headamp/01/gain").unwrap();
-                        resp.extend(osc_lib::OscMessage::serialize_to_bytes("/headamp/01/gain", vec![state1]).unwrap());
+                        resp.extend(
+                            osc_lib::OscMessage::serialize_to_bytes(
+                                "/headamp/01/gain",
+                                vec![state1],
+                            )
+                            .unwrap(),
+                        );
                         let state2 = state.get("/headamp/02/gain").unwrap();
-                        resp.extend(osc_lib::OscMessage::serialize_to_bytes("/headamp/02/gain", vec![state2]).unwrap());
+                        resp.extend(
+                            osc_lib::OscMessage::serialize_to_bytes(
+                                "/headamp/02/gain",
+                                vec![state2],
+                            )
+                            .unwrap(),
+                        );
                         let _ = socket.send_to(&resp, src).await;
                     }
 
@@ -56,7 +68,11 @@ async fn run_mock_server() -> Result<(String, tokio::task::JoinHandle<()>)> {
                             blob.extend_from_slice(&val.to_le_bytes());
                         }
 
-                        let meters_msg_bytes = osc_lib::OscMessage::serialize_to_bytes("/meters/1", vec![&OscArg::Blob(blob)]).unwrap();
+                        let meters_msg_bytes = osc_lib::OscMessage::serialize_to_bytes(
+                            "/meters/1",
+                            vec![&OscArg::Blob(blob)],
+                        )
+                        .unwrap();
                         let _ = socket.send_to(&meters_msg_bytes, src).await;
                     }
                 }
@@ -66,7 +82,6 @@ async fn run_mock_server() -> Result<(String, tokio::task::JoinHandle<()>)> {
 
     Ok((addr, handle))
 }
-
 
 #[tokio::test]
 async fn test_auto_gain_adjusts_levels() -> Result<()> {
@@ -81,7 +96,6 @@ async fn test_auto_gain_adjusts_levels() -> Result<()> {
         &mock_ip_clone,
         "--channels",
         "1,2",
-
         "--target-dbfs=-18.0",
         "--rate-ms",
         "50",
