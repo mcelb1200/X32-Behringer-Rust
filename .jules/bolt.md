@@ -84,3 +84,9 @@
 ## 2026-07-08 - AppState Lifetimes
 **Learning:** When passing large pre-calculated string arrays (like `tab_titles`) or invariant state fields to a UI render function on every tick, adding lifetimes to the state struct (e.g. `AppState<'a>`) to borrow variables from the main loop scope completely eliminates the overhead of deeply cloning owned `String`s into the state on every frame.
 **Action:** Use borrowed lifetimes (`&'a str`, `&'a [String]`) instead of `String` for invariant display states passed into hot UI loops.
+## 2024-11-20 - [Eliminate vector allocation in Automix Dugan Gain Calculation]
+**Learning:** Returning a `Vec<f32>` constructed with `.push()` in a high-frequency hot loop (like `calculate_dugan_gains` processing OSC `/meters/1` messages up to 20 times a second) forces repeated dynamic heap allocations. For constrained environments where the maximum channel size is static (e.g. 32 channels on the X32), these allocations can degrade throughput.
+**Action:** Replace `Vec<f32>` returns with fixed-size stack arrays `[f32; 32]` inside DSP and mixing loop calculations to entirely avoid heap allocations while performing math. Use bounds checks `if i >= 32` to ensure memory safety.
+## 2026-07-10 - [Replace dynamic vector allocations with fixed stack arrays for known bounds]
+**Learning:** Initializing collections using iterators like `(1..=32).map(...).collect::<Vec<_>>()` forces dynamic heap allocation even when the size (32) is perfectly known ahead of time. This is a common bottleneck when initializing arrays of addresses or states.
+**Action:** Replace iterator-to-vector collecting with `core::array::from_fn` for fixed size, known-bound structures to allocate them safely on the stack and completely eliminate vector heap allocations.
