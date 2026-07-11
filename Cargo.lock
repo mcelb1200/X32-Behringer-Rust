@@ -12,6 +12,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "alloca"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e5a7d05ea6aea7e9e64d25b9156ba2fee3fdd659e34e41063cd2fc7cd020d7f4"
+dependencies = [
+ "cc",
+]
+
+[[package]]
 name = "allocator-api2"
 version = "0.2.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -38,6 +47,21 @@ dependencies = [
  "libc",
  "pkg-config",
 ]
+
+[[package]]
+name = "android_system_properties"
+version = "0.1.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "819e7219dbd41043ac279b19830f2efc897156490d7fd6ea916720117ee66311"
+dependencies = [
+ "libc",
+]
+
+[[package]]
+name = "anes"
+version = "0.1.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4b46cbb362ab8752921c97e041f5e366ee6297bd428a31275b9fcf1e380f7299"
 
 [[package]]
 name = "anstream"
@@ -199,6 +223,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "df8670b8c7b9dae1793364eafadf7239c40d669904660c5960d74cfd80b46a53"
 
 [[package]]
+name = "cast"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "37b2a672a2cb129a2e41c10b1224bb368f9f37a2b16b612598138befd7b37eb5"
+
+[[package]]
 name = "cc"
 version = "1.2.64"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -230,6 +260,46 @@ name = "cfg-if"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9330f8b2ff13f34540b44e946ef35111825727b38d33286ef986142615121801"
+
+[[package]]
+name = "chrono"
+version = "0.4.45"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1aa79e62e7697b8e29b513a68abacf485adcd1fe8284a4316c5ae868e6633327"
+dependencies = [
+ "iana-time-zone",
+ "js-sys",
+ "num-traits",
+ "wasm-bindgen",
+ "windows-link",
+]
+
+[[package]]
+name = "ciborium"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "42e69ffd6f0917f5c029256a24d0161db17cea3997d185db0d35926308770f0e"
+dependencies = [
+ "ciborium-io",
+ "ciborium-ll",
+ "serde",
+]
+
+[[package]]
+name = "ciborium-io"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "05afea1e0a06c9be33d539b876f1ce3692f4afea2cb41f740e7743225ed1c757"
+
+[[package]]
+name = "ciborium-ll"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "57663b653d948a338bfb3eeba9bb2fd5fcfaecb9e199e87e1eda4d9e8b240fd9"
+dependencies = [
+ "ciborium-io",
+ "half",
+]
 
 [[package]]
 name = "clang-sys"
@@ -379,10 +449,64 @@ dependencies = [
 ]
 
 [[package]]
+name = "criterion"
+version = "0.8.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "950046b2aa2492f9a536f5f4f9a3de7b9e2476e575e05bd6c333371add4d98f3"
+dependencies = [
+ "alloca",
+ "anes",
+ "cast",
+ "ciborium",
+ "clap",
+ "criterion-plot",
+ "itertools 0.13.0",
+ "num-traits",
+ "oorandom",
+ "page_size",
+ "plotters",
+ "rayon",
+ "regex",
+ "serde",
+ "serde_json",
+ "tinytemplate",
+ "walkdir",
+]
+
+[[package]]
+name = "criterion-plot"
+version = "0.8.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d8d80a2f4f5b554395e47b5d8305bc3d27813bacb73493eb1001e8f76dae29ea"
+dependencies = [
+ "cast",
+ "itertools 0.13.0",
+]
+
+[[package]]
 name = "crossbeam-channel"
 version = "0.5.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "82b8f8f868b36967f9606790d1903570de9ceaf870a7bf9fbbd3016d636a2cb2"
+dependencies = [
+ "crossbeam-utils",
+]
+
+[[package]]
+name = "crossbeam-deque"
+version = "0.8.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5181e0de7b61eb03a81e347d6dd8797bae9da5146707b51077e2d71a54ec0ceb"
+dependencies = [
+ "crossbeam-epoch",
+ "crossbeam-utils",
+]
+
+[[package]]
+name = "crossbeam-epoch"
+version = "0.9.20"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2d6914041f254d6e9176c01941b21115dcfb7089e55135a35411081bd106ef3f"
 dependencies = [
  "crossbeam-utils",
 ]
@@ -419,6 +543,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "crunchy"
+version = "0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "460fbee9c2c2f33933d720630a6a0bac33ba7053db5344fac858d4b8952d77d5"
+
+[[package]]
 name = "dasp_sample"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -451,6 +581,23 @@ dependencies = [
  "libc",
  "windows-sys 0.61.2",
 ]
+
+[[package]]
+name = "escargot"
+version = "0.5.15"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "11c3aea32bc97b500c9ca6a72b768a26e558264303d101d3409cf6d57a9ed0cf"
+dependencies = [
+ "log",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "fastrand"
+version = "2.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9f1f227452a390804cdb637b74a86990f2a7d7ba4b7d5693aac9b4dd6defd8d6"
 
 [[package]]
 name = "find-msvc-tools"
@@ -527,6 +674,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0cc23270f6e1808e30a928bdc84dea0b9b4136a8bc82338574f23baf47bbd280"
 
 [[package]]
+name = "half"
+version = "2.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6ea2d84b969582b4b1864a92dc5d27cd2b77b622a8d79306834f1be5ba20d84b"
+dependencies = [
+ "cfg-if",
+ "crunchy",
+ "zerocopy",
+]
+
+[[package]]
 name = "hashbrown"
 version = "0.15.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -554,6 +712,36 @@ name = "heck"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2304e00983f87ffb38b55b444b5e3b60a884b5d30c0fca7d82fe33449bbe55ea"
+
+[[package]]
+name = "hound"
+version = "3.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "62adaabb884c94955b19907d60019f4e145d091c75345379e70d1ee696f7854f"
+
+[[package]]
+name = "iana-time-zone"
+version = "0.1.65"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e31bc9ad994ba00e440a8aa5c9ef0ec67d5cb5e5cb0cc7f8b744a35b389cc470"
+dependencies = [
+ "android_system_properties",
+ "core-foundation-sys",
+ "iana-time-zone-haiku",
+ "js-sys",
+ "log",
+ "wasm-bindgen",
+ "windows-core 0.56.0",
+]
+
+[[package]]
+name = "iana-time-zone-haiku"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f31827a206f56af32e590ba56d5d2d085f558508192593743f16b2306495269f"
+dependencies = [
+ "cc",
+]
 
 [[package]]
 name = "indexmap"
@@ -690,6 +878,12 @@ dependencies = [
  "cfg-if",
  "windows-link",
 ]
+
+[[package]]
+name = "linux-raw-sys"
+version = "0.12.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "32a66949e030da00e8c7d4434b251670a91556f4144941d37452769c25d58a53"
 
 [[package]]
 name = "lock_api"
@@ -917,11 +1111,27 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "384b8ab6d37215f3c5301a95a4accb5d64aa607f1fcb26a11b5303878451b4fe"
 
 [[package]]
+name = "oorandom"
+version = "11.1.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d6790f58c7ff633d8771f42965289203411a5e5c68388703c06e14f24770b41e"
+
+[[package]]
 name = "osc_lib"
 version = "0.1.0"
 dependencies = [
  "anyhow",
  "byteorder",
+]
+
+[[package]]
+name = "page_size"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "30d5b2194ed13191c1999ae0704b7839fb18384fa22e49b57eeaa97d79ce40da"
+dependencies = [
+ "libc",
+ "winapi",
 ]
 
 [[package]]
@@ -964,6 +1174,34 @@ name = "pkg-config"
 version = "0.3.33"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "19f132c84eca552bf34cab8ec81f1c1dcc229b811638f9d283dceabe58c5569e"
+
+[[package]]
+name = "plotters"
+version = "0.3.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5aeb6f403d7a4911efb1e33402027fc44f29b5bf6def3effcc22d7bb75f2b747"
+dependencies = [
+ "num-traits",
+ "plotters-backend",
+ "plotters-svg",
+ "wasm-bindgen",
+ "web-sys",
+]
+
+[[package]]
+name = "plotters-backend"
+version = "0.3.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "df42e13c12958a16b3f7f4386b9ab1f3e7933914ecea48da7139435263a4172a"
+
+[[package]]
+name = "plotters-svg"
+version = "0.3.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "51bae2ac328883f7acdfea3d66a7c35751187f870bc81f94563733a154d7a670"
+dependencies = [
+ "plotters-backend",
+]
 
 [[package]]
 name = "ppv-lite86"
@@ -1095,6 +1333,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "rayon"
+version = "1.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fb39b166781f92d482534ef4b4b1b2568f42613b53e5b6c160e24cfbfa30926d"
+dependencies = [
+ "either",
+ "rayon-core",
+]
+
+[[package]]
+name = "rayon-core"
+version = "1.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "22e18b0f0062d30d4230b2e85ff77fdfe4326feb054b9783a3460d8435c8ab91"
+dependencies = [
+ "crossbeam-deque",
+ "crossbeam-utils",
+]
+
+[[package]]
 name = "redox_syscall"
 version = "0.5.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1162,6 +1420,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "rustix"
+version = "1.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b6fe4565b9518b83ef4f91bb47ce29620ca828bd32cb7e408f0062e9930ba190"
+dependencies = [
+ "bitflags 2.13.0",
+ "errno",
+ "libc",
+ "linux-raw-sys",
+ "windows-sys 0.61.2",
+]
+
+[[package]]
 name = "rustversion"
 version = "1.0.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1181,14 +1452,6 @@ name = "scopeguard"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
-
-[[package]]
-name = "scratchpad"
-version = "0.1.0"
-dependencies = [
- "osc_lib",
- "x32_fxparse",
-]
 
 [[package]]
 name = "serde"
@@ -1344,6 +1607,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "tempfile"
+version = "3.27.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "32497e9a4c7b38532efcdebeef879707aa9f794296a4f0244f6f69e9bc8574bd"
+dependencies = [
+ "fastrand",
+ "getrandom 0.3.4",
+ "once_cell",
+ "rustix",
+ "windows-sys 0.61.2",
+]
+
+[[package]]
 name = "termtree"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1381,6 +1657,16 @@ dependencies = [
  "log",
  "rustversion",
  "winapi",
+]
+
+[[package]]
+name = "tinytemplate"
+version = "1.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "be4d6b5f19ff7664e8c98d03e2139cb510db9b0a60b55f8e8709b689d939b6bc"
+dependencies = [
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -1905,6 +2191,56 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1ebf944e87a7c253233ad6766e082e3cd714b5d03812acc24c318f549614536e"
 
 [[package]]
+name = "x32-cli"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "tokio",
+ "x32_auto_gain",
+ "x32_autobeat",
+ "x32_automix",
+ "x32_command",
+ "x32_commander",
+ "x32_copy_fx",
+ "x32_cpxlivemarkers",
+ "x32_crossfade",
+ "x32_custom_layer",
+ "x32_dca_spill",
+ "x32_desk_restore",
+ "x32_desk_save",
+ "x32_dump",
+ "x32_emulator",
+ "x32_fade",
+ "x32_geq2_cpy",
+ "x32_get_lib",
+ "x32_get_scene",
+ "x32_get_scene_name",
+ "x32_jog4xlive",
+ "x32_loudness",
+ "x32_midi2osc",
+ "x32_punch_control",
+ "x32_reaper",
+ "x32_replay",
+ "x32_set_lib",
+ "x32_set_preset",
+ "x32_set_scene",
+ "x32_ssavergw",
+ "x32_sync",
+ "x32_tap",
+ "x32_tapw",
+ "x32_tcp",
+ "x32_udp",
+ "x32_usb",
+ "x32_vocal_ducking",
+ "x32_wav_xlive",
+ "x32_xlive_wav",
+ "xair_command",
+ "xair_get_scene",
+ "xair_set_scene",
+]
+
+[[package]]
 name = "x32_auto_gain"
 version = "0.1.0"
 dependencies = [
@@ -1949,10 +2285,64 @@ dependencies = [
 ]
 
 [[package]]
+name = "x32_command"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "assert_cmd",
+ "clap",
+ "osc_lib",
+ "predicates",
+ "tempfile",
+ "tokio",
+ "x32_lib",
+]
+
+[[package]]
+name = "x32_commander"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "midir",
+ "osc_lib",
+ "tempfile",
+ "tokio",
+ "x32_lib",
+]
+
+[[package]]
+name = "x32_copy_fx"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "assert_cmd",
+ "clap",
+ "escargot",
+ "lazy_static",
+ "osc_lib",
+ "predicates",
+ "tokio",
+ "x32_lib",
+]
+
+[[package]]
 name = "x32_core"
 version = "0.1.0"
 dependencies = [
  "osc_lib",
+]
+
+[[package]]
+name = "x32_cpxlivemarkers"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "assert_cmd",
+ "byteorder",
+ "clap",
+ "predicates",
+ "tempfile",
 ]
 
 [[package]]
@@ -1961,6 +2351,18 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "clap",
+ "osc_lib",
+ "tokio",
+ "x32_lib",
+]
+
+[[package]]
+name = "x32_custom_layer"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "criterion",
  "osc_lib",
  "tokio",
  "x32_lib",
@@ -1978,6 +2380,48 @@ dependencies = [
 ]
 
 [[package]]
+name = "x32_desk_restore"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "assert_cmd",
+ "clap",
+ "escargot",
+ "osc_lib",
+ "predicates",
+ "tokio",
+ "x32_lib",
+]
+
+[[package]]
+name = "x32_desk_save"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "assert_cmd",
+ "clap",
+ "escargot",
+ "osc_lib",
+ "predicates",
+ "tokio",
+ "x32_lib",
+]
+
+[[package]]
+name = "x32_dump"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "assert_cmd",
+ "byteorder",
+ "clap",
+ "osc_lib",
+ "predicates",
+ "tempfile",
+ "x32_lib",
+]
+
+[[package]]
 name = "x32_emulator"
 version = "0.1.0"
 dependencies = [
@@ -1989,6 +2433,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "x32_fade"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "osc_lib",
+ "serde",
+ "serde_json",
+ "tokio",
+ "x32_lib",
+]
+
+[[package]]
 name = "x32_fxparse"
 version = "0.1.0"
 dependencies = [
@@ -1996,6 +2453,64 @@ dependencies = [
  "osc_lib",
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "x32_geq2_cpy"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "osc_lib",
+ "tokio",
+ "x32_lib",
+]
+
+[[package]]
+name = "x32_get_lib"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "osc_lib",
+ "tokio",
+ "x32_lib",
+]
+
+[[package]]
+name = "x32_get_scene"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "osc_lib",
+ "tokio",
+ "x32_lib",
+]
+
+[[package]]
+name = "x32_get_scene_name"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "assert_cmd",
+ "clap",
+ "escargot",
+ "osc_lib",
+ "predicates",
+ "tokio",
+ "x32_lib",
+]
+
+[[package]]
+name = "x32_jog4xlive"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "osc_lib",
+ "tokio",
+ "x32_lib",
 ]
 
 [[package]]
@@ -2015,6 +2530,45 @@ dependencies = [
 ]
 
 [[package]]
+name = "x32_loudness"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "osc_lib",
+ "serde",
+ "serde_json",
+ "tokio",
+ "x32_lib",
+]
+
+[[package]]
+name = "x32_midi2osc"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "byteorder",
+ "clap",
+ "midir",
+ "osc_lib",
+ "tempfile",
+ "tokio",
+ "x32_lib",
+]
+
+[[package]]
+name = "x32_punch_control"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "osc_lib",
+ "tempfile",
+ "tokio",
+ "x32_lib",
+]
+
+[[package]]
 name = "x32_reaper"
 version = "0.1.0"
 dependencies = [
@@ -2023,6 +2577,50 @@ dependencies = [
  "osc_lib",
  "serde",
  "serde_json",
+ "tokio",
+ "x32_lib",
+]
+
+[[package]]
+name = "x32_replay"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "osc_lib",
+ "tokio",
+ "x32_lib",
+]
+
+[[package]]
+name = "x32_set_lib"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "osc_lib",
+ "tokio",
+ "x32_lib",
+]
+
+[[package]]
+name = "x32_set_preset"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "osc_lib",
+ "tokio",
+ "x32_lib",
+]
+
+[[package]]
+name = "x32_set_scene"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "osc_lib",
  "tokio",
  "x32_lib",
 ]
@@ -2041,12 +2639,41 @@ dependencies = [
 ]
 
 [[package]]
+name = "x32_ssavergw"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "assert_cmd",
+ "clap",
+ "escargot",
+ "osc_lib",
+ "predicates",
+ "tempfile",
+ "tokio",
+ "x32_emulator",
+ "x32_lib",
+]
+
+[[package]]
 name = "x32_sync"
 version = "0.1.0"
 dependencies = [
  "anyhow",
  "clap",
  "osc_lib",
+ "tokio",
+ "x32_lib",
+]
+
+[[package]]
+name = "x32_tap"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "assert_cmd",
+ "clap",
+ "osc_lib",
+ "predicates",
  "tokio",
  "x32_lib",
 ]
@@ -2068,6 +2695,46 @@ dependencies = [
 ]
 
 [[package]]
+name = "x32_tcp"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "assert_cmd",
+ "clap",
+ "escargot",
+ "osc_lib",
+ "predicates",
+ "tokio",
+ "x32_lib",
+]
+
+[[package]]
+name = "x32_udp"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "assert_cmd",
+ "clap",
+ "osc_lib",
+ "tokio",
+ "x32_lib",
+]
+
+[[package]]
+name = "x32_usb"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "assert_cmd",
+ "clap",
+ "osc_lib",
+ "predicates",
+ "tokio",
+ "x32_emulator",
+ "x32_lib",
+]
+
+[[package]]
 name = "x32_vocal_ducking"
 version = "0.1.0"
 dependencies = [
@@ -2077,6 +2744,76 @@ dependencies = [
  "osc_lib",
  "rustfft",
  "thread-priority",
+ "tokio",
+ "x32_lib",
+]
+
+[[package]]
+name = "x32_wav_xlive"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "assert_cmd",
+ "byteorder",
+ "chrono",
+ "clap",
+ "hound",
+ "predicates",
+ "tempfile",
+]
+
+[[package]]
+name = "x32_xlive_wav"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "assert_cmd",
+ "byteorder",
+ "chrono",
+ "clap",
+ "hound",
+ "tempfile",
+]
+
+[[package]]
+name = "xair_command"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "assert_cmd",
+ "clap",
+ "escargot",
+ "osc_lib",
+ "predicates",
+ "tempfile",
+ "tokio",
+ "x32_lib",
+]
+
+[[package]]
+name = "xair_get_scene"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "assert_cmd",
+ "clap",
+ "escargot",
+ "osc_lib",
+ "predicates",
+ "tokio",
+ "x32_lib",
+]
+
+[[package]]
+name = "xair_set_scene"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "assert_cmd",
+ "clap",
+ "escargot",
+ "osc_lib",
+ "predicates",
  "tokio",
  "x32_lib",
 ]

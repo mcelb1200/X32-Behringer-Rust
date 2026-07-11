@@ -70,7 +70,7 @@ pub async fn run(args: Args) -> Result<()> {
     let mut channels: Vec<u8> = Vec::new();
     for part in args.channels.split(',') {
         if let Ok(ch) = part.trim().parse::<u8>() {
-            if ch >= 1 && ch <= 32 {
+            if (1..=32).contains(&ch) {
                 channels.push(ch);
             }
         }

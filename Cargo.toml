@@ -3,7 +3,7 @@ resolver = "2"
 members = [
     "libs/*",
     "apps/*",
-    "apps/x32_sync", "scratchpad",
+    "tools/*",
 ]
 
 [workspace.dependencies]
