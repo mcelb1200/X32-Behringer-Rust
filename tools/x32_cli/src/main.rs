@@ -97,6 +97,8 @@ enum Commands {
     X32Crossfade(x32_crossfade::Args),
     /// Run x32_auto_gain
     X32AutoGain(x32_auto_gain::Args),
+    /// Run x32_safe_mute
+    X32SafeMute(x32_safe_mute::Args),
 }
 
 #[tokio::main]
@@ -156,5 +158,6 @@ async fn main() -> Result<()> {
         Commands::X32Emulator(args) => x32_emulator::run(args).map_err(anyhow::Error::msg),
         Commands::X32Crossfade(args) => x32_crossfade::run(args).await.map_err(anyhow::Error::msg),
         Commands::X32AutoGain(args) => x32_auto_gain::run(args).await.map_err(anyhow::Error::msg),
+        Commands::X32SafeMute(args) => x32_safe_mute::run(args).await.map_err(anyhow::Error::msg),
     }
 }

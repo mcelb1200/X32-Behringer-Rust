@@ -1,0 +1,16 @@
+[package]
+name = "x32_safe_mute"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tokio = { workspace = true }
+anyhow = { workspace = true }
+clap = { workspace = true }
+x32_lib = { workspace = true }
+osc_lib = { workspace = true }
+crossterm = { workspace = true }
+scopeguard = "1.2.0"
+
+[lints]
+workspace = true
