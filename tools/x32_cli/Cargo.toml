@@ -48,3 +48,4 @@ x32_midi2osc = { path = "../x32_midi2osc" }
 x32_emulator = { path = "../x32_emulator" }
 x32_crossfade = { path = "../../apps/x32_crossfade" }
 x32_auto_gain = { path = "../../apps/x32_auto_gain" }
+x32_feedback_detect = { path = "../../apps/x32_feedback_detect" }

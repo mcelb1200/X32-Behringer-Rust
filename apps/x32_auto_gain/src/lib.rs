@@ -94,7 +94,7 @@ pub async fn run(args: Args) -> Result<()> {
 
                 // Track HA gain manual changes
                 if msg.path.starts_with("/headamp/") && msg.path.ends_with("/gain") {
-                    if let Some(OscArg::Float(f)) = msg.args.get(0) {
+                    if let Some(OscArg::Float(f)) = msg.args.first() {
                         let parts: Vec<&str> = msg.path.split('/').collect();
                         if parts.len() == 4 {
                             if let Ok(ch) = parts[2].parse::<u8>() {
@@ -106,7 +106,7 @@ pub async fn run(args: Args) -> Result<()> {
 
                 // Process meter updates
                 if msg.path == "/meters/1" {
-                    if let Some(OscArg::Blob(data)) = msg.args.get(0) {
+                    if let Some(OscArg::Blob(data)) = msg.args.first() {
                         // skip first 4 bytes (length)
                         if data.len() < 4 + 32 * 4 {
                             continue;
