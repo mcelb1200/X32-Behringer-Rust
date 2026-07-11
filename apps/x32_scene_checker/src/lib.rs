@@ -3,8 +3,8 @@ use osc_lib::OscArg;
 use std::collections::HashMap;
 use std::io::{Read, Write};
 use std::time::Duration;
-use x32_lib::scene_parse::SceneParser;
 use x32_lib::MixerClient;
+use x32_lib::scene_parse::SceneParser;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about = "Intelligent Scene Pre-flight Checker", long_about = None)]
@@ -68,14 +68,28 @@ pub fn classify_risk(path: &str, current: &OscArg, scene: &OscArg) -> Option<Ris
     }
 
     let mut level = RiskLevel::Low;
-    let mut description = format!("Change from {} to {}", format_arg(current), format_arg(scene));
+    let mut description = format!(
+        "Change from {} to {}",
+        format_arg(current),
+        format_arg(scene)
+    );
 
     if path.starts_with("/routing/") || path.ends_with("/config/source") {
         level = RiskLevel::Critical;
-        description = format!("Routing change! From {} to {}", format_arg(current), format_arg(scene));
-    } else if path.starts_with("/main/st/mix/on") || (path.contains("/mix/on") && (path.starts_with("/bus/") || path.starts_with("/mtx/"))) {
+        description = format!(
+            "Routing change! From {} to {}",
+            format_arg(current),
+            format_arg(scene)
+        );
+    } else if path.starts_with("/main/st/mix/on")
+        || (path.contains("/mix/on") && (path.starts_with("/bus/") || path.starts_with("/mtx/")))
+    {
         level = RiskLevel::Critical;
-        description = format!("Output mute state change: {} -> {}", format_arg(current), format_arg(scene));
+        description = format!(
+            "Output mute state change: {} -> {}",
+            format_arg(current),
+            format_arg(scene)
+        );
     } else if path.ends_with("/preamp/trim") {
         if let (OscArg::Float(c), OscArg::Float(s)) = (current, scene) {
             let diff = (c - s).abs();
@@ -89,7 +103,11 @@ pub fn classify_risk(path: &str, current: &OscArg, scene: &OscArg) -> Option<Ris
     } else if path.contains("/eq/") {
         if path.ends_with("/on") {
             level = RiskLevel::High;
-            description = format!("EQ bypass changed: {} -> {}", format_arg(current), format_arg(scene));
+            description = format!(
+                "EQ bypass changed: {} -> {}",
+                format_arg(current),
+                format_arg(scene)
+            );
         } else if path.ends_with("/g") {
             if let (OscArg::Float(c), OscArg::Float(s)) = (current, scene) {
                 let diff = (c - s).abs();
@@ -107,9 +125,16 @@ pub fn classify_risk(path: &str, current: &OscArg, scene: &OscArg) -> Option<Ris
                 description = format!("Fader level change > 10dB: {:.2} -> {:.2}", c, s);
             }
         }
-    } else if path.ends_with("/config/name") || path.ends_with("/config/icon") || path.ends_with("/config/color") {
+    } else if path.ends_with("/config/name")
+        || path.ends_with("/config/icon")
+        || path.ends_with("/config/color")
+    {
         level = RiskLevel::Info;
-        description = format!("Cosmetic naming/icon change: {} -> {}", format_arg(current), format_arg(scene));
+        description = format!(
+            "Cosmetic naming/icon change: {} -> {}",
+            format_arg(current),
+            format_arg(scene)
+        );
     } else if path.contains("/dyn/") || path.contains("/gate/") {
         level = RiskLevel::Low;
     }
@@ -128,14 +153,36 @@ fn print_report_summary(issues: &[RiskIssue]) {
     println!("║  SCENE PRE-FLIGHT CHECK                          ║");
     println!("╠══════════════════════════════════════════════════╣");
 
-    let criticals: Vec<_> = issues.iter().filter(|i| i.level == RiskLevel::Critical).collect();
-    let highs: Vec<_> = issues.iter().filter(|i| i.level == RiskLevel::High).collect();
-    let moderates: Vec<_> = issues.iter().filter(|i| i.level == RiskLevel::Moderate).collect();
-    let lows: Vec<_> = issues.iter().filter(|i| i.level == RiskLevel::Low).collect();
-    let infos: Vec<_> = issues.iter().filter(|i| i.level == RiskLevel::Info).collect();
+    let criticals: Vec<_> = issues
+        .iter()
+        .filter(|i| i.level == RiskLevel::Critical)
+        .collect();
+    let highs: Vec<_> = issues
+        .iter()
+        .filter(|i| i.level == RiskLevel::High)
+        .collect();
+    let moderates: Vec<_> = issues
+        .iter()
+        .filter(|i| i.level == RiskLevel::Moderate)
+        .collect();
+    let lows: Vec<_> = issues
+        .iter()
+        .filter(|i| i.level == RiskLevel::Low)
+        .collect();
+    let infos: Vec<_> = issues
+        .iter()
+        .filter(|i| i.level == RiskLevel::Info)
+        .collect();
 
     if !criticals.is_empty() {
-        println!("║  🔴 CRITICAL ({} issues){width:<width$}║", "", width = 50 - format!("║  🔴 CRITICAL ({} issues)", criticals.len()).chars().count());
+        println!(
+            "║  🔴 CRITICAL ({} issues){width:<width$}║",
+            "",
+            width = 50
+                - format!("║  🔴 CRITICAL ({} issues)", criticals.len())
+                    .chars()
+                    .count()
+        );
         for i in criticals.iter().take(3) {
             println!("║    • {}: {}", i.path, i.description);
         }
@@ -146,7 +193,14 @@ fn print_report_summary(issues: &[RiskIssue]) {
     }
 
     if !highs.is_empty() {
-        println!("║  🟠 HIGH ({} issues){width:<width$}║", "", width = 50 - format!("║  🟠 HIGH ({} issues)", highs.len()).chars().count());
+        println!(
+            "║  🟠 HIGH ({} issues){width:<width$}║",
+            "",
+            width = 50
+                - format!("║  🟠 HIGH ({} issues)", highs.len())
+                    .chars()
+                    .count()
+        );
         for i in highs.iter().take(3) {
             println!("║    • {}: {}", i.path, i.description);
         }
@@ -160,7 +214,11 @@ fn print_report_summary(issues: &[RiskIssue]) {
         println!("║  🟡 MODERATE ({} changes)", moderates.len());
     }
 
-    println!("║  🟢 LOW ({} changes)  ⚪ INFO ({} changes)", lows.len(), infos.len());
+    println!(
+        "║  🟢 LOW ({} changes)  ⚪ INFO ({} changes)",
+        lows.len(),
+        infos.len()
+    );
     println!("╚══════════════════════════════════════════════════╝");
 }
 
@@ -206,7 +264,10 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
     let client = MixerClient::connect(&args.ip, true).await?;
     let client = std::sync::Arc::new(client);
 
-    println!("Fetching current mixer state for {} parameters...", scene_map.len());
+    println!(
+        "Fetching current mixer state for {} parameters...",
+        scene_map.len()
+    );
     let mut current_map: HashMap<String, OscArg> = HashMap::new();
     let mut count = 0;
 
@@ -237,7 +298,10 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
             issues.push(RiskIssue {
                 level: RiskLevel::Info,
                 path: path.to_string(),
-                description: format!("Could not verify current state, setting to {}", format_arg(scene_arg)),
+                description: format!(
+                    "Could not verify current state, setting to {}",
+                    format_arg(scene_arg)
+                ),
                 from: OscArg::Int(0), // Dummy
                 to: scene_arg.clone(),
             });
@@ -251,7 +315,9 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
 
     loop {
         print_report_summary(&issues);
-        println!("Options: [L]oad anyway | [S]afe-load (skip critical/high) | [R]eview details | [C]ancel");
+        println!(
+            "Options: [L]oad anyway | [S]afe-load (skip critical/high) | [R]eview details | [C]ancel"
+        );
         print!("> ");
         let _ = std::io::stdout().flush();
 
@@ -263,7 +329,9 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
             "l" | "load" => {
                 println!("Loading entire scene...");
                 for issue in &issues {
-                    client.send_message(&issue.path, vec![issue.to.clone()]).await?;
+                    client
+                        .send_message(&issue.path, vec![issue.to.clone()])
+                        .await?;
                     tokio::time::sleep(Duration::from_millis(2)).await; // avoid overwhelming
                 }
                 println!("Scene loaded.");
@@ -278,11 +346,16 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
                         skipped += 1;
                         continue;
                     }
-                    client.send_message(&issue.path, vec![issue.to.clone()]).await?;
+                    client
+                        .send_message(&issue.path, vec![issue.to.clone()])
+                        .await?;
                     tokio::time::sleep(Duration::from_millis(2)).await;
                     applied += 1;
                 }
-                println!("Safe load complete. Applied {}, skipped {}.", applied, skipped);
+                println!(
+                    "Safe load complete. Applied {}, skipped {}.",
+                    applied, skipped
+                );
                 break;
             }
             "r" | "review" => {
