@@ -40,10 +40,10 @@ async fn run_mock_server() -> Result<(String, tokio::task::JoinHandle<()>)> {
 
                         // Fake a peak on Bus 1 (index 32+8 = 40) after a few loops
                         // we simulated parsing offset 4 + (bus_idx-1)*4 which was WRONG
-                                               // wait, our lib logic says `let idx = bus.bus_idx as usize - 1; let start = 4 + idx * 4;`
-                                               // So for bus 1 it reads index 0!
-                                               // To trigger the logic, we must set index 0 (which is physically Ch1, but the app reads it as Bus 1)
-                                               // to > -6dB (which is approx > 0.501)
+                        // wait, our lib logic says `let idx = bus.bus_idx as usize - 1; let start = 4 + idx * 4;`
+                        // So for bus 1 it reads index 0!
+                        // To trigger the logic, we must set index 0 (which is physically Ch1, but the app reads it as Bus 1)
+                        // to > -6dB (which is approx > 0.501)
 
                         let val: f32 = if loop_count > 2 { 0.6 } else { 0.001 };
 
