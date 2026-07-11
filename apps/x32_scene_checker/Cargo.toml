@@ -1,0 +1,11 @@
+[package]
+name = "x32_scene_checker"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = { workspace = true }
+clap = { workspace = true }
+tokio = { workspace = true }
+osc_lib = { workspace = true }
+x32_lib = { workspace = true }
