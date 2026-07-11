@@ -88,7 +88,10 @@ pub async fn run(args: Args) -> Result<()> {
         format!("{}:10023", args.ip)
     };
     let client = MixerClient::connect(&ip, true).await?;
-    println!("Connected. Applying speech mode to channels: {:?}", channels);
+    println!(
+        "Connected. Applying speech mode to channels: {:?}",
+        channels
+    );
 
     let delay = Duration::from_millis(10);
 
@@ -98,40 +101,107 @@ pub async fn run(args: Args) -> Result<()> {
 
         let msgs = vec![
             // 1. High-pass filter: 80 Hz, 18 dB/oct slope (type = 5 is Low Cut on eq/1/type, freq = 80Hz)
-            OscMessage { path: format!("{}/eq/1/type", prefix), args: vec![OscArg::Int(5)] },
-            OscMessage { path: format!("{}/eq/1/f", prefix), args: vec![OscArg::Float(freq_to_osc(80.0))] },
-
+            OscMessage {
+                path: format!("{}/eq/1/type", prefix),
+                args: vec![OscArg::Int(5)],
+            },
+            OscMessage {
+                path: format!("{}/eq/1/f", prefix),
+                args: vec![OscArg::Float(freq_to_osc(80.0))],
+            },
             // 2. Low-pass filter: 12 kHz, 12 dB/oct slope (type = 6 is High Cut)
-            OscMessage { path: format!("{}/eq/6/type", prefix), args: vec![OscArg::Int(6)] },
-            OscMessage { path: format!("{}/eq/6/f", prefix), args: vec![OscArg::Float(freq_to_osc(12000.0))] },
-
+            OscMessage {
+                path: format!("{}/eq/6/type", prefix),
+                args: vec![OscArg::Int(6)],
+            },
+            OscMessage {
+                path: format!("{}/eq/6/f", prefix),
+                args: vec![OscArg::Float(freq_to_osc(12000.0))],
+            },
             // 3. Presence boost: +3 dB shelf at 3.5 kHz (type = 3 is PEQ)
-            OscMessage { path: format!("{}/eq/3/type", prefix), args: vec![OscArg::Int(3)] },
-            OscMessage { path: format!("{}/eq/3/f", prefix), args: vec![OscArg::Float(freq_to_osc(3500.0))] },
-            OscMessage { path: format!("{}/eq/3/g", prefix), args: vec![OscArg::Float(gain_to_osc(3.0))] },
-
+            OscMessage {
+                path: format!("{}/eq/3/type", prefix),
+                args: vec![OscArg::Int(3)],
+            },
+            OscMessage {
+                path: format!("{}/eq/3/f", prefix),
+                args: vec![OscArg::Float(freq_to_osc(3500.0))],
+            },
+            OscMessage {
+                path: format!("{}/eq/3/g", prefix),
+                args: vec![OscArg::Float(gain_to_osc(3.0))],
+            },
             // 4. Low-mid scoop: -2 dB at 300 Hz, Q=1.5 (type = 3 PEQ)
-            OscMessage { path: format!("{}/eq/2/type", prefix), args: vec![OscArg::Int(3)] },
-            OscMessage { path: format!("{}/eq/2/f", prefix), args: vec![OscArg::Float(freq_to_osc(300.0))] },
-            OscMessage { path: format!("{}/eq/2/g", prefix), args: vec![OscArg::Float(gain_to_osc(-2.0))] },
-            OscMessage { path: format!("{}/eq/2/q", prefix), args: vec![OscArg::Float(q_to_osc(1.5))] },
-
+            OscMessage {
+                path: format!("{}/eq/2/type", prefix),
+                args: vec![OscArg::Int(3)],
+            },
+            OscMessage {
+                path: format!("{}/eq/2/f", prefix),
+                args: vec![OscArg::Float(freq_to_osc(300.0))],
+            },
+            OscMessage {
+                path: format!("{}/eq/2/g", prefix),
+                args: vec![OscArg::Float(gain_to_osc(-2.0))],
+            },
+            OscMessage {
+                path: format!("{}/eq/2/q", prefix),
+                args: vec![OscArg::Float(q_to_osc(1.5))],
+            },
             // 5. Compressor: Ratio 3:1, threshold -20 dBFS, attack 10 ms, release 100 ms, knee soft
-            OscMessage { path: format!("{}/dyn/on", prefix), args: vec![OscArg::Int(1)] },
-            OscMessage { path: format!("{}/dyn/mode", prefix), args: vec![OscArg::Int(0)] }, // COMP
-            OscMessage { path: format!("{}/dyn/ratio", prefix), args: vec![OscArg::Int(5)] }, // Ratio 3:1 is typically index 5 in X_DY_RAT (" 1.1", " 1.3", " 1.5", " 2.0", " 2.5", " 3.0", " 4.0", " 5.0", " 7.0", " 10", " 20", " 100")
-            OscMessage { path: format!("{}/dyn/thr", prefix), args: vec![OscArg::Float(dyn_thr_to_osc(-20.0))] },
-            OscMessage { path: format!("{}/dyn/attack", prefix), args: vec![OscArg::Float(dyn_attack_to_osc(10.0))] },
-            OscMessage { path: format!("{}/dyn/release", prefix), args: vec![OscArg::Float(dyn_release_to_osc(100.0))] },
-            OscMessage { path: format!("{}/dyn/knee", prefix), args: vec![OscArg::Float(0.6)] }, // Soft knee (roughly 3-4dB, 0-5dB scale -> 0.6)
-
+            OscMessage {
+                path: format!("{}/dyn/on", prefix),
+                args: vec![OscArg::Int(1)],
+            },
+            OscMessage {
+                path: format!("{}/dyn/mode", prefix),
+                args: vec![OscArg::Int(0)],
+            }, // COMP
+            OscMessage {
+                path: format!("{}/dyn/ratio", prefix),
+                args: vec![OscArg::Int(5)],
+            }, // Ratio 3:1 is typically index 5 in X_DY_RAT (" 1.1", " 1.3", " 1.5", " 2.0", " 2.5", " 3.0", " 4.0", " 5.0", " 7.0", " 10", " 20", " 100")
+            OscMessage {
+                path: format!("{}/dyn/thr", prefix),
+                args: vec![OscArg::Float(dyn_thr_to_osc(-20.0))],
+            },
+            OscMessage {
+                path: format!("{}/dyn/attack", prefix),
+                args: vec![OscArg::Float(dyn_attack_to_osc(10.0))],
+            },
+            OscMessage {
+                path: format!("{}/dyn/release", prefix),
+                args: vec![OscArg::Float(dyn_release_to_osc(100.0))],
+            },
+            OscMessage {
+                path: format!("{}/dyn/knee", prefix),
+                args: vec![OscArg::Float(0.6)],
+            }, // Soft knee (roughly 3-4dB, 0-5dB scale -> 0.6)
             // 6. Gate/Expander: Threshold -50 dBFS, range -20 dB, attack 0.5 ms, release 200 ms
-            OscMessage { path: format!("{}/gate/on", prefix), args: vec![OscArg::Int(1)] },
-            OscMessage { path: format!("{}/gate/mode", prefix), args: vec![OscArg::Int(2)] }, // EXP 2
-            OscMessage { path: format!("{}/gate/thr", prefix), args: vec![OscArg::Float(gate_thr_to_osc(-50.0))] },
-            OscMessage { path: format!("{}/gate/range", prefix), args: vec![OscArg::Float(gate_range_to_osc(-20.0))] },
-            OscMessage { path: format!("{}/gate/attack", prefix), args: vec![OscArg::Float(dyn_attack_to_osc(0.5))] },
-            OscMessage { path: format!("{}/gate/release", prefix), args: vec![OscArg::Float(dyn_release_to_osc(200.0))] },
+            OscMessage {
+                path: format!("{}/gate/on", prefix),
+                args: vec![OscArg::Int(1)],
+            },
+            OscMessage {
+                path: format!("{}/gate/mode", prefix),
+                args: vec![OscArg::Int(2)],
+            }, // EXP 2
+            OscMessage {
+                path: format!("{}/gate/thr", prefix),
+                args: vec![OscArg::Float(gate_thr_to_osc(-50.0))],
+            },
+            OscMessage {
+                path: format!("{}/gate/range", prefix),
+                args: vec![OscArg::Float(gate_range_to_osc(-20.0))],
+            },
+            OscMessage {
+                path: format!("{}/gate/attack", prefix),
+                args: vec![OscArg::Float(dyn_attack_to_osc(0.5))],
+            },
+            OscMessage {
+                path: format!("{}/gate/release", prefix),
+                args: vec![OscArg::Float(dyn_release_to_osc(200.0))],
+            },
         ];
 
         for msg in msgs {

@@ -1,5 +1,5 @@
 use clap::Parser;
-use x32_speech_mode::{run, Args};
+use x32_speech_mode::{Args, run};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
