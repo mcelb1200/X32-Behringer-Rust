@@ -2461,6 +2461,7 @@ dependencies = [
  "x32_punch_control",
  "x32_reaper",
  "x32_replay",
+ "x32_scene_checker",
  "x32_set_lib",
  "x32_set_preset",
  "x32_set_scene",
@@ -2822,6 +2823,17 @@ dependencies = [
 
 [[package]]
 name = "x32_replay"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "osc_lib",
+ "tokio",
+ "x32_lib",
+]
+
+[[package]]
+name = "x32_scene_checker"
 version = "0.1.0"
 dependencies = [
  "anyhow",
