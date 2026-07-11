@@ -1,26 +1,29 @@
-1.  **Analyze `AppState` string joining in `x32_autobeat` loop:**
-    *   Currently, inside the `last_ui_update.elapsed() > Duration::from_millis(50)` loop block, `AppState::source` is generated via:
-        ```rust
-        source: sources
-            .iter()
-            .map(|s| s.to_string())
-            .collect::<Vec<_>>()
-            .join(", ")
-        ```
-    *   This is evaluated every ~50ms and allocates multiple `String` instances and a `Vec`, then joins them into another `String`, doing O(N) heap allocations.
-    *   However, `sources` is initialized *before* the main event loop and is completely static during the loop.
+1.  **Create the `x32_auto_ringout` App crate:**
+    *   Initialize the crate in `apps/x32_auto_ringout`.
+    *   Set up `Cargo.toml` with dependencies: `x32_lib`, `osc_lib`, `tokio`, `anyhow`, `clap`, `ratatui`, `crossterm`.
+    *   Create a library entry point `src/lib.rs` and standalone wrapper `src/main.rs`.
 
-2.  **Move computation outside the loop:**
-    *   We will compute the `sources_str` once before the `loop { ... }`.
-    *   Inside the loop, we simply `clone()` this pre-computed string: `source: sources_str.clone(),`.
+2.  **Implement the Core Logic in `src/lib.rs`:**
+    *   Parse CLI arguments (`ip`, `buses`, `target_dbfs`, `max_notches`).
+    *   Implement TUI setup/teardown using `crossterm` and `ratatui`.
+    *   Set up the main application loop responding to key events and OSC messages.
+    *   Define an `AppState` to track buses (armed, disarmed, active), current levels, and identified notches.
+    *   Implement the auto-ringout sequence:
+        1.  Gradually raise bus levels.
+        2.  Identify feedback (simulated via high sustained signal levels for now, or using a rudimentary peak detection on `/meters` if feasible without FFT, although full FFT is complex for a TUI without a dedicated audio stream. The spec says "Listen for feedback onset using the Automatic Feedback Detection function... Fallback: meter data from `/meters` OSC subscriptions"). We will implement a peak detection over meter blocks.
+        3.  Apply notch filters on the corresponding `/bus/XX/eq/N/*` OSC paths.
+        4.  Cap out at `max_notches` per bus.
+    *   Integrate with the Dugan automixer if speech buses are configured.
+    *   Maintain "gain before feedback" headroom.
 
-3.  **Ensure compliance with PR formatting and tests:**
-    *   We'll use `cargo check` and `cargo test --workspace` to ensure things pass.
-    *   We'll run `cargo clippy --workspace -- -D warnings`.
-    *   We'll document the performance win in `.jules/bolt.md` based on the system memory directives.
-    *   We'll format PR as `⚡ Bolt: [performance improvement]`.
+3.  **Integrate `x32_auto_ringout` into the `x32-cli` Monolith:**
+    *   Add `x32_auto_ringout = { path = "../../apps/x32_auto_ringout" }` to `tools/x32_cli/Cargo.toml`.
+    *   Add the `X32AutoRingout(x32_auto_ringout::Args)` subcommand in `tools/x32_cli/src/main.rs`.
+    *   Wire up the execution logic in the `main` match block.
 
-4.  **Perform pre-commit checks**
-    *   Ensure proper testing, verification, review, and reflection are done.
+4.  **Write Tests:**
+    *   Add integration tests in `apps/x32_auto_ringout/tests/integration_test.rs` using a mock UDP server to verify EQ notch applications.
 
-5.  **Submit changes.**
+5.  **Pre-Commit Check:**
+    *   Run `cargo test`, `cargo fmt`, and `cargo clippy`.
+    *   Ensure all project standards and `.jules/x32_cli.md` constraints are met.

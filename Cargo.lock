@@ -2437,6 +2437,7 @@ dependencies = [
  "clap",
  "tokio",
  "x32_auto_gain",
+ "x32_auto_ringout",
  "x32_autobeat",
  "x32_automix",
  "x32_command",
@@ -2486,6 +2487,20 @@ dependencies = [
  "anyhow",
  "clap",
  "osc_lib",
+ "tokio",
+ "x32_core",
+ "x32_lib",
+]
+
+[[package]]
+name = "x32_auto_ringout"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "crossterm",
+ "osc_lib",
+ "ratatui",
  "tokio",
  "x32_core",
  "x32_lib",
