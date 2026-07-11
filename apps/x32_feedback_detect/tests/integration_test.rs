@@ -25,7 +25,10 @@ fn test_detector_finds_feedback() {
     assert_eq!(events.len(), 1, "Should detect sustained feedback");
 
     let fb = events[0];
-    assert!((fb.frequency - target_freq).abs() < 50.0, "Frequency should be close to 1000 Hz");
+    assert!(
+        (fb.frequency - target_freq).abs() < 50.0,
+        "Frequency should be close to 1000 Hz"
+    );
     assert!(fb.q_ratio > 30.0, "Pure sine should have high Q");
 }
 
