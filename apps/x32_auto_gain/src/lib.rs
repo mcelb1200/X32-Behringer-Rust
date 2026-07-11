@@ -6,7 +6,7 @@ use clap::Parser;
 use osc_lib::OscArg;
 use std::collections::HashMap;
 use std::time::Duration;
-use tokio::time::{interval, Instant};
+use tokio::time::{Instant, interval};
 use x32_lib::MixerClient;
 
 #[derive(Parser, Debug, Clone)]
@@ -56,59 +56,129 @@ pub fn infer_target_levels(name: &str, icon: i32) -> TargetLevels {
 
     // Kick drum / Bass drum
     if lower_name.contains("kick") || lower_name.contains("bass drum") || icon == 1 {
-        return TargetLevels { rms_dbfs: -12.0, peak_dbfs: -6.0 };
+        return TargetLevels {
+            rms_dbfs: -12.0,
+            peak_dbfs: -6.0,
+        };
     }
     // Snare drum
     if lower_name.contains("snare") || icon == 2 {
-        return TargetLevels { rms_dbfs: -14.0, peak_dbfs: -6.0 };
+        return TargetLevels {
+            rms_dbfs: -14.0,
+            peak_dbfs: -6.0,
+        };
     }
     // Toms
     if lower_name.contains("tom") || icon == 3 {
-        return TargetLevels { rms_dbfs: -14.0, peak_dbfs: -6.0 };
+        return TargetLevels {
+            rms_dbfs: -14.0,
+            peak_dbfs: -6.0,
+        };
     }
     // Overhead / Cymbal
-    if lower_name.contains("oh") || lower_name.contains("overhead") || lower_name.contains("cymbal") || icon == 5 {
-        return TargetLevels { rms_dbfs: -18.0, peak_dbfs: -10.0 };
+    if lower_name.contains("oh")
+        || lower_name.contains("overhead")
+        || lower_name.contains("cymbal")
+        || icon == 5
+    {
+        return TargetLevels {
+            rms_dbfs: -18.0,
+            peak_dbfs: -10.0,
+        };
     }
     // Bass guitar (DI)
     if lower_name.contains("bass") || icon == 6 {
-        return TargetLevels { rms_dbfs: -14.0, peak_dbfs: -8.0 };
+        return TargetLevels {
+            rms_dbfs: -14.0,
+            peak_dbfs: -8.0,
+        };
     }
     // Electric guitar (amp mic)
-    if lower_name.contains("egtr") || lower_name.contains("elec gtr") || lower_name.contains("electric guitar") || icon == 8 {
-        return TargetLevels { rms_dbfs: -16.0, peak_dbfs: -8.0 };
+    if lower_name.contains("egtr")
+        || lower_name.contains("elec gtr")
+        || lower_name.contains("electric guitar")
+        || icon == 8
+    {
+        return TargetLevels {
+            rms_dbfs: -16.0,
+            peak_dbfs: -8.0,
+        };
     }
     // Acoustic guitar (mic)
-    if lower_name.contains("agtr") || lower_name.contains("acou") || lower_name.contains("acoustic") || icon == 9 {
-        return TargetLevels { rms_dbfs: -18.0, peak_dbfs: -10.0 };
+    if lower_name.contains("agtr")
+        || lower_name.contains("acou")
+        || lower_name.contains("acoustic")
+        || icon == 9
+    {
+        return TargetLevels {
+            rms_dbfs: -18.0,
+            peak_dbfs: -10.0,
+        };
     }
     // Piano / Keys (DI/stereo)
-    if lower_name.contains("piano") || lower_name.contains("keys") || lower_name.contains("synth") || icon == 11 {
-        return TargetLevels { rms_dbfs: -18.0, peak_dbfs: -8.0 };
+    if lower_name.contains("piano")
+        || lower_name.contains("keys")
+        || lower_name.contains("synth")
+        || icon == 11
+    {
+        return TargetLevels {
+            rms_dbfs: -18.0,
+            peak_dbfs: -8.0,
+        };
     }
     // Lead vocal
     if lower_name.contains("vox") || lower_name.contains("vocal") || icon == 14 {
-        return TargetLevels { rms_dbfs: -18.0, peak_dbfs: -8.0 };
+        return TargetLevels {
+            rms_dbfs: -18.0,
+            peak_dbfs: -8.0,
+        };
     }
     // Speech / Lectern
-    if lower_name.contains("speech") || lower_name.contains("lectern") || lower_name.contains("pastor") || lower_name.contains("mc") || icon == 16 {
-        return TargetLevels { rms_dbfs: -20.0, peak_dbfs: -10.0 };
+    if lower_name.contains("speech")
+        || lower_name.contains("lectern")
+        || lower_name.contains("pastor")
+        || lower_name.contains("mc")
+        || icon == 16
+    {
+        return TargetLevels {
+            rms_dbfs: -20.0,
+            peak_dbfs: -10.0,
+        };
     }
     // Choir / Ensemble (stereo)
     if lower_name.contains("choir") || lower_name.contains("ensemble") || icon == 15 {
-        return TargetLevels { rms_dbfs: -20.0, peak_dbfs: -10.0 };
+        return TargetLevels {
+            rms_dbfs: -20.0,
+            peak_dbfs: -10.0,
+        };
     }
     // Wireless lavalier
     if lower_name.contains("lav") || lower_name.contains("headset") || icon == 18 {
-        return TargetLevels { rms_dbfs: -22.0, peak_dbfs: -12.0 };
+        return TargetLevels {
+            rms_dbfs: -22.0,
+            peak_dbfs: -12.0,
+        };
     }
     // DJ / Playback (line level)
-    if lower_name.contains("dj") || lower_name.contains("ipod") || lower_name.contains("mac") || lower_name.contains("pc") || lower_name.contains("track") || lower_name.contains("playback") || icon == 19 {
-        return TargetLevels { rms_dbfs: -14.0, peak_dbfs: -6.0 };
+    if lower_name.contains("dj")
+        || lower_name.contains("ipod")
+        || lower_name.contains("mac")
+        || lower_name.contains("pc")
+        || lower_name.contains("track")
+        || lower_name.contains("playback")
+        || icon == 19
+    {
+        return TargetLevels {
+            rms_dbfs: -14.0,
+            peak_dbfs: -6.0,
+        };
     }
 
     // Best-guess (unknown)
-    TargetLevels { rms_dbfs: -18.0, peak_dbfs: -10.0 }
+    TargetLevels {
+        rms_dbfs: -18.0,
+        peak_dbfs: -10.0,
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -169,20 +239,29 @@ pub async fn run(args: Args) -> Result<()> {
         let mut name = String::new();
         let mut icon = 0;
 
-        if let Ok(OscArg::String(n)) = client.query_value(&format!("/ch/{:02}/config/name", ch)).await {
+        if let Ok(OscArg::String(n)) = client
+            .query_value(&format!("/ch/{:02}/config/name", ch))
+            .await
+        {
             name = n;
         }
-        if let Ok(OscArg::Int(i)) = client.query_value(&format!("/ch/{:02}/config/icon", ch)).await {
+        if let Ok(OscArg::Int(i)) = client
+            .query_value(&format!("/ch/{:02}/config/icon", ch))
+            .await
+        {
             icon = i;
         }
 
         target_levels.insert(*ch, infer_target_levels(&name, icon));
-        channel_states.insert(*ch, ChannelState::Measuring {
-            start_time: None,
-            rms_sum: 0.0,
-            rms_count: 0,
-            max_peak: -144.0,
-        });
+        channel_states.insert(
+            *ch,
+            ChannelState::Measuring {
+                start_time: None,
+                rms_sum: 0.0,
+                rms_count: 0,
+                max_peak: -144.0,
+            },
+        );
     }
 
     let mut rx = client.subscribe();
