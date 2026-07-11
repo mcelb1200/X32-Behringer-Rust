@@ -1,6 +1,6 @@
 use anyhow::Result;
 use clap::Parser;
-use x32_usb::{Args, run};
+use x32_usb::{run, Args};
 
 #[tokio::main]
 async fn main() -> Result<()> {
