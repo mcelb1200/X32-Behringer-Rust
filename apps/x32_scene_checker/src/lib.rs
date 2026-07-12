@@ -175,13 +175,11 @@ fn print_report_summary(issues: &[RiskIssue]) {
         .collect();
 
     if !criticals.is_empty() {
+        let text = format!("║  🔴 CRITICAL ({} issues)", criticals.len());
         println!(
-            "║  🔴 CRITICAL ({} issues){width:<width$}║",
+            "{text}{:<width$}║",
             "",
-            width = 50
-                - format!("║  🔴 CRITICAL ({} issues)", criticals.len())
-                    .chars()
-                    .count()
+            width = 50 - text.chars().count()
         );
         for i in criticals.iter().take(3) {
             println!("║    • {}: {}", i.path, i.description);
@@ -193,13 +191,11 @@ fn print_report_summary(issues: &[RiskIssue]) {
     }
 
     if !highs.is_empty() {
+        let text = format!("║  🟠 HIGH ({} issues)", highs.len());
         println!(
-            "║  🟠 HIGH ({} issues){width:<width$}║",
+            "{text}{:<width$}║",
             "",
-            width = 50
-                - format!("║  🟠 HIGH ({} issues)", highs.len())
-                    .chars()
-                    .count()
+            width = 50 - text.chars().count()
         );
         for i in highs.iter().take(3) {
             println!("║    • {}: {}", i.path, i.description);
