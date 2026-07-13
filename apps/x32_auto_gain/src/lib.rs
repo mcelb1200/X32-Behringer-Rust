@@ -148,13 +148,7 @@ pub async fn run(args: Args) -> Result<()> {
                                     let delta_osc = delta_db / 72.0;
 
                                     if let Some(current_osc) = ha_gains.get(ch) {
-                                        let mut new_osc = current_osc + delta_osc;
-<<<<<<< HEAD
-                                        if new_osc < 0.0 { new_osc = 0.0; }
-                                        if new_osc > 1.0 { new_osc = 1.0; }
-=======
-                                        new_osc = new_osc.clamp(0.0, 1.0);
->>>>>>> origin/feat/speech-mode-macro-9292381256915091186
+                                        let new_osc = (current_osc + delta_osc).clamp(0.0, 1.0);
 
                                         // Update only if changed significantly
                                         if (new_osc - current_osc).abs() > 0.005 {
