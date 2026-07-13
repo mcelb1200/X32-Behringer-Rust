@@ -93,3 +93,7 @@
 ## 2024-07-25 - [Extract duplicate formatted strings into variables to avoid redundant allocation]
 **Learning:** Using `format!` twice with the same arguments—once to print the string and once to calculate its character count for padding—causes redundant string allocations on the heap and duplicates formatting work.
 **Action:** When a formatted string needs to be both printed and measured, always extract the `format!(...)` call into a single variable first, then use that variable for printing (`println!("{text}")`) and for its length (`text.chars().count()`).
+
+## 2024-11-20 - [Avoid Vec allocations when extracting single segments from string splits]
+**Learning:** Using `s.split('/').collect::<Vec<&str>>()` inside hot loops (like processing OSC network messages) forces a dynamic heap allocation for the `Vec`, even if only a single segment of the split is needed. This degrades performance and increases memory fragmentation.
+**Action:** When extracting a specific segment from a separated string, use `.split('/').nth(index)` instead of collecting into a vector. It returns an `Option<&str>` natively without performing any heap allocations.

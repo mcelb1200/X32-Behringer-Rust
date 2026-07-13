@@ -2467,6 +2467,7 @@ dependencies = [
  "x32_set_scene",
  "x32_ssavergw",
  "x32_sync",
+ "x32_system_tune",
  "x32_tap",
  "x32_tapw",
  "x32_tcp",
@@ -2900,6 +2901,18 @@ dependencies = [
  "clap",
  "osc_lib",
  "tokio",
+ "x32_lib",
+]
+
+[[package]]
+name = "x32_system_tune"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "osc_lib",
+ "tokio",
+ "x32_core",
  "x32_lib",
 ]
 
