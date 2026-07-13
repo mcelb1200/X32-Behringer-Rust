@@ -2452,6 +2452,7 @@ dependencies = [
  "x32_dump",
  "x32_emulator",
  "x32_fade",
+ "x32_feedback_detect",
  "x32_geq2_cpy",
  "x32_get_lib",
  "x32_get_scene",
@@ -2467,6 +2468,7 @@ dependencies = [
  "x32_set_scene",
  "x32_ssavergw",
  "x32_sync",
+ "x32_system_tune",
  "x32_tap",
  "x32_tapw",
  "x32_tcp",
@@ -2700,6 +2702,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "x32_feedback_detect"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "cpal",
+ "crossterm",
+ "num-complex",
+ "osc_lib",
+ "ratatui",
+ "ringbuf",
+ "rustfft",
+ "tokio",
+ "x32_lib",
+]
+
+[[package]]
 name = "x32_fxparse"
 version = "0.1.0"
 dependencies = [
@@ -2903,6 +2922,18 @@ dependencies = [
  "clap",
  "osc_lib",
  "tokio",
+ "x32_lib",
+]
+
+[[package]]
+name = "x32_system_tune"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "osc_lib",
+ "tokio",
+ "x32_core",
  "x32_lib",
 ]
 

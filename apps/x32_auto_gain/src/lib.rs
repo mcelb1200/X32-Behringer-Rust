@@ -95,15 +95,28 @@ pub async fn run(args: Args) -> Result<()> {
                 // Track HA gain manual changes
                 if msg.path.starts_with("/headamp/") && msg.path.ends_with("/gain") {
                     if let Some(OscArg::Float(f)) = msg.args.first() {
-                        let parts: Vec<&str> = msg.path.split('/').collect();
-                        if parts.len() == 4 {
-                            if let Ok(ch) = parts[2].parse::<u8>() {
+                        // ⚡ Bolt: Use .nth(2) instead of .collect::<Vec<&str>>() to avoid heap allocation
+                        // in the hot network loop when parsing OSC messages.
+                        if let Some(ch_str) = msg.path.split('/').nth(2) {
+                            if let Ok(ch) = ch_str.parse::<u8>() {
                                 ha_gains.insert(ch, *f);
                             }
                         }
                     }
                 }
 
+                // Track phantom power changes to warn user
+                if msg.path.starts_with("/headamp/") && msg.path.ends_with("/+48V") {
+                    // ⚡ Bolt: Use .nth(2) instead of .collect::<Vec<&str>>() to avoid heap allocation
+                    // in the hot network loop when parsing OSC messages.
+                    if let Some(ch_str) = msg.path.split('/').nth(2) {
+                        if let Ok(ch) = ch_str.parse::<u8>() {
+                            if channels.contains(&ch) {
+                                println!("WARNING: Phantom power (+48V) changed on Ch {:02} during Auto-Gain. This can cause severe audio transients!", ch);
+                            }
+                        }
+                    }
+                }
                 // Process meter updates
                 if msg.path == "/meters/1" {
                     if let Some(OscArg::Blob(data)) = msg.args.first() {
@@ -136,6 +149,9 @@ pub async fn run(args: Args) -> Result<()> {
 
                                     if let Some(current_osc) = ha_gains.get(ch) {
                                         let new_osc = (current_osc + delta_osc).clamp(0.0, 1.0);
+                                        let mut new_osc = current_osc + delta_osc;
+                                        if new_osc < 0.0 { new_osc = 0.0; }
+                                        if new_osc > 1.0 { new_osc = 1.0; }
 
                                         // Update only if changed significantly
                                         if (new_osc - current_osc).abs() > 0.005 {

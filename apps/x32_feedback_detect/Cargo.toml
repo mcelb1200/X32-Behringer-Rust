@@ -1,0 +1,17 @@
+[package]
+name = "x32_feedback_detect"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = { workspace = true }
+clap = { workspace = true }
+tokio = { workspace = true }
+osc_lib = { workspace = true }
+x32_lib = { workspace = true }
+cpal = { workspace = true }
+rustfft = "6.1"
+num-complex = "0.4"
+ratatui = { workspace = true }
+crossterm = { workspace = true }
+ringbuf = "0.3"

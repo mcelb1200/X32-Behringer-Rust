@@ -1,0 +1,14 @@
+[package]
+name = "x32_system_tune"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+x32_lib = { path = "../../libs/x32_lib" }
+osc_lib = { path = "../../libs/osc_lib" }
+tokio = { workspace = true }
+anyhow = { workspace = true }
+clap = { workspace = true }
+
+[dev-dependencies]
+x32_core = { path = "../../libs/x32_core" }
