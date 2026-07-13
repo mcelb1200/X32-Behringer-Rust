@@ -163,8 +163,8 @@ async fn main() -> Result<()> {
         Commands::X32SceneChecker(args) => x32_scene_checker::run(args)
             .await
             .map_err(anyhow::Error::msg),
-        Commands::X32SystemTune(args) => {
-            x32_system_tune::run(args).await.map_err(anyhow::Error::msg)
-        }
+        Commands::X32SystemTune(args) => x32_system_tune::run(args)
+            .await
+            .map_err(anyhow::Error::msg),
     }
 }
