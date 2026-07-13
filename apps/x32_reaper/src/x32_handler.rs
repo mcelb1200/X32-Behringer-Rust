@@ -5,6 +5,36 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::net::UdpSocket;
 
+lazy_static::lazy_static! {
+    static ref VOLUME_PATHS: Vec<String> = (0..=256).map(|i| format!("/track/{}/volume", i)).collect();
+    static ref PAN_PATHS: Vec<String> = (0..=256).map(|i| format!("/track/{}/pan", i)).collect();
+    static ref MUTE_PATHS: Vec<String> = (0..=256).map(|i| format!("/track/{}/mute", i)).collect();
+}
+
+fn get_volume_path(track_id: i32) -> std::borrow::Cow<'static, str> {
+    if track_id >= 0 && track_id <= 256 {
+        std::borrow::Cow::Borrowed(&VOLUME_PATHS[track_id as usize])
+    } else {
+        std::borrow::Cow::Owned(format!("/track/{}/volume", track_id))
+    }
+}
+
+fn get_pan_path(track_id: i32) -> std::borrow::Cow<'static, str> {
+    if track_id >= 0 && track_id <= 256 {
+        std::borrow::Cow::Borrowed(&PAN_PATHS[track_id as usize])
+    } else {
+        std::borrow::Cow::Owned(format!("/track/{}/pan", track_id))
+    }
+}
+
+fn get_mute_path(track_id: i32) -> std::borrow::Cow<'static, str> {
+    if track_id >= 0 && track_id <= 256 {
+        std::borrow::Cow::Borrowed(&MUTE_PATHS[track_id as usize])
+    } else {
+        std::borrow::Cow::Owned(format!("/track/{}/mute", track_id))
+    }
+}
+
 pub async fn handle_x32_message(
     buf: &[u8],
     len: usize,
@@ -46,22 +76,18 @@ async fn process_x32_message(
                 "fader" => {
                     if let Some(OscArg::Float(val)) = msg.args.first() {
                         if let Some(track_id) = map_ch_to_track(ch_num, state).await {
-                            let r_msg = OscMessage::new(
-                                format!("/track/{}/volume", track_id),
-                                vec![OscArg::Float(*val)],
-                            );
-                            socket.send_to(&r_msg.to_bytes()?, addr).await?;
+                            let path = get_volume_path(track_id);
+                            let bytes = OscMessage::serialize_to_bytes(&path, std::iter::once(&OscArg::Float(*val)))?;
+                            socket.send_to(&bytes, addr).await?;
                         }
                     }
                 }
                 "pan" => {
                     if let Some(OscArg::Float(val)) = msg.args.first() {
                         if let Some(track_id) = map_ch_to_track(ch_num, state).await {
-                            let r_msg = OscMessage::new(
-                                format!("/track/{}/pan", track_id),
-                                vec![OscArg::Float(*val)],
-                            );
-                            socket.send_to(&r_msg.to_bytes()?, addr).await?;
+                            let path = get_pan_path(track_id);
+                            let bytes = OscMessage::serialize_to_bytes(&path, std::iter::once(&OscArg::Float(*val)))?;
+                            socket.send_to(&bytes, addr).await?;
                         }
                     }
                 }
@@ -70,11 +96,9 @@ async fn process_x32_message(
                         if let Some(track_id) = map_ch_to_track(ch_num, state).await {
                             // X32: 1=on, 0=off/mute. Reaper: 1.0=mute, 0.0=unmute
                             let mute_val = if *val == 1 { 0.0 } else { 1.0 };
-                            let r_msg = OscMessage::new(
-                                format!("/track/{}/mute", track_id),
-                                vec![OscArg::Float(mute_val)],
-                            );
-                            socket.send_to(&r_msg.to_bytes()?, addr).await?;
+                            let path = get_mute_path(track_id);
+                            let bytes = OscMessage::serialize_to_bytes(&path, std::iter::once(&OscArg::Float(mute_val)))?;
+                            socket.send_to(&bytes, addr).await?;
                         }
                     }
                 }
