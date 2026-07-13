@@ -432,6 +432,36 @@ Before handing the system to a volunteer, an experienced engineer sets up:
 3. Alert thresholds (e.g., what level is "too quiet", what level is "too loud").
 4. An optional "admin password" to unlock the full interface for troubleshooting.
 
+#### JSON Configuration File (`x32_config.json`)
+The X32 CLI supports a unified configuration file to adjust target parameters and defaults:
+```json
+{
+  "auto_gain": {
+    "default_target_dbfs": -18.0,
+    "vocals": {
+      "target_dbfs": -12.0,
+      "compressor_enabled": true,
+      "compressor_ratio": 3.0,
+      "compressor_threshold_dbfs": -20.0,
+      "makeup_gain_db": 6.0
+    },
+    "max_step_db": 3.0,
+    "tolerance_db": 2.0
+  },
+  "feedback_detect": {
+    "max_notch_depth_db": -12.0,
+    "max_notches_per_channel": 3,
+    "detection_threshold_q": 30.0,
+    "detection_time_ms": 150
+  },
+  "volunteer_mode": {
+    "max_fader_limit_db": -3.0,
+    "visible_channels": [1, 2, 3, 4, 5, 6],
+    "visible_dcas": [1, 2]
+  }
+}
+```
+
 ### X32 OSC paths involved
 - `/ch/XX/mix/fader`, `/ch/XX/mix/on` — channel levels and mutes
 - `/dca/N/fader`, `/dca/N/on` — DCA group levels and mutes
