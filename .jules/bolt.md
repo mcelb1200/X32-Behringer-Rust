@@ -90,3 +90,7 @@
 ## 2026-07-10 - [Replace dynamic vector allocations with fixed stack arrays for known bounds]
 **Learning:** Initializing collections using iterators like `(1..=32).map(...).collect::<Vec<_>>()` forces dynamic heap allocation even when the size (32) is perfectly known ahead of time. This is a common bottleneck when initializing arrays of addresses or states.
 **Action:** Replace iterator-to-vector collecting with `core::array::from_fn` for fixed size, known-bound structures to allocate them safely on the stack and completely eliminate vector heap allocations.
+
+## 2024-11-20 - [Avoid Vec allocations when extracting single segments from string splits]
+**Learning:** Using `s.split('/').collect::<Vec<&str>>()` inside hot loops (like processing OSC network messages) forces a dynamic heap allocation for the `Vec`, even if only a single segment of the split is needed. This degrades performance and increases memory fragmentation.
+**Action:** When extracting a specific segment from a separated string, use `.split('/').nth(index)` instead of collecting into a vector. It returns an `Option<&str>` natively without performing any heap allocations.

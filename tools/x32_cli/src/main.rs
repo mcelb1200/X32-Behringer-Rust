@@ -99,6 +99,10 @@ enum Commands {
     X32AutoGain(x32_auto_gain::Args),
     /// Run x32_feedback_detect
     X32FeedbackDetect(x32_feedback_detect::Args),
+    /// Run x32_scene_checker
+    X32SceneChecker(x32_scene_checker::Args),
+    /// Run x32_system_tune
+    X32SystemTune(x32_system_tune::Args),
 }
 
 #[tokio::main]
@@ -161,5 +165,12 @@ async fn main() -> Result<()> {
         Commands::X32FeedbackDetect(args) => x32_feedback_detect::run(args)
             .await
             .map_err(anyhow::Error::msg),
+        Commands::X32SceneChecker(args) => x32_scene_checker::run(args)
+            .await
+            .map_err(anyhow::Error::msg),
+        Commands::X32SystemTune(args) => {
+            x32_system_tune::run(args).await.map_err(anyhow::Error::msg)
+        }
+    }
     }
 }
