@@ -90,6 +90,9 @@
 ## 2026-07-10 - [Replace dynamic vector allocations with fixed stack arrays for known bounds]
 **Learning:** Initializing collections using iterators like `(1..=32).map(...).collect::<Vec<_>>()` forces dynamic heap allocation even when the size (32) is perfectly known ahead of time. This is a common bottleneck when initializing arrays of addresses or states.
 **Action:** Replace iterator-to-vector collecting with `core::array::from_fn` for fixed size, known-bound structures to allocate them safely on the stack and completely eliminate vector heap allocations.
+## 2024-07-25 - [Extract duplicate formatted strings into variables to avoid redundant allocation]
+**Learning:** Using `format!` twice with the same arguments—once to print the string and once to calculate its character count for padding—causes redundant string allocations on the heap and duplicates formatting work.
+**Action:** When a formatted string needs to be both printed and measured, always extract the `format!(...)` call into a single variable first, then use that variable for printing (`println!("{text}")`) and for its length (`text.chars().count()`).
 
 ## 2024-11-20 - [Avoid Vec allocations when extracting single segments from string splits]
 **Learning:** Using `s.split('/').collect::<Vec<&str>>()` inside hot loops (like processing OSC network messages) forces a dynamic heap allocation for the `Vec`, even if only a single segment of the split is needed. This degrades performance and increases memory fragmentation.
