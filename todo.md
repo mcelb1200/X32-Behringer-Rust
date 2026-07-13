@@ -528,7 +528,10 @@ Tuning a sound system to a room ("ringing out the mains") and verifying that all
 - `/bus/XX/eq/N/*` — bus parametric EQ for foldback notch insertion
 
 ### Safety guardrails
-- **Strict Level Limits**: The oscillator `/config/osc/level` is hard-capped in software to never exceed -18 dBFS to prevent speaker damage.
+- **Strict Level Limits (EBU R128 Compliance)**: The oscillator `/config/osc/level` is hard-capped in software to never exceed **-18 dBFS**. This complies with the European alignment standard (EBU R128), ensuring that:
+  1. The system maintains **18 dB of digital headroom**, allowing feedback spikes to build and be detected by the FFT algorithms without clipping the DACs.
+  2. Average output energy (RMS) is limited to prevent overheating speaker voice coils and protect operator hearing.
+  3. Volunteers cannot accidentally drive the digital output engine into clipping.
 - **Auto-Timeout**: The oscillator automatically turns off (`/config/osc/active` = 0) after 30 seconds of inactivity or if network connection is lost.
 - **Instant Kill Switch**: The Panic Button (§5) immediately disables the oscillator.
 - **Volume Fade-In**: The system always starts the oscillator at -∞ dB and ramps up slowly to the target level.
