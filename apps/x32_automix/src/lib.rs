@@ -138,30 +138,26 @@ async fn run_automix(args: Args, client: MixerClient) -> Result<()> {
                         }
 
                         // 2. Calculate Dugan gains if NOM is enabled, else simple threshold
-                        let gains = if args.nom {
+                        let mut full_gains = [0.0; 32];
+                        if args.nom {
                             let levels_slice = &current_levels[start_ch..stop_ch];
-                            let calculated = calculate_dugan_gains(levels_slice, args.sensitivity);
-                            let mut full_gains = [0.0; 32];
-                            for (i, &g) in calculated.iter().enumerate() {
-                                if start_ch + i < 32 {
-                                    full_gains[start_ch + i] = g;
-                                }
+                            let mut temp_gains = [0.0; 32];
+                            calculate_dugan_gains(levels_slice, args.sensitivity, &mut temp_gains);
+                            for (i, &g) in temp_gains.iter().enumerate().take(levels_slice.len()) {
+                                full_gains[start_ch + i] = g;
                             }
-                            full_gains
                         } else {
                             // Legacy simple threshold (0.75 represents unity gain on X32, 1.0 represents +10dB which can cause feedback)
-                            let mut full_gains = [0.0; 32];
                             for ch in start_ch..stop_ch {
                                 if current_levels[ch] > args.sensitivity {
                                     full_gains[ch] = 0.75;
                                 }
                             }
-                            full_gains
-                        };
+                        }
 
                         // 3. UDP Throttling: Only send updates if fader level changed by > 0.01
                         for ch in start_ch..stop_ch {
-                            let new_gain = gains[ch];
+                            let new_gain = full_gains[ch];
                             if (new_gain - last_sent_levels[ch]).abs() > 0.01 {
                                 last_sent_levels[ch] = new_gain;
                                 if let Some(addr) = fader_addresses.get(ch) {
@@ -214,14 +210,12 @@ fn db_to_level(db: f32) -> f32 {
 /// preventing feedback and noise buildup.
 ///
 /// We also apply priority ducking by only including channels above the noise_floor.
-fn calculate_dugan_gains(levels: &[f32], noise_floor: f32) -> [f32; 32] {
+fn calculate_dugan_gains(levels: &[f32], noise_floor: f32, gains_out: &mut [f32]) {
+    // ⚡ Bolt: Use a stack-allocated array to prevent Vec heap allocations on every audio frame
     let mut weights = [0.0; 32];
     let mut sum_weights = 0.0;
 
     for (i, &level) in levels.iter().enumerate() {
-        if i >= 32 {
-            break;
-        }
         if level > noise_floor {
             let db = level_to_db(level);
             // Convert dB to linear weight. 10^(dB/20) gives voltage gain,
@@ -234,11 +228,7 @@ fn calculate_dugan_gains(levels: &[f32], noise_floor: f32) -> [f32; 32] {
         }
     }
 
-    let mut gains = [0.0; 32];
-    for (i, &weight) in weights.iter().enumerate() {
-        if i >= levels.len() || i >= 32 {
-            break;
-        }
+    for (i, &weight) in weights.iter().enumerate().take(levels.len()) {
         if sum_weights > 0.0 && weight > 0.0 {
             // G_i = W_i / W_sum
             let gain_linear = weight / sum_weights;
@@ -249,13 +239,11 @@ fn calculate_dugan_gains(levels: &[f32], noise_floor: f32) -> [f32; 32] {
             // Map the Dugan target gain to the X32 fader curve where 0dB = 0.75 float.
             // We assume a base unity mix (0dB). If we want to be safe, Dugan max is 0dB -> 0.75 fader.
             let fader_level = db_to_level(gain_db);
-            gains[i] = fader_level;
+            gains_out[i] = fader_level;
         } else {
-            gains[i] = 0.0; // Full attenuation if below noise floor or no signal
+            gains_out[i] = 0.0; // Full attenuation if below noise floor or no signal
         }
     }
-
-    gains
 }
 
 #[cfg(test)]
@@ -359,21 +347,22 @@ mod tests {
         // We use levels that convert to a reasonable dB.
         // 0.75 level -> 40*0.75 - 30 = 0 dB.
         let levels = vec![0.75, 0.75];
-        let gains = calculate_dugan_gains(&levels, 0.01);
+        let mut gains = [0.0; 32];
+        calculate_dugan_gains(&levels, 0.01, &mut gains);
         // Half linear gain = -6.02 dB. X32 scale for -6.02 dB is: (db + 30) / 40 = ( -6.02 + 30 ) / 40 = 23.98 / 40 = ~0.6
         assert!((gains[0] - 0.6).abs() < 0.01);
         assert!((gains[1] - 0.6).abs() < 0.01);
 
         // One channel active, one below noise floor
         let levels = vec![0.75, 0.0];
-        let gains = calculate_dugan_gains(&levels, 0.01);
+        calculate_dugan_gains(&levels, 0.01, &mut gains);
         // Full linear gain = 1.0 = 0 dB. X32 scale for 0 dB is 0.75.
         assert!((gains[0] - 0.75).abs() < 0.01);
         assert!((gains[1] - 0.0).abs() < 0.01);
 
         // All below noise floor
         let levels = vec![0.001, 0.001];
-        let gains = calculate_dugan_gains(&levels, 0.01);
+        calculate_dugan_gains(&levels, 0.01, &mut gains);
         assert_eq!(gains[0], 0.0);
         assert_eq!(gains[1], 0.0);
     }

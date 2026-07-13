@@ -376,36 +376,45 @@ impl Mixer {
                     &osc_msg.args[2],
                     &osc_msg.args[3],
                 ) {
-                    let mut src_prefix = String::new();
-                    let mut dst_prefix = String::new();
                     let mut valid = false;
                     let mut copy_all = false;
 
-                    if item_type == "libchan"
+                    // ⚡ Bolt: Eliminate redundant String::new() allocations by binding directly
+                    let (src_prefix, dst_prefix) = if item_type == "libchan"
                         && *src_idx >= 0
                         && *src_idx < 32
                         && *dst_idx >= 0
                         && *dst_idx < 32
                     {
-                        src_prefix = format!("/ch/{:02}/", src_idx + 1);
-                        dst_prefix = format!("/ch/{:02}/", dst_idx + 1);
                         valid = true;
+                        (
+                            format!("/ch/{:02}/", src_idx + 1),
+                            format!("/ch/{:02}/", dst_idx + 1),
+                        )
                     } else if item_type == "libfx" && *src_idx >= 0 && *dst_idx >= 0 {
-                        src_prefix = format!("/-libs/fx/{:03}/", src_idx);
-                        dst_prefix = format!("/-libs/fx/{:03}/", dst_idx);
                         valid = true;
                         copy_all = true;
+                        (
+                            format!("/-libs/fx/{:03}/", src_idx),
+                            format!("/-libs/fx/{:03}/", dst_idx),
+                        )
                     } else if item_type == "librout" && *src_idx >= 0 && *dst_idx >= 0 {
-                        src_prefix = format!("/-libs/r/{:03}/", src_idx);
-                        dst_prefix = format!("/-libs/r/{:03}/", dst_idx);
                         valid = true;
                         copy_all = true;
+                        (
+                            format!("/-libs/r/{:03}/", src_idx),
+                            format!("/-libs/r/{:03}/", dst_idx),
+                        )
                     } else if item_type == "scene" && *src_idx >= 0 && *dst_idx >= 0 {
-                        src_prefix = format!("/-show/showfile/scene/{:03}/", src_idx);
-                        dst_prefix = format!("/-show/showfile/scene/{:03}/", dst_idx);
                         valid = true;
                         copy_all = true;
-                    }
+                        (
+                            format!("/-show/showfile/scene/{:03}/", src_idx),
+                            format!("/-show/showfile/scene/{:03}/", dst_idx),
+                        )
+                    } else {
+                        (String::new(), String::new())
+                    };
 
                     if valid {
                         // C_CONFIG = 0x0002
