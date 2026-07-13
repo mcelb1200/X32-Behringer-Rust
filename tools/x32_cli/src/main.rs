@@ -105,6 +105,8 @@ enum Commands {
     X32SystemTune(x32_system_tune::Args),
     /// Run x32_volunteer
     X32Volunteer(x32_volunteer::Args),
+    /// Run x32_safe_mute
+    X32SafeMute(x32_safe_mute::Args),
 }
 
 #[tokio::main]
@@ -174,5 +176,6 @@ async fn main() -> Result<()> {
             x32_system_tune::run(args).await.map_err(anyhow::Error::msg)
         }
         Commands::X32Volunteer(args) => x32_volunteer::run(args).await.map_err(anyhow::Error::msg),
+        Commands::X32SafeMute(args) => x32_safe_mute::run(args).await.map_err(anyhow::Error::msg),
     }
 }
