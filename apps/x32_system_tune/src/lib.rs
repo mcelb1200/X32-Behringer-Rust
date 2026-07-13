@@ -1,8 +1,8 @@
 use anyhow::Result;
 use clap::Parser;
-use tokio::time::{interval, Duration};
-use x32_lib::MixerClient;
 use osc_lib::OscArg;
+use tokio::time::{Duration, interval};
+use x32_lib::MixerClient;
 
 #[derive(Parser, Debug, Clone)]
 #[command(
@@ -38,14 +38,25 @@ pub async fn run(args: Args) -> Result<()> {
     let client = MixerClient::connect(&args.ip, true).await?;
 
     // 1. Initial configuration
-    println!("Setting oscillator destination to {} and type to {}", args.dest, args.signal_type);
-    let _ = client.send_message("/config/osc/dest", vec![OscArg::Int(args.dest)]).await;
-    let _ = client.send_message("/config/osc/type", vec![OscArg::Int(args.signal_type)]).await;
-    let _ = client.send_message("/config/osc/level", vec![OscArg::Float(0.0)]).await;
+    println!(
+        "Setting oscillator destination to {} and type to {}",
+        args.dest, args.signal_type
+    );
+    let _ = client
+        .send_message("/config/osc/dest", vec![OscArg::Int(args.dest)])
+        .await;
+    let _ = client
+        .send_message("/config/osc/type", vec![OscArg::Int(args.signal_type)])
+        .await;
+    let _ = client
+        .send_message("/config/osc/level", vec![OscArg::Float(0.0)])
+        .await;
 
     // 2. Start oscillator
     println!("Turning oscillator ON.");
-    let _ = client.send_message("/config/osc", vec![OscArg::Int(1)]).await;
+    let _ = client
+        .send_message("/config/osc", vec![OscArg::Int(1)])
+        .await;
 
     // 3. Ramp up the volume
     let steps = 20;
@@ -85,8 +96,12 @@ pub async fn run(args: Args) -> Result<()> {
 
     // 4. Cleanup
     println!("Turning oscillator OFF and resetting level.");
-    let _ = client.send_message("/config/osc/level", vec![OscArg::Float(0.0)]).await;
-    let _ = client.send_message("/config/osc", vec![OscArg::Int(0)]).await;
+    let _ = client
+        .send_message("/config/osc/level", vec![OscArg::Float(0.0)])
+        .await;
+    let _ = client
+        .send_message("/config/osc", vec![OscArg::Int(0)])
+        .await;
 
     // Slight delay to ensure messages are sent
     tokio::time::sleep(Duration::from_millis(100)).await;
