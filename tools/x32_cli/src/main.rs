@@ -97,6 +97,8 @@ enum Commands {
     X32Crossfade(x32_crossfade::Args),
     /// Run x32_auto_gain
     X32AutoGain(x32_auto_gain::Args),
+    /// Run x32_feedback_detect
+    X32FeedbackDetect(x32_feedback_detect::Args),
     /// Run x32_scene_checker
     X32SceneChecker(x32_scene_checker::Args),
     /// Run x32_system_tune
@@ -160,6 +162,9 @@ async fn main() -> Result<()> {
         Commands::X32Emulator(args) => x32_emulator::run(args).map_err(anyhow::Error::msg),
         Commands::X32Crossfade(args) => x32_crossfade::run(args).await.map_err(anyhow::Error::msg),
         Commands::X32AutoGain(args) => x32_auto_gain::run(args).await.map_err(anyhow::Error::msg),
+        Commands::X32FeedbackDetect(args) => x32_feedback_detect::run(args)
+            .await
+            .map_err(anyhow::Error::msg),
         Commands::X32SceneChecker(args) => x32_scene_checker::run(args)
             .await
             .map_err(anyhow::Error::msg),

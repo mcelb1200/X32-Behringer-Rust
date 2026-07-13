@@ -16,18 +16,6 @@ async fn run_mock_server() -> Result<(String, tokio::task::JoinHandle<()>)> {
     state.insert("/headamp/01/gain".to_string(), OscArg::Float(0.5));
     state.insert("/headamp/02/gain".to_string(), OscArg::Float(0.5));
 
-    state.insert(
-        "/ch/01/config/name".to_string(),
-        OscArg::String("Kick".to_string()),
-    );
-    state.insert(
-        "/ch/02/config/name".to_string(),
-        OscArg::String("Vocal".to_string()),
-    );
-
-    state.insert("/ch/01/config/icon".to_string(), OscArg::Int(1));
-    state.insert("/ch/02/config/icon".to_string(), OscArg::Int(14));
-
     let handle = tokio::spawn(async move {
         let mut buf = [0u8; 1024];
         loop {
@@ -36,31 +24,6 @@ async fn run_mock_server() -> Result<(String, tokio::task::JoinHandle<()>)> {
                     // Update state if it's a set message
                     if msg.path.starts_with("/headamp/") && !msg.args.is_empty() {
                         state.insert(msg.path.clone(), msg.args[0].clone());
-                    }
-
-                    // Respond to point queries (e.g., config/name, /gain)
-                    if msg.args.is_empty() {
-                        if let Some(val) = state.get(&msg.path) {
-                            if let Ok(resp_bytes) =
-                                osc_lib::OscMessage::serialize_to_bytes(&msg.path, vec![val])
-                            {
-                                let _ = socket.send_to(&resp_bytes, src).await;
-                            }
-                        } else {
-                            // default fallback for unknown paths
-                            let val = if msg.path.ends_with("/icon") {
-                                OscArg::Int(0)
-                            } else if msg.path.ends_with("/name") {
-                                OscArg::String("".to_string())
-                            } else {
-                                OscArg::Float(0.0)
-                            };
-                            if let Ok(resp_bytes) =
-                                osc_lib::OscMessage::serialize_to_bytes(&msg.path, vec![&val])
-                            {
-                                let _ = socket.send_to(&resp_bytes, src).await;
-                            }
-                        }
                     }
 
                     // Respond to xremote to keep the client alive
