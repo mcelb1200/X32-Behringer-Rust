@@ -2462,7 +2462,6 @@ dependencies = [
  "x32_punch_control",
  "x32_reaper",
  "x32_replay",
- "x32_scene_checker",
  "x32_set_lib",
  "x32_set_preset",
  "x32_set_scene",
@@ -2475,6 +2474,7 @@ dependencies = [
  "x32_udp",
  "x32_usb",
  "x32_vocal_ducking",
+ "x32_volunteer",
  "x32_wav_xlive",
  "x32_xlive_wav",
  "xair_command",
@@ -2852,17 +2852,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "x32_scene_checker"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "clap",
- "osc_lib",
- "tokio",
- "x32_lib",
-]
-
-[[package]]
 name = "x32_set_lib"
 version = "0.1.0"
 dependencies = [
@@ -3013,6 +3002,19 @@ dependencies = [
  "osc_lib",
  "rustfft",
  "thread-priority",
+ "tokio",
+ "x32_lib",
+]
+
+[[package]]
+name = "x32_volunteer"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "crossterm",
+ "osc_lib",
+ "ratatui",
  "tokio",
  "x32_lib",
 ]

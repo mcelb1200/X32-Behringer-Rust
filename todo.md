@@ -368,7 +368,7 @@ volunteer recall a scene's EQ, compression, and naming without accidentally re-p
 
 ---
 
-## 7. Simplified TUI Dashboard (Volunteer Mode)
+## (Completed) 7. Simplified TUI Dashboard (Volunteer Mode)
 
 ### Why this matters (plain language)
 The X32 has 32 input channels, 16 mix buses, 6 matrices, 8 DCA groups, and hundreds of

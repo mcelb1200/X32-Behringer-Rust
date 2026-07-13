@@ -1,0 +1,13 @@
+[package]
+name = "x32_volunteer"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+clap = { workspace = true }
+anyhow = { workspace = true }
+x32_lib = { workspace = true }
+osc_lib = { workspace = true }
+tokio = { version = "1.0", features = ["full", "macros"] }
+ratatui = "0.24"
+crossterm = "0.27"

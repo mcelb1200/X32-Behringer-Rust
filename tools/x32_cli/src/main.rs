@@ -103,6 +103,8 @@ enum Commands {
     X32SceneChecker(x32_scene_checker::Args),
     /// Run x32_system_tune
     X32SystemTune(x32_system_tune::Args),
+    /// Run x32_volunteer
+    X32Volunteer(x32_volunteer::Args),
 }
 
 #[tokio::main]
@@ -171,5 +173,6 @@ async fn main() -> Result<()> {
         Commands::X32SystemTune(args) => {
             x32_system_tune::run(args).await.map_err(anyhow::Error::msg)
         }
+        Commands::X32Volunteer(args) => x32_volunteer::run(args).await.map_err(anyhow::Error::msg),
     }
 }

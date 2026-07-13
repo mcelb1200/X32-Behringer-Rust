@@ -51,3 +51,4 @@ x32_auto_gain = { path = "../../apps/x32_auto_gain" }
 x32_feedback_detect = { path = "../../apps/x32_feedback_detect" }
 x32_scene_checker = { path = "../../apps/x32_scene_checker" }
 x32_system_tune = { path = "../../apps/x32_system_tune" }
+x32_volunteer = { path = "../../apps/x32_volunteer" }
