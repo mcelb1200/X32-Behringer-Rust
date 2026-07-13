@@ -90,7 +90,7 @@ async fn test_auto_gain_adjusts_levels() -> Result<()> {
     let mock_ip_clone = mock_ip.clone();
 
     // Spawn the app in background
-    let args = Args::parse_from(&[
+    let args = Args::parse_from([
         "x32_auto_gain",
         "--ip",
         &mock_ip_clone,

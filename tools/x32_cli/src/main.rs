@@ -107,6 +107,8 @@ enum Commands {
     X32Volunteer(x32_volunteer::Args),
     /// Run x32_safe_mute
     X32SafeMute(x32_safe_mute::Args),
+    /// Run x32_speech_mode
+    X32SpeechMode(x32_speech_mode::Args),
 }
 
 #[tokio::main]
@@ -177,5 +179,6 @@ async fn main() -> Result<()> {
         }
         Commands::X32Volunteer(args) => x32_volunteer::run(args).await.map_err(anyhow::Error::msg),
         Commands::X32SafeMute(args) => x32_safe_mute::run(args).await.map_err(anyhow::Error::msg),
+        Commands::X32SpeechMode(args) => x32_speech_mode::run(args).await.map_err(anyhow::Error::msg),
     }
 }
