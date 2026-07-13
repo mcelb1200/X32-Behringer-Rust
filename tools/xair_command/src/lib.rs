@@ -67,7 +67,8 @@ pub async fn run(args: Args) -> Result<()> {
         use std::fs::File;
         use std::io::BufRead;
 
-        let file = File::open(file_path).context(format!("Cannot read file: {}", file_path))?;
+        let file =
+            File::open(file_path).with_context(|| format!("Cannot read file: {}", file_path))?;
 
         // Security: Prevent OOM from maliciously large or corrupted files.
         // Also protect against special system files (like /dev/zero) that report 0 length

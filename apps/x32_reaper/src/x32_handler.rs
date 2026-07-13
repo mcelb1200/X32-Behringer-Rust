@@ -77,7 +77,10 @@ async fn process_x32_message(
                     if let Some(OscArg::Float(val)) = msg.args.first() {
                         if let Some(track_id) = map_ch_to_track(ch_num, state).await {
                             let path = get_volume_path(track_id);
-                            let bytes = OscMessage::serialize_to_bytes(&path, std::iter::once(&OscArg::Float(*val)))?;
+                            let bytes = OscMessage::serialize_to_bytes(
+                                &path,
+                                std::iter::once(&OscArg::Float(*val)),
+                            )?;
                             socket.send_to(&bytes, addr).await?;
                         }
                     }
@@ -86,7 +89,10 @@ async fn process_x32_message(
                     if let Some(OscArg::Float(val)) = msg.args.first() {
                         if let Some(track_id) = map_ch_to_track(ch_num, state).await {
                             let path = get_pan_path(track_id);
-                            let bytes = OscMessage::serialize_to_bytes(&path, std::iter::once(&OscArg::Float(*val)))?;
+                            let bytes = OscMessage::serialize_to_bytes(
+                                &path,
+                                std::iter::once(&OscArg::Float(*val)),
+                            )?;
                             socket.send_to(&bytes, addr).await?;
                         }
                     }
@@ -97,7 +103,10 @@ async fn process_x32_message(
                             // X32: 1=on, 0=off/mute. Reaper: 1.0=mute, 0.0=unmute
                             let mute_val = if *val == 1 { 0.0 } else { 1.0 };
                             let path = get_mute_path(track_id);
-                            let bytes = OscMessage::serialize_to_bytes(&path, std::iter::once(&OscArg::Float(mute_val)))?;
+                            let bytes = OscMessage::serialize_to_bytes(
+                                &path,
+                                std::iter::once(&OscArg::Float(mute_val)),
+                            )?;
                             socket.send_to(&bytes, addr).await?;
                         }
                     }
