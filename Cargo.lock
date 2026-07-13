@@ -2451,6 +2451,7 @@ dependencies = [
  "x32_dump",
  "x32_emulator",
  "x32_fade",
+ "x32_feedback_detect",
  "x32_geq2_cpy",
  "x32_get_lib",
  "x32_get_scene",
@@ -2680,6 +2681,23 @@ dependencies = [
  "osc_lib",
  "serde",
  "serde_json",
+ "tokio",
+ "x32_lib",
+]
+
+[[package]]
+name = "x32_feedback_detect"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "cpal",
+ "crossterm",
+ "num-complex",
+ "osc_lib",
+ "ratatui",
+ "ringbuf",
+ "rustfft",
  "tokio",
  "x32_lib",
 ]

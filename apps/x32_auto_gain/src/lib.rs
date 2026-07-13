@@ -42,7 +42,7 @@ pub async fn run(args: Args) -> Result<()> {
     let mut channels: Vec<u8> = Vec::new();
     for part in args.channels.split(',') {
         if let Ok(ch) = part.trim().parse::<u8>() {
-            if ch >= 1 && ch <= 32 {
+            if (1..=32).contains(&ch) {
                 channels.push(ch);
             }
         }
@@ -94,7 +94,7 @@ pub async fn run(args: Args) -> Result<()> {
 
                 // Track HA gain manual changes
                 if msg.path.starts_with("/headamp/") && msg.path.ends_with("/gain") {
-                    if let Some(OscArg::Float(f)) = msg.args.get(0) {
+                    if let Some(OscArg::Float(f)) = msg.args.first() {
                         let parts: Vec<&str> = msg.path.split('/').collect();
                         if parts.len() == 4 {
                             if let Ok(ch) = parts[2].parse::<u8>() {
@@ -106,7 +106,7 @@ pub async fn run(args: Args) -> Result<()> {
 
                 // Process meter updates
                 if msg.path == "/meters/1" {
-                    if let Some(OscArg::Blob(data)) = msg.args.get(0) {
+                    if let Some(OscArg::Blob(data)) = msg.args.first() {
                         // skip first 4 bytes (length)
                         if data.len() < 4 + 32 * 4 {
                             continue;
@@ -135,9 +135,7 @@ pub async fn run(args: Args) -> Result<()> {
                                     let delta_osc = delta_db / 72.0;
 
                                     if let Some(current_osc) = ha_gains.get(ch) {
-                                        let mut new_osc = current_osc + delta_osc;
-                                        if new_osc < 0.0 { new_osc = 0.0; }
-                                        if new_osc > 1.0 { new_osc = 1.0; }
+                                        let new_osc = (current_osc + delta_osc).clamp(0.0, 1.0);
 
                                         // Update only if changed significantly
                                         if (new_osc - current_osc).abs() > 0.005 {
