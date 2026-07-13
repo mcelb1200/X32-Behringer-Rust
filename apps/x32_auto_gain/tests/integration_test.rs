@@ -3,7 +3,7 @@ use clap::Parser;
 use osc_lib::OscArg;
 use std::time::Duration;
 use tokio::time::sleep;
-use x32_auto_gain::{Args, run};
+use x32_auto_gain::{run, Args};
 
 // A simple local mock
 use tokio::net::UdpSocket;
