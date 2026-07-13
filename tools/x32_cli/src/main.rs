@@ -172,5 +172,4 @@ async fn main() -> Result<()> {
             x32_system_tune::run(args).await.map_err(anyhow::Error::msg)
         }
     }
-    }
 }
