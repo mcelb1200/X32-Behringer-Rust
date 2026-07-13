@@ -33,7 +33,7 @@ pub async fn run(args: Args) -> Result<()> {
     let addr = format!("{}:{}", args.ip, args.port);
     let client = MixerClient::connect(&addr, false)
         .await
-        .context(format!("Failed to connect to {}", addr))?;
+        .with_context(|| format!("Failed to connect to {}", addr))?;
 
     let mut rx = client.subscribe();
 

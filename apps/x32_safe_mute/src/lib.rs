@@ -104,15 +104,11 @@ pub async fn capture_state(
         let mut cstate = ChannelState { fader: 0.0, on: 0 };
         let fader_path = format!("{}/fader", path);
         let on_path = format!("{}/on", path);
-        if let Ok(val) = client.query_value(&fader_path).await {
-            if let OscArg::Float(fval) = val {
-                cstate.fader = fval;
-            }
+        if let Ok(OscArg::Float(fval)) = client.query_value(&fader_path).await {
+            cstate.fader = fval;
         }
-        if let Ok(val) = client.query_value(&on_path).await {
-            if let OscArg::Int(ival) = val {
-                cstate.on = ival;
-            }
+        if let Ok(OscArg::Int(ival)) = client.query_value(&on_path).await {
+            cstate.on = ival;
         }
         state.insert(path.clone(), cstate);
     }

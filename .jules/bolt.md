@@ -103,3 +103,6 @@
 ## 2026-07-08 - [Eliminate heap allocations in Automix loops and Core path parsing]
 **Learning:** In audio-processing loops operating at high frequencies (like Dugan automixing in `x32_automix`), allocating `Vec<f32>` dynamically for every audio packet introduces significant garbage collection overhead. Since the X32 has a hard limit of 32 channels, passing and mutating fixed-size stack arrays (`[f32; 32]`) completely eliminates these heap allocations. Similarly, initializing string variables with `String::new()` only to immediately overwrite them via `format!()` is an anti-pattern that causes double allocations.
 **Action:** When working with channel loops, use fixed-size stack arrays where the bounds are known. For dynamic strings, use inline block expressions or conditional tuple bindings (e.g., `let (a, b) = if cond { (format!(...), format!(...)) } else { ... }`) to initialize and format in a single allocation.
+## 2024-05-19 - [Lazy Error Formatting]
+**Learning:** Using `.context(format!("..."))` from `anyhow` eagerly evaluates the `format!` macro, allocating a `String` on the heap even when the operation succeeds (the "happy path").
+**Action:** Always use `.with_context(|| format!("..."))` to defer the string allocation and formatting until an error actually occurs, avoiding unnecessary heap allocations on success paths.
