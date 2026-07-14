@@ -170,7 +170,9 @@ async fn main() -> Result<()> {
         Commands::X32Emulator(args) => x32_emulator::run(args).map_err(anyhow::Error::msg),
         Commands::X32Crossfade(args) => x32_crossfade::run(args).await.map_err(anyhow::Error::msg),
         Commands::X32AutoGain(args) => x32_auto_gain::run(args).await.map_err(anyhow::Error::msg),
-        Commands::X32AutoRingout(args) => x32_auto_ringout::run(args).await.map_err(anyhow::Error::msg),
+        Commands::X32AutoRingout(args) => x32_auto_ringout::run(args)
+            .await
+            .map_err(anyhow::Error::msg),
         Commands::X32FeedbackDetect(args) => x32_feedback_detect::run(args)
             .await
             .map_err(anyhow::Error::msg),
@@ -182,6 +184,8 @@ async fn main() -> Result<()> {
         }
         Commands::X32Volunteer(args) => x32_volunteer::run(args).await.map_err(anyhow::Error::msg),
         Commands::X32SafeMute(args) => x32_safe_mute::run(args).await.map_err(anyhow::Error::msg),
-        Commands::X32SpeechMode(args) => x32_speech_mode::run(args).await.map_err(anyhow::Error::msg),
+        Commands::X32SpeechMode(args) => {
+            x32_speech_mode::run(args).await.map_err(anyhow::Error::msg)
+        }
     }
 }

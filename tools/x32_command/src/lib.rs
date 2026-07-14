@@ -76,7 +76,8 @@ pub async fn run(args: Args) -> Result<()> {
         use std::fs::File;
         use std::io::BufRead;
 
-        let file = File::open(file_path).context(format!("Cannot read file: {}", file_path))?;
+        let file =
+            File::open(file_path).with_context(|| format!("Cannot read file: {}", file_path))?;
         if file.metadata()?.len() > 1024 * 1024 {
             return Err(anyhow::anyhow!("File too large"));
         }
