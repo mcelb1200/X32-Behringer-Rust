@@ -69,10 +69,8 @@ pub async fn run(args: Args) -> Result<()> {
             &config,
             move |data: &[u16], _: &cpal::InputCallbackInfo| {
                 for &sample in data {
-                    let _ = producer.push(
-                        (sample as f32 - u16::MAX as f32 / 2.0)
-                            / (u16::MAX as f32 / 2.0),
-                    );
+                    let _ = producer
+                        .push((sample as f32 - u16::MAX as f32 / 2.0) / (u16::MAX as f32 / 2.0));
                 }
             },
             err_fn,
