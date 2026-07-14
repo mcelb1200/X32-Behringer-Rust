@@ -344,6 +344,43 @@ mod tests {
     }
 
     #[test]
+    fn test_scene_parser_whitebox_out_of_bounds() {
+        let mut parser = SceneParser::new();
+
+        // Out of bounds channel (not 1..=32)
+        let msgs = parser.parse_scene_line("/ch/99/config/name \"Lead Vox\"");
+        assert!(msgs.is_empty(), "Should ignore channel 99");
+
+        // Out of bounds FX slot for source (1..=4)
+        let msgs = parser.parse_scene_line("/fx/5/source/L MIX1");
+        assert!(msgs.is_empty(), "Should ignore FX slot 5 for source");
+
+        // Unparseable channel ID (not an integer)
+        let msgs = parser.parse_scene_line("/ch/abc/config/name \"Lead Vox\"");
+        assert!(msgs.is_empty(), "Should gracefully handle non-integer channel IDs");
+
+        // Invalid FX source enum argument
+        let msgs = parser.parse_scene_line("/fx/1/source/L INVALID_SRC");
+        assert!(msgs.is_empty(), "Should ignore invalid enum values");
+    }
+
+    #[test]
+    fn test_scene_parser_whitebox_limits() {
+        let mut parser = SceneParser::new();
+
+        // Path with more than 16 segments. Only first 16 are parsed.
+        // Let's ensure it doesn't panic.
+        let long_path = format!("/{}/value 123", "a/".repeat(20));
+        let msgs = parser.parse_scene_line(&long_path);
+        // It won't match any known patterns, so it returns empty without panic
+        assert!(msgs.is_empty());
+
+        // Empty parts after trim
+        let msgs = parser.parse_scene_line("/ 123");
+        assert!(msgs.is_empty(), "Should ignore paths that result in empty parts array");
+    }
+
+    #[test]
     fn test_scene_parser_with_model() {
         let parser_xr18 = SceneParser::with_model(MixerModel::XR18);
         assert!(matches!(parser_xr18.model, MixerModel::XR18));
