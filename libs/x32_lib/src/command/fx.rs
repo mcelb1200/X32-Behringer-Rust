@@ -100,4 +100,18 @@ mod tests {
         assert_eq!(args.len(), 1);
         assert_eq!(args[0], OscArg::Float(0.5));
     }
+
+    #[test]
+    fn test_set_fx_param_socket_error() {
+        // Create an unconnected client socket
+        // Calling send() on an unconnected UDP socket without specifying a destination
+        // will result in an error ("Destination address required").
+        let client = UdpSocket::bind("127.0.0.1:0").unwrap();
+
+        // Call the function
+        let result = set_fx_param(&client, 1, 5, 0.5);
+
+        // Assert the result is an Err, validating the error pathway
+        assert!(result.is_err());
+    }
 }
