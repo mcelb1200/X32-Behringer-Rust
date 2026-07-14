@@ -11,7 +11,7 @@ use ratatui::{
     style::{Color, Style},
     widgets::{Block, Borders, Paragraph},
 };
-use std::{io, time::Duration, fmt::Write};
+use std::{fmt::Write, io, time::Duration};
 
 use crate::mixer::AppliedNotch;
 
