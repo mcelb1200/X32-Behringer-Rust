@@ -1,3 +1,4 @@
+#![allow(clippy::manual_range_contains)]
 //! `x32_safe_mute` is a Panic Button feature that instantly silences the entire system safely
 //! by using a rapid exponential fade instead of an instantaneous hard mute to avoid pops and thumps.
 
@@ -74,7 +75,7 @@ pub fn resolve_target_paths(mode: &Mode, dcas: &str) -> Vec<String> {
             if !dcas.is_empty() {
                 for part in dcas.split(',') {
                     if let Ok(num) = part.trim().parse::<u8>() {
-                        if (1..=8).contains(&num) {
+                        if num >= 1 && num <= 8 {
                             paths.push(format!("/dca/{}", num));
                         }
                     }
