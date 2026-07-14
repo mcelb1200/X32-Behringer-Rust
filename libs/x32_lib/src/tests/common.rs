@@ -30,7 +30,7 @@ mod tests {
     #[test]
     fn test_command_value() {
         let int_val = CommandValue::Int(42);
-        let float_val = CommandValue::Float(3.14);
+        let float_val = CommandValue::Float(1.23);
         let str_val = CommandValue::String("hello".to_string());
         let none_val = CommandValue::None;
 
@@ -41,7 +41,7 @@ mod tests {
         }
 
         if let CommandValue::Float(val) = float_val.clone() {
-            assert_eq!(val, 3.14);
+            assert_eq!(val, 1.23);
         } else {
             panic!("Expected CommandValue::Float");
         }

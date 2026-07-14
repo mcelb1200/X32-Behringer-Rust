@@ -304,6 +304,55 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_scene_parser_basic_line() {
+        let mut parser = SceneParser::new();
+        let msgs = parser.parse_scene_line("/ch/01/config/name \"Lead Vox\"");
+        assert_eq!(msgs.len(), 1);
+        assert_eq!(msgs[0].path, "/ch/01/config/name");
+        assert_eq!(msgs[0].args, vec![OscArg::String("Lead Vox".to_string())]);
+    }
+
+    #[test]
+    fn test_scene_parser_stateful_fx() {
+        let mut parser = SceneParser::new();
+        // Set FX 1 type to AMBI
+        let msgs = parser.parse_scene_line("/fx/1/type AMBI");
+        assert_eq!(msgs.len(), 1);
+        assert_eq!(parser.fx_types[0], 1); // AMBI is index 1 in XFXTYP4
+
+        // Now parse parameters for FX 1
+        let msgs = parser.parse_scene_line("/fx/1/par 50 1.5 50 5000 15 0 20 10000 50 50");
+        assert_eq!(msgs.len(), 1);
+        assert_eq!(msgs[0].path, "/fx/1/par");
+        assert_eq!(msgs[0].args.len(), 10); // AMBI has 10 parameters
+    }
+
+    #[test]
+    fn test_scene_parser_empty_and_invalid() {
+        let mut parser = SceneParser::new();
+        let msgs = parser.parse_scene_line("");
+        assert!(msgs.is_empty());
+
+        let msgs = parser.parse_scene_line("   ");
+        assert!(msgs.is_empty());
+
+        let msgs = parser.parse_scene_line("# This is a comment");
+        assert!(msgs.is_empty());
+
+        let msgs = parser.parse_scene_line("invalid_line_without_space");
+        assert!(msgs.is_empty());
+    }
+
+    #[test]
+    fn test_scene_parser_with_model() {
+        let parser_xr18 = SceneParser::with_model(MixerModel::XR18);
+        assert!(matches!(parser_xr18.model, MixerModel::XR18));
+
+        let parser_x32 = SceneParser::with_model(MixerModel::X32);
+        assert!(matches!(parser_x32.model, MixerModel::X32));
+    }
+
+    #[test]
     #[allow(deprecated)]
     fn test_parse_scene_line_string() {
         let msgs = parse_scene_line("/ch/01/config/name \"Lead Vox\"");
