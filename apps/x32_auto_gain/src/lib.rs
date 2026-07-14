@@ -128,7 +128,10 @@ pub async fn run(args: Args) -> Result<()> {
                         for ch in &channels {
                             let idx = *ch as usize - 1;
                             let start = 4 + idx * 4;
-                            let bytes: [u8; 4] = data[start..start+4].try_into().unwrap_or([0; 4]);
+                            let bytes: [u8; 4] = match data.get(start..start + 4) {
+                                Some(slice) => slice.try_into().unwrap_or([0; 4]),
+                                None => continue,
+                            };
                             let val = f32::from_le_bytes(bytes);
 
                             if val > 0.00001 {

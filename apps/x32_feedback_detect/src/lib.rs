@@ -38,18 +38,46 @@ pub async fn run(args: Args) -> Result<()> {
 
     let (mut producer, mut consumer) = HeapRb::<f32>::new(4096 * 4).split();
 
-    let stream = device.build_input_stream(
-        &config,
-        move |data: &[f32], _: &cpal::InputCallbackInfo| {
-            for &sample in data {
-                let _ = producer.push(sample);
-            }
-        },
-        move |err| {
-            eprintln!("Audio input stream error: {}", err);
-        },
-        None,
-    )?;
+    let sample_format = device.default_input_config()?.sample_format();
+
+    let err_fn = move |err| {
+        eprintln!("Audio input stream error: {}", err);
+    };
+
+    let stream = match sample_format {
+        cpal::SampleFormat::F32 => device.build_input_stream(
+            &config,
+            move |data: &[f32], _: &cpal::InputCallbackInfo| {
+                for &sample in data {
+                    let _ = producer.push(sample);
+                }
+            },
+            err_fn,
+            None,
+        )?,
+        cpal::SampleFormat::I16 => device.build_input_stream(
+            &config,
+            move |data: &[i16], _: &cpal::InputCallbackInfo| {
+                for &sample in data {
+                    let _ = producer.push(sample as f32 / i16::MAX as f32);
+                }
+            },
+            err_fn,
+            None,
+        )?,
+        cpal::SampleFormat::U16 => device.build_input_stream(
+            &config,
+            move |data: &[u16], _: &cpal::InputCallbackInfo| {
+                for &sample in data {
+                    let _ = producer
+                        .push((sample as f32 - u16::MAX as f32 / 2.0) / (u16::MAX as f32 / 2.0));
+                }
+            },
+            err_fn,
+            None,
+        )?,
+        _ => return Err(anyhow::anyhow!("Unsupported sample format")),
+    };
 
     stream.play()?;
 
