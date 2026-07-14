@@ -106,3 +106,5 @@
 ## 2024-05-19 - [Lazy Error Formatting]
 **Learning:** Using `.context(format!("..."))` from `anyhow` eagerly evaluates the `format!` macro, allocating a `String` on the heap even when the operation succeeds (the "happy path").
 **Action:** Always use `.with_context(|| format!("..."))` to defer the string allocation and formatting until an error actually occurs, avoiding unnecessary heap allocations on success paths.
+To avoid dynamic string allocations in high-frequency network loops (e.g., TUI update loops), pre-allocate static OSC paths (like fader or mute paths) inside state structs (e.g., `ChannelState`) during initialization rather than formatting them dynamically on each iteration.
+When initializing terminal UI state that might fail and return a `Result` (e.g., `Terminal::new(backend)?`), use `.inspect_err(|_e| { /* cleanup */ })` to ensure proper terminal restoration (like `disable_raw_mode()`) occurs before the error is propagated.
