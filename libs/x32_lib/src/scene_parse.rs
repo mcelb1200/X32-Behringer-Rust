@@ -357,7 +357,10 @@ mod tests {
 
         // Unparseable channel ID (not an integer)
         let msgs = parser.parse_scene_line("/ch/abc/config/name \"Lead Vox\"");
-        assert!(msgs.is_empty(), "Should gracefully handle non-integer channel IDs");
+        assert!(
+            msgs.is_empty(),
+            "Should gracefully handle non-integer channel IDs"
+        );
 
         // Invalid FX source enum argument
         let msgs = parser.parse_scene_line("/fx/1/source/L INVALID_SRC");
@@ -377,7 +380,10 @@ mod tests {
 
         // Empty parts after trim
         let msgs = parser.parse_scene_line("/ 123");
-        assert!(msgs.is_empty(), "Should ignore paths that result in empty parts array");
+        assert!(
+            msgs.is_empty(),
+            "Should ignore paths that result in empty parts array"
+        );
     }
 
     #[test]
