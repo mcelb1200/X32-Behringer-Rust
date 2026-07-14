@@ -252,7 +252,10 @@ pub async fn run(args: Args) -> Result<()> {
                                 // matching the integration test.
                                 let idx = bus.bus_idx as usize - 1;
                                 let start = 4 + idx * 4;
-                                let bytes: [u8; 4] = data[start..start+4].try_into().unwrap_or([0; 4]);
+                                let bytes: [u8; 4] = match data.get(start..start + 4) {
+                                    Some(slice) => slice.try_into().unwrap_or([0; 4]),
+                                    None => continue,
+                                };
                                 let val = f32::from_le_bytes(bytes);
 
                                 if val > 0.00001 {
@@ -288,6 +291,7 @@ pub async fn run(args: Args) -> Result<()> {
                             }
                         }
 
+                        #[allow(clippy::needless_range_loop)]
                         for i in 0..update_count {
                             if let Some(update) = &updates[i] {
                                 // Apply notch via OSC

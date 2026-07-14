@@ -116,3 +116,13 @@
 **Vulnerability:** The OSC parser (`libs/osc_lib/src/lib.rs`) read `b` (blob) lengths as `i32` and cast them directly to `usize` without verifying they were non-negative. This allowed malicious network packets to supply negative lengths (e.g., `-1`), which casted to massive values (e.g., `18446744073709551615`) and caused immediate memory exhaustion or an arithmetic overflow panic (`attempt to add with overflow`) when the parser tried to calculate the `end_pos` or allocate a slice.
 **Learning:** Network protocols often use signed integers (like `i32` in OSC 1.0) for length or size fields. In Rust, silently casting from `i32` to `usize` is dangerous because negative bounds turn into maximum capacity requests, creating trivial Denial of Service (DoS) vectors on hot network paths.
 **Prevention:** Always validate size/length fields received from the network before casting to `usize`. Explicitly enforce `if length < 0` to reject malformed or malicious sizes.
+
+## $(date +%Y-%m-%d) - Prevent DoS via Out-of-Bounds Network Slice Parsing
+**Vulnerability:** Several tools (like `x32_auto_gain` and `x32_auto_ringout`) directly sliced network byte buffers (`&data[idx..idx + size]`) based on lengths extracted from the packet itself, without first validating that the buffer `data` was sufficiently large. A crafted or truncated OSC packet or network payload could cause the application to panic and crash (Denial of Service).
+**Learning:** External network lengths cannot be trusted. Slicing with `[]` on unvalidated ranges in Rust causes immediate thread panics, crashing the network listener.
+**Prevention:** When extracting byte slices from network data buffers (like OSC blobs), always use safe slice access `data.get(start..end)` and handle the `None` case (e.g., via `match`), rather than direct indexing `data[start..end]` which will panic on malformed or truncated packets.
+
+## $(date +%Y-%m-%d) - Support Diverse Audio Sample Formats
+**Vulnerability:** The `cpal` audio input stream initialization in `x32_feedback_detect` implicitly hardcoded the sample format closure to `f32`. Some audio interfaces default to `I16` or `U16` format, which would result in a runtime crash or failure to initialize the stream.
+**Learning:** Audio APIs must dynamically accommodate the format exposed by the underlying hardware.
+**Prevention:** When using `cpal` to build an input stream, do not hardcode the sample format to `f32`. Always query `device.default_input_config()?.sample_format()` and use a `match` statement to safely handle and cast different native formats (`cpal::SampleFormat::F32`, `cpal::SampleFormat::I16`, `cpal::SampleFormat::U16`).
