@@ -77,4 +77,41 @@ mod tests {
         let commands = get_fx_commands(1);
         assert_eq!(commands.len(), 67);
     }
+
+    #[test]
+    fn test_set_fx_param() {
+        // Create a dummy server socket
+        let server = UdpSocket::bind("127.0.0.1:0").unwrap();
+        let server_addr = server.local_addr().unwrap();
+
+        // Create a client socket and connect it to the server
+        let client = UdpSocket::bind("127.0.0.1:0").unwrap();
+        client.connect(server_addr).unwrap();
+
+        // Call the function
+        let result = set_fx_param(&client, 1, 5, 0.5);
+
+        // Assert the result is Ok
+        assert!(result.is_ok());
+
+        // Assert on the returned values
+        let (path, args) = result.unwrap();
+        assert_eq!(path, "/fx/1/par/05");
+        assert_eq!(args.len(), 1);
+        assert_eq!(args[0], OscArg::Float(0.5));
+    }
+
+    #[test]
+    fn test_set_fx_param_socket_error() {
+        // Create an unconnected client socket
+        // Calling send() on an unconnected UDP socket without specifying a destination
+        // will result in an error ("Destination address required").
+        let client = UdpSocket::bind("127.0.0.1:0").unwrap();
+
+        // Call the function
+        let result = set_fx_param(&client, 1, 5, 0.5);
+
+        // Assert the result is an Err, validating the error pathway
+        assert!(result.is_err());
+    }
 }
