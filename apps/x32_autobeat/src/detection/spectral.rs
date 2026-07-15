@@ -162,8 +162,7 @@ impl BeatDetector for SpectralFluxDetector {
                 // So this frame ended `self.buffer.len() - self.fft_size` samples BEFORE the most recent sample.
 
                 let samples_ago = self.buffer.len() as u64; // Start of buffer
-                let frame_time =
-                    self.total_samples_processed - samples_ago + (self.fft_size / 2) as u64;
+                let frame_time = self.total_samples_processed - samples_ago + (self.fft_size / 2) as u64;
 
                 if frame_time > self.last_beat_time + min_interval {
                     self.beat_detected = true;

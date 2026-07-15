@@ -3,6 +3,14 @@ name = "x32_set_scene"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+name = "x32_set_scene"
+path = "src/lib.rs"
+
+[[bin]]
+name = "x32_set_scene"
+path = "src/main.rs"
+
 [dependencies]
 clap = { workspace = true }
 osc_lib = { workspace = true }
