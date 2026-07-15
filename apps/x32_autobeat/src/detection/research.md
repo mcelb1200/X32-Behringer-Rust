@@ -17,7 +17,7 @@ The Energy Moving Average algorithm is a standard, computationally efficient met
 
 ---
 
-## Alternative: Spectral Flux / Onset Detection (TODO)
+## Alternative: Spectral Flux / Onset Detection
 
 ### Concept
 Unlike the Energy method which looks at total volume, Spectral Flux analyzes changes in the *frequency domain*. It performs an FFT (Fast Fourier Transform) on the audio chunks and measures how much the magnitude of each frequency bin changes between frames.

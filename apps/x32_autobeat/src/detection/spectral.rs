@@ -25,6 +25,7 @@ pub struct SpectralFluxDetector {
     fft_size: usize,
     hop_size: usize,
     buffer: Vec<f32>, // Accumulate samples until we have fft_size
+    threshold_multiplier: f32,
 }
 
 impl SpectralFluxDetector {
@@ -54,7 +55,12 @@ impl SpectralFluxDetector {
             fft_size,
             hop_size: fft_size / 2, // 50% overlap
             buffer: Vec::with_capacity(fft_size),
+            threshold_multiplier: 1.5,
         }
+    }
+
+    pub fn set_threshold_multiplier(&mut self, multiplier: f32) {
+        self.threshold_multiplier = multiplier;
     }
 
     fn apply_window(buffer: &[f32], output: &mut [Complex<f32>]) {
@@ -126,7 +132,7 @@ impl BeatDetector for SpectralFluxDetector {
             self.flux_history.push_back(flux);
 
             // Threshold multiplier
-            let c = 1.5;
+            let c = self.threshold_multiplier;
 
             if flux > c * local_average && flux > 0.0001 {
                 // Min threshold to avoid noise
@@ -156,7 +162,8 @@ impl BeatDetector for SpectralFluxDetector {
                 // So this frame ended `self.buffer.len() - self.fft_size` samples BEFORE the most recent sample.
 
                 let samples_ago = self.buffer.len() as u64; // Start of buffer
-                let frame_time = self.total_samples_processed - samples_ago + self.fft_size as u64;
+                let frame_time =
+                    self.total_samples_processed - samples_ago + (self.fft_size / 2) as u64;
 
                 if frame_time > self.last_beat_time + min_interval {
                     self.beat_detected = true;
@@ -211,6 +218,14 @@ impl Default for SpectralFluxDetector {
 mod tests {
     use super::*;
     use rand::Rng;
+
+    #[test]
+    fn test_set_threshold_multiplier() {
+        let mut detector = SpectralFluxDetector::new(44100, 1024);
+        assert_eq!(detector.threshold_multiplier, 1.5);
+        detector.set_threshold_multiplier(2.0);
+        assert_eq!(detector.threshold_multiplier, 2.0);
+    }
 
     #[test]
     fn test_spectral_flux_detector_beats_multi_channel() {
