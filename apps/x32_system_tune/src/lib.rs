@@ -90,10 +90,24 @@ pub async fn run(args: Args) -> Result<()> {
                             current_step = format!("Testing {}", main_outputs[0].0);
                             status_message = "Press 'y' if you hear pink noise, 'n' if not.";
 
-                            let _ = client.send_message("/config/osc/type", vec![OscArg::Int(1)]).await; // Pink Noise
-                            let _ = client.send_message(main_outputs[0].1, vec![OscArg::Int(main_outputs[0].2)]).await;
-                            let _ = client.send_message("/config/osc/level", vec![OscArg::Float(args.max_level)]).await;
-                            let _ = client.send_message("/config/osc", vec![OscArg::Int(1)]).await;
+                            let _ = client
+                                .send_message("/config/osc/type", vec![OscArg::Int(1)])
+                                .await; // Pink Noise
+                            let _ = client
+                                .send_message(
+                                    main_outputs[0].1,
+                                    vec![OscArg::Int(main_outputs[0].2)],
+                                )
+                                .await;
+                            let _ = client
+                                .send_message(
+                                    "/config/osc/level",
+                                    vec![OscArg::Float(args.max_level)],
+                                )
+                                .await;
+                            let _ = client
+                                .send_message("/config/osc", vec![OscArg::Int(1)])
+                                .await;
                             current_level = args.max_level;
                         }
                         Phase::GuidedOutputVerification(_) => {
@@ -101,37 +115,78 @@ pub async fn run(args: Args) -> Result<()> {
                             current_phase_str = "Phase 2: Assisted Gain Staging";
                             current_step = "Playing sine wave reference".to_string();
                             status_message = "Adjust amplifier knobs. Press Enter when done.";
-                            let _ = client.send_message("/config/osc/type", vec![OscArg::Int(0)]).await; // Sine
-                            let _ = client.send_message(main_outputs[0].1, vec![OscArg::Int(main_outputs[0].2)]).await;
-                            let _ = client.send_message("/config/osc/level", vec![OscArg::Float(args.max_level)]).await;
-                            let _ = client.send_message("/config/osc", vec![OscArg::Int(1)]).await;
+                            let _ = client
+                                .send_message("/config/osc/type", vec![OscArg::Int(0)])
+                                .await; // Sine
+                            let _ = client
+                                .send_message(
+                                    main_outputs[0].1,
+                                    vec![OscArg::Int(main_outputs[0].2)],
+                                )
+                                .await;
+                            let _ = client
+                                .send_message(
+                                    "/config/osc/level",
+                                    vec![OscArg::Float(args.max_level)],
+                                )
+                                .await;
+                            let _ = client
+                                .send_message("/config/osc", vec![OscArg::Int(1)])
+                                .await;
                         }
                         Phase::AssistedGainStaging => {
                             current_phase = Phase::RoomTuning;
                             current_phase_str = "Phase 3: Room Tuning";
                             current_step = "Sweeping pink noise".to_string();
                             status_message = "Listening for feedback modes... Press Enter to skip";
-                            let _ = client.send_message("/config/osc/type", vec![OscArg::Int(1)]).await; // Pink Noise
-                            let _ = client.send_message(main_outputs[0].1, vec![OscArg::Int(main_outputs[0].2)]).await;
-                            let _ = client.send_message("/config/osc/level", vec![OscArg::Float(args.max_level)]).await;
-                            let _ = client.send_message("/config/osc", vec![OscArg::Int(1)]).await;
+                            let _ = client
+                                .send_message("/config/osc/type", vec![OscArg::Int(1)])
+                                .await; // Pink Noise
+                            let _ = client
+                                .send_message(
+                                    main_outputs[0].1,
+                                    vec![OscArg::Int(main_outputs[0].2)],
+                                )
+                                .await;
+                            let _ = client
+                                .send_message(
+                                    "/config/osc/level",
+                                    vec![OscArg::Float(args.max_level)],
+                                )
+                                .await;
+                            let _ = client
+                                .send_message("/config/osc", vec![OscArg::Int(1)])
+                                .await;
                         }
                         Phase::RoomTuning => {
                             current_phase = Phase::MonitorRinging;
                             current_phase_str = "Phase 4: Monitor Ringing";
                             current_step = "Ringing Monitor Bus 1".to_string();
                             status_message = "Press Enter to finish.";
-                            let _ = client.send_message("/config/osc/type", vec![OscArg::Int(0)]).await; // Sine
-                            let _ = client.send_message("/config/osc/dest", vec![OscArg::Int(1)]).await; // Bus 1
-                            let _ = client.send_message("/config/osc/level", vec![OscArg::Float(args.max_level)]).await;
-                            let _ = client.send_message("/config/osc", vec![OscArg::Int(1)]).await;
+                            let _ = client
+                                .send_message("/config/osc/type", vec![OscArg::Int(0)])
+                                .await; // Sine
+                            let _ = client
+                                .send_message("/config/osc/dest", vec![OscArg::Int(1)])
+                                .await; // Bus 1
+                            let _ = client
+                                .send_message(
+                                    "/config/osc/level",
+                                    vec![OscArg::Float(args.max_level)],
+                                )
+                                .await;
+                            let _ = client
+                                .send_message("/config/osc", vec![OscArg::Int(1)])
+                                .await;
                         }
                         Phase::MonitorRinging => {
                             current_phase = Phase::Done;
                             current_phase_str = "Finished";
                             current_step = "All phases complete.".to_string();
                             status_message = "Press 'q' to exit.";
-                            let _ = client.send_message("/config/osc", vec![OscArg::Int(0)]).await;
+                            let _ = client
+                                .send_message("/config/osc", vec![OscArg::Int(0)])
+                                .await;
                             current_level = 0.0;
                         }
                         Phase::Done => {
@@ -145,16 +200,35 @@ pub async fn run(args: Args) -> Result<()> {
                         if next_idx < main_outputs.len() {
                             current_phase = Phase::GuidedOutputVerification(next_idx);
                             current_step = format!("Testing {}", main_outputs[next_idx].0);
-                            let _ = client.send_message(main_outputs[next_idx].1, vec![OscArg::Int(main_outputs[next_idx].2)]).await;
+                            let _ = client
+                                .send_message(
+                                    main_outputs[next_idx].1,
+                                    vec![OscArg::Int(main_outputs[next_idx].2)],
+                                )
+                                .await;
                         } else {
                             current_phase = Phase::AssistedGainStaging;
                             current_phase_str = "Phase 2: Assisted Gain Staging";
                             current_step = "Playing reference tone".to_string();
                             status_message = "Adjust physical amplifier knobs to comfortable level. Press Enter to proceed.";
-                            let _ = client.send_message("/config/osc/type", vec![OscArg::Int(0)]).await; // Sine wave
-                            let _ = client.send_message(main_outputs[0].1, vec![OscArg::Int(main_outputs[0].2)]).await;
-                            let _ = client.send_message("/config/osc/level", vec![OscArg::Float(args.max_level)]).await;
-                            let _ = client.send_message("/config/osc", vec![OscArg::Int(1)]).await;
+                            let _ = client
+                                .send_message("/config/osc/type", vec![OscArg::Int(0)])
+                                .await; // Sine wave
+                            let _ = client
+                                .send_message(
+                                    main_outputs[0].1,
+                                    vec![OscArg::Int(main_outputs[0].2)],
+                                )
+                                .await;
+                            let _ = client
+                                .send_message(
+                                    "/config/osc/level",
+                                    vec![OscArg::Float(args.max_level)],
+                                )
+                                .await;
+                            let _ = client
+                                .send_message("/config/osc", vec![OscArg::Int(1)])
+                                .await;
                         }
                     }
                 }
@@ -162,8 +236,12 @@ pub async fn run(args: Args) -> Result<()> {
         }
     }
 
-    let _ = client.send_message("/config/osc/level", vec![OscArg::Float(0.0)]).await;
-    let _ = client.send_message("/config/osc", vec![OscArg::Int(0)]).await;
+    let _ = client
+        .send_message("/config/osc/level", vec![OscArg::Float(0.0)])
+        .await;
+    let _ = client
+        .send_message("/config/osc", vec![OscArg::Int(0)])
+        .await;
     tokio::time::sleep(Duration::from_millis(100)).await;
 
     Ok(())
@@ -212,14 +290,16 @@ mod tests {
 
         // ⚡ Bolt: Simulate without TUI blocking to ensure network commands function correctly
         let client = MixerClient::connect(&addr, true).await.unwrap();
-        let _ = client.send_message("/config/osc/type", vec![OscArg::Int(1)]).await;
+        let _ = client
+            .send_message("/config/osc/type", vec![OscArg::Int(1)])
+            .await;
 
         tokio::time::sleep(Duration::from_millis(50)).await;
 
         if let Ok(OscArg::Int(val)) = client.query_value("/config/osc/type").await {
-             assert_eq!(val, 1);
+            assert_eq!(val, 1);
         } else {
-             panic!("Failed to verify OSC");
+            panic!("Failed to verify OSC");
         }
     }
 }
