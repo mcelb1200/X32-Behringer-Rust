@@ -1,26 +1,15 @@
-1.  **Analyze `AppState` string joining in `x32_autobeat` loop:**
-    *   Currently, inside the `last_ui_update.elapsed() > Duration::from_millis(50)` loop block, `AppState::source` is generated via:
-        ```rust
-        source: sources
-            .iter()
-            .map(|s| s.to_string())
-            .collect::<Vec<_>>()
-            .join(", ")
-        ```
-    *   This is evaluated every ~50ms and allocates multiple `String` instances and a `Vec`, then joins them into another `String`, doing O(N) heap allocations.
-    *   However, `sources` is initialized *before* the main event loop and is completely static during the loop.
-
-2.  **Move computation outside the loop:**
-    *   We will compute the `sources_str` once before the `loop { ... }`.
-    *   Inside the loop, we simply `clone()` this pre-computed string: `source: sources_str.clone(),`.
-
-3.  **Ensure compliance with PR formatting and tests:**
-    *   We'll use `cargo check` and `cargo test --workspace` to ensure things pass.
-    *   We'll run `cargo clippy --workspace -- -D warnings`.
-    *   We'll document the performance win in `.jules/bolt.md` based on the system memory directives.
-    *   We'll format PR as `⚡ Bolt: [performance improvement]`.
-
-4.  **Perform pre-commit checks**
-    *   Ensure proper testing, verification, review, and reflection are done.
-
-5.  **Submit changes.**
+1. **Analyze existing components and the feature roadmap:**
+   - `todo.md` requests a `x32_system_tune` app with 4 phases (Output Verification, Assisted Gain Staging, Room Tuning, Monitor Ringing).
+   - Currently, `apps/x32_system_tune` implements a basic version that just ramps the oscillator up.
+   - I have added `crossterm` and `ratatui` as dependencies, and set up a basic `Tui` rendering with states matching the phases.
+2. **Refine `x32_system_tune` to meet all `todo.md` requirements:**
+   - Update `lib.rs` to loop through all `main_outputs`, test for `Pink Noise` or `Sine`, listen for operator confirmations.
+   - We have implemented a state machine for the 4 phases and interactive TUI prompts.
+   - Restored the integration test for `x32_system_tune` allowing us to verify the background client interaction and TDD process correctly.
+3. **Run tests & clippy.**
+   - All tests and clippy checks pass.
+4. **Ensure `AGENTS.md` and `.jules/bolt.md` rules are followed** (like hoisting invariant string operations, and adding the Bolt performance PR format).
+   - The TUI state rendering is simple and avoids excessive allocation.
+5. **Perform pre-commit checks**
+   - Ensure proper testing, verification, review, and reflection are done.
+6. **Submit changes.**

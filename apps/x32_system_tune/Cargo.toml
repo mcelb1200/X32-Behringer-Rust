@@ -4,6 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+ratatui = "0.24"
+crossterm = "0.27"
 x32_lib = { path = "../../libs/x32_lib" }
 osc_lib = { path = "../../libs/osc_lib" }
 tokio = { workspace = true }

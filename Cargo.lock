@@ -2973,7 +2973,9 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "clap",
+ "crossterm",
  "osc_lib",
+ "ratatui",
  "tokio",
  "x32_core",
  "x32_lib",
