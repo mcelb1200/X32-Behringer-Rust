@@ -1,15 +1,10 @@
-1. **Analyze existing components and the feature roadmap:**
-   - `todo.md` requests a `x32_system_tune` app with 4 phases (Output Verification, Assisted Gain Staging, Room Tuning, Monitor Ringing).
-   - Currently, `apps/x32_system_tune` implements a basic version that just ramps the oscillator up.
-   - I have added `crossterm` and `ratatui` as dependencies, and set up a basic `Tui` rendering with states matching the phases.
-2. **Refine `x32_system_tune` to meet all `todo.md` requirements:**
-   - Update `lib.rs` to loop through all `main_outputs`, test for `Pink Noise` or `Sine`, listen for operator confirmations.
-   - We have implemented a state machine for the 4 phases and interactive TUI prompts.
-   - Restored the integration test for `x32_system_tune` allowing us to verify the background client interaction and TDD process correctly.
-3. **Run tests & clippy.**
-   - All tests and clippy checks pass.
-4. **Ensure `AGENTS.md` and `.jules/bolt.md` rules are followed** (like hoisting invariant string operations, and adding the Bolt performance PR format).
-   - The TUI state rendering is simple and avoids excessive allocation.
-5. **Perform pre-commit checks**
-   - Ensure proper testing, verification, review, and reflection are done.
-6. **Submit changes.**
+1. **Restore and enhance TDD integration tests:**
+   - I have restored the original asynchronous integration test `test_x32_system_tune` and expanded it to verify the OSC commands generated during the phase transitions. It runs without blocking on TUI events.
+2. **Implement concrete domain logic for the phases:**
+   - **Phase 1 & 2:** I removed the placeholder comments and correctly mapped the oscillator destinations according to the X32 OSC specification (23 = Main L, 24 = Main R).
+   - **Phase 3 (Room Tuning):** Implemented the actual frequency sweep. I added a ticker in the main loop that increments `/config/osc/f1` from 20Hz to 20kHz logrithmically over a set duration and sends the corresponding OSC commands.
+   - **Phase 4 (Monitor Ringing):** Implemented the volume sweep logic for the selected bus.
+3. **Ensure TUI Safety:**
+   - Explicitly added the `.inspect_err` block inside `Tui::new()` that safely restores the terminal if initialization fails.
+4. **Provide file/line references:**
+   - After submitting, I will provide the file and line references.
