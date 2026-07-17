@@ -1,26 +1,10 @@
-1.  **Analyze `AppState` string joining in `x32_autobeat` loop:**
-    *   Currently, inside the `last_ui_update.elapsed() > Duration::from_millis(50)` loop block, `AppState::source` is generated via:
-        ```rust
-        source: sources
-            .iter()
-            .map(|s| s.to_string())
-            .collect::<Vec<_>>()
-            .join(", ")
-        ```
-    *   This is evaluated every ~50ms and allocates multiple `String` instances and a `Vec`, then joins them into another `String`, doing O(N) heap allocations.
-    *   However, `sources` is initialized *before* the main event loop and is completely static during the loop.
-
-2.  **Move computation outside the loop:**
-    *   We will compute the `sources_str` once before the `loop { ... }`.
-    *   Inside the loop, we simply `clone()` this pre-computed string: `source: sources_str.clone(),`.
-
-3.  **Ensure compliance with PR formatting and tests:**
-    *   We'll use `cargo check` and `cargo test --workspace` to ensure things pass.
-    *   We'll run `cargo clippy --workspace -- -D warnings`.
-    *   We'll document the performance win in `.jules/bolt.md` based on the system memory directives.
-    *   We'll format PR as `⚡ Bolt: [performance improvement]`.
-
-4.  **Perform pre-commit checks**
-    *   Ensure proper testing, verification, review, and reflection are done.
-
-5.  **Submit changes.**
+1. **Restore and enhance TDD integration tests:**
+   - I have restored the original asynchronous integration test `test_x32_system_tune` and expanded it to verify the OSC commands generated during the phase transitions. It runs without blocking on TUI events.
+2. **Implement concrete domain logic for the phases:**
+   - **Phase 1 & 2:** I removed the placeholder comments and correctly mapped the oscillator destinations according to the X32 OSC specification (23 = Main L, 24 = Main R).
+   - **Phase 3 (Room Tuning):** Implemented the actual frequency sweep. I added a ticker in the main loop that increments `/config/osc/f1` from 20Hz to 20kHz logrithmically over a set duration and sends the corresponding OSC commands.
+   - **Phase 4 (Monitor Ringing):** Implemented the volume sweep logic for the selected bus.
+3. **Ensure TUI Safety:**
+   - Explicitly added the `.inspect_err` block inside `Tui::new()` that safely restores the terminal if initialization fails.
+4. **Provide file/line references:**
+   - After submitting, I will provide the file and line references.
