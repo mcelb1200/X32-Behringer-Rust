@@ -341,7 +341,11 @@ mod tests {
         write!(file, "{}", valid_config.trim()).unwrap();
 
         let result = Config::load(file.path());
-        assert!(result.is_ok(), "Expected valid config to parse, got {:?}", result);
+        assert!(
+            result.is_ok(),
+            "Expected valid config to parse, got {:?}",
+            result
+        );
         let config = result.unwrap();
         assert_eq!(config.verbose, true);
         assert_eq!(config.x32_ip, "192.168.1.100");
