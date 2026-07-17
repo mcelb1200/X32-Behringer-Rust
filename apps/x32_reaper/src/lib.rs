@@ -1378,11 +1378,17 @@ mod tests {
         let state = Arc::new(Mutex::new(AppState::new(&config)));
 
         // Create dummy sockets
-        let r_sock = UdpSocket::bind("127.0.0.1:0").await.expect("Failed to bind dummy UDP socket for test");
+        let r_sock = UdpSocket::bind("127.0.0.1:0")
+            .await
+            .expect("Failed to bind dummy UDP socket for test");
         let r_addr: SocketAddr = "127.0.0.1:8000".parse().expect("Failed to parse address");
 
-        let mock_server = UdpSocket::bind("127.0.0.1:0").await.expect("Failed to bind dummy UDP socket for test");
-        let mock_addr = mock_server.local_addr().expect("Failed to get local address");
+        let mock_server = UdpSocket::bind("127.0.0.1:0")
+            .await
+            .expect("Failed to bind dummy UDP socket for test");
+        let mock_addr = mock_server
+            .local_addr()
+            .expect("Failed to get local address");
         tokio::spawn(async move {
             let mut buf = [0u8; 1024];
             while let Ok((_, src)) = mock_server.recv_from(&mut buf).await {
@@ -1474,11 +1480,17 @@ mod tests {
         };
         let state = Arc::new(Mutex::new(AppState::new(&config)));
 
-        let r_sock = UdpSocket::bind("127.0.0.1:0").await.expect("Failed to bind dummy UDP socket for test");
+        let r_sock = UdpSocket::bind("127.0.0.1:0")
+            .await
+            .expect("Failed to bind dummy UDP socket for test");
         let r_addr: SocketAddr = "127.0.0.1:8000".parse().expect("Failed to parse address");
 
-        let mock_server = UdpSocket::bind("127.0.0.1:0").await.expect("Failed to bind dummy UDP socket for test");
-        let mock_addr = mock_server.local_addr().expect("Failed to get local address");
+        let mock_server = UdpSocket::bind("127.0.0.1:0")
+            .await
+            .expect("Failed to bind dummy UDP socket for test");
+        let mock_addr = mock_server
+            .local_addr()
+            .expect("Failed to get local address");
         tokio::spawn(async move {
             let mut buf = [0u8; 1024];
             while let Ok((_, src)) = mock_server.recv_from(&mut buf).await {
@@ -1543,11 +1555,17 @@ mod tests {
         };
         let state = Arc::new(Mutex::new(AppState::new(&config)));
 
-        let r_sock = UdpSocket::bind("127.0.0.1:0").await.expect("Failed to bind dummy UDP socket for test");
+        let r_sock = UdpSocket::bind("127.0.0.1:0")
+            .await
+            .expect("Failed to bind dummy UDP socket for test");
         let r_addr: SocketAddr = "127.0.0.1:8000".parse().expect("Failed to parse address");
 
-        let mock_server = UdpSocket::bind("127.0.0.1:0").await.expect("Failed to bind dummy UDP socket for test");
-        let mock_addr = mock_server.local_addr().expect("Failed to get local address");
+        let mock_server = UdpSocket::bind("127.0.0.1:0")
+            .await
+            .expect("Failed to bind dummy UDP socket for test");
+        let mock_addr = mock_server
+            .local_addr()
+            .expect("Failed to get local address");
         tokio::spawn(async move {
             let mut buf = [0u8; 1024];
             while let Ok((_, src)) = mock_server.recv_from(&mut buf).await {
@@ -1619,11 +1637,17 @@ mod tests {
         let state = Arc::new(Mutex::new(AppState::new(&config)));
 
         // Create dummy sockets
-        let r_sock = UdpSocket::bind("127.0.0.1:0").await.expect("Failed to bind dummy UDP socket for test");
+        let r_sock = UdpSocket::bind("127.0.0.1:0")
+            .await
+            .expect("Failed to bind dummy UDP socket for test");
         let r_addr: SocketAddr = "127.0.0.1:8000".parse().expect("Failed to parse address");
 
-        let mock_server = UdpSocket::bind("127.0.0.1:0").await.expect("Failed to bind dummy UDP socket for test");
-        let mock_addr = mock_server.local_addr().expect("Failed to get local address");
+        let mock_server = UdpSocket::bind("127.0.0.1:0")
+            .await
+            .expect("Failed to bind dummy UDP socket for test");
+        let mock_addr = mock_server
+            .local_addr()
+            .expect("Failed to get local address");
         tokio::spawn(async move {
             let mut buf = [0u8; 1024];
             while let Ok((_, src)) = mock_server.recv_from(&mut buf).await {
@@ -1723,11 +1747,17 @@ mod tests {
         let state = Arc::new(Mutex::new(AppState::new(&config)));
 
         // Create dummy sockets
-        let r_sock = UdpSocket::bind("127.0.0.1:0").await.expect("Failed to bind dummy UDP socket for test");
+        let r_sock = UdpSocket::bind("127.0.0.1:0")
+            .await
+            .expect("Failed to bind dummy UDP socket for test");
         let r_addr: SocketAddr = "127.0.0.1:8000".parse().expect("Failed to parse address");
 
-        let mock_server = UdpSocket::bind("127.0.0.1:0").await.expect("Failed to bind dummy UDP socket for test");
-        let mock_addr = mock_server.local_addr().expect("Failed to get local address");
+        let mock_server = UdpSocket::bind("127.0.0.1:0")
+            .await
+            .expect("Failed to bind dummy UDP socket for test");
+        let mock_addr = mock_server
+            .local_addr()
+            .expect("Failed to get local address");
         tokio::spawn(async move {
             let mut buf = [0u8; 1024];
             while let Ok((_, src)) = mock_server.recv_from(&mut buf).await {
