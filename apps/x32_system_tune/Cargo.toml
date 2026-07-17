@@ -9,6 +9,9 @@ osc_lib = { path = "../../libs/osc_lib" }
 tokio = { workspace = true }
 anyhow = { workspace = true }
 clap = { workspace = true }
+ratatui = "0.24"
+crossterm = "0.27"
+scopeguard = "1.2.0"
 
 [dev-dependencies]
 x32_core = { path = "../../libs/x32_core" }
