@@ -44,7 +44,10 @@ impl Tui {
             let _ = disable_raw_mode();
             let _ = execute!(io::stdout(), LeaveAlternateScreen, DisableMouseCapture);
         })?;
-        Ok(Self { terminal, _guard: TuiDropGuard })
+        Ok(Self {
+            terminal,
+            _guard: TuiDropGuard,
+        })
     }
 
     pub fn draw(&mut self, state: &AppState) -> Result<()> {
@@ -64,14 +67,23 @@ impl Tui {
                 .split(f.size());
 
             let header = Paragraph::new("X32 System Tune - Oscillator-Assisted Tuning")
-                .style(Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD))
+                .style(
+                    Style::default()
+                        .fg(Color::Yellow)
+                        .add_modifier(Modifier::BOLD),
+                )
                 .block(Block::default().borders(Borders::ALL));
             f.render_widget(header, chunks[0]);
 
             let phase_text = vec![
                 Line::from(vec![
                     Span::raw("Phase: "),
-                    Span::styled(state.current_phase, Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)),
+                    Span::styled(
+                        state.current_phase,
+                        Style::default()
+                            .fg(Color::Cyan)
+                            .add_modifier(Modifier::BOLD),
+                    ),
                 ]),
                 Line::from(""),
                 Line::from(vec![
@@ -79,17 +91,25 @@ impl Tui {
                     Span::styled(&state.current_step, Style::default().fg(Color::White)),
                 ]),
             ];
-            let phase_para = Paragraph::new(phase_text).block(Block::default().borders(Borders::ALL));
+            let phase_para =
+                Paragraph::new(phase_text).block(Block::default().borders(Borders::ALL));
             f.render_widget(phase_para, chunks[1]);
 
             let gauge = Gauge::default()
-                .block(Block::default().borders(Borders::ALL).title("Oscillator Level"))
+                .block(
+                    Block::default()
+                        .borders(Borders::ALL)
+                        .title("Oscillator Level"),
+                )
                 .gauge_style(Style::default().fg(Color::Green))
                 .ratio(state.level.clamp(0.0, 1.0) as f64);
             f.render_widget(gauge, chunks[2]);
 
-            let status = Paragraph::new(state.status_message)
-                .block(Block::default().borders(Borders::ALL).title("Status / Action"));
+            let status = Paragraph::new(state.status_message).block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .title("Status / Action"),
+            );
             f.render_widget(status, chunks[3]);
         })?;
         Ok(())
