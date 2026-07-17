@@ -92,11 +92,8 @@ impl AppState {
     pub fn parse_meter_blob(data: &[u8]) -> Option<f32> {
         if data.len() >= 16 {
             let mut f_bytes = [0u8; 4];
-            if let Some(slice) = data.get(12..16) {
-                f_bytes.copy_from_slice(slice);
-            } else {
-                return None;
-            }
+            let slice = data.get(12..16)?;
+            f_bytes.copy_from_slice(slice);
             Some(f32::from_le_bytes(f_bytes))
         } else {
             None
