@@ -272,7 +272,6 @@ pub fn parse_parameter(model: MixerModel, path: &str, arg_str: &str) -> Option<O
 /// Parses FX parameters from a scene file line according to the active FX type.
 /// The `ifx` is the effect type index (e.g., HALL = 0).
 /// `arg_str` contains the space-separated string of parameter values.
-#[allow(unused_assignments)]
 pub fn parse_fx_par(ifx: usize, arg_str: &str, path: &str) -> Option<OscMessage> {
     if arg_str.is_empty() {
         return None;
