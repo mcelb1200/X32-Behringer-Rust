@@ -34,14 +34,11 @@ function Log-Message {
 
 # --- Compilation ---
 function Compile-Binaries {
-    Log-Message "Starting compilation of all binaries..."
-    foreach ($binary in $Binaries) {
-        Log-Message "Compiling $binary..."
-        cargo build --package $binary --release
-        if ($LASTEXITCODE -ne 0) {
-            Log-Message "ERROR: Compilation of $binary failed."
-            return $false
-        }
+    Log-Message "Starting parallel compilation of all workspace binaries..."
+    cargo build --workspace --bins --release
+    if ($LASTEXITCODE -ne 0) {
+        Log-Message "ERROR: Workspace compilation failed."
+        return $false
     }
     Log-Message "Compilation complete."
     return $true

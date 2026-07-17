@@ -32,15 +32,12 @@ log_message() {
 
 # --- Compilation ---
 compile_binaries() {
-    log_message "Starting compilation of all binaries..."
-    for binary in "${BINARIES[@]}"; do
-        log_message "Compiling $binary..."
-        cargo build --package "$binary" --release
-        if [ $? -ne 0 ]; then
-            log_message "ERROR: Compilation of $binary failed."
-            return 1
-        fi
-    done
+    log_message "Starting parallel compilation of all workspace binaries..."
+    cargo build --workspace --bins --release
+    if [ $? -ne 0 ]; then
+        log_message "ERROR: Workspace compilation failed."
+        return 1
+    fi
     log_message "Compilation complete."
     return 0
 }

@@ -30,6 +30,65 @@ if %ERRORLEVEL% neq 0 (
     echo GNU toolchain is already the default.
 )
 
+:: Ensure .vscode configurations exist for new users
+if not exist .vscode (
+    mkdir .vscode
+)
+if not exist .vscode\settings.json (
+    echo Creating .vscode\settings.json for IDE integration...
+    (
+        echo {
+        echo   "rust-analyzer.cargo.target": "x86_64-pc-windows-gnu",
+        echo   "rust-analyzer.check.command": "clippy",
+        echo   "rust-analyzer.check.allTargets": false,
+        echo   "rust-analyzer.cargo.buildScripts.enable": true,
+        echo   "rust-analyzer.procMacro.enable": true,
+        echo   "[rust]": {
+        echo     "editor.defaultFormatter": "rust-lang.rust-analyzer",
+        echo     "editor.formatOnSave": true
+        echo   }
+        echo }
+    ) > .vscode\settings.json
+)
+if not exist .vscode\tasks.json (
+    echo Creating .vscode\tasks.json for tasks integration...
+    (
+        echo {
+        echo   "version": "2.0.0",
+        echo   "tasks": [
+        echo     {
+        echo       "label": "Cargo Check Workspace",
+        echo       "type": "cargo",
+        echo       "command": "check",
+        echo       "args": ["--workspace"],
+        echo       "problemMatcher": ["$rustc"],
+        echo       "group": "build"
+        echo     },
+        echo     {
+        echo       "label": "Cargo Clippy Workspace",
+        echo       "type": "cargo",
+        echo       "command": "clippy",
+        echo       "args": ["--workspace"],
+        echo       "problemMatcher": ["$rustc"],
+        echo       "group": "build"
+        echo     },
+        echo     {
+        echo       "label": "Run Tests",
+        echo       "type": "shell",
+        echo       "command": "powershell",
+        echo       "args": [
+        echo         "-ExecutionPolicy",
+        echo         "Bypass",
+        echo         "-File",
+        echo         "${workspaceFolder}/run_tests.ps1"
+        echo       ],
+        echo       "group": "test"
+        echo     }
+        echo   ]
+        echo }
+    ) > .vscode\tasks.json
+)
+
 :: Check if clang or gcc is available in PATH
 where clang >nul 2>nul
 if %ERRORLEVEL% neq 0 (
