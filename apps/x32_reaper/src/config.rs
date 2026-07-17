@@ -275,3 +275,75 @@ impl Config {
         })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Write;
+    use tempfile::NamedTempFile;
+
+    #[test]
+    fn test_config_load_file_not_found() {
+        let result = Config::load("non_existent_file.txt");
+        assert!(result.is_err());
+        assert_eq!(
+            result.unwrap_err().to_string(),
+            "Failed to open config file"
+        );
+    }
+
+    #[test]
+    fn test_config_load_too_large() {
+        let mut file = NamedTempFile::new().unwrap();
+        // Create a file larger than 1MB
+        let buffer = vec![b'x'; 1024 * 1024 + 10];
+        file.write_all(&buffer).unwrap();
+
+        let result = Config::load(file.path());
+        assert!(result.is_err());
+        assert_eq!(
+            result.unwrap_err().to_string(),
+            "Config file too large to load (max 1MB)"
+        );
+    }
+
+    #[test]
+    fn test_config_load_invalid_format() {
+        let mut file = NamedTempFile::new().unwrap();
+        writeln!(file, "invalid format").unwrap();
+
+        let result = Config::load(file.path());
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_config_load_valid() {
+        let mut file = NamedTempFile::new().unwrap();
+        // A valid config
+        let valid_config = "
+800 600 1 10 20 1 2
+192.168.1.100
+192.168.1.101
+8000
+8001
+1 1 1 5 1 1
+1 32 1 16 1 4 1 16 1 8 0
+1 1
+1 1
+1 1
+1 1
+1 1
+1 1
+1 1
+1 1
+1 2 3 4 5
+";
+        write!(file, "{}", valid_config.trim()).unwrap();
+
+        let result = Config::load(file.path());
+        assert!(result.is_ok(), "Expected valid config to parse, got {:?}", result);
+        let config = result.unwrap();
+        assert_eq!(config.verbose, true);
+        assert_eq!(config.x32_ip, "192.168.1.100");
+    }
+}
