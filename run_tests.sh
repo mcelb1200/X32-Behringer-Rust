@@ -130,7 +130,7 @@ detect_x32_connection() {
         if [ ! -f "$emulator_bin" ]; then
             emulator_bin="./target/debug/x32_emulator"
         fi
-        
+
         if [ -f "$emulator_bin" ]; then
             log_message "Non-interactive mode: Starting local background emulator ($emulator_bin)..."
             "$emulator_bin" --ip 127.0.0.1 &
@@ -183,7 +183,7 @@ detect_x32_connection() {
 # --- Non-Interactive Mode ---
 run_all_tests_non_interactive() {
     log_message "Running in non-interactive mode."
-    
+
     # Redefine read to auto-reply in non-interactive mode
     read() {
         echo "[Non-Interactive Auto-Reply]"
@@ -218,7 +218,7 @@ run_all_tests_non_interactive() {
             fi
         fi
     done
-    
+
     if [ "$spawned_emulator" = "true" ] && [ -n "$EMULATOR_PID" ]; then
         log_message "Stopping background x32_emulator..."
         kill "$EMULATOR_PID" &> /dev/null
