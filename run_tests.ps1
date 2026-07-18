@@ -1,3 +1,7 @@
+param (
+    [string]$Mode = ""
+)
+
 # Main PowerShell script for testing X32 Rust binaries
 
 # --- Configuration ---
@@ -48,6 +52,9 @@ function Compile-Binaries {
 $Global:X32Connection = $null
 
 function Detect-X32Connection {
+    param (
+        [bool]$NonInteractive = $false
+    )
     Log-Message "Attempting to detect X32 connection..."
 
     # 1. Check for USB Connection
@@ -64,30 +71,42 @@ function Detect-X32Connection {
 
     # 2. Check for Network Connection (this can be slow)
     Log-Message "Checking for network devices... This may take a few minutes."
-    $ipconfig = Get-NetIPConfiguration | Where-Object { $_.IPv4DefaultGateway -ne $null }
+    $ipconfig = Get-NetIPConfiguration | Where-Object { $_.IPv4Address -ne $null }
     if ($ipconfig) {
         $ipAddress = $ipconfig.IPv4Address.IPAddress
-        $subnet = $ipAddress.Split('.')[0..2] -join '.'
-        for ($i = 1; $i -lt 255; $i++) {
-            $targetIP = "$subnet.$i"
-            Write-Host "Scanning $targetIP..." -NoNewline
-            $test = Test-NetConnection -ComputerName $targetIP -Port 10023 -WarningAction SilentlyContinue -InformationLevel Quiet
-            if ($test.TcpTestSucceeded) {
-                Write-Host " Found X32!"
-                Log-Message "Found X32 at network address: $targetIP"
-                $Global:X32Connection = [PSCustomObject]@{
-                    Type = "Network"
-                    IPAddress = $targetIP
+        # Handle multiple interfaces or single one
+        $ipAddrStr = if ($ipAddress -is [array]) { $ipAddress[0] } else { $ipAddress }
+        if ($ipAddrStr) {
+            $subnet = $ipAddrStr.Split('.')[0..2] -join '.'
+            for ($i = 1; $i -lt 255; $i++) {
+                $targetIP = "$subnet.$i"
+                Write-Host "Scanning $targetIP..." -NoNewline
+                $test = Test-NetConnection -ComputerName $targetIP -Port 10023 -WarningAction SilentlyContinue -InformationLevel Quiet
+                if ($test.TcpTestSucceeded) {
+                    Write-Host " Found X32!"
+                    Log-Message "Found X32 at network address: $targetIP"
+                    $Global:X32Connection = [PSCustomObject]@{
+                        Type = "Network"
+                        IPAddress = $targetIP
+                    }
+                    return
+                } else {
+                     Write-Host ""
                 }
-                return
-            } else {
-                 Write-Host ""
             }
         }
     }
 
     # 3. Prompt user if auto-detection fails
     Log-Message "Could not auto-detect X32 connection."
+    if ($NonInteractive) {
+        Log-Message "Non-interactive mode: Skipping user prompt and defaulting to no connection."
+        $Global:X32Connection = [PSCustomObject]@{
+            Type = "None"
+            IPAddress = $null
+        }
+        return
+    }
     while ($true) {
         Clear-Host
         Write-Host "Could not automatically detect the X32."
@@ -141,6 +160,27 @@ Get-ChildItem -Path ".\tests" -Filter "*.test.ps1" | ForEach-Object {
     $TestModules[$moduleName] = $_.FullName
 }
 
+# --- Non-Interactive Mode ---
+function Run-AllTestsNonInteractive {
+    Log-Message "Running in non-interactive mode."
+    Detect-X32Connection -NonInteractive $true
+    
+    Log-Message "Compiling all binaries..."
+    if (-not (Compile-Binaries)) {
+        Log-Message "ERROR: Compilation failed. Aborting tests."
+        exit 1
+    }
+
+    Log-Message "Running all tests..."
+    foreach ($module in $TestModules.GetEnumerator()) {
+        . $module.Value
+        $testFunctionName = "Test-$($module.Name)"
+        Invoke-Expression -Command $testFunctionName
+    }
+    Log-Message "All tests finished."
+    exit 0
+}
+
 # --- Main Menu (TUI) ---
 function Show-MainMenu {
     Clear-Host
@@ -157,6 +197,10 @@ function Show-MainMenu {
 }
 
 # --- Main Loop ---
+if ($Mode -eq "non_interactive" -or $Mode -eq "--run-tests-and-exit" -or $Mode -eq "noninteractive") {
+    Run-AllTestsNonInteractive
+}
+
 while ($true) {
     $choice = Show-MainMenu
     switch ($choice) {

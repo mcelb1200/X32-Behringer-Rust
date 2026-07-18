@@ -46,7 +46,9 @@ if not exist .vscode\settings.json (
         echo   "[rust]": {
         echo     "editor.defaultFormatter": "rust-lang.rust-analyzer",
         echo     "editor.formatOnSave": true
-        echo   }
+        echo   },
+        echo   "// rust-analyzer.testExplorer.runType": "cargo-nextest",
+        echo   "// rust-analyzer.testExplorer.coverageType": "cargo-llvm-cov"
         echo }
     ) > .vscode\settings.json
 )
@@ -58,18 +60,16 @@ if not exist .vscode\tasks.json (
         echo   "tasks": [
         echo     {
         echo       "label": "Cargo Check Workspace",
-        echo       "type": "cargo",
-        echo       "command": "check",
-        echo       "args": ["--workspace"],
-        echo       "problemMatcher": ["$rustc"],
+        echo       "type": "shell",
+        echo       "command": "cargo check --workspace",
+        echo       "problemMatcher": ["$rustc-json"],
         echo       "group": "build"
         echo     },
         echo     {
         echo       "label": "Cargo Clippy Workspace",
-        echo       "type": "cargo",
-        echo       "command": "clippy",
-        echo       "args": ["--workspace"],
-        echo       "problemMatcher": ["$rustc"],
+        echo       "type": "shell",
+        echo       "command": "cargo clippy --workspace",
+        echo       "problemMatcher": ["$rustc-json"],
         echo       "group": "build"
         echo     },
         echo     {
@@ -80,9 +80,14 @@ if not exist .vscode\tasks.json (
         echo         "-ExecutionPolicy",
         echo         "Bypass",
         echo         "-File",
-        echo         "${workspaceFolder}/run_tests.ps1"
+        echo         "${workspaceFolder}/run_tests.ps1",
+        echo         "-Mode",
+        echo         "non_interactive"
         echo       ],
-        echo       "group": "test"
+        echo       "group": {
+        echo         "kind": "test",
+        echo         "isDefault": true
+        echo       }
         echo     }
         echo   ]
         echo }
