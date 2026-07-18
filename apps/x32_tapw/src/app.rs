@@ -169,6 +169,23 @@ mod tests {
     }
 
     #[test]
+    fn test_log() {
+        let mut app = AppState::new();
+
+        app.log("first log".to_string());
+        assert_eq!(app.logs.len(), 1);
+        assert_eq!(app.logs[0], "first log");
+
+        for i in 0..101 {
+            app.log(format!("log {}", i));
+        }
+
+        assert_eq!(app.logs.len(), 100);
+        assert_eq!(app.logs[0], "log 1");
+        assert_eq!(app.logs[99], "log 100");
+    }
+
+    #[test]
     fn test_process_meter_data() {
         let mut app = AppState::new();
         app.threshold = 0.5;

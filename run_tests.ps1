@@ -91,6 +91,30 @@ function Detect-X32Connection {
 
     # 3. Prompt user if auto-detection fails
     Log-Message "Could not auto-detect X32 connection."
+    if ($NonInteractive) {
+        $emulatorPath = ".\target\release\x32_emulator.exe"
+        if (-not (Test-Path $emulatorPath)) {
+            $emulatorPath = ".\target\debug\x32_emulator.exe"
+        }
+
+        if (Test-Path $emulatorPath) {
+            Log-Message "Non-interactive mode: Starting local background emulator ($emulatorPath)..."
+            $Global:EmulatorProcess = Start-Process -FilePath $emulatorPath -ArgumentList "--ip", "127.0.0.1" -PassThru -NoNewWindow
+            Start-Sleep -Seconds 1
+            $Global:X32Connection = [PSCustomObject]@{
+                Type = "Network"
+                IPAddress = "127.0.0.1"
+            }
+            return
+        } else {
+            Log-Message "Warning: x32_emulator binary not found. Skipping user prompt and defaulting to no connection."
+            $Global:X32Connection = [PSCustomObject]@{
+                Type = "None"
+                IPAddress = $null
+            }
+            return
+        }
+    }
     while ($true) {
         Clear-Host
         Write-Host "Could not automatically detect the X32."
@@ -142,6 +166,57 @@ $TestModules = @{}
 Get-ChildItem -Path ".\tests" -Filter "*.test.ps1" | ForEach-Object {
     $moduleName = $_.BaseName.Split('.')[0]
     $TestModules[$moduleName] = $_.FullName
+}
+
+# --- Non-Interactive Mode ---
+function Run-AllTestsNonInteractive {
+    Log-Message "Running in non-interactive mode."
+    $Global:NonInteractive = $true
+
+    # Redefine Read-Host to auto-reply in non-interactive mode
+    function global:Read-Host {
+        param([string]$Prompt)
+        Log-Message "[Non-Interactive Auto-Reply]"
+        if ($Prompt -like "*y/n*" -or $Prompt -like "*succeed*") {
+            return 'y'
+        }
+        return ''
+    }
+
+    if (-not $SkipBuild) {
+        Log-Message "Compiling all binaries..."
+        if (-not (Compile-Binaries)) {
+            Log-Message "ERROR: Compilation failed. Aborting tests."
+            exit 1
+        }
+    } else {
+        Log-Message "Skipping compilation step as requested (-SkipBuild)."
+    }
+
+    Detect-X32Connection -NonInteractive $true
+
+    try {
+        Log-Message "Running all tests..."
+        foreach ($module in $TestModules.GetEnumerator()) {
+            . $module.Value
+            $fileContent = Get-Content $module.Value -Raw
+            if ($fileContent -match 'function\s+(Test-[\w_-]+)') {
+                $testFunctionName = $Matches[1]
+                Invoke-Expression -Command $testFunctionName
+            } else {
+                Log-Message "Warning: Could not find Test- function in $($module.Name)"
+            }
+        }
+    } finally {
+        # Restore Read-Host
+        Remove-Item -Path function:Read-Host -ErrorAction SilentlyContinue
+        if ($Global:EmulatorProcess) {
+            Log-Message "Stopping background x32_emulator..."
+            Stop-Process -Id $Global:EmulatorProcess.Id -Force -ErrorAction SilentlyContinue
+        }
+    }
+    Log-Message "All tests finished."
+    exit 0
 }
 
 # --- Main Menu (TUI) ---

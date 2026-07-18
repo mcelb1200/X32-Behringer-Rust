@@ -121,6 +121,29 @@ detect_x32_connection() {
 
     # 3. Prompt user if auto-detection fails
     log_message "Could not auto-detect X32 connection."
+
+    if [ "$non_interactive_mode" = "true" ]; then
+        local emulator_bin="./target/release/x32_emulator"
+        if [ ! -f "$emulator_bin" ]; then
+            emulator_bin="./target/debug/x32_emulator"
+        fi
+
+        if [ -f "$emulator_bin" ]; then
+            log_message "Non-interactive mode: Starting local background emulator ($emulator_bin)..."
+            "$emulator_bin" --ip 127.0.0.1 &
+            EMULATOR_PID=$!
+            spawned_emulator=true
+            sleep 1
+            X32_CONNECTION_TYPE="Network"
+            X32_IP_ADDRESS="127.0.0.1"
+            return
+        else
+            log_message "Warning: x32_emulator binary not found. Skipping user prompt and defaulting to no connection."
+            X32_CONNECTION_TYPE="None"
+            X32_IP_ADDRESS=""
+            return
+        fi
+    fi
     echo "Could not automatically detect the X32."
     echo "Please select the connection method:"
     echo "1. Network"
@@ -153,6 +176,62 @@ detect_x32_connection() {
 }
 
 
+# --- Non-Interactive Mode ---
+run_all_tests_non_interactive() {
+    log_message "Running in non-interactive mode."
+
+    # Redefine read to auto-reply in non-interactive mode
+    read() {
+        echo "[Non-Interactive Auto-Reply]"
+        local last_arg="${!#}"
+        if [[ ! "$last_arg" =~ ^- ]]; then
+            eval "$last_arg='y'"
+        fi
+    }
+
+    if [ "$SKIP_BUILD" = "false" ]; then
+        log_message "Compiling all binaries..."
+        compile_binaries
+        if [ $? -ne 0 ]; then
+            log_message "ERROR: Compilation failed. Aborting tests."
+            unset -f read
+            exit 1
+        fi
+    else
+        log_message "Skipping compilation step as requested (--skip-build)."
+    fi
+
+    detect_x32_connection true
+
+    log_message "Running all tests..."
+    local test_failed=false
+    for test_file in tests_sh/*.test.sh; do
+        if [ -f "$test_file" ]; then
+            source "$test_file"
+            local test_function_name=$(basename "$test_file" .test.sh | tr '-' '_')
+            if ! "test_$test_function_name"; then
+                test_failed=true
+            fi
+        fi
+    done
+
+    if [ "$spawned_emulator" = "true" ] && [ -n "$EMULATOR_PID" ]; then
+        log_message "Stopping background x32_emulator..."
+        kill "$EMULATOR_PID" &> /dev/null
+    fi
+
+    unset -f read
+
+    if [ "$test_failed" = "true" ]; then
+        log_message "ERROR: Some tests failed."
+        exit 1
+    fi
+
+    log_message "All tests finished."
+    exit 0
+}
+
+
 # --- Main Menu (TUI) ---
 show_main_menu() {
     clear
@@ -169,6 +248,16 @@ show_main_menu() {
 }
 
 # --- Main Loop ---
+
+SKIP_BUILD=false
+spawned_emulator=false
+EMULATOR_PID=""
+
+for arg in "$@"; do
+    if [ "$arg" == "--skip-build" ]; then
+        SKIP_BUILD=true
+    fi
+done
 
 # Check for non-interactive flag
 if [ "$1" == "--coverage" ]; then
