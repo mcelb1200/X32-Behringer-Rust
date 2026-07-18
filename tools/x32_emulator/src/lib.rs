@@ -64,9 +64,10 @@ pub mod server {
                 },
                 Err(ref e)
                     if e.kind() == std::io::ErrorKind::WouldBlock
-                        || e.kind() == std::io::ErrorKind::TimedOut =>
+                        || e.kind() == std::io::ErrorKind::TimedOut
+                        || e.kind() == std::io::ErrorKind::ConnectionReset =>
                 {
-                    // No data received, continue
+                    // No data received or connection reset (Windows client disconnect), continue
                 }
                 Err(e) => {
                     eprintln!("Error receiving data: {}", e);

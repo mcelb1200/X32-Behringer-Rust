@@ -92,11 +92,8 @@ impl AppState {
     pub fn parse_meter_blob(data: &[u8]) -> Option<f32> {
         if data.len() >= 16 {
             let mut f_bytes = [0u8; 4];
-            if let Some(slice) = data.get(12..16) {
-                f_bytes.copy_from_slice(slice);
-            } else {
-                return None;
-            }
+            let slice = data.get(12..16)?;
+            f_bytes.copy_from_slice(slice);
             Some(f32::from_le_bytes(f_bytes))
         } else {
             None
@@ -164,13 +161,41 @@ mod tests {
 
     #[test]
     fn test_parse_meter_blob() {
+        // Happy path: exactly 16 bytes
         let mut blob = vec![0u8; 16];
         let level = 0.75f32;
         blob[12..16].copy_from_slice(&level.to_le_bytes());
         assert_eq!(AppState::parse_meter_blob(&blob), Some(0.75));
 
+        // Negative float value
+        let mut neg_blob = vec![0u8; 16];
+        let neg_level = -1.25f32;
+        neg_blob[12..16].copy_from_slice(&neg_level.to_le_bytes());
+        assert_eq!(AppState::parse_meter_blob(&neg_blob), Some(-1.25));
+
+        // Exact zero value
+        let mut zero_blob = vec![0u8; 16];
+        let zero_level = 0.0f32;
+        zero_blob[12..16].copy_from_slice(&zero_level.to_le_bytes());
+        assert_eq!(AppState::parse_meter_blob(&zero_blob), Some(0.0));
+
+        // Blob length > 16 bytes (safely ignores extra bytes)
+        let mut long_blob = vec![0u8; 20];
+        let long_level = 2.5f32;
+        long_blob[12..16].copy_from_slice(&long_level.to_le_bytes());
+        assert_eq!(AppState::parse_meter_blob(&long_blob), Some(2.5));
+
+        // Short blob (10 bytes)
         let short_blob = vec![0u8; 10];
         assert_eq!(AppState::parse_meter_blob(&short_blob), None);
+
+        // Off-by-one case: exactly 15 bytes
+        let off_by_one_blob = vec![0u8; 15];
+        assert_eq!(AppState::parse_meter_blob(&off_by_one_blob), None);
+
+        // Empty blob
+        let empty_blob: Vec<u8> = vec![];
+        assert_eq!(AppState::parse_meter_blob(&empty_blob), None);
     }
 
     #[test]
