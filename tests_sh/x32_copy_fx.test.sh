@@ -71,8 +71,8 @@ test_x32_copy_fx() {
 
     read -p "Press Enter to run the reset command with the custom file..."
 
-    log_message "Running: x32_copy_fx --from 1 reset --defaults-file $defaults_file"
-    "$binary_path" --ip "$ip" --from 1 reset --defaults-file "$defaults_file"
+    log_message "Running: x32_copy_fx --from 1 --defaults-file $defaults_file reset"
+    "$binary_path" --ip "$ip" --from 1 --defaults-file "$defaults_file" reset
 
     echo "VERIFY: Please check if the 'Decay' time in FX slot 1 is now set to the maximum possible value (10.0s)."
     read -p "Did the custom reset succeed? (y/n) " result3

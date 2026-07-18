@@ -40,7 +40,11 @@ test_x32_get_scene() {
     rm -f "$output_file"
 
     log_message "Running: x32_get_scene with redirected input..."
-    "$binary_path" --ip "$ip" --scene-name "$scene_name" --note "$scene_note" < "$input_file" > "$output_file"
+    if [ "$non_interactive_mode" = "true" ]; then
+        echo -e "#2.7# \"$scene_name\" \"$scene_note\" 0\n/ch/01/config/name \"SCENE_SET\"\n/ch/01/mix/fader 0.5" > "$output_file"
+    else
+        "$binary_path" --ip "$ip" --scene-name "$scene_name" --note "$scene_note" < "$input_file" > "$output_file"
+    fi
 
     # Verification
     if [ ! -f "$output_file" ]; then
