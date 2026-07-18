@@ -220,22 +220,20 @@ async fn run_app<B: Backend>(
                                 let status = if app_state.is_auto { "Auto" } else { "Manual" };
                                 app_state.log(format!("Switched to {} mode", status));
                             }
-                            KeyCode::Enter => {
+                            KeyCode::Enter if !app_state.is_auto => {
                                 // Manual tap
-                                if !app_state.is_auto {
-                                    let now = Instant::now();
-                                    if let Some(f_val) = app_state.handle_manual_tap(now) {
-                                        let delay_ms = app_state.current_delay_ms.unwrap_or(0);
-                                        app_state.log(format!("Tapped: {}ms", delay_ms));
+                                let now = Instant::now();
+                                if let Some(f_val) = app_state.handle_manual_tap(now) {
+                                    let delay_ms = app_state.current_delay_ms.unwrap_or(0);
+                                    app_state.log(format!("Tapped: {}ms", delay_ms));
 
-                                        let slot = app_state.slot;
-                                        let address = format!("/fx/{}/par/02", slot);
-                                        let msg =
-                                            OscMessage::new(address, vec![OscArg::Float(f_val)]);
-                                        let _ = tx.try_send(msg);
-                                    } else {
-                                        app_state.log("First tap...".to_string());
-                                    }
+                                    let slot = app_state.slot;
+                                    let address = format!("/fx/{}/par/02", slot);
+                                    let msg =
+                                        OscMessage::new(address, vec![OscArg::Float(f_val)]);
+                                    let _ = tx.try_send(msg);
+                                } else {
+                                    app_state.log("First tap...".to_string());
                                 }
                             }
                             _ => {}
