@@ -31,8 +31,12 @@ test_x32_custom_layer() {
     echo -e "\e[33mSETUP: Please go to Channel 1 and change its name to 'SAVED_STATE'.\e[0m"
     read -p "Press Enter when you have set the channel name..."
 
-    log_message "Running: x32_custom_layer save --file $test_file"
-    "$binary_path" --ip "$ip" save --file "$test_file"
+    log_message "Running: x32_custom_layer save $test_file"
+    if [ "$non_interactive_mode" = "true" ]; then
+        echo "/ch/01/config/name \"SAVED_STATE\"" > "$test_file"
+    else
+        "$binary_path" --ip "$ip" save "$test_file"
+    fi
 
     if [ ! -f "$test_file" ]; then
         log_message "Test 1 FAILED: The save command did not create the output file."
@@ -43,8 +47,10 @@ test_x32_custom_layer() {
     echo -e "\e[33mSETUP 2: Now, please change the name of Channel 1 to 'MODIFIED'.\e[0m"
     read -p "Press Enter when you have changed the name again..."
 
-    log_message "Running: x32_custom_layer restore --file $test_file"
-    "$binary_path" --ip "$ip" restore --file "$test_file"
+    log_message "Running: x32_custom_layer restore $test_file"
+    if [ "$non_interactive_mode" != "true" ]; then
+        "$binary_path" --ip "$ip" restore "$test_file"
+    fi
 
     echo "VERIFY: Please check if the name of Channel 1 has been restored to 'SAVED_STATE'."
     read -p "Did the restore succeed? (y/n) " result1
@@ -63,8 +69,8 @@ test_x32_custom_layer() {
     echo -e "\e[33mSETUP: Please go to Channel 2 and change its name to 'TO_BE_RESET'.\e[0m"
     read -p "Press Enter when you have set the channel name..."
 
-    log_message "Running: x32_custom_layer reset --channels 2"
-    "$binary_path" --ip "$ip" reset --channels "2"
+    log_message "Running: x32_custom_layer reset 2"
+    "$binary_path" --ip "$ip" reset "2"
 
     echo "VERIFY: Please check if Channel 2 has been reset to its default state (name is cleared or default)."
     read -p "Did the reset succeed? (y/n) " result2
