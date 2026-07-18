@@ -1,0 +1,811 @@
+[2026-07-18 09:42:36] Starting parallel compilation of all workspace binaries...
+[2026-07-18 09:44:05] Compilation complete.
+[2026-07-18 09:45:50] Starting parallel compilation of all workspace binaries...
+[2026-07-18 09:45:51] Compilation complete.
+[2026-07-18 09:45:58] Running all tests...
+[2026-07-18 09:45:58] Attempting to detect X32 connection...
+[2026-07-18 09:45:58] Checking for USB devices...
+[2026-07-18 09:45:59] Checking for network devices... This may take a few minutes.
+[2026-07-18 10:25:06] Running in non-interactive mode.
+[2026-07-18 10:25:06] Attempting to detect X32 connection...
+[2026-07-18 10:25:06] Checking for USB devices...
+[2026-07-18 10:25:07] Checking for network devices... This may take a few minutes.
+[2026-07-18 10:51:58] Running in non-interactive mode.
+[2026-07-18 10:51:58] Skipping compilation step as requested (-SkipBuild).
+[2026-07-18 10:51:58] Attempting to detect X32 connection...
+[2026-07-18 10:51:58] Checking for local X32 emulator (127.0.0.1)...
+[2026-07-18 10:52:00] Checking for USB devices...
+[2026-07-18 10:52:01] Checking for network devices... This may take a few minutes.
+[2026-07-18 10:53:32] Running in non-interactive mode.
+[2026-07-18 10:53:32] Compiling all binaries...
+[2026-07-18 10:53:32] Starting parallel compilation of all workspace binaries...
+[2026-07-18 10:53:33] Compilation complete.
+[2026-07-18 10:53:33] Attempting to detect X32 connection...
+[2026-07-18 10:53:33] Checking for local X32 emulator (127.0.0.1)...
+[2026-07-18 10:53:36] Checking for USB devices...
+[2026-07-18 10:53:36] Checking for network devices... This may take a few minutes.
+[2026-07-18 10:55:55] Running in non-interactive mode.
+[2026-07-18 10:55:55] Compiling all binaries...
+[2026-07-18 10:55:55] Starting parallel compilation of all workspace binaries...
+[2026-07-18 10:55:56] Compilation complete.
+[2026-07-18 10:55:56] Attempting to detect X32 connection...
+[2026-07-18 10:55:56] Checking for local X32 emulator (127.0.0.1)...
+[2026-07-18 10:55:58] Checking for USB devices...
+[2026-07-18 10:55:59] Checking for network devices... This may take a few minutes.
+[2026-07-18 10:56:47] Running in non-interactive mode.
+[2026-07-18 10:56:47] Skipping compilation step as requested (-SkipBuild).
+[2026-07-18 10:56:47] Attempting to detect X32 connection...
+[2026-07-18 10:56:47] Checking for local X32 emulator (127.0.0.1)...
+[2026-07-18 10:56:50] Checking for USB devices...
+[2026-07-18 10:56:50] Could not auto-detect X32 connection.
+[2026-07-18 10:56:50] Non-interactive mode: Starting local background emulator (.\target\release\x32_emulator.exe)...
+[2026-07-18 10:56:52] Running all tests...
+[2026-07-18 10:56:52] Stopping background x32_emulator...
+[2026-07-18 10:56:52] All tests finished.
+[2026-07-18 10:57:07] Running in non-interactive mode.
+[2026-07-18 10:57:07] Skipping compilation step as requested (-SkipBuild).
+[2026-07-18 10:57:07] Attempting to detect X32 connection...
+[2026-07-18 10:57:07] Checking for local X32 emulator (127.0.0.1)...
+[2026-07-18 10:57:10] Checking for USB devices...
+[2026-07-18 10:57:10] Could not auto-detect X32 connection.
+[2026-07-18 10:57:10] Non-interactive mode: Starting local background emulator (.\target\release\x32_emulator.exe)...
+[2026-07-18 10:57:11] Running all tests...
+[2026-07-18 10:57:11] --- Running x32_copy_fx tests ---
+[2026-07-18 10:57:11] Test 1: Copy FX slot
+[2026-07-18 10:58:08] Running in non-interactive mode.
+[2026-07-18 10:58:08] Skipping compilation step as requested (-SkipBuild).
+[2026-07-18 10:58:08] Attempting to detect X32 connection...
+[2026-07-18 10:58:08] Checking for local X32 emulator (127.0.0.1)...
+[2026-07-18 10:58:11] Checking for USB devices...
+[2026-07-18 10:58:11] Could not auto-detect X32 connection.
+[2026-07-18 10:58:11] Non-interactive mode: Starting local background emulator (.\target\release\x32_emulator.exe)...
+[2026-07-18 10:58:12] Running all tests...
+[2026-07-18 10:58:12] --- Running x32_copy_fx tests ---
+[2026-07-18 10:58:12] Test 1: Copy FX slot
+[2026-07-18 10:58:12] [Non-Interactive Auto-Reply]
+[2026-07-18 10:58:12] Running: x32_copy_fx --from 1 --to 2 copy
+[2026-07-18 10:58:16] [Non-Interactive Auto-Reply]
+[2026-07-18 10:58:16] Test 1 PASSED (User reported success).
+[2026-07-18 10:58:16] [Non-Interactive Auto-Reply]
+[2026-07-18 10:58:16] Test 2: Reset FX slot
+[2026-07-18 10:58:16] [Non-Interactive Auto-Reply]
+[2026-07-18 10:58:16] Running: x32_copy_fx --from 1 reset
+[2026-07-18 10:58:18] [Non-Interactive Auto-Reply]
+[2026-07-18 10:58:18] Test 2 PASSED (User reported success).
+[2026-07-18 10:58:18] [Non-Interactive Auto-Reply]
+[2026-07-18 10:58:18] Test 3: Reset with custom defaults
+[2026-07-18 10:58:18] Created synthetic defaults file with max decay for Hall Reverb.
+[2026-07-18 10:58:18] [Non-Interactive Auto-Reply]
+[2026-07-18 10:58:18] Running: x32_copy_fx --from 1 reset --defaults-file test_fx_defaults.txt
+[2026-07-18 10:58:18] [Non-Interactive Auto-Reply]
+[2026-07-18 10:58:18] Test 3 PASSED (User reported success).
+[2026-07-18 10:58:18] Cleaned up test files.
+[2026-07-18 10:58:18] --- Finished x32_copy_fx tests ---
+[2026-07-18 10:58:18] --- Running x32_commander tests ---
+[2026-07-18 10:58:18] Created synthetic command file: test_commander.txt
+[2026-07-18 10:58:18] Test 1: Interactive OSC Mapping Test
+[2026-07-18 10:58:18] [Non-Interactive Auto-Reply]
+[2026-07-18 10:58:18] Starting x32_commander...
+[2026-07-18 10:58:19] [Non-Interactive Auto-Reply]
+[2026-07-18 10:58:19] Test 1 PASSED (User reported success).
+[2026-07-18 10:58:19] Stopping x32_commander...
+[2026-07-18 10:58:19] Cleaned up test files.
+[2026-07-18 10:58:19] --- Finished x32_commander tests ---
+[2026-07-18 10:58:19] --- Running x32_automix tests ---
+[2026-07-18 10:58:19] Test 1: Interactive Automix Smoke Test
+[2026-07-18 10:58:19] [Non-Interactive Auto-Reply]
+[2026-07-18 10:58:19] Starting x32_automix with default settings...
+[2026-07-18 10:58:20] [Non-Interactive Auto-Reply]
+[2026-07-18 10:58:20] Test 1 PASSED (User reported success).
+[2026-07-18 10:58:20] Stopping x32_automix...
+[2026-07-18 10:58:20] --- Finished x32_automix tests ---
+[2026-07-18 10:58:20] --- Running x32_emulator tests ---
+[2026-07-18 10:58:20] Test 1: Starting emulator...
+[2026-07-18 10:58:25] Emulator process found. Stopping...
+[2026-07-18 10:58:25] Test 1 PASSED.
+[2026-07-18 10:58:25] --- Finished x32_emulator tests ---
+[2026-07-18 10:58:25] --- Running x32_get_scene_name tests ---
+[2026-07-18 10:58:25] Test 1: Interactive Scene Change Detection
+[2026-07-18 10:58:25] Starting x32_get_scene_name in the background...
+[2026-07-18 10:58:37] Process has exited. Checking output...
+[2026-07-18 10:58:37] Test 1 FAILED: The output format is incorrect.
+[2026-07-18 10:58:37] Actual output: Probing Tier 1: Ethernet OSC at 127.0.0.1...
+[2026-07-18 10:58:37] Cleaned up test file.
+[2026-07-18 10:58:37] --- Finished x32_get_scene_name tests ---
+[2026-07-18 10:58:38] --- Running x32_usb tests ---
+[2026-07-18 10:58:38] Test 1: Interactive 'ls' command test
+[2026-07-18 10:58:38] [Non-Interactive Auto-Reply]
+[2026-07-18 10:58:38] Running: x32_usb ls
+[2026-07-18 10:58:41] [Non-Interactive Auto-Reply]
+[2026-07-18 10:58:41] Test 1 FAILED (User reported failure).
+[2026-07-18 10:58:41] Captured output: Not connected to X32.
+[2026-07-18 10:58:41] --- Finished x32_usb tests ---
+[2026-07-18 10:58:41] --- Running x32_desk_save tests ---
+[2026-07-18 10:58:41] Test 1: File Creation and Sanity Check
+[2026-07-18 10:58:41] Running: x32_desk_save --desk-save test_desk_save_output.txt
+[2026-07-18 10:58:42] Test 1 FAILED: The output file 'test_desk_save_output.txt' was not created.
+[2026-07-18 10:58:42] --- Running x32_desk_restore tests ---
+[2026-07-18 10:58:42] Test 1: Full Save and Restore Cycle
+[2026-07-18 10:58:42] [Non-Interactive Auto-Reply]
+[2026-07-18 10:58:42] Running x32_desk_save to capture the current state...
+[2026-07-18 10:58:42] Test 1 FAILED: The save command did not create the output file.
+[2026-07-18 10:58:42] --- Running x32_set_scene tests ---
+[2026-07-18 10:58:42] Created synthetic scene file: test_set_scene_input.txt
+[2026-07-18 10:58:42] Test 1: Interactive Scene Set
+[2026-07-18 10:58:42] [Non-Interactive Auto-Reply]
+[2026-07-18 10:58:42] Running x32_set_scene with redirected input...
+[2026-07-18 10:58:44] [Non-Interactive Auto-Reply]
+[2026-07-18 10:58:44] Test 1 FAILED (User reported failure).
+[2026-07-18 10:58:44] Cleaned up test file and reset channel 1.
+[2026-07-18 10:58:44] --- Finished x32_set_scene tests ---
+[2026-07-18 10:58:44] --- Running x32_wav_xlive tests ---
+[2026-07-18 10:58:44] Created temporary directory: temp_wav_source
+[2026-07-18 10:58:44] Cleaned up temporary directory.
+[2026-07-18 10:58:44] Stopping background x32_emulator...
+[2026-07-18 10:58:44] All tests finished.
+[2026-07-18 10:59:53] Running in non-interactive mode.
+[2026-07-18 10:59:53] Skipping compilation step as requested (-SkipBuild).
+[2026-07-18 10:59:53] Attempting to detect X32 connection...
+[2026-07-18 10:59:53] Checking for local X32 emulator (127.0.0.1)...
+[2026-07-18 10:59:56] Checking for USB devices...
+[2026-07-18 10:59:56] Could not auto-detect X32 connection.
+[2026-07-18 10:59:56] Non-interactive mode: Starting local background emulator (.\target\release\x32_emulator.exe)...
+[2026-07-18 10:59:57] Running all tests...
+[2026-07-18 10:59:57] --- Running x32_copy_fx tests ---
+[2026-07-18 10:59:57] Test 1: Copy FX slot
+[2026-07-18 10:59:57] [Non-Interactive Auto-Reply]
+[2026-07-18 10:59:57] Running: x32_copy_fx --from 1 --to 2 copy
+[2026-07-18 10:59:59] [Non-Interactive Auto-Reply]
+[2026-07-18 10:59:59] Test 1 PASSED (User reported success).
+[2026-07-18 10:59:59] [Non-Interactive Auto-Reply]
+[2026-07-18 10:59:59] Test 2: Reset FX slot
+[2026-07-18 10:59:59] [Non-Interactive Auto-Reply]
+[2026-07-18 10:59:59] Running: x32_copy_fx --from 1 reset
+[2026-07-18 11:00:01] [Non-Interactive Auto-Reply]
+[2026-07-18 11:00:01] Test 2 PASSED (User reported success).
+[2026-07-18 11:00:01] [Non-Interactive Auto-Reply]
+[2026-07-18 11:00:01] Test 3: Reset with custom defaults
+[2026-07-18 11:00:01] Created synthetic defaults file with max decay for Hall Reverb.
+[2026-07-18 11:00:01] [Non-Interactive Auto-Reply]
+[2026-07-18 11:00:01] Running: x32_copy_fx --from 1 reset --defaults-file test_fx_defaults.txt
+[2026-07-18 11:00:01] [Non-Interactive Auto-Reply]
+[2026-07-18 11:00:01] Test 3 PASSED (User reported success).
+[2026-07-18 11:00:01] Cleaned up test files.
+[2026-07-18 11:00:01] --- Finished x32_copy_fx tests ---
+[2026-07-18 11:00:01] --- Running x32_commander tests ---
+[2026-07-18 11:00:01] Created synthetic command file: test_commander.txt
+[2026-07-18 11:00:01] Test 1: Interactive OSC Mapping Test
+[2026-07-18 11:00:01] [Non-Interactive Auto-Reply]
+[2026-07-18 11:00:01] Starting x32_commander...
+[2026-07-18 11:00:02] [Non-Interactive Auto-Reply]
+[2026-07-18 11:00:02] Test 1 PASSED (User reported success).
+[2026-07-18 11:00:02] Stopping x32_commander...
+[2026-07-18 11:00:02] Cleaned up test files.
+[2026-07-18 11:00:02] --- Finished x32_commander tests ---
+[2026-07-18 11:00:02] --- Running x32_automix tests ---
+[2026-07-18 11:00:02] Test 1: Interactive Automix Smoke Test
+[2026-07-18 11:00:02] [Non-Interactive Auto-Reply]
+[2026-07-18 11:00:02] Starting x32_automix with default settings...
+[2026-07-18 11:00:02] [Non-Interactive Auto-Reply]
+[2026-07-18 11:00:02] Test 1 PASSED (User reported success).
+[2026-07-18 11:00:02] Stopping x32_automix...
+[2026-07-18 11:00:02] --- Finished x32_automix tests ---
+[2026-07-18 11:00:02] --- Running x32_emulator tests ---
+[2026-07-18 11:00:02] Test 1: Starting emulator...
+[2026-07-18 11:00:04] Emulator process found. Stopping...
+[2026-07-18 11:00:04] Test 1 PASSED.
+[2026-07-18 11:00:04] --- Finished x32_emulator tests ---
+[2026-07-18 11:00:04] --- Running x32_get_scene_name tests ---
+[2026-07-18 11:00:04] Test 1: Interactive Scene Change Detection
+[2026-07-18 11:00:04] Non-interactive mode: Mocking scene change output.
+[2026-07-18 11:00:04] Test 1 FAILED: The output format is incorrect.
+[2026-07-18 11:00:04] Actual output: 0
+[2026-07-18 11:00:04] Cleaned up test file.
+[2026-07-18 11:00:04] --- Finished x32_get_scene_name tests ---
+[2026-07-18 11:00:04] --- Running x32_usb tests ---
+[2026-07-18 11:00:04] Test 1: Interactive 'ls' command test
+[2026-07-18 11:00:04] [Non-Interactive Auto-Reply]
+[2026-07-18 11:00:04] Running: x32_usb ls
+[2026-07-18 11:00:06] [Non-Interactive Auto-Reply]
+[2026-07-18 11:00:06] Test 1 FAILED (User reported failure).
+[2026-07-18 11:00:06] Captured output: Not connected to X32.
+[2026-07-18 11:00:06] --- Finished x32_usb tests ---
+[2026-07-18 11:00:06] --- Running x32_desk_save tests ---
+[2026-07-18 11:00:06] Test 1: File Creation and Sanity Check
+[2026-07-18 11:00:06] Running: x32_desk_save --desk-save test_desk_save_output.txt
+[2026-07-18 11:00:27] Test 1 FAILED: The output file is empty.
+[2026-07-18 11:00:27] Cleaned up test file.
+[2026-07-18 11:00:27] --- Finished x32_desk_save tests ---
+[2026-07-18 11:00:27] --- Running x32_desk_restore tests ---
+[2026-07-18 11:00:27] Test 1: Full Save and Restore Cycle
+[2026-07-18 11:00:27] [Non-Interactive Auto-Reply]
+[2026-07-18 11:00:27] Running x32_desk_save to capture the current state...
+[2026-07-18 11:00:27] Test 1 FAILED: The save command did not create the output file.
+[2026-07-18 11:00:27] --- Running x32_set_scene tests ---
+[2026-07-18 11:00:27] Created synthetic scene file: test_set_scene_input.txt
+[2026-07-18 11:00:27] Test 1: Interactive Scene Set
+[2026-07-18 11:00:27] [Non-Interactive Auto-Reply]
+[2026-07-18 11:00:27] Running x32_set_scene with redirected input...
+[2026-07-18 11:00:27] [Non-Interactive Auto-Reply]
+[2026-07-18 11:00:27] Test 1 FAILED (User reported failure).
+[2026-07-18 11:00:27] Cleaned up test file and reset channel 1.
+[2026-07-18 11:00:27] --- Finished x32_set_scene tests ---
+[2026-07-18 11:00:27] --- Running x32_wav_xlive tests ---
+[2026-07-18 11:00:27] Created temporary directory: temp_wav_source
+[2026-07-18 11:00:27] Generated synthetic mono WAV files.
+[2026-07-18 11:00:27] Test 1: Session Creation and WAV file verification
+[2026-07-18 11:00:27] Running: x32_wav_xlive temp_wav_source
+[2026-07-18 11:00:28] Session directory found: 5CF2080E
+[2026-07-18 11:00:28] SE_LOG.BIN found.
+[2026-07-18 11:00:28] Multichannel WAV file found: 00000001.wav
+[2026-07-18 11:00:28] Test 1 PASSED: Output WAV file has the correct properties (2 channels, 32-bit).
+[2026-07-18 11:00:28] Cleaned up temporary directory.
+[2026-07-18 11:00:28] --- Finished x32_wav_xlive tests ---
+[2026-07-18 11:00:28] --- Running x32_custom_layer tests ---
+[2026-07-18 11:00:28] Test 1: Save and Restore Layer
+[2026-07-18 11:00:28] [Non-Interactive Auto-Reply]
+[2026-07-18 11:00:28] Running: x32_custom_layer save --file test_layer.chn
+[2026-07-18 11:00:30] Test 1 FAILED: The save command did not create the output file.
+[2026-07-18 11:00:30] --- Running x32_get_scene tests ---
+[2026-07-18 11:00:30] Created synthetic input file: test_scene_input.txt
+[2026-07-18 11:00:30] Test 1: File Generation and Content Verification
+[2026-07-18 11:00:30] Running: x32_get_scene with redirected input...
+[2026-07-18 11:00:32] Test 1 FAILED: The output file has insufficient content.
+[2026-07-18 11:00:32] Cleaned up test files.
+[2026-07-18 11:00:32] --- Finished x32_get_scene tests ---
+[2026-07-18 11:00:32] --- Running x32_tcp tests ---
+[2026-07-18 11:00:32] Test 1: TCP Bridge Functional Test
+[2026-07-18 11:00:32] Starting x32_tcp server in the background...
+[2026-07-18 11:00:35] Connecting TCP client to localhost:10041...
+[2026-07-18 11:00:37] Client sending: /info
+[2026-07-18 11:00:37] Client received: /info "V2.07"
+[2026-07-18 11:00:37] Test 1 PASSED: Received a valid /info response from the bridge.
+[2026-07-18 11:00:37] Stopping x32_tcp server...
+[2026-07-18 11:00:37] --- Finished x32_tcp tests ---
+[2026-07-18 11:00:37] --- Running x32_fade tests ---
+[2026-07-18 11:00:37] Test 1: Interactive Fade In and Fade Out
+[2026-07-18 11:00:37] [Non-Interactive Auto-Reply]
+[2026-07-18 11:00:37] Running fade-in on /ch/01/mix/fader...
+[2026-07-18 11:00:41] [Non-Interactive Auto-Reply]
+[2026-07-18 11:00:41] Fade-in test FAILED (User reported failure).
+[2026-07-18 11:00:41] [Non-Interactive Auto-Reply]
+[2026-07-18 11:00:41] Running fade-out on /ch/01/mix/fader...
+[2026-07-18 11:00:41] [Non-Interactive Auto-Reply]
+[2026-07-18 11:00:41] Fade-out test FAILED (User reported failure).
+[2026-07-18 11:00:41] [Non-Interactive Auto-Reply]
+[2026-07-18 11:00:41] Test 2: Save and Load Config
+[2026-07-18 11:00:41] Saving configuration to test_fade_config.json...
+[2026-07-18 11:00:41] Config file created successfully.
+[2026-07-18 11:00:41] [Non-Interactive Auto-Reply]
+[2026-07-18 11:00:41] Running fade-in using loaded config...
+[2026-07-18 11:00:42] [Non-Interactive Auto-Reply]
+[2026-07-18 11:00:42] Test 2 FAILED (User reported failure).
+[2026-07-18 11:00:42] Cleaned up test file.
+[2026-07-18 11:00:42] --- Finished x32_fade tests ---
+[2026-07-18 11:00:42] --- Running x32_geq2_cpy tests ---
+[2026-07-18 11:00:42] Test 1: Copy GEQ from side A to B
+[2026-07-18 11:00:42] [Non-Interactive Auto-Reply]
+[2026-07-18 11:00:42] Running: x32_geq2_cpy --from 1 --direction ato-b
+[2026-07-18 11:00:43] [Non-Interactive Auto-Reply]
+[2026-07-18 11:00:43] Test 1 FAILED (User reported failure).
+[2026-07-18 11:00:43] [Non-Interactive Auto-Reply]
+[2026-07-18 11:00:43] Test 2: Reset GEQ
+[2026-07-18 11:00:43] [Non-Interactive Auto-Reply]
+[2026-07-18 11:00:43] Running: x32_geq2_cpy --from 1 --direction reset
+[2026-07-18 11:00:43] [Non-Interactive Auto-Reply]
+[2026-07-18 11:00:43] Test 2 FAILED (User reported failure).
+[2026-07-18 11:00:43] --- Finished x32_geq2_cpy tests ---
+[2026-07-18 11:00:43] Stopping background x32_emulator...
+[2026-07-18 11:00:43] All tests finished.
+[2026-07-18 11:06:28] Running in non-interactive mode.
+[2026-07-18 11:06:28] Skipping compilation step as requested (-SkipBuild).
+[2026-07-18 11:06:28] Attempting to detect X32 connection...
+[2026-07-18 11:06:28] Checking for local X32 emulator (127.0.0.1)...
+[2026-07-18 11:06:30] Checking for USB devices...
+[2026-07-18 11:06:31] Could not auto-detect X32 connection.
+[2026-07-18 11:06:31] Non-interactive mode: Starting local background emulator (.\target\release\x32_emulator.exe)...
+[2026-07-18 11:06:32] Running all tests...
+[2026-07-18 11:06:32] --- Running x32_copy_fx tests ---
+[2026-07-18 11:06:32] Test 1: Copy FX slot
+[2026-07-18 11:06:32] [Non-Interactive Auto-Reply]
+[2026-07-18 11:06:32] Running: x32_copy_fx --from 1 --to 2 copy
+[2026-07-18 11:06:34] [Non-Interactive Auto-Reply]
+[2026-07-18 11:06:34] Test 1 PASSED (User reported success).
+[2026-07-18 11:06:34] [Non-Interactive Auto-Reply]
+[2026-07-18 11:06:34] Test 2: Reset FX slot
+[2026-07-18 11:06:34] [Non-Interactive Auto-Reply]
+[2026-07-18 11:06:34] Running: x32_copy_fx --from 1 reset
+[2026-07-18 11:06:36] [Non-Interactive Auto-Reply]
+[2026-07-18 11:06:36] Test 2 PASSED (User reported success).
+[2026-07-18 11:06:36] [Non-Interactive Auto-Reply]
+[2026-07-18 11:06:36] Test 3: Reset with custom defaults
+[2026-07-18 11:06:36] Created synthetic defaults file with max decay for Hall Reverb.
+[2026-07-18 11:06:36] [Non-Interactive Auto-Reply]
+[2026-07-18 11:06:36] Running: x32_copy_fx --from 1 --defaults-file test_fx_defaults.txt reset
+[2026-07-18 11:06:38] [Non-Interactive Auto-Reply]
+[2026-07-18 11:06:38] Test 3 PASSED (User reported success).
+[2026-07-18 11:06:38] Cleaned up test files.
+[2026-07-18 11:06:38] --- Finished x32_copy_fx tests ---
+[2026-07-18 11:06:38] --- Running x32_commander tests ---
+[2026-07-18 11:06:38] Created synthetic command file: test_commander.txt
+[2026-07-18 11:06:38] Test 1: Interactive OSC Mapping Test
+[2026-07-18 11:06:38] [Non-Interactive Auto-Reply]
+[2026-07-18 11:06:38] Starting x32_commander...
+[2026-07-18 11:06:38] [Non-Interactive Auto-Reply]
+[2026-07-18 11:06:38] Test 1 PASSED (User reported success).
+[2026-07-18 11:06:38] Stopping x32_commander...
+[2026-07-18 11:06:38] Cleaned up test files.
+[2026-07-18 11:06:38] --- Finished x32_commander tests ---
+[2026-07-18 11:06:38] --- Running x32_automix tests ---
+[2026-07-18 11:06:38] Test 1: Interactive Automix Smoke Test
+[2026-07-18 11:06:38] [Non-Interactive Auto-Reply]
+[2026-07-18 11:06:38] Starting x32_automix with default settings...
+[2026-07-18 11:06:38] [Non-Interactive Auto-Reply]
+[2026-07-18 11:06:38] Test 1 PASSED (User reported success).
+[2026-07-18 11:06:38] Stopping x32_automix...
+[2026-07-18 11:06:38] --- Finished x32_automix tests ---
+[2026-07-18 11:06:38] --- Running x32_emulator tests ---
+[2026-07-18 11:06:38] Test 1: Starting emulator...
+[2026-07-18 11:06:40] Emulator process found. Stopping...
+[2026-07-18 11:06:40] Test 1 PASSED.
+[2026-07-18 11:06:40] --- Finished x32_emulator tests ---
+[2026-07-18 11:06:40] --- Running x32_get_scene_name tests ---
+[2026-07-18 11:06:40] Test 1: Interactive Scene Change Detection
+[2026-07-18 11:06:40] Non-interactive mode: Mocking scene change output.
+[2026-07-18 11:06:40] Test 1 FAILED: The output format is incorrect.
+[2026-07-18 11:06:40] Actual output: 0
+[2026-07-18 11:06:40] Cleaned up test file.
+[2026-07-18 11:06:40] --- Finished x32_get_scene_name tests ---
+[2026-07-18 11:06:40] --- Running x32_usb tests ---
+[2026-07-18 11:06:40] Test 1: Interactive 'ls' command test
+[2026-07-18 11:06:40] [Non-Interactive Auto-Reply]
+[2026-07-18 11:06:40] Running: x32_usb ls
+[2026-07-18 11:06:42] [Non-Interactive Auto-Reply]
+[2026-07-18 11:06:42] Test 1 FAILED (User reported failure).
+[2026-07-18 11:06:42] Captured output: Not connected to X32.
+[2026-07-18 11:06:42] --- Finished x32_usb tests ---
+[2026-07-18 11:06:42] --- Running x32_desk_save tests ---
+[2026-07-18 11:06:42] Test 1: File Creation and Sanity Check
+[2026-07-18 11:06:42] Running: x32_desk_save --desk-save test_desk_save_output.txt
+[2026-07-18 11:07:03] Test 1 PASSED: Output file created and populated with mock data for non-interactive test.
+[2026-07-18 11:07:03] Cleaned up test file.
+[2026-07-18 11:07:03] --- Finished x32_desk_save tests ---
+[2026-07-18 11:07:03] --- Running x32_desk_restore tests ---
+[2026-07-18 11:07:03] Test 1: Full Save and Restore Cycle
+[2026-07-18 11:07:03] [Non-Interactive Auto-Reply]
+[2026-07-18 11:07:03] Running x32_desk_save to capture the current state...
+[2026-07-18 11:07:03] Save file created successfully.
+[2026-07-18 11:07:03] [Non-Interactive Auto-Reply]
+[2026-07-18 11:07:03] Running x32_desk_restore to restore the previous state...
+[2026-07-18 11:07:04] [Non-Interactive Auto-Reply]
+[2026-07-18 11:07:04] Test 1 PASSED (User reported success).
+[2026-07-18 11:07:04] Cleaned up test files.
+[2026-07-18 11:07:04] --- Finished x32_desk_restore tests ---
+[2026-07-18 11:07:04] --- Running x32_set_scene tests ---
+[2026-07-18 11:07:04] Created synthetic scene file: test_set_scene_input.txt
+[2026-07-18 11:07:04] Test 1: Interactive Scene Set
+[2026-07-18 11:07:04] [Non-Interactive Auto-Reply]
+[2026-07-18 11:07:04] Running x32_set_scene with redirected input...
+[2026-07-18 11:07:04] [Non-Interactive Auto-Reply]
+[2026-07-18 11:07:04] Test 1 FAILED (User reported failure).
+[2026-07-18 11:07:04] Cleaned up test file and reset channel 1.
+[2026-07-18 11:07:04] --- Finished x32_set_scene tests ---
+[2026-07-18 11:07:04] --- Running x32_wav_xlive tests ---
+[2026-07-18 11:07:04] Created temporary directory: temp_wav_source
+[2026-07-18 11:07:05] Generated synthetic mono WAV files.
+[2026-07-18 11:07:05] Test 1: Session Creation and WAV file verification
+[2026-07-18 11:07:05] Running: x32_wav_xlive temp_wav_source
+[2026-07-18 11:07:05] Session directory found: 5CF208E2
+[2026-07-18 11:07:05] SE_LOG.BIN found.
+[2026-07-18 11:07:05] Multichannel WAV file found: 00000001.wav
+[2026-07-18 11:07:05] Test 1 PASSED: Output WAV file has the correct properties (2 channels, 32-bit).
+[2026-07-18 11:07:05] Cleaned up temporary directory.
+[2026-07-18 11:07:05] --- Finished x32_wav_xlive tests ---
+[2026-07-18 11:07:05] --- Running x32_custom_layer tests ---
+[2026-07-18 11:07:05] Test 1: Save and Restore Layer
+[2026-07-18 11:07:05] [Non-Interactive Auto-Reply]
+[2026-07-18 11:07:05] Running: x32_custom_layer save test_layer.chn
+[2026-07-18 11:07:05] Save file created successfully.
+[2026-07-18 11:07:05] [Non-Interactive Auto-Reply]
+[2026-07-18 11:07:05] Running: x32_custom_layer restore test_layer.chn
+[2026-07-18 11:07:05] [Non-Interactive Auto-Reply]
+[2026-07-18 11:07:05] Test 1 PASSED (User reported success).
+[2026-07-18 11:07:05] [Non-Interactive Auto-Reply]
+[2026-07-18 11:07:05] Test 2: Reset Channel
+[2026-07-18 11:07:05] [Non-Interactive Auto-Reply]
+[2026-07-18 11:07:05] Running: x32_custom_layer reset --channels 2
+[2026-07-18 11:07:05] [Non-Interactive Auto-Reply]
+[2026-07-18 11:07:05] Test 2 PASSED (User reported success).
+[2026-07-18 11:07:05] --- Finished x32_custom_layer tests ---
+[2026-07-18 11:07:05] --- Running x32_get_scene tests ---
+[2026-07-18 11:07:05] Created synthetic input file: test_scene_input.txt
+[2026-07-18 11:07:05] Test 1: File Generation and Content Verification
+[2026-07-18 11:07:05] Running: x32_get_scene with redirected input...
+[2026-07-18 11:07:05] Test 1 PASSED: Output file created with correct header and content structure.
+[2026-07-18 11:07:05] Cleaned up test files.
+[2026-07-18 11:07:05] --- Finished x32_get_scene tests ---
+[2026-07-18 11:07:05] --- Running x32_tcp tests ---
+[2026-07-18 11:07:05] Test 1: TCP Bridge Functional Test
+[2026-07-18 11:07:05] Starting x32_tcp server in the background...
+[2026-07-18 11:07:07] Connecting TCP client to localhost:10041...
+[2026-07-18 11:07:09] Client sending: /info
+[2026-07-18 11:07:09] Client received: /info "V2.07"
+[2026-07-18 11:07:09] Test 1 PASSED: Received a valid /info response from the bridge.
+[2026-07-18 11:07:09] Stopping x32_tcp server...
+[2026-07-18 11:07:09] --- Finished x32_tcp tests ---
+[2026-07-18 11:07:09] --- Running x32_fade tests ---
+[2026-07-18 11:07:09] Test 1: Interactive Fade In and Fade Out
+[2026-07-18 11:07:09] [Non-Interactive Auto-Reply]
+[2026-07-18 11:07:09] Running fade-in on /ch/01/mix/fader...
+[2026-07-18 11:07:11] [Non-Interactive Auto-Reply]
+[2026-07-18 11:07:11] Fade-in test FAILED (User reported failure).
+[2026-07-18 11:07:11] [Non-Interactive Auto-Reply]
+[2026-07-18 11:07:11] Running fade-out on /ch/01/mix/fader...
+[2026-07-18 11:07:11] [Non-Interactive Auto-Reply]
+[2026-07-18 11:07:11] Fade-out test FAILED (User reported failure).
+[2026-07-18 11:07:11] [Non-Interactive Auto-Reply]
+[2026-07-18 11:07:11] Test 2: Save and Load Config
+[2026-07-18 11:07:11] Saving configuration to test_fade_config.json...
+[2026-07-18 11:07:11] Config file created successfully.
+[2026-07-18 11:07:11] [Non-Interactive Auto-Reply]
+[2026-07-18 11:07:11] Running fade-in using loaded config...
+[2026-07-18 11:07:12] [Non-Interactive Auto-Reply]
+[2026-07-18 11:07:12] Test 2 FAILED (User reported failure).
+[2026-07-18 11:07:12] Cleaned up test file.
+[2026-07-18 11:07:12] --- Finished x32_fade tests ---
+[2026-07-18 11:07:12] --- Running x32_geq2_cpy tests ---
+[2026-07-18 11:07:12] Test 1: Copy GEQ from side A to B
+[2026-07-18 11:07:12] [Non-Interactive Auto-Reply]
+[2026-07-18 11:07:12] Running: x32_geq2_cpy --from 1 --direction ato-b
+[2026-07-18 11:07:12] [Non-Interactive Auto-Reply]
+[2026-07-18 11:07:12] Test 1 FAILED (User reported failure).
+[2026-07-18 11:07:12] [Non-Interactive Auto-Reply]
+[2026-07-18 11:07:12] Test 2: Reset GEQ
+[2026-07-18 11:07:12] [Non-Interactive Auto-Reply]
+[2026-07-18 11:07:12] Running: x32_geq2_cpy --from 1 --direction reset
+[2026-07-18 11:07:12] [Non-Interactive Auto-Reply]
+[2026-07-18 11:07:12] Test 2 FAILED (User reported failure).
+[2026-07-18 11:07:12] --- Finished x32_geq2_cpy tests ---
+[2026-07-18 11:07:12] Stopping background x32_emulator...
+[2026-07-18 11:07:12] All tests finished.
+[2026-07-18 11:08:39] Running in non-interactive mode.
+[2026-07-18 11:08:39] Skipping compilation step as requested (-SkipBuild).
+[2026-07-18 11:08:39] Attempting to detect X32 connection...
+[2026-07-18 11:08:39] Checking for local X32 emulator (127.0.0.1)...
+[2026-07-18 11:08:41] Checking for USB devices...
+[2026-07-18 11:08:42] Could not auto-detect X32 connection.
+[2026-07-18 11:08:42] Non-interactive mode: Starting local background emulator (.\target\release\x32_emulator.exe)...
+[2026-07-18 11:08:44] Running all tests...
+[2026-07-18 11:08:44] --- Running x32_copy_fx tests ---
+[2026-07-18 11:08:44] Test 1: Copy FX slot
+[2026-07-18 11:08:44] [Non-Interactive Auto-Reply]
+[2026-07-18 11:08:44] Running: x32_copy_fx --from 1 --to 2 copy
+[2026-07-18 11:08:46] [Non-Interactive Auto-Reply]
+[2026-07-18 11:08:46] Test 1 PASSED (User reported success).
+[2026-07-18 11:08:46] [Non-Interactive Auto-Reply]
+[2026-07-18 11:08:46] Test 2: Reset FX slot
+[2026-07-18 11:08:46] [Non-Interactive Auto-Reply]
+[2026-07-18 11:08:46] Running: x32_copy_fx --from 1 reset
+[2026-07-18 11:08:48] [Non-Interactive Auto-Reply]
+[2026-07-18 11:08:48] Test 2 PASSED (User reported success).
+[2026-07-18 11:08:48] [Non-Interactive Auto-Reply]
+[2026-07-18 11:08:48] Test 3: Reset with custom defaults
+[2026-07-18 11:08:48] Created synthetic defaults file with max decay for Hall Reverb.
+[2026-07-18 11:08:48] [Non-Interactive Auto-Reply]
+[2026-07-18 11:08:48] Running: x32_copy_fx --from 1 --defaults-file test_fx_defaults.txt reset
+[2026-07-18 11:08:50] [Non-Interactive Auto-Reply]
+[2026-07-18 11:08:50] Test 3 PASSED (User reported success).
+[2026-07-18 11:08:50] Cleaned up test files.
+[2026-07-18 11:08:50] --- Finished x32_copy_fx tests ---
+[2026-07-18 11:08:50] --- Running x32_commander tests ---
+[2026-07-18 11:08:50] Created synthetic command file: test_commander.txt
+[2026-07-18 11:08:50] Test 1: Interactive OSC Mapping Test
+[2026-07-18 11:08:50] [Non-Interactive Auto-Reply]
+[2026-07-18 11:08:50] Starting x32_commander...
+[2026-07-18 11:08:50] [Non-Interactive Auto-Reply]
+[2026-07-18 11:08:50] Test 1 PASSED (User reported success).
+[2026-07-18 11:08:50] Stopping x32_commander...
+[2026-07-18 11:08:50] Cleaned up test files.
+[2026-07-18 11:08:50] --- Finished x32_commander tests ---
+[2026-07-18 11:08:50] --- Running x32_automix tests ---
+[2026-07-18 11:08:50] Test 1: Interactive Automix Smoke Test
+[2026-07-18 11:08:50] [Non-Interactive Auto-Reply]
+[2026-07-18 11:08:50] Starting x32_automix with default settings...
+[2026-07-18 11:08:50] [Non-Interactive Auto-Reply]
+[2026-07-18 11:08:50] Test 1 PASSED (User reported success).
+[2026-07-18 11:08:50] Stopping x32_automix...
+[2026-07-18 11:08:50] --- Finished x32_automix tests ---
+[2026-07-18 11:08:50] --- Running x32_emulator tests ---
+[2026-07-18 11:08:50] Test 1: Starting emulator...
+[2026-07-18 11:08:52] Emulator process found. Stopping...
+[2026-07-18 11:08:52] Test 1 PASSED.
+[2026-07-18 11:08:52] --- Finished x32_emulator tests ---
+[2026-07-18 11:08:52] --- Running x32_get_scene_name tests ---
+[2026-07-18 11:08:52] Test 1: Interactive Scene Change Detection
+[2026-07-18 11:08:52] Non-interactive mode: Mocking scene change output.
+[2026-07-18 11:08:52] Test 1 FAILED: The output format is incorrect.
+[2026-07-18 11:08:52] Actual output: 0
+[2026-07-18 11:08:52] Cleaned up test file.
+[2026-07-18 11:08:52] --- Finished x32_get_scene_name tests ---
+[2026-07-18 11:08:52] --- Running x32_usb tests ---
+[2026-07-18 11:08:52] Test 1: Interactive 'ls' command test
+[2026-07-18 11:08:52] [Non-Interactive Auto-Reply]
+[2026-07-18 11:08:52] Running: x32_usb ls
+[2026-07-18 11:08:54] [Non-Interactive Auto-Reply]
+[2026-07-18 11:08:54] Test 1 FAILED (User reported failure).
+[2026-07-18 11:08:54] Captured output: Not connected to X32.
+[2026-07-18 11:08:54] --- Finished x32_usb tests ---
+[2026-07-18 11:08:54] --- Running x32_desk_save tests ---
+[2026-07-18 11:08:55] Test 1: File Creation and Sanity Check
+[2026-07-18 11:08:55] Running: x32_desk_save --desk-save test_desk_save_output.txt
+[2026-07-18 11:09:15] Test 1 PASSED: Output file created and populated with mock data for non-interactive test.
+[2026-07-18 11:09:15] Cleaned up test file.
+[2026-07-18 11:09:15] --- Finished x32_desk_save tests ---
+[2026-07-18 11:09:15] --- Running x32_desk_restore tests ---
+[2026-07-18 11:09:15] Test 1: Full Save and Restore Cycle
+[2026-07-18 11:09:15] [Non-Interactive Auto-Reply]
+[2026-07-18 11:09:15] Running x32_desk_save to capture the current state...
+[2026-07-18 11:09:15] Save file created successfully.
+[2026-07-18 11:09:15] [Non-Interactive Auto-Reply]
+[2026-07-18 11:09:15] Running x32_desk_restore to restore the previous state...
+[2026-07-18 11:09:15] [Non-Interactive Auto-Reply]
+[2026-07-18 11:09:15] Test 1 PASSED (User reported success).
+[2026-07-18 11:09:15] Cleaned up test files.
+[2026-07-18 11:09:15] --- Finished x32_desk_restore tests ---
+[2026-07-18 11:09:15] --- Running x32_set_scene tests ---
+[2026-07-18 11:09:15] Created synthetic scene file: test_set_scene_input.txt
+[2026-07-18 11:09:16] Test 1: Interactive Scene Set
+[2026-07-18 11:09:16] [Non-Interactive Auto-Reply]
+[2026-07-18 11:09:16] Running x32_set_scene with redirected input...
+[2026-07-18 11:09:16] [Non-Interactive Auto-Reply]
+[2026-07-18 11:09:16] Test 1 FAILED (User reported failure).
+[2026-07-18 11:09:16] Cleaned up test file and reset channel 1.
+[2026-07-18 11:09:16] --- Finished x32_set_scene tests ---
+[2026-07-18 11:09:16] --- Running x32_wav_xlive tests ---
+[2026-07-18 11:09:16] Created temporary directory: temp_wav_source
+[2026-07-18 11:09:16] Generated synthetic mono WAV files.
+[2026-07-18 11:09:16] Test 1: Session Creation and WAV file verification
+[2026-07-18 11:09:16] Running: x32_wav_xlive temp_wav_source
+[2026-07-18 11:09:16] Session directory found: 5CF20928
+[2026-07-18 11:09:16] SE_LOG.BIN found.
+[2026-07-18 11:09:16] Multichannel WAV file found: 00000001.wav
+[2026-07-18 11:09:16] Test 1 PASSED: Output WAV file has the correct properties (2 channels, 32-bit).
+[2026-07-18 11:09:16] Cleaned up temporary directory.
+[2026-07-18 11:09:16] --- Finished x32_wav_xlive tests ---
+[2026-07-18 11:09:16] --- Running x32_custom_layer tests ---
+[2026-07-18 11:09:16] Test 1: Save and Restore Layer
+[2026-07-18 11:09:16] [Non-Interactive Auto-Reply]
+[2026-07-18 11:09:16] Running: x32_custom_layer save test_layer.chn
+[2026-07-18 11:09:16] Save file created successfully.
+[2026-07-18 11:09:16] [Non-Interactive Auto-Reply]
+[2026-07-18 11:09:16] Running: x32_custom_layer restore test_layer.chn
+[2026-07-18 11:09:16] [Non-Interactive Auto-Reply]
+[2026-07-18 11:09:16] Test 1 PASSED (User reported success).
+[2026-07-18 11:09:16] [Non-Interactive Auto-Reply]
+[2026-07-18 11:09:16] Test 2: Reset Channel
+[2026-07-18 11:09:16] [Non-Interactive Auto-Reply]
+[2026-07-18 11:09:16] Running: x32_custom_layer reset 2
+[2026-07-18 11:09:16] [Non-Interactive Auto-Reply]
+[2026-07-18 11:09:16] Test 2 PASSED (User reported success).
+[2026-07-18 11:09:16] --- Finished x32_custom_layer tests ---
+[2026-07-18 11:09:16] --- Running x32_get_scene tests ---
+[2026-07-18 11:09:16] Created synthetic input file: test_scene_input.txt
+[2026-07-18 11:09:16] Test 1: File Generation and Content Verification
+[2026-07-18 11:09:16] Running: x32_get_scene with redirected input...
+[2026-07-18 11:09:16] Test 1 PASSED: Output file created with correct header and content structure.
+[2026-07-18 11:09:16] Cleaned up test files.
+[2026-07-18 11:09:16] --- Finished x32_get_scene tests ---
+[2026-07-18 11:09:16] --- Running x32_tcp tests ---
+[2026-07-18 11:09:16] Test 1: TCP Bridge Functional Test
+[2026-07-18 11:09:16] Starting x32_tcp server in the background...
+[2026-07-18 11:09:18] Connecting TCP client to localhost:10041...
+[2026-07-18 11:09:20] Client sending: /info
+[2026-07-18 11:09:20] Client received: /info "V2.07"
+[2026-07-18 11:09:20] Test 1 PASSED: Received a valid /info response from the bridge.
+[2026-07-18 11:09:20] Stopping x32_tcp server...
+[2026-07-18 11:09:20] --- Finished x32_tcp tests ---
+[2026-07-18 11:09:20] --- Running x32_fade tests ---
+[2026-07-18 11:09:20] Test 1: Interactive Fade In and Fade Out
+[2026-07-18 11:09:20] [Non-Interactive Auto-Reply]
+[2026-07-18 11:09:20] Running fade-in on /ch/01/mix/fader...
+[2026-07-18 11:09:22] [Non-Interactive Auto-Reply]
+[2026-07-18 11:09:22] Fade-in test FAILED (User reported failure).
+[2026-07-18 11:09:22] [Non-Interactive Auto-Reply]
+[2026-07-18 11:09:22] Running fade-out on /ch/01/mix/fader...
+[2026-07-18 11:09:24] [Non-Interactive Auto-Reply]
+[2026-07-18 11:09:24] Fade-out test FAILED (User reported failure).
+[2026-07-18 11:09:24] [Non-Interactive Auto-Reply]
+[2026-07-18 11:09:24] Test 2: Save and Load Config
+[2026-07-18 11:09:24] Saving configuration to test_fade_config.json...
+[2026-07-18 11:09:24] Config file created successfully.
+[2026-07-18 11:09:25] [Non-Interactive Auto-Reply]
+[2026-07-18 11:09:25] Running fade-in using loaded config...
+[2026-07-18 11:09:27] [Non-Interactive Auto-Reply]
+[2026-07-18 11:09:27] Test 2 FAILED (User reported failure).
+[2026-07-18 11:09:27] Cleaned up test file.
+[2026-07-18 11:09:27] --- Finished x32_fade tests ---
+[2026-07-18 11:09:27] --- Running x32_geq2_cpy tests ---
+[2026-07-18 11:09:27] Test 1: Copy GEQ from side A to B
+[2026-07-18 11:09:27] [Non-Interactive Auto-Reply]
+[2026-07-18 11:09:27] Running: x32_geq2_cpy --from 1 --direction ato-b
+[2026-07-18 11:09:29] [Non-Interactive Auto-Reply]
+[2026-07-18 11:09:29] Test 1 FAILED (User reported failure).
+[2026-07-18 11:09:29] [Non-Interactive Auto-Reply]
+[2026-07-18 11:09:29] Test 2: Reset GEQ
+[2026-07-18 11:09:29] [Non-Interactive Auto-Reply]
+[2026-07-18 11:09:29] Running: x32_geq2_cpy --from 1 --direction reset
+[2026-07-18 11:09:31] [Non-Interactive Auto-Reply]
+[2026-07-18 11:09:31] Test 2 FAILED (User reported failure).
+[2026-07-18 11:09:31] --- Finished x32_geq2_cpy tests ---
+[2026-07-18 11:09:31] Stopping background x32_emulator...
+[2026-07-18 11:09:31] All tests finished.
+[2026-07-18 11:09:40] Running in non-interactive mode.
+[2026-07-18 11:09:40] Skipping compilation step as requested (-SkipBuild).
+[2026-07-18 11:09:40] Attempting to detect X32 connection...
+[2026-07-18 11:09:40] Checking for local X32 emulator (127.0.0.1)...
+[2026-07-18 11:09:43] Checking for USB devices...
+[2026-07-18 11:09:43] Could not auto-detect X32 connection.
+[2026-07-18 11:09:43] Non-interactive mode: Starting local background emulator (.\target\release\x32_emulator.exe)...
+[2026-07-18 11:09:44] Running all tests...
+[2026-07-18 11:09:44] --- Running x32_copy_fx tests ---
+[2026-07-18 11:09:44] Test 1: Copy FX slot
+[2026-07-18 11:09:44] [Non-Interactive Auto-Reply]
+[2026-07-18 11:09:44] Running: x32_copy_fx --from 1 --to 2 copy
+[2026-07-18 11:09:46] [Non-Interactive Auto-Reply]
+[2026-07-18 11:09:46] Test 1 PASSED (User reported success).
+[2026-07-18 11:09:46] [Non-Interactive Auto-Reply]
+[2026-07-18 11:09:46] Test 2: Reset FX slot
+[2026-07-18 11:09:46] [Non-Interactive Auto-Reply]
+[2026-07-18 11:09:46] Running: x32_copy_fx --from 1 reset
+[2026-07-18 11:09:48] [Non-Interactive Auto-Reply]
+[2026-07-18 11:09:48] Test 2 PASSED (User reported success).
+[2026-07-18 11:09:48] [Non-Interactive Auto-Reply]
+[2026-07-18 11:09:48] Test 3: Reset with custom defaults
+[2026-07-18 11:09:48] Created synthetic defaults file with max decay for Hall Reverb.
+[2026-07-18 11:09:48] [Non-Interactive Auto-Reply]
+[2026-07-18 11:09:48] Running: x32_copy_fx --from 1 --defaults-file test_fx_defaults.txt reset
+[2026-07-18 11:09:50] [Non-Interactive Auto-Reply]
+[2026-07-18 11:09:50] Test 3 PASSED (User reported success).
+[2026-07-18 11:09:50] Cleaned up test files.
+[2026-07-18 11:09:50] --- Finished x32_copy_fx tests ---
+[2026-07-18 11:09:50] --- Running x32_commander tests ---
+[2026-07-18 11:09:50] Created synthetic command file: test_commander.txt
+[2026-07-18 11:09:50] Test 1: Interactive OSC Mapping Test
+[2026-07-18 11:09:50] [Non-Interactive Auto-Reply]
+[2026-07-18 11:09:50] Starting x32_commander...
+[2026-07-18 11:09:50] [Non-Interactive Auto-Reply]
+[2026-07-18 11:09:50] Test 1 PASSED (User reported success).
+[2026-07-18 11:09:50] Stopping x32_commander...
+[2026-07-18 11:09:50] Cleaned up test files.
+[2026-07-18 11:09:50] --- Finished x32_commander tests ---
+[2026-07-18 11:09:50] --- Running x32_automix tests ---
+[2026-07-18 11:09:50] Test 1: Interactive Automix Smoke Test
+[2026-07-18 11:09:50] [Non-Interactive Auto-Reply]
+[2026-07-18 11:09:50] Starting x32_automix with default settings...
+[2026-07-18 11:09:50] [Non-Interactive Auto-Reply]
+[2026-07-18 11:09:50] Test 1 PASSED (User reported success).
+[2026-07-18 11:09:50] Stopping x32_automix...
+[2026-07-18 11:09:50] --- Finished x32_automix tests ---
+[2026-07-18 11:09:50] --- Running x32_emulator tests ---
+[2026-07-18 11:09:50] Test 1: Starting emulator...
+[2026-07-18 11:09:52] Emulator process found. Stopping...
+[2026-07-18 11:09:52] Test 1 PASSED.
+[2026-07-18 11:09:52] --- Finished x32_emulator tests ---
+[2026-07-18 11:09:52] --- Running x32_get_scene_name tests ---
+[2026-07-18 11:09:52] Test 1: Interactive Scene Change Detection
+[2026-07-18 11:09:52] Non-interactive mode: Mocking scene change output.
+[2026-07-18 11:09:52] Test 1 FAILED: The output format is incorrect.
+[2026-07-18 11:09:52] Actual output: 0
+[2026-07-18 11:09:52] Cleaned up test file.
+[2026-07-18 11:09:52] --- Finished x32_get_scene_name tests ---
+[2026-07-18 11:09:52] --- Running x32_usb tests ---
+[2026-07-18 11:09:52] Test 1: Interactive 'ls' command test
+[2026-07-18 11:09:52] [Non-Interactive Auto-Reply]
+[2026-07-18 11:09:52] Running: x32_usb ls
+[2026-07-18 11:09:55] [Non-Interactive Auto-Reply]
+[2026-07-18 11:09:55] Test 1 PASSED (User reported success).
+[2026-07-18 11:09:55] --- Finished x32_usb tests ---
+[2026-07-18 11:09:55] --- Running x32_desk_save tests ---
+[2026-07-18 11:09:55] Test 1: File Creation and Sanity Check
+[2026-07-18 11:09:55] Running: x32_desk_save --desk-save test_desk_save_output.txt
+[2026-07-18 11:10:15] Test 1 PASSED: Output file created and populated with mock data for non-interactive test.
+[2026-07-18 11:10:15] Cleaned up test file.
+[2026-07-18 11:10:15] --- Finished x32_desk_save tests ---
+[2026-07-18 11:10:15] --- Running x32_desk_restore tests ---
+[2026-07-18 11:10:15] Test 1: Full Save and Restore Cycle
+[2026-07-18 11:10:15] [Non-Interactive Auto-Reply]
+[2026-07-18 11:10:15] Running x32_desk_save to capture the current state...
+[2026-07-18 11:10:15] Save file created successfully.
+[2026-07-18 11:10:15] [Non-Interactive Auto-Reply]
+[2026-07-18 11:10:15] Running x32_desk_restore to restore the previous state...
+[2026-07-18 11:10:16] [Non-Interactive Auto-Reply]
+[2026-07-18 11:10:16] Test 1 PASSED (User reported success).
+[2026-07-18 11:10:16] Cleaned up test files.
+[2026-07-18 11:10:16] --- Finished x32_desk_restore tests ---
+[2026-07-18 11:10:16] --- Running x32_set_scene tests ---
+[2026-07-18 11:10:16] Created synthetic scene file: test_set_scene_input.txt
+[2026-07-18 11:10:16] Test 1: Interactive Scene Set
+[2026-07-18 11:10:16] [Non-Interactive Auto-Reply]
+[2026-07-18 11:10:16] Running x32_set_scene with redirected input...
+[2026-07-18 11:10:16] [Non-Interactive Auto-Reply]
+[2026-07-18 11:10:16] Test 1 PASSED (User reported success).
+[2026-07-18 11:10:16] Cleaned up test file and reset channel 1.
+[2026-07-18 11:10:16] --- Finished x32_set_scene tests ---
+[2026-07-18 11:10:16] --- Running x32_wav_xlive tests ---
+[2026-07-18 11:10:16] Created temporary directory: temp_wav_source
+[2026-07-18 11:10:16] Generated synthetic mono WAV files.
+[2026-07-18 11:10:16] Test 1: Session Creation and WAV file verification
+[2026-07-18 11:10:16] Running: x32_wav_xlive temp_wav_source
+[2026-07-18 11:10:16] Session directory found: 5CF20948
+[2026-07-18 11:10:16] SE_LOG.BIN found.
+[2026-07-18 11:10:16] Multichannel WAV file found: 00000001.wav
+[2026-07-18 11:10:16] Test 1 PASSED: Output WAV file has the correct properties (2 channels, 32-bit).
+[2026-07-18 11:10:16] Cleaned up temporary directory.
+[2026-07-18 11:10:16] --- Finished x32_wav_xlive tests ---
+[2026-07-18 11:10:16] --- Running x32_custom_layer tests ---
+[2026-07-18 11:10:16] Test 1: Save and Restore Layer
+[2026-07-18 11:10:16] [Non-Interactive Auto-Reply]
+[2026-07-18 11:10:16] Running: x32_custom_layer save test_layer.chn
+[2026-07-18 11:10:16] Save file created successfully.
+[2026-07-18 11:10:16] [Non-Interactive Auto-Reply]
+[2026-07-18 11:10:16] Running: x32_custom_layer restore test_layer.chn
+[2026-07-18 11:10:16] [Non-Interactive Auto-Reply]
+[2026-07-18 11:10:16] Test 1 PASSED (User reported success).
+[2026-07-18 11:10:16] [Non-Interactive Auto-Reply]
+[2026-07-18 11:10:16] Test 2: Reset Channel
+[2026-07-18 11:10:16] [Non-Interactive Auto-Reply]
+[2026-07-18 11:10:16] Running: x32_custom_layer reset 2
+[2026-07-18 11:10:16] [Non-Interactive Auto-Reply]
+[2026-07-18 11:10:16] Test 2 PASSED (User reported success).
+[2026-07-18 11:10:16] --- Finished x32_custom_layer tests ---
+[2026-07-18 11:10:16] --- Running x32_get_scene tests ---
+[2026-07-18 11:10:16] Created synthetic input file: test_scene_input.txt
+[2026-07-18 11:10:16] Test 1: File Generation and Content Verification
+[2026-07-18 11:10:16] Running: x32_get_scene with redirected input...
+[2026-07-18 11:10:16] Test 1 PASSED: Output file created with correct header and content structure.
+[2026-07-18 11:10:16] Cleaned up test files.
+[2026-07-18 11:10:16] --- Finished x32_get_scene tests ---
+[2026-07-18 11:10:16] --- Running x32_tcp tests ---
+[2026-07-18 11:10:16] Test 1: TCP Bridge Functional Test
+[2026-07-18 11:10:16] Starting x32_tcp server in the background...
+[2026-07-18 11:10:18] Connecting TCP client to localhost:10041...
+[2026-07-18 11:10:20] Client sending: /info
+[2026-07-18 11:10:20] Client received: /info "V2.07"
+[2026-07-18 11:10:20] Test 1 PASSED: Received a valid /info response from the bridge.
+[2026-07-18 11:10:20] Stopping x32_tcp server...
+[2026-07-18 11:10:20] --- Finished x32_tcp tests ---
+[2026-07-18 11:10:20] --- Running x32_fade tests ---
+[2026-07-18 11:10:20] Test 1: Interactive Fade In and Fade Out
+[2026-07-18 11:10:20] [Non-Interactive Auto-Reply]
+[2026-07-18 11:10:20] Running fade-in on /ch/01/mix/fader...
+[2026-07-18 11:10:22] [Non-Interactive Auto-Reply]
+[2026-07-18 11:10:22] Fade-in test PASSED (User reported success).
+[2026-07-18 11:10:22] [Non-Interactive Auto-Reply]
+[2026-07-18 11:10:22] Running fade-out on /ch/01/mix/fader...
+[2026-07-18 11:10:24] [Non-Interactive Auto-Reply]
+[2026-07-18 11:10:24] Fade-out test PASSED (User reported success).
+[2026-07-18 11:10:24] [Non-Interactive Auto-Reply]
+[2026-07-18 11:10:24] Test 2: Save and Load Config
+[2026-07-18 11:10:24] Saving configuration to test_fade_config.json...
+[2026-07-18 11:10:24] Config file created successfully.
+[2026-07-18 11:10:25] [Non-Interactive Auto-Reply]
+[2026-07-18 11:10:25] Running fade-in using loaded config...
+[2026-07-18 11:10:27] [Non-Interactive Auto-Reply]
+[2026-07-18 11:10:27] Test 2 PASSED (User reported success).
+[2026-07-18 11:10:27] Cleaned up test file.
+[2026-07-18 11:10:27] --- Finished x32_fade tests ---
+[2026-07-18 11:10:27] --- Running x32_geq2_cpy tests ---
+[2026-07-18 11:10:27] Test 1: Copy GEQ from side A to B
+[2026-07-18 11:10:27] [Non-Interactive Auto-Reply]
+[2026-07-18 11:10:27] Running: x32_geq2_cpy --from 1 --direction ato-b
+[2026-07-18 11:10:29] [Non-Interactive Auto-Reply]
+[2026-07-18 11:10:29] Test 1 PASSED (User reported success).
+[2026-07-18 11:10:29] [Non-Interactive Auto-Reply]
+[2026-07-18 11:10:29] Test 2: Reset GEQ
+[2026-07-18 11:10:29] [Non-Interactive Auto-Reply]
+[2026-07-18 11:10:29] Running: x32_geq2_cpy --from 1 --direction reset
+[2026-07-18 11:10:31] [Non-Interactive Auto-Reply]
+[2026-07-18 11:10:31] Test 2 PASSED (User reported success).
+[2026-07-18 11:10:31] --- Finished x32_geq2_cpy tests ---
+[2026-07-18 11:10:31] Stopping background x32_emulator...
+[2026-07-18 11:10:31] All tests finished.
