@@ -222,11 +222,7 @@ mod tests {
         let mparam = [];
 
         assert_eq!(calc.calculate("1.0 e", &mparam).unwrap(), 1.0f64.exp());
-        assert_eq!(
-            calc.calculate(&format!("{} l", std::f64::consts::E), &mparam)
-                .unwrap(),
-            1.0
-        );
+        assert_eq!(calc.calculate(&format!("{} l", std::f64::consts::E), &mparam).unwrap(), 1.0);
         assert_eq!(calc.calculate("100.0 L", &mparam).unwrap(), 2.0);
         assert_eq!(calc.calculate("3.14 i", &mparam).unwrap(), 3.0);
         assert_eq!(calc.calculate("-3.14 i", &mparam).unwrap(), -3.0);

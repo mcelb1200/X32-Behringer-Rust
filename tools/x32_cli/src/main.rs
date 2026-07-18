@@ -123,9 +123,9 @@ async fn main() -> Result<()> {
         Commands::XairGetScene(args) => xair_get_scene::run(args).await.map_err(anyhow::Error::msg),
         Commands::X32SetScene(args) => x32_set_scene::run(args).await.map_err(anyhow::Error::msg),
         Commands::X32GetScene(args) => x32_get_scene::run(args).await.map_err(anyhow::Error::msg),
-        Commands::X32GetSceneName(args) => x32_get_scene_name::run(args)
-            .await
-            .map_err(anyhow::Error::msg),
+        Commands::X32GetSceneName(args) => {
+            x32_get_scene_name::run(args).await.map_err(anyhow::Error::msg)
+        }
         Commands::X32Cpxlivemarkers(args) => {
             x32_cpxlivemarkers::run(args).map_err(anyhow::Error::msg)
         }

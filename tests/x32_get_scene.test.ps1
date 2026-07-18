@@ -41,16 +41,7 @@ function Test-X32GetScene {
     if (Test-Path $outputFile) { Remove-Item $outputFile }
 
     Log-Message "Running: x32_get_scene with redirected input..."
-    if ($Global:NonInteractive) {
-        $mockContent = @(
-            "#2.7# `"$sceneName`" `"$sceneNote`" 0",
-            "/ch/01/config/name `"SCENE_SET`"",
-            "/ch/01/mix/fader 0.5"
-        )
-        Set-Content -Path $outputFile -Value $mockContent
-    } else {
-        Get-Content $inputFile | & $binaryPath --ip $ip --scene-name $sceneName --note $sceneNote > $outputFile
-    }
+    Get-Content $inputFile | & $binaryPath --ip $ip --scene-name $sceneName --note $sceneNote > $outputFile
 
     # Verification
     if (-not (Test-Path $outputFile)) {
