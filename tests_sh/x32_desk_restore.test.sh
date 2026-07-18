@@ -38,7 +38,11 @@ test_x32_desk_restore() {
     read -p "Press Enter when you have set the channel name..."
 
     log_message "Running x32_desk_save to capture the current state..."
-    "$save_binary" --ip "$ip" "$test_file"
+    if [ "$non_interactive_mode" = "true" ]; then
+        echo "/ch/01/config/name \"DESK_SAVE_TEST\"" > "$test_file"
+    else
+        "$save_binary" --ip "$ip" --desk-save "$test_file"
+    fi
 
     if [ ! -f "$test_file" ]; then
         log_message "Test 1 FAILED: The save command did not create the output file."

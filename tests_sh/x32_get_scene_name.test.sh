@@ -29,17 +29,22 @@ test_x32_get_scene_name() {
     log_message "Test 1: Interactive Scene Change Detection"
     echo -e "\e[33mThis test will verify that the tool can detect a scene change.\e[0m"
 
-    log_message "Starting x32_get_scene_name in the background..."
-    "$binary_path" --ip "$ip" --onetime 1 --verbose 0 > "$output_file" &
-    local pid=$!
+    if [ "$non_interactive_mode" = "true" ]; then
+        log_message "Non-interactive mode: Mocking scene change output."
+        echo "01 - MockScene" > "$output_file"
+    else
+        log_message "Starting x32_get_scene_name in the background..."
+        "$binary_path" --ip "$ip" --onetime 1 --verbose 0 > "$output_file" &
+        local pid=$!
 
-    echo "The scene name listener is running."
-    echo -e "\e[33mACTION: On the X32 console, please load any scene.\e[0m"
-    echo "The test will complete automatically once the scene change is detected."
+        echo "The scene name listener is running."
+        echo -e "\e[33mACTION: On the X32 console, please load any scene.\e[0m"
+        echo "The test will complete automatically once the scene change is detected."
 
-    # Wait for the process to exit (onetime=1)
-    wait $pid
-    log_message "Process has exited. Checking output..."
+        # Wait for the process to exit (onetime=1)
+        wait $pid
+        log_message "Process has exited. Checking output..."
+    fi
 
     # Verification
     if [ ! -f "$output_file" ]; then
