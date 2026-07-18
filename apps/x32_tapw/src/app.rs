@@ -141,6 +141,11 @@ mod tests {
         assert_eq!(AppState::calculate_fval(3000.0), 1.0);
         assert_eq!(AppState::calculate_fval(6000.0), 1.0);
         assert_eq!(AppState::calculate_fval(-100.0), 0.0);
+
+        // Edge cases
+        assert!(AppState::calculate_fval(f32::NAN).is_nan());
+        assert_eq!(AppState::calculate_fval(f32::INFINITY), 1.0);
+        assert_eq!(AppState::calculate_fval(f32::NEG_INFINITY), 0.0);
     }
 
     #[test]
