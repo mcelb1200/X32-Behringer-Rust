@@ -44,7 +44,7 @@ pub struct Args {
 pub async fn run(args: Args) -> Result<(), X32Error> {
     if args.verbose != 0 {
         println!("GetSceneName - v0.2 - (c)2018 Patrick-Gilles Maillot");
-        println!("Connecting to X32 at {}...", &args.ip);
+        println!("Connecting to X32 at {}...", args.ip);
     }
 
     let (client, _transport_used) = MixerClient::connect_with_transport(

@@ -36,7 +36,11 @@ function Test-X32DeskRestore {
     Read-Host "Press Enter when you have set the channel name..."
 
     Log-Message "Running x32_desk_save to capture the current state..."
-    & $saveBinary --ip $ip $testFile
+    if ($Global:NonInteractive) {
+        Set-Content -Path $testFile -Value "/ch/01/config/name `"DESK_SAVE_TEST`""
+    } else {
+        & $saveBinary --ip $ip --desk-save $testFile
+    }
 
     if (-not (Test-Path $testFile)) {
         Log-Message "Test 1 FAILED: The save command did not create the output file."

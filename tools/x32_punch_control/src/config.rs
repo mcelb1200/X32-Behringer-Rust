@@ -169,4 +169,16 @@ mod tests {
         assert_eq!(config.xbank, 'A');
         assert_eq!(config.xcatchdelay, 10);
     }
+
+    #[test]
+    fn test_config_load_non_existent_file() {
+        let config = Config::load("this_file_does_not_exist.txt").unwrap();
+        let default_config = Config::default();
+        assert_eq!(config.xip_str, default_config.xip_str);
+        assert_eq!(config.xscene_str, default_config.xscene_str);
+        assert_eq!(config.xusemidi, default_config.xusemidi);
+        assert_eq!(config.xusebank, default_config.xusebank);
+        assert_eq!(config.xbank, default_config.xbank);
+        assert_eq!(config.xcatchdelay, default_config.xcatchdelay);
+    }
 }
