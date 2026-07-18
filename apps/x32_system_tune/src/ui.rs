@@ -1,16 +1,16 @@
 use anyhow::Result;
 use crossterm::{
-    event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
+    event::{self, Event, KeyCode},
     execute,
-    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
+    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use ratatui::{
-    Terminal,
     backend::CrosstermBackend,
     layout::{Constraint, Direction, Layout},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Gauge, Paragraph},
+    Terminal,
 };
 use std::{io, time::Duration};
 
@@ -25,7 +25,7 @@ pub struct TuiDropGuard;
 impl Drop for TuiDropGuard {
     fn drop(&mut self) {
         let _ = disable_raw_mode();
-        let _ = execute!(io::stdout(), LeaveAlternateScreen, DisableMouseCapture);
+        let _ = execute!(io::stdout(), LeaveAlternateScreen);
     }
 }
 
@@ -38,11 +38,11 @@ impl Tui {
     pub fn new() -> Result<Self> {
         enable_raw_mode()?;
         let mut stdout = io::stdout();
-        execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
+        execute!(stdout, EnterAlternateScreen)?;
         let backend = CrosstermBackend::new(stdout);
         let terminal = Terminal::new(backend).inspect_err(|_e| {
             let _ = disable_raw_mode();
-            let _ = execute!(io::stdout(), LeaveAlternateScreen, DisableMouseCapture);
+            let _ = execute!(io::stdout(), LeaveAlternateScreen);
         })?;
         Ok(Self {
             terminal,
@@ -116,18 +116,23 @@ impl Tui {
     }
 
     pub fn handle_events(&self) -> Result<Option<UIEvent>> {
-        if event::poll(Duration::from_millis(50))? {
+        // Drain events to avoid backing up the queue if mouse is moved or keys mashed
+        let mut last_event = None;
+        while event::poll(Duration::from_millis(0))? {
             if let Event::Key(key) = event::read()? {
                 match key.code {
-                    KeyCode::Esc | KeyCode::Char('q') => return Ok(Some(UIEvent::Quit)),
-                    KeyCode::Char('y') => return Ok(Some(UIEvent::Yes)),
-                    KeyCode::Char('n') => return Ok(Some(UIEvent::No)),
-                    KeyCode::Enter => return Ok(Some(UIEvent::Next)),
+                    KeyCode::Esc | KeyCode::Char('q') => last_event = Some(UIEvent::Quit),
+                    KeyCode::Char('y') => last_event = Some(UIEvent::Yes),
+                    KeyCode::Char('n') => last_event = Some(UIEvent::No),
+                    KeyCode::Enter => last_event = Some(UIEvent::Next),
                     _ => {}
                 }
+            } else {
+                let _ = event::read()?; // drop other events like resize/mouse
             }
         }
-        Ok(None)
+
+        Ok(last_event)
     }
 }
 

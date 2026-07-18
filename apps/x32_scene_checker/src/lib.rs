@@ -3,8 +3,8 @@ use osc_lib::OscArg;
 use std::collections::HashMap;
 use std::io::{Read, Write};
 use std::time::Duration;
-use x32_lib::MixerClient;
 use x32_lib::scene_parse::SceneParser;
+use x32_lib::MixerClient;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about = "Intelligent Scene Pre-flight Checker", long_about = None)]
