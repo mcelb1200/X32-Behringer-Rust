@@ -282,7 +282,7 @@ async fn update_bk_ch(
         let track = &state.bank_tracks[src_idx];
 
         path_buf.clear();
-        write!(&mut path_buf, "/ch/{:02}/mix/fader", i).unwrap();
+        write!(&mut path_buf, "/ch/{:02}/mix/fader", i).expect("Failed to format OSC path");
         let msg = OscMessage {
             path: path_buf.clone(),
             args: vec![OscArg::Float(track.fader)],
@@ -290,7 +290,7 @@ async fn update_bk_ch(
         let _ = x_client.send_message(&msg.path, msg.args.clone()).await;
 
         path_buf.clear();
-        write!(&mut path_buf, "/ch/{:02}/mix/pan", i).unwrap();
+        write!(&mut path_buf, "/ch/{:02}/mix/pan", i).expect("Failed to format OSC path");
         let msg = OscMessage {
             path: path_buf.clone(),
             args: vec![OscArg::Float(track.pan)],
@@ -298,7 +298,7 @@ async fn update_bk_ch(
         let _ = x_client.send_message(&msg.path, msg.args.clone()).await;
 
         path_buf.clear();
-        write!(&mut path_buf, "/ch/{:02}/mix/on", i).unwrap();
+        write!(&mut path_buf, "/ch/{:02}/mix/on", i).expect("Failed to format OSC path");
         let msg = OscMessage {
             path: path_buf.clone(),
             args: vec![OscArg::Int(if track.mute > 0.5 { 0 } else { 1 })],
@@ -307,7 +307,8 @@ async fn update_bk_ch(
 
         for j in 1..=16 {
             path_buf.clear();
-            write!(&mut path_buf, "/ch/{:02}/mix/{:02}/level", i, j).unwrap();
+            write!(&mut path_buf, "/ch/{:02}/mix/{:02}/level", i, j)
+                .expect("Failed to format OSC path");
             let msg = OscMessage {
                 path: path_buf.clone(),
                 args: vec![OscArg::Float(track.mixbus[j as usize - 1])],
@@ -316,7 +317,7 @@ async fn update_bk_ch(
         }
 
         path_buf.clear();
-        write!(&mut path_buf, "/ch/{:02}/config/name", i).unwrap();
+        write!(&mut path_buf, "/ch/{:02}/config/name", i).expect("Failed to format OSC path");
         let msg = OscMessage {
             path: path_buf.clone(),
             args: vec![OscArg::String(track.scribble.clone())],
@@ -324,7 +325,7 @@ async fn update_bk_ch(
         let _ = x_client.send_message(&msg.path, msg.args.clone()).await;
 
         path_buf.clear();
-        write!(&mut path_buf, "/ch/{:02}/config/color", i).unwrap();
+        write!(&mut path_buf, "/ch/{:02}/config/color", i).expect("Failed to format OSC path");
         let msg = OscMessage {
             path: path_buf.clone(),
             args: vec![OscArg::Int(track.color)],
@@ -332,7 +333,7 @@ async fn update_bk_ch(
         let _ = x_client.send_message(&msg.path, msg.args.clone()).await;
 
         path_buf.clear();
-        write!(&mut path_buf, "/ch/{:02}/config/icon", i).unwrap();
+        write!(&mut path_buf, "/ch/{:02}/config/icon", i).expect("Failed to format OSC path");
         let msg = OscMessage {
             path: path_buf.clone(),
             args: vec![OscArg::Int(track.icon)],
@@ -440,8 +441,8 @@ async fn process_x32_message(
                             for r_trk in rmin..=rmax {
                                 if (xr_mask & config.xr_send_mask) != 0 {
                                     path_buf.clear();
-                                    use std::fmt::Write;
-                                    write!(&mut path_buf, "/track/{}/volume", r_trk).unwrap();
+                                    write!(&mut path_buf, "/track/{}/volume", r_trk)
+                                        .expect("Failed to format OSC path");
                                     let m = OscMessage {
                                         path: path_buf.clone(),
                                         args: vec![OscArg::Float(*f)],
@@ -475,8 +476,8 @@ async fn process_x32_message(
                             for r_trk in rmin..=rmax {
                                 if (xr_mask & config.xr_send_mask) != 0 {
                                     path_buf.clear();
-                                    use std::fmt::Write;
-                                    write!(&mut path_buf, "/track/{}/mute", r_trk).unwrap();
+                                    write!(&mut path_buf, "/track/{}/mute", r_trk)
+                                        .expect("Failed to format OSC path");
                                     let m = OscMessage {
                                         path: path_buf.clone(),
                                         args: vec![OscArg::Float(val)],
