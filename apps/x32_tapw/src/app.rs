@@ -138,6 +138,11 @@ mod tests {
         assert_eq!(AppState::calculate_fval(3000.0), 1.0);
         assert_eq!(AppState::calculate_fval(6000.0), 1.0);
         assert_eq!(AppState::calculate_fval(-100.0), 0.0);
+
+        // Edge cases
+        assert!(AppState::calculate_fval(f32::NAN).is_nan());
+        assert_eq!(AppState::calculate_fval(f32::INFINITY), 1.0);
+        assert_eq!(AppState::calculate_fval(f32::NEG_INFINITY), 0.0);
     }
 
     #[test]
@@ -191,6 +196,23 @@ mod tests {
         // Empty blob
         let empty_blob: Vec<u8> = vec![];
         assert_eq!(AppState::parse_meter_blob(&empty_blob), None);
+    }
+
+    #[test]
+    fn test_log() {
+        let mut app = AppState::new();
+
+        app.log("first log".to_string());
+        assert_eq!(app.logs.len(), 1);
+        assert_eq!(app.logs[0], "first log");
+
+        for i in 0..101 {
+            app.log(format!("log {}", i));
+        }
+
+        assert_eq!(app.logs.len(), 100);
+        assert_eq!(app.logs[0], "log 1");
+        assert_eq!(app.logs[99], "log 100");
     }
 
     #[test]
