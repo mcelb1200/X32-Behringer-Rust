@@ -229,8 +229,7 @@ async fn run_app<B: Backend>(
 
                                     let slot = app_state.slot;
                                     let address = format!("/fx/{}/par/02", slot);
-                                    let msg =
-                                        OscMessage::new(address, vec![OscArg::Float(f_val)]);
+                                    let msg = OscMessage::new(address, vec![OscArg::Float(f_val)]);
                                     let _ = tx.try_send(msg);
                                 } else {
                                     app_state.log("First tap...".to_string());
