@@ -88,6 +88,21 @@ if not exist .vscode\tasks.json (
         echo         "kind": "test",
         echo         "isDefault": true
         echo       }
+        echo     },
+        echo     {
+        echo       "label": "Run Tests (Skip Build)",
+        echo       "type": "shell",
+        echo       "command": "powershell",
+        echo       "args": [
+        echo         "-ExecutionPolicy",
+        echo         "Bypass",
+        echo         "-File",
+        echo         "${workspaceFolder}/run_tests.ps1",
+        echo         "-Mode",
+        echo         "non_interactive",
+        echo         "-SkipBuild"
+        echo       ],
+        echo       "group": "test"
         echo     }
         echo   ]
         echo }
