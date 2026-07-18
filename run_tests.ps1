@@ -119,7 +119,7 @@ function Detect-X32Connection {
         if (-not (Test-Path $emulatorPath)) {
             $emulatorPath = ".\target\debug\x32_emulator.exe"
         }
-        
+
         if (Test-Path $emulatorPath) {
             Log-Message "Non-interactive mode: Starting local background emulator ($emulatorPath)..."
             $Global:EmulatorProcess = Start-Process -FilePath $emulatorPath -ArgumentList "--ip", "127.0.0.1" -PassThru -NoNewWindow
@@ -195,7 +195,7 @@ Get-ChildItem -Path ".\tests" -Filter "*.test.ps1" | ForEach-Object {
 function Run-AllTestsNonInteractive {
     Log-Message "Running in non-interactive mode."
     $Global:NonInteractive = $true
-    
+
     # Redefine Read-Host to auto-reply in non-interactive mode
     function global:Read-Host {
         param([string]$Prompt)
@@ -291,7 +291,7 @@ while ($true) {
         "4" {
             Log-Message "Running specific test..."
             if ($null -eq $Global:X32Connection) { Detect-X32Connection }
- 
+
             $i = 1
             $testOptions = @{}
             foreach ($module in $TestModules.GetEnumerator()) {
@@ -301,7 +301,7 @@ while ($true) {
             }
             $testChoice = Read-Host "Select a test to run"
             $selectedTest = $testOptions[$testChoice]
- 
+
             if ($selectedTest) {
                 . $selectedTest.Value
                 $fileContent = Get-Content $selectedTest.Value -Raw
