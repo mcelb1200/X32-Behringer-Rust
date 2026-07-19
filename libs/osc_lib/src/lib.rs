@@ -208,7 +208,11 @@ impl OscMessage {
 
                     let buf = match buf_ref.get(current_pos..end_pos) {
                         Some(b) => b.to_vec(),
-                        None => return Err(OscError::ParseError("Unexpected end of buffer".to_string())),
+                        None => {
+                            return Err(OscError::ParseError(
+                                "Unexpected end of buffer".to_string(),
+                            ));
+                        }
                     };
                     args.push(OscArg::Blob(buf));
 
