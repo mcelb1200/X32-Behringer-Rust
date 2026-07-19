@@ -14,6 +14,9 @@ pub struct Args {
 
     #[arg(short, long)]
     pub scene: String,
+
+    #[arg(long)]
+    pub auto_load: bool,
 }
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
@@ -37,7 +40,7 @@ impl RiskLevel {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct RiskIssue {
     pub level: RiskLevel,
     pub path: String,
@@ -298,6 +301,18 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
 
     if issues.is_empty() {
         println!("No changes detected. Scene matches current state.");
+        return Ok(());
+    }
+
+    if args.auto_load {
+        println!("Auto-loading entire scene...");
+        for issue in &issues {
+            client
+                .send_message(&issue.path, vec![issue.to.clone()])
+                .await?;
+            tokio::time::sleep(Duration::from_millis(2)).await; // avoid overwhelming
+        }
+        println!("Scene loaded.");
         return Ok(());
     }
 
