@@ -87,7 +87,6 @@ fn parse_scene_line_internal(parser: &mut SceneParser, line: &str) -> Vec<OscMes
         return vec![];
     }
 
-    let mut messages = Vec::new();
     let mut parts_array = [""; 16];
     let mut parts_len = 0;
     for p in path.trim_start_matches('/').split('/') {
@@ -98,11 +97,33 @@ fn parse_scene_line_internal(parser: &mut SceneParser, line: &str) -> Vec<OscMes
     }
     let parts = &parts_array[..parts_len];
     if parts.is_empty() {
-        return messages;
+        return vec![];
     }
 
+    let specific_messages = match parts {
+        ["fx", ..] => parse_fx_scene_line(parser, parts, arg_str),
+        ["config", ..] => parse_config_scene_line(parts, arg_str),
+        _ => None,
+    };
+
+    if let Some(msgs) = specific_messages {
+        return msgs;
+    }
+
+    let mut messages = Vec::new();
+    if let Some(msg) = x32_fxparse::parse_parameter(parser.model, path, arg_str) {
+        messages.push(msg);
+    }
+    messages
+}
+
+fn parse_fx_scene_line(
+    parser: &mut SceneParser,
+    parts: &[&str],
+    arg_str: &str,
+) -> Option<Vec<OscMessage>> {
+    let mut messages = Vec::new();
     match parts {
-        // --- FX Types and Sources ---
         ["fx", slot, "type"] => {
             if let Ok(s) = slot.parse::<usize>() {
                 if (1..=8).contains(&s) {
@@ -121,6 +142,7 @@ fn parse_scene_line_internal(parser: &mut SceneParser, line: &str) -> Vec<OscMes
                     }
                 }
             }
+            Some(messages)
         }
         ["fx", slot, "source", side] => {
             if let Ok(s) = slot.parse::<usize>() {
@@ -133,6 +155,7 @@ fn parse_scene_line_internal(parser: &mut SceneParser, line: &str) -> Vec<OscMes
                     }
                 }
             }
+            Some(messages)
         }
         ["fx", slot, "par"] => {
             if let Ok(s) = slot.parse::<usize>() {
@@ -143,9 +166,15 @@ fn parse_scene_line_internal(parser: &mut SceneParser, line: &str) -> Vec<OscMes
                     }
                 }
             }
+            Some(messages)
         }
+        _ => None,
+    }
+}
 
-        // --- Config ---
+fn parse_config_scene_line(parts: &[&str], arg_str: &str) -> Option<Vec<OscMessage>> {
+    let mut messages = Vec::new();
+    match parts {
         ["config", "chlink"] => {
             for ch in (1..32).step_by(2) {
                 let p = format!("/config/chlink/{}-{}", ch, ch + 1);
@@ -153,6 +182,7 @@ fn parse_scene_line_internal(parser: &mut SceneParser, line: &str) -> Vec<OscMes
                     messages.push(OscMessage::new(p, vec![arg]));
                 }
             }
+            Some(messages)
         }
         ["config", "auxlink"] => {
             for ch in (1..8).step_by(2) {
@@ -161,6 +191,7 @@ fn parse_scene_line_internal(parser: &mut SceneParser, line: &str) -> Vec<OscMes
                     messages.push(OscMessage::new(p, vec![arg]));
                 }
             }
+            Some(messages)
         }
         ["config", "fxlink"] => {
             for ch in (1..8).step_by(2) {
@@ -169,6 +200,7 @@ fn parse_scene_line_internal(parser: &mut SceneParser, line: &str) -> Vec<OscMes
                     messages.push(OscMessage::new(p, vec![arg]));
                 }
             }
+            Some(messages)
         }
         ["config", "buslink"] => {
             for ch in (1..16).step_by(2) {
@@ -177,6 +209,7 @@ fn parse_scene_line_internal(parser: &mut SceneParser, line: &str) -> Vec<OscMes
                     messages.push(OscMessage::new(p, vec![arg]));
                 }
             }
+            Some(messages)
         }
         ["config", "mtxlink"] => {
             for ch in (1..6).step_by(2) {
@@ -185,6 +218,7 @@ fn parse_scene_line_internal(parser: &mut SceneParser, line: &str) -> Vec<OscMes
                     messages.push(OscMessage::new(p, vec![arg]));
                 }
             }
+            Some(messages)
         }
         ["config", "mute"] => {
             for ch in 1..=6 {
@@ -193,6 +227,7 @@ fn parse_scene_line_internal(parser: &mut SceneParser, line: &str) -> Vec<OscMes
                     messages.push(OscMessage::new(p, vec![arg]));
                 }
             }
+            Some(messages)
         }
         ["config", "linkcfg"] => {
             let p_ha = "/config/linkcfg/ha".to_string();
@@ -211,6 +246,7 @@ fn parse_scene_line_internal(parser: &mut SceneParser, line: &str) -> Vec<OscMes
                     vec![arg],
                 ));
             }
+            Some(messages)
         }
         ["config", "mono"] => {
             if let Some(arg) = parse_onoff(arg_str, "LR+M") {
@@ -219,6 +255,7 @@ fn parse_scene_line_internal(parser: &mut SceneParser, line: &str) -> Vec<OscMes
             if let Some(arg) = parse_onoff(arg_str, "OFF") {
                 messages.push(OscMessage::new("/config/mono/link".to_string(), vec![arg]));
             }
+            Some(messages)
         }
         ["config", "solo"] => {
             let p = "/config/solo/source".to_string();
@@ -260,16 +297,10 @@ fn parse_scene_line_internal(parser: &mut SceneParser, line: &str) -> Vec<OscMes
                     vec![arg],
                 ));
             }
+            Some(messages)
         }
-        // General fallback handler for all specific channel/bus/etc settings
-        _ => {
-            if let Some(msg) = x32_fxparse::parse_parameter(parser.model, path, arg_str) {
-                messages.push(msg);
-            }
-        }
+        _ => None,
     }
-
-    messages
 }
 
 // --- Helper parsing functions ---
