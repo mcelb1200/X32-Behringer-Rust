@@ -9,7 +9,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::time::interval;
-use x32_lib::{transport::udp::UdpTransport, MixerClient};
+use x32_lib::{MixerClient, transport::udp::UdpTransport};
 
 use crossterm::{
     event::{self, Event, KeyCode},
