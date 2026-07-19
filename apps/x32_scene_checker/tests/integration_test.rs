@@ -1,15 +1,15 @@
 //! Scene checker tests
+use osc_lib::OscArg;
+use std::io::Write;
 use std::sync::Arc;
 use std::time::Duration;
+use tempfile::NamedTempFile;
 use tokio::net::UdpSocket;
 use x32_core::Mixer;
 use x32_lib::MixerClient;
 use x32_lib::transport::udp::UdpTransport;
-use osc_lib::OscArg;
-use std::io::Write;
-use tempfile::NamedTempFile;
 
-use x32_scene_checker::{Args, run, classify_risk, RiskLevel};
+use x32_scene_checker::{Args, RiskLevel, classify_risk, run};
 
 #[test]
 fn test_classify_risk() {

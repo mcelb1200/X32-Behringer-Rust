@@ -1,12 +1,12 @@
 //! Volunteer App Integration Tests
 //! Volunteer app tests
+use osc_lib::OscArg;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::net::UdpSocket;
 use x32_core::Mixer;
 use x32_lib::MixerClient;
 use x32_lib::transport::udp::UdpTransport;
-use osc_lib::OscArg;
 
 use x32_volunteer::{Args, run};
 
@@ -22,9 +22,36 @@ async fn test_x32_volunteer_integration() {
     let socket_rx = socket_arc.clone();
 
     // Populate initial state required by volunteer app queries
-    mixer.dispatch(osc_lib::OscMessage::new("/ch/01/config/name".to_string(), vec![OscArg::String("Vox".to_string())]).to_bytes().unwrap().as_slice(), socket_addr).unwrap();
-    mixer.dispatch(osc_lib::OscMessage::new("/ch/01/mix/on".to_string(), vec![OscArg::Int(1)]).to_bytes().unwrap().as_slice(), socket_addr).unwrap();
-    mixer.dispatch(osc_lib::OscMessage::new("/ch/01/mix/fader".to_string(), vec![OscArg::Float(0.75)]).to_bytes().unwrap().as_slice(), socket_addr).unwrap();
+    mixer
+        .dispatch(
+            osc_lib::OscMessage::new(
+                "/ch/01/config/name".to_string(),
+                vec![OscArg::String("Vox".to_string())],
+            )
+            .to_bytes()
+            .unwrap()
+            .as_slice(),
+            socket_addr,
+        )
+        .unwrap();
+    mixer
+        .dispatch(
+            osc_lib::OscMessage::new("/ch/01/mix/on".to_string(), vec![OscArg::Int(1)])
+                .to_bytes()
+                .unwrap()
+                .as_slice(),
+            socket_addr,
+        )
+        .unwrap();
+    mixer
+        .dispatch(
+            osc_lib::OscMessage::new("/ch/01/mix/fader".to_string(), vec![OscArg::Float(0.75)])
+                .to_bytes()
+                .unwrap()
+                .as_slice(),
+            socket_addr,
+        )
+        .unwrap();
 
     let _ = tokio::spawn(async move {
         let mut buf = [0u8; 1024];

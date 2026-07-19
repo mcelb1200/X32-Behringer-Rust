@@ -47,14 +47,14 @@ fn test_detector_ignores_noise() {
     assert!(events.is_empty(), "Should ignore non-sustained noise");
 }
 
-use x32_feedback_detect::mixer::MixerState;
-use x32_lib::MixerClient;
+use osc_lib::OscArg;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::net::UdpSocket;
 use x32_core::Mixer;
+use x32_feedback_detect::mixer::MixerState;
+use x32_lib::MixerClient;
 use x32_lib::transport::udp::UdpTransport;
-use osc_lib::OscArg;
 
 #[tokio::test]
 async fn test_x32_feedback_detect_mixer_state() {
@@ -65,7 +65,15 @@ async fn test_x32_feedback_detect_mixer_state() {
 
     let mut mixer = Mixer::new();
     // Pre-populate some states to simulate an active mixer that accepts EQ bands
-    mixer.dispatch(osc_lib::OscMessage::new("/ch/01/eq/6/type".to_string(), vec![OscArg::Int(3)]).to_bytes().unwrap().as_slice(), socket_addr).unwrap();
+    mixer
+        .dispatch(
+            osc_lib::OscMessage::new("/ch/01/eq/6/type".to_string(), vec![OscArg::Int(3)])
+                .to_bytes()
+                .unwrap()
+                .as_slice(),
+            socket_addr,
+        )
+        .unwrap();
 
     let socket_arc = Arc::new(socket);
     let socket_rx = socket_arc.clone();
