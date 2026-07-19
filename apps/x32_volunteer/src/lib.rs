@@ -84,9 +84,7 @@ async fn run_tui_loop(
     for ch in &state.channels {
         network.send_message(ch.fader_path.as_str(), vec![]).await?;
         network.send_message(ch.mute_path.as_str(), vec![]).await?;
-        network
-            .send_message(ch.name_path.as_str(), vec![])
-            .await?;
+        network.send_message(ch.name_path.as_str(), vec![]).await?;
     }
     network
         .send_message("/meters", vec![OscArg::String("/meters/1".to_string())])
