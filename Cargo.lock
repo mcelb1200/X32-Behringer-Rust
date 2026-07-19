@@ -2533,6 +2533,7 @@ dependencies = [
  "ringbuf",
  "rustfft",
  "tokio",
+ "x32_core",
  "x32_lib",
 ]
 
@@ -2705,7 +2706,9 @@ dependencies = [
  "anyhow",
  "clap",
  "osc_lib",
+ "tempfile",
  "tokio",
+ "x32_core",
  "x32_lib",
 ]
 
@@ -2876,6 +2879,7 @@ dependencies = [
  "rustfft",
  "thread-priority",
  "tokio",
+ "x32_core",
  "x32_lib",
 ]
 
@@ -2889,6 +2893,7 @@ dependencies = [
  "osc_lib",
  "ratatui",
  "tokio",
+ "x32_core",
  "x32_lib",
 ]
 
