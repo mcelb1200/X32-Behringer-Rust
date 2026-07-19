@@ -200,12 +200,20 @@ impl OscMessage {
                     let current_pos = cursor.position() as usize;
                     let buf_ref = cursor.get_ref();
 
-                    let end_pos = current_pos + len;
-                    if end_pos > buf_ref.len() {
+                    if len > buf_ref.len().saturating_sub(current_pos) {
                         return Err(OscError::ParseError("Unexpected end of buffer".to_string()));
                     }
 
-                    let buf = buf_ref[current_pos..end_pos].to_vec();
+                    let end_pos = current_pos + len;
+
+                    let buf = match buf_ref.get(current_pos..end_pos) {
+                        Some(b) => b.to_vec(),
+                        None => {
+                            return Err(OscError::ParseError(
+                                "Unexpected end of buffer".to_string(),
+                            ));
+                        }
+                    };
                     args.push(OscArg::Blob(buf));
 
                     let next_aligned_pos = (end_pos + 3) & !3;
@@ -597,7 +605,10 @@ fn read_osc_string_bytes<'a>(cursor: &mut Cursor<&'a [u8]>) -> Result<&'a [u8]> 
         return Err(OscError::ParseError("Unexpected end of buffer".to_string()));
     }
 
-    let remainder = &buf[pos..];
+    let remainder = match buf.get(pos..) {
+        Some(r) => r,
+        None => return Err(OscError::ParseError("Unexpected end of buffer".to_string())),
+    };
 
     // Find the null terminator byte (0)
     let null_pos = match remainder.iter().position(|&b| b == 0) {
@@ -610,7 +621,10 @@ fn read_osc_string_bytes<'a>(cursor: &mut Cursor<&'a [u8]>) -> Result<&'a [u8]> 
     };
 
     // Extract the string bytes
-    let string_bytes = &remainder[..null_pos];
+    let string_bytes = match remainder.get(..null_pos) {
+        Some(b) => b,
+        None => return Err(OscError::ParseError("Unexpected end of buffer".to_string())),
+    };
 
     // Calculate the new position after the null terminator and padding
     let new_pos = pos + null_pos + 1; // +1 for the null terminator
