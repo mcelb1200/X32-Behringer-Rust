@@ -3,6 +3,9 @@ name = "x32_vocal_ducking"
 version = "0.1.0"
 edition = "2021"
 
+[dev-dependencies]
+x32_core = { workspace = true }
+
 [dependencies]
 tokio = { workspace = true }
 anyhow = { workspace = true }
