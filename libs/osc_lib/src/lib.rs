@@ -211,7 +211,9 @@ impl OscMessage {
                             args.push(OscArg::Blob(buf));
                         }
                         None => {
-                            return Err(OscError::ParseError("Unexpected end of buffer".to_string()));
+                            return Err(OscError::ParseError(
+                                "Unexpected end of buffer".to_string(),
+                            ));
                         }
                     }
 
