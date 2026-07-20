@@ -118,22 +118,22 @@ impl Tui {
                     Span::raw("Style (PgUp/PgDn):     "),
                     Span::styled(&cfg.style, Style::default().fg(Color::Magenta)),
                 ]),
-                Line::from(vec![
-                    Span::raw("Status:                "),
-                    {
-                        let is_supported = state.is_supported[state.selected_slot];
-                        let effect_name = &state.active_effects[state.selected_slot];
-                        if effect_name.is_empty() {
-                            Span::styled("EMPTY SLOT", Style::default().fg(Color::DarkGray))
-                        } else if !is_supported {
-                            Span::styled("UNSUPPORTED (NO TEMPO PARAM)", Style::default().fg(Color::LightYellow))
-                        } else if cfg.enabled {
-                            Span::styled("SYNCED", Style::default().fg(Color::Green))
-                        } else {
-                            Span::styled("BYPASS", Style::default().fg(Color::Red))
-                        }
-                    },
-                ]),
+                Line::from(vec![Span::raw("Status:                "), {
+                    let is_supported = state.is_supported[state.selected_slot];
+                    let effect_name = &state.active_effects[state.selected_slot];
+                    if effect_name.is_empty() {
+                        Span::styled("EMPTY SLOT", Style::default().fg(Color::DarkGray))
+                    } else if !is_supported {
+                        Span::styled(
+                            "UNSUPPORTED (NO TEMPO PARAM)",
+                            Style::default().fg(Color::LightYellow),
+                        )
+                    } else if cfg.enabled {
+                        Span::styled("SYNCED", Style::default().fg(Color::Green))
+                    } else {
+                        Span::styled("BYPASS", Style::default().fg(Color::Red))
+                    }
+                }]),
             ];
             let details = Paragraph::new(detail_text).block(
                 Block::default()
@@ -180,7 +180,9 @@ impl Tui {
                 }),
                 Span::raw(" | Msg: "),
                 Span::raw(state.message),
-                Span::raw(" | Controls: Arrow Keys, PgUp/Dn, Space (toggle), 'a'lgo, 'r'eset, 'q'uit"),
+                Span::raw(
+                    " | Controls: Arrow Keys, PgUp/Dn, Space (toggle), 'a'lgo, 'r'eset, 'q'uit",
+                ),
             ]);
             let status = Paragraph::new(status_text).block(Block::default().borders(Borders::ALL));
             f.render_widget(status, chunks[5]);
