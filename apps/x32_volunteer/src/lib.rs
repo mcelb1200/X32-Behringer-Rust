@@ -82,21 +82,9 @@ async fn run_tui_loop(
 ) -> Result<()> {
     // Initial state request
     for ch in &state.channels {
-        let fader_path = if ch.is_dca {
-            format!("{}/fader", ch.osc_prefix)
-        } else {
-            format!("{}/mix/fader", ch.osc_prefix)
-        };
-        let mute_path = if ch.is_dca {
-            format!("{}/on", ch.osc_prefix)
-        } else {
-            format!("{}/mix/on", ch.osc_prefix)
-        };
-        network.send_message(fader_path.as_str(), vec![]).await?;
-        network.send_message(mute_path.as_str(), vec![]).await?;
-        network
-            .send_message(format!("{}/config/name", ch.osc_prefix).as_str(), vec![])
-            .await?;
+        network.send_message(ch.fader_path.as_str(), vec![]).await?;
+        network.send_message(ch.mute_path.as_str(), vec![]).await?;
+        network.send_message(ch.name_path.as_str(), vec![]).await?;
     }
     network
         .send_message("/meters", vec![OscArg::String("/meters/1".to_string())])
@@ -112,30 +100,15 @@ async fn run_tui_loop(
 
             // Fader / Mute updates
             for ch in &mut state.channels {
-                if (ch.is_dca && path == format!("{}/fader", ch.osc_prefix))
-                    || (!ch.is_dca && path == format!("{}/mix/fader", ch.osc_prefix))
-                {
+                if path == ch.fader_path {
                     if let Some(OscArg::Float(v)) = msg.args.first() {
                         ch.fader = *v;
                     }
-                } else if path == format!("{}/mix/on", ch.osc_prefix)
-                    || path == format!("{}/on", ch.osc_prefix)
-                {
-                    // Handle DCA vs CH on
-                    let mut found = false;
-                    if path.starts_with("/ch/") && path.ends_with("/mix/on") {
-                        found = true;
+                } else if path == ch.mute_path {
+                    if let Some(OscArg::Int(v)) = msg.args.first() {
+                        ch.muted = *v == 0;
                     }
-                    if path.starts_with("/dca/") && path.ends_with("/on") {
-                        found = true;
-                    }
-
-                    if found {
-                        if let Some(OscArg::Int(v)) = msg.args.first() {
-                            ch.muted = *v == 0;
-                        }
-                    }
-                } else if path == format!("{}/config/name", ch.osc_prefix) {
+                } else if path == ch.name_path {
                     if let Some(OscArg::String(s)) = msg.args.first() {
                         if !s.is_empty() {
                             ch.name = s.clone();
@@ -197,33 +170,18 @@ async fn run_tui_loop(
                     UIEvent::Quit => break,
                     UIEvent::MuteAll => {
                         for ch in &state.channels {
-                            let mute_path = if ch.is_dca {
-                                format!("{}/on", ch.osc_prefix)
-                            } else {
-                                format!("{}/mix/on", ch.osc_prefix)
-                            };
                             network
-                                .send_message(&mute_path, vec![OscArg::Int(0)])
+                                .send_message(&ch.mute_path, vec![OscArg::Int(0)])
                                 .await?;
                         }
                     }
                     UIEvent::Panic => {
                         for ch in &state.channels {
-                            let mute_path = if ch.is_dca {
-                                format!("{}/on", ch.osc_prefix)
-                            } else {
-                                format!("{}/mix/on", ch.osc_prefix)
-                            };
                             network
-                                .send_message(&mute_path, vec![OscArg::Int(0)])
+                                .send_message(&ch.mute_path, vec![OscArg::Int(0)])
                                 .await?;
-                            let fader_path = if ch.is_dca {
-                                format!("{}/fader", ch.osc_prefix)
-                            } else {
-                                format!("{}/mix/fader", ch.osc_prefix)
-                            };
                             network
-                                .send_message(&fader_path, vec![OscArg::Float(0.0)])
+                                .send_message(&ch.fader_path, vec![OscArg::Float(0.0)])
                                 .await?;
                         }
                     }
