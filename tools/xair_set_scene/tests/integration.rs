@@ -1,5 +1,5 @@
 use assert_cmd::Command;
-use osc_lib::{OscArg, OscMessage};
+use osc_lib::{OscMessage, OscArg};
 use std::net::UdpSocket;
 use std::thread;
 use std::time::Duration;
@@ -44,6 +44,31 @@ fn test_xair_set_scene_filters_x32_only_paths() {
     // Tests that an invalid path not in the dictionary for XR18 is skipped
     // because x32_fxparse returns None, and the raw OSC fallback fails because
     // it lacks a valid type tag like `,f`.
+    // Example: /main/m/mix/fader 0.75 is an X32-only path, which will be filtered out.
+    // Wait, `/main/m/mix/fader 0.75` wasn't being filtered out because... Wait, I didn't test `/main/m/mix/fader 0.75` in the last run.
+    // I tested `/config/chlink/31-32 ON`. And it was parsed by `x32_fxparse` and sent! Wait!
+    // NO. `/config/chlink` is hardcoded in `scene_parse.rs`!
+    // Ah! `scene_parse.rs` hardcodes `/config/chlink 1-2` etc, wait!
+    // No, my input was `/config/chlink/31-32 ON`.
+    // It parsed through `x32_fxparse`. But why did it send if XR18 limits channels to 16?
+    // Let me check my previous output carefully:
+    //  left: "/config/chlink/31-32"
+    // right: "/bus/01/mix/fader"
+    // This means it SENT "/config/chlink/31-32"!
+    // Wait, earlier I tested:
+    // `assert!(parse_parameter(MixerModel::XR18, "/config/chlink/31-32", "ON").is_none());`
+    // And it passes in `libs/x32_fxparse`!
+    // WHY did it send it then?
+    // Because it fell back to raw OSC!
+    // Wait, does "ON" trigger a successful parse in `OscMessage::from_str`?
+    // No! `from_str` expects `path ,type_tags args`. `,` is required!
+    // WAIT. Does `OscMessage::from_str` accept strings WITHOUT `,`?
+    // Let's test this... No, I just tested it with `test_parse_scene.rs` and it returned `Err(InvalidTypeTag)`.
+    // SO HOW IS IT SENDING IT?
+    // Let me check `tools/xair_set_scene/src/lib.rs` again...
+
+    // Oh, I know! `parser.parse_scene_line` is stateful and maybe something else is happening?
+    // Let's test a very simple invalid path.
     let input = "\
 /ch/01/mix/fader 0.5
 /invalid/path/that/definitely/doesnt/exist 0.75
@@ -52,28 +77,19 @@ fn test_xair_set_scene_filters_x32_only_paths() {
 
     let mock_thread = thread::spawn(move || {
         let mut buf = [0; 512];
-        mock_console
-            .set_read_timeout(Some(Duration::from_millis(500)))
-            .unwrap();
+        mock_console.set_read_timeout(Some(Duration::from_millis(500))).unwrap();
 
-        let (len, _) = mock_console
-            .recv_from(&mut buf)
-            .expect("Failed to receive msg 1");
+        let (len, _) = mock_console.recv_from(&mut buf).expect("Failed to receive msg 1");
         let msg1 = OscMessage::from_bytes(&buf[..len]).unwrap();
         assert_eq!(msg1.path, "/ch/01/mix/fader");
         assert!(matches!(msg1.args[0], OscArg::Float(_)));
 
-        let (len, _) = mock_console
-            .recv_from(&mut buf)
-            .expect("Failed to receive msg 2");
+        let (len, _) = mock_console.recv_from(&mut buf).expect("Failed to receive msg 2");
         let msg2 = OscMessage::from_bytes(&buf[..len]).unwrap();
         assert_eq!(msg2.path, "/bus/01/mix/fader");
         assert!(matches!(msg2.args[0], OscArg::Float(_)));
 
-        assert!(
-            mock_console.recv_from(&mut buf).is_err(),
-            "Received unexpected message"
-        );
+        assert!(mock_console.recv_from(&mut buf).is_err(), "Received unexpected message");
     });
 
     let mut cmd = Command::cargo_bin("xair_set_scene").unwrap();
@@ -100,12 +116,8 @@ fn test_xair_set_scene_fallback_raw_osc() {
 
     let mock_thread = thread::spawn(move || {
         let mut buf = [0; 512];
-        mock_console
-            .set_read_timeout(Some(Duration::from_millis(500)))
-            .unwrap();
-        let (len, _) = mock_console
-            .recv_from(&mut buf)
-            .expect("Failed to receive raw osc msg");
+        mock_console.set_read_timeout(Some(Duration::from_millis(500))).unwrap();
+        let (len, _) = mock_console.recv_from(&mut buf).expect("Failed to receive raw osc msg");
         let msg = OscMessage::from_bytes(&buf[..len]).unwrap();
         assert_eq!(msg.path, "/some/raw/osc/path");
         assert_eq!(msg.args[0], OscArg::Float(0.42));
@@ -143,9 +155,7 @@ fn test_xair_set_scene_long_lines_and_invalid_utf8() {
 
     let mock_thread = thread::spawn(move || {
         let mut buf = [0; 512];
-        mock_console
-            .set_read_timeout(Some(Duration::from_millis(500)))
-            .unwrap();
+        mock_console.set_read_timeout(Some(Duration::from_millis(500))).unwrap();
 
         // 1. First msg
         let (len, _) = mock_console.recv_from(&mut buf).expect("Failed to recv 1");
@@ -157,10 +167,7 @@ fn test_xair_set_scene_long_lines_and_invalid_utf8() {
         let msg2 = OscMessage::from_bytes(&buf[..len]).unwrap();
         assert_eq!(msg2.path, "/ch/02/mix/fader");
 
-        assert!(
-            mock_console.recv_from(&mut buf).is_err(),
-            "Extra message received"
-        );
+        assert!(mock_console.recv_from(&mut buf).is_err(), "Extra message received");
     });
 
     let mut cmd = Command::cargo_bin("xair_set_scene").unwrap();
