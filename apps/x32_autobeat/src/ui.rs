@@ -118,22 +118,22 @@ impl Tui {
                     Span::raw("Style (PgUp/PgDn):     "),
                     Span::styled(&cfg.style, Style::default().fg(Color::Magenta)),
                 ]),
-                Line::from(vec![
-                    Span::raw("Status:                "),
-                    {
-                        let is_supported = state.is_supported[state.selected_slot];
-                        let effect_name = &state.active_effects[state.selected_slot];
-                        if effect_name.is_empty() {
-                            Span::styled("EMPTY SLOT", Style::default().fg(Color::DarkGray))
-                        } else if !is_supported {
-                            Span::styled("UNSUPPORTED (NO TEMPO PARAM)", Style::default().fg(Color::LightYellow))
-                        } else if cfg.enabled {
-                            Span::styled("SYNCED", Style::default().fg(Color::Green))
-                        } else {
-                            Span::styled("BYPASS", Style::default().fg(Color::Red))
-                        }
-                    },
-                ]),
+                Line::from(vec![Span::raw("Status:                "), {
+                    let is_supported = state.is_supported[state.selected_slot];
+                    let effect_name = &state.active_effects[state.selected_slot];
+                    if effect_name.is_empty() {
+                        Span::styled("EMPTY SLOT", Style::default().fg(Color::DarkGray))
+                    } else if !is_supported {
+                        Span::styled(
+                            "UNSUPPORTED (NO TEMPO PARAM)",
+                            Style::default().fg(Color::LightYellow),
+                        )
+                    } else if cfg.enabled {
+                        Span::styled("SYNCED", Style::default().fg(Color::Green))
+                    } else {
+                        Span::styled("BYPASS", Style::default().fg(Color::Red))
+                    }
+                }]),
             ];
             let details = Paragraph::new(detail_text).block(
                 Block::default()
@@ -147,7 +147,7 @@ impl Tui {
             let bpm_text = if state.is_panic {
                 "PANIC"
             } else if let Some(bpm) = state.current_bpm {
-                bpm_string = format!("{:.1} BPM ({})", bpm, state.algorithm);
+                bpm_string = format!("{bpm:.1} BPM ({})", state.algorithm);
                 &bpm_string
             } else {
                 "Detecting..."
@@ -169,16 +169,21 @@ impl Tui {
                 .ratio(state.input_level.clamp(0.0, 1.0) as f64);
             f.render_widget(gauge, chunks[4]);
 
-            let status_text = format!(
-                "Source: {} | Mode: {} | Msg: {} | Controls: Arrow Keys, PgUp/Dn, Space (toggle), 'a'lgo, 'r'eset, 'q'uit",
-                state.source,
-                if state.is_fallback {
+            let status_text = Line::from(vec![
+                Span::raw("Source: "),
+                Span::raw(state.source),
+                Span::raw(" | Mode: "),
+                Span::raw(if state.is_fallback {
                     "OSC Fallback"
                 } else {
                     "Audio"
-                },
-                state.message
-            );
+                }),
+                Span::raw(" | Msg: "),
+                Span::raw(state.message),
+                Span::raw(
+                    " | Controls: Arrow Keys, PgUp/Dn, Space (toggle), 'a'lgo, 'r'eset, 'q'uit",
+                ),
+            ]);
             let status = Paragraph::new(status_text).block(Block::default().borders(Borders::ALL));
             f.render_widget(status, chunks[5]);
         })?;
