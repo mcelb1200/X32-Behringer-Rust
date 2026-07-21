@@ -134,7 +134,7 @@ pub async fn run(args: Args) -> Result<()> {
     loop {
         // Render
         {
-            let state = app_state.lock().unwrap();
+            let state = app_state.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
             terminal.draw(|f| ui(f, &state))?;
             if state.should_quit {
                 break;
@@ -153,7 +153,7 @@ pub async fn run(args: Args) -> Result<()> {
             }) => {
                 if let Ok(Some(Event::Key(key))) = event_result {
                     if key.kind == KeyEventKind::Press {
-                        let mut state = app_state.lock().unwrap();
+                        let mut state = app_state.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
                         match key.code {
                             KeyCode::Char('q') | KeyCode::Esc => state.should_quit = true,
                             KeyCode::Char('p') => state.pause_ramp = !state.pause_ramp,
@@ -180,7 +180,7 @@ pub async fn run(args: Args) -> Result<()> {
 
                 let mut fader_updates = Vec::new();
                 {
-                    let mut state = app_state.lock().unwrap();
+                    let mut state = app_state.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
                     if state.pause_ramp {
                         continue;
                     }
@@ -240,7 +240,7 @@ pub async fn run(args: Args) -> Result<()> {
                         let mut update_count = 0;
 
                         {
-                            let mut state = app_state.lock().unwrap();
+                            let mut state = app_state.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
                             for bus in state.buses.values_mut() {
                                 if bus.status != BusStatus::Active || bus.notches.len() >= args.max_notches as usize {
                                     continue;
