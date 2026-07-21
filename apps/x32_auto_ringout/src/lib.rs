@@ -134,7 +134,9 @@ pub async fn run(args: Args) -> Result<()> {
     loop {
         // Render
         {
-            let state = app_state.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+            let state = app_state
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner());
             terminal.draw(|f| ui(f, &state))?;
             if state.should_quit {
                 break;
