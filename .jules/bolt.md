@@ -114,3 +114,7 @@ When initializing terminal UI state that might fail and return a `Result` (e.g.,
 ## 2026-07-20 - [Replace dynamic vector allocations with fixed stack arrays for predefined strings]
 **Learning:** When initializing static collections of predefined strings (like OSC paths) in `lazy_static!`, using `Vec<String>` (e.g., via `.map(...).collect()`) dynamically allocates a heap buffer. For arrays with bounds known at compile time, this is an unnecessary abstraction that adds a layer of pointer indirection upon every runtime access.
 **Action:** Replace `Vec<String>` with fixed-size arrays (e.g., `[String; 257]`) initialized via `core::array::from_fn`. This avoids the heap allocation for the container and embeds the array directly into the static structure.
+
+## $(date +%Y-%m-%d) - TUI Layout Constraints Re-allocation
+**Learning:** In Ratatui applications, providing a dynamic iterator to `Layout::constraints()` via `.collect::<Vec<_>>()` inside the high-frequency `Terminal::draw` closure forces a heap allocation on every single UI tick (e.g., 60 times a second).
+**Action:** When a constraints vector's length can only change dynamically based on state (and thus can't use `core::array::from_fn`), cache the `Vec<Constraint>` in the UI's state struct. Conditionally invalidate and regenerate this cached vector only when the underlying dynamic state length changes, and pass `.as_slice()` to the `constraints()` method to eliminate per-frame heap allocations.

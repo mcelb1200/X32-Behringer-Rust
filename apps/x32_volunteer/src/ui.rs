@@ -17,6 +17,7 @@ use std::{io, time::Duration};
 
 pub struct Tui {
     terminal: Terminal<CrosstermBackend<io::Stdout>>,
+    cached_constraints: Option<Vec<Constraint>>,
 }
 
 impl Tui {
@@ -26,10 +27,24 @@ impl Tui {
         execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
         let backend = CrosstermBackend::new(stdout);
         let terminal = Terminal::new(backend)?;
-        Ok(Self { terminal })
+        Ok(Self {
+            terminal,
+            cached_constraints: None,
+        })
     }
 
     pub fn draw(&mut self, state: &AppState) -> Result<()> {
+        // ⚡ Bolt: Cache constraints layout vector to prevent heap allocation on every UI tick
+        let target_len = state.channels.len();
+        if self.cached_constraints.as_ref().map(|c| c.len()) != Some(target_len) {
+            self.cached_constraints = Some(
+                std::iter::repeat(Constraint::Ratio(1, target_len as u32))
+                    .take(target_len)
+                    .collect(),
+            );
+        }
+        let constraints = self.cached_constraints.as_ref().unwrap();
+
         self.terminal.draw(|f| {
             let chunks = Layout::default()
                 .direction(Direction::Vertical)
@@ -73,13 +88,7 @@ impl Tui {
             // 2. Channels (Grid layout ideally, simplify for now to horizontal chunks)
             let channel_chunks = Layout::default()
                 .direction(Direction::Horizontal)
-                .constraints(
-                    state
-                        .channels
-                        .iter()
-                        .map(|_| Constraint::Ratio(1, state.channels.len() as u32))
-                        .collect::<Vec<_>>(),
-                )
+                .constraints(constraints.as_slice())
                 .split(chunks[1]);
 
             for (i, ch) in state.channels.iter().enumerate() {
