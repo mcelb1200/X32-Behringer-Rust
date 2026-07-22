@@ -32,12 +32,15 @@ log_message() {
 
 # --- Compilation ---
 compile_binaries() {
-    log_message "Starting parallel compilation of all workspace binaries..."
-    cargo build --workspace --bins --release
-    if [ $? -ne 0 ]; then
-        log_message "ERROR: Workspace compilation failed."
-        return 1
-    fi
+    log_message "Starting compilation of all binaries..."
+    for binary in "${BINARIES[@]}"; do
+        log_message "Compiling $binary..."
+        cargo build --package "$binary" --release
+        if [ $? -ne 0 ]; then
+            log_message "ERROR: Compilation of $binary failed."
+            return 1
+        fi
+    done
     log_message "Compilation complete."
     return 0
 }
@@ -71,24 +74,6 @@ detect_x32_connection() {
     local non_interactive_mode=$1
     log_message "Attempting to detect X32 connection..."
 
-    # 0. Check for Local Emulator (127.0.0.1) first
-    log_message "Checking for local X32 emulator (127.0.0.1)..."
-    if command -v nc &> /dev/null; then
-        if nc -z -w 1 127.0.0.1 10023 &> /dev/null; then
-            log_message "Found local X32 Emulator at 127.0.0.1"
-            X32_CONNECTION_TYPE="Network"
-            X32_IP_ADDRESS="127.0.0.1"
-            return
-        fi
-    elif command -v timeout &> /dev/null && command -v bash &> /dev/null; then
-        if timeout 1 bash -c 'cat < /dev/null > /dev/tcp/127.0.0.1/10023' &> /dev/null; then
-            log_message "Found local X32 Emulator at 127.0.0.1"
-            X32_CONNECTION_TYPE="Network"
-            X32_IP_ADDRESS="127.0.0.1"
-            return
-        fi
-    fi
-
     # 1. Check for USB Connection
     log_message "Checking for USB devices..."
     if command -v lsusb &> /dev/null; then
@@ -102,27 +87,25 @@ detect_x32_connection() {
         log_message "Warning: 'lsusb' is not installed. Skipping USB device check."
     fi
 
-    # 2. Check for Network Connection (skip in non-interactive)
-    if [ "$non_interactive_mode" != "true" ]; then
-        log_message "Checking for network devices... This may take a few minutes."
-        if command -v nmap &> /dev/null; then
-            local subnet=$(ip -o -f inet addr show | awk '/scope global/ {print $4}' | head -n 1)
-            if [ -n "$subnet" ]; then
-                log_message "Scanning subnet $subnet for X32 on port 10023..."
-                local found_ip=$(nmap -p 10023 --open -n "$subnet" | awk '/Nmap scan report for/{ip=$NF} /10023\/open/{print ip}' | head -n 1)
-                if [ -n "$found_ip" ]; then
-                    log_message "Found X32 at network address: $found_ip"
-                    X32_CONNECTION_TYPE="Network"
-                    X32_IP_ADDRESS="$found_ip"
-                    return
-                fi
+    # 2. Check for Network Connection
+    log_message "Checking for network devices... This may take a few minutes."
+    if command -v nmap &> /dev/null; then
+        local subnet=$(ip -o -f inet addr show | awk '/scope global/ {print $4}' | head -n 1)
+        if [ -n "$subnet" ]; then
+            log_message "Scanning subnet $subnet for X32 on port 10023..."
+            local found_ip=$(nmap -p 10023 --open -n "$subnet" | awk '/Nmap scan report for/{ip=$NF} /10023\/open/{print ip}' | head -n 1)
+            if [ -n "$found_ip" ]; then
+                log_message "Found X32 at network address: $found_ip"
+                X32_CONNECTION_TYPE="Network"
+                X32_IP_ADDRESS="$found_ip"
+                return
             fi
-        else
-            log_message "Warning: 'nmap' is not installed. Skipping network scan. Please install it (e.g., 'sudo apt-get install nmap')."
         fi
+    else
+        log_message "Warning: 'nmap' is not installed. Skipping network scan. Please install it (e.g., 'sudo apt-get install nmap')."
     fi
 
-    # 3. Prompt user or auto-start local emulator if auto-detection fails
+    # 3. Prompt user if auto-detection fails
     log_message "Could not auto-detect X32 connection."
 
     if [ "$non_interactive_mode" = "true" ]; then
@@ -206,16 +189,19 @@ run_all_tests_non_interactive() {
     fi
 
     detect_x32_connection true
+    log_message "Compiling all binaries..."
+    compile_binaries
+    if [ $? -ne 0 ]; then
+        log_message "ERROR: Compilation failed. Aborting tests."
+        exit 1
+    fi
 
     log_message "Running all tests..."
-    local test_failed=false
     for test_file in tests_sh/*.test.sh; do
         if [ -f "$test_file" ]; then
             source "$test_file"
             local test_function_name=$(basename "$test_file" .test.sh | tr '-' '_')
-            if ! "test_$test_function_name"; then
-                test_failed=true
-            fi
+            "test_$test_function_name"
         fi
     done
 
@@ -252,18 +238,8 @@ show_main_menu() {
 
 # --- Main Loop ---
 
-SKIP_BUILD=false
-spawned_emulator=false
-EMULATOR_PID=""
-
-for arg in "$@"; do
-    if [ "$arg" == "--skip-build" ]; then
-        SKIP_BUILD=true
-    fi
-done
-
 # Check for non-interactive flag
-if [ "$1" == "--run-tests-and-exit" ] || [ "$2" == "--run-tests-and-exit" ]; then
+if [ "$1" == "--run-tests-and-exit" ]; then
     run_all_tests_non_interactive
 elif [ "$1" == "--coverage" ]; then
     ensure_llvm_cov non_interactive

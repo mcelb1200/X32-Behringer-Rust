@@ -855,17 +855,19 @@ async fn handle_user_par(
                     .await?;
                 }
             }
-            24 if val == 0 => {
+            24 => {
                 // REC
-                send_to_r(
-                    r_sock,
-                    r_addr,
-                    &OscMessage {
-                        path: "/record".to_string(),
-                        args: vec![OscArg::Float(1.0)],
-                    },
-                )
-                .await?;
+                if val == 0 {
+                    send_to_r(
+                        r_sock,
+                        r_addr,
+                        &OscMessage {
+                            path: "/record".to_string(),
+                            args: vec![OscArg::Float(1.0)],
+                        },
+                    )
+                    .await?;
+                }
             }
             // Encoders 33-36 logic omitted for brevity but follows same pattern
             _ => {}
@@ -1313,16 +1315,18 @@ fn parse_osc_packet(data: &[u8]) -> Result<OscMessage> {
                         arg_idx += 4;
                     }
                 }
-                b's' if arg_idx < data.len() => {
-                    let str_end = data[arg_idx..]
-                        .iter()
-                        .position(|&b| b == 0)
-                        .map(|p| p + arg_idx)
-                        .unwrap_or(data.len());
-                    // ⚡ Bolt: Use `into_owned` instead of `to_string` to avoid Cow's Display formatting overhead
-                    let s = String::from_utf8_lossy(&data[arg_idx..str_end]).into_owned();
-                    args.push(OscArg::String(s));
-                    arg_idx = (str_end + 4) & !3;
+                b's' => {
+                    if arg_idx < data.len() {
+                        let str_end = data[arg_idx..]
+                            .iter()
+                            .position(|&b| b == 0)
+                            .map(|p| p + arg_idx)
+                            .unwrap_or(data.len());
+                        // ⚡ Bolt: Use `into_owned` instead of `to_string` to avoid Cow's Display formatting overhead
+                        let s = String::from_utf8_lossy(&data[arg_idx..str_end]).into_owned();
+                        args.push(OscArg::String(s));
+                        arg_idx = (str_end + 4) & !3;
+                    }
                 }
                 _ => {}
             }

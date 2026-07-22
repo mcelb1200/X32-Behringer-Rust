@@ -215,4 +215,69 @@ mod tests {
         assert_eq!(calc.calculate("5 3 |", &mparam).unwrap(), 7.0);
         assert_eq!(calc.calculate("5 3 ^", &mparam).unwrap(), 6.0);
     }
+
+    #[test]
+    fn test_math_functions() {
+        let mut calc = RpnCalculator::new();
+        let mparam = [];
+
+        assert_eq!(calc.calculate("1.0 e", &mparam).unwrap(), 1.0f64.exp());
+        assert_eq!(
+            calc.calculate(&format!("{} l", std::f64::consts::E), &mparam)
+                .unwrap(),
+            1.0
+        );
+        assert_eq!(calc.calculate("100.0 L", &mparam).unwrap(), 2.0);
+        assert_eq!(calc.calculate("3.14 i", &mparam).unwrap(), 3.0);
+        assert_eq!(calc.calculate("-3.14 i", &mparam).unwrap(), -3.0);
+        assert_eq!(calc.calculate("-5.5 a", &mparam).unwrap(), 5.5);
+        assert_eq!(calc.calculate("10 3 %", &mparam).unwrap(), 1.0);
+    }
+
+    #[test]
+    fn test_comparisons_and_logic() {
+        let mut calc = RpnCalculator::new();
+        let mparam = [];
+
+        assert_eq!(calc.calculate("5 3 >", &mparam).unwrap(), 1.0);
+        assert_eq!(calc.calculate("3 5 >", &mparam).unwrap(), 0.0);
+
+        assert_eq!(calc.calculate("3 5 <", &mparam).unwrap(), 1.0);
+        assert_eq!(calc.calculate("5 3 <", &mparam).unwrap(), 0.0);
+
+        assert_eq!(calc.calculate("5 5 =", &mparam).unwrap(), 1.0);
+        assert_eq!(calc.calculate("5 3 =", &mparam).unwrap(), 0.0);
+
+        assert_eq!(calc.calculate("5 3 !", &mparam).unwrap(), 1.0);
+        assert_eq!(calc.calculate("5 5 !", &mparam).unwrap(), 0.0);
+
+        assert_eq!(calc.calculate("5 ~", &mparam).unwrap(), -6.0);
+
+        assert_eq!(calc.calculate("1.0 10.0 20.0 ?", &mparam).unwrap(), 10.0);
+        assert_eq!(calc.calculate("0.0 10.0 20.0 ?", &mparam).unwrap(), 20.0);
+    }
+
+    #[test]
+    fn test_error_conditions() {
+        let mut calc = RpnCalculator::new();
+        let mparam = [crate::CommandParam::Float(1.0)];
+
+        let err = calc.calculate("1 0 /", &mparam).unwrap_err();
+        assert!(err.to_string().contains("Division by zero"));
+
+        let err = calc.calculate("+", &mparam).unwrap_err();
+        assert!(err.to_string().contains("Stack underflow"));
+
+        let err = calc.calculate("1 2", &mparam).unwrap_err();
+        assert!(err.to_string().contains("Stack leftover items"));
+
+        let err = calc.calculate("$5", &mparam).unwrap_err();
+        assert!(err.to_string().contains("Parameter index out of bounds"));
+
+        let err = calc.calculate("$$", &mparam).unwrap_err();
+        assert!(err.to_string().contains("Invalid parameter format"));
+
+        let err = calc.calculate("1 foo", &mparam).unwrap_err();
+        assert!(err.to_string().contains("Unknown operator"));
+    }
 }

@@ -1,8 +1,3 @@
-param (
-    [string]$Mode = "",
-    [switch]$SkipBuild
-)
-
 # Main PowerShell script for testing X32 Rust binaries
 
 # --- Configuration ---
@@ -39,11 +34,14 @@ function Log-Message {
 
 # --- Compilation ---
 function Compile-Binaries {
-    Log-Message "Starting parallel compilation of all workspace binaries..."
-    cargo build --workspace --bins --release
-    if ($LASTEXITCODE -ne 0) {
-        Log-Message "ERROR: Workspace compilation failed."
-        return $false
+    Log-Message "Starting compilation of all binaries..."
+    foreach ($binary in $Binaries) {
+        Log-Message "Compiling $binary..."
+        cargo build --package $binary --release
+        if ($LASTEXITCODE -ne 0) {
+            Log-Message "ERROR: Compilation of $binary failed."
+            return $false
+        }
     }
     Log-Message "Compilation complete."
     return $true
@@ -53,22 +51,7 @@ function Compile-Binaries {
 $Global:X32Connection = $null
 
 function Detect-X32Connection {
-    param (
-        [bool]$NonInteractive = $false
-    )
     Log-Message "Attempting to detect X32 connection..."
-
-    # 0. Check for Local Emulator (127.0.0.1) first to avoid scanning subnet
-    Log-Message "Checking for local X32 emulator (127.0.0.1)..."
-    $testLocal = Test-NetConnection -ComputerName "127.0.0.1" -Port 10023 -WarningAction SilentlyContinue -InformationLevel Quiet
-    if ($testLocal.TcpTestSucceeded) {
-        Log-Message "Found local X32 Emulator at 127.0.0.1"
-        $Global:X32Connection = [PSCustomObject]@{
-            Type = "Network"
-            IPAddress = "127.0.0.1"
-        }
-        return
-    }
 
     # 1. Check for USB Connection
     Log-Message "Checking for USB devices..."
@@ -82,37 +65,31 @@ function Detect-X32Connection {
         return
     }
 
-    # 2. Check for Network Connection (this can be slow, skip in non-interactive)
-    if (-not $NonInteractive) {
-        Log-Message "Checking for network devices... This may take a few minutes."
-        $ipconfig = Get-NetIPConfiguration | Where-Object { $_.IPv4Address -ne $null }
-        if ($ipconfig) {
-            $ipAddress = $ipconfig.IPv4Address.IPAddress
-            # Handle multiple interfaces or single one
-            $ipAddrStr = if ($ipAddress -is [array]) { $ipAddress[0] } else { $ipAddress }
-            if ($ipAddrStr) {
-                $subnet = $ipAddrStr.Split('.')[0..2] -join '.'
-                for ($i = 1; $i -lt 255; $i++) {
-                    $targetIP = "$subnet.$i"
-                    Write-Host "Scanning $targetIP..." -NoNewline
-                    $test = Test-NetConnection -ComputerName $targetIP -Port 10023 -WarningAction SilentlyContinue -InformationLevel Quiet
-                    if ($test.TcpTestSucceeded) {
-                        Write-Host " Found X32!"
-                        Log-Message "Found X32 at network address: $targetIP"
-                        $Global:X32Connection = [PSCustomObject]@{
-                            Type = "Network"
-                            IPAddress = $targetIP
-                        }
-                        return
-                    } else {
-                         Write-Host ""
-                    }
+    # 2. Check for Network Connection (this can be slow)
+    Log-Message "Checking for network devices... This may take a few minutes."
+    $ipconfig = Get-NetIPConfiguration | Where-Object { $_.IPv4DefaultGateway -ne $null }
+    if ($ipconfig) {
+        $ipAddress = $ipconfig.IPv4Address.IPAddress
+        $subnet = $ipAddress.Split('.')[0..2] -join '.'
+        for ($i = 1; $i -lt 255; $i++) {
+            $targetIP = "$subnet.$i"
+            Write-Host "Scanning $targetIP..." -NoNewline
+            $test = Test-NetConnection -ComputerName $targetIP -Port 10023 -WarningAction SilentlyContinue -InformationLevel Quiet
+            if ($test.TcpTestSucceeded) {
+                Write-Host " Found X32!"
+                Log-Message "Found X32 at network address: $targetIP"
+                $Global:X32Connection = [PSCustomObject]@{
+                    Type = "Network"
+                    IPAddress = $targetIP
                 }
+                return
+            } else {
+                 Write-Host ""
             }
         }
     }
 
-    # 3. Prompt user or auto-start local emulator if auto-detection fails
+    # 3. Prompt user if auto-detection fails
     Log-Message "Could not auto-detect X32 connection."
     if ($NonInteractive) {
         $emulatorPath = ".\target\release\x32_emulator.exe"
@@ -258,10 +235,6 @@ function Show-MainMenu {
 }
 
 # --- Main Loop ---
-if ($Mode -eq "non_interactive" -or $Mode -eq "--run-tests-and-exit" -or $Mode -eq "noninteractive") {
-    Run-AllTestsNonInteractive
-}
-
 while ($true) {
     $choice = Show-MainMenu
     switch ($choice) {
@@ -278,13 +251,8 @@ while ($true) {
             if ($null -eq $Global:X32Connection) { Detect-X32Connection }
             foreach ($module in $TestModules.GetEnumerator()) {
                 . $module.Value
-                $fileContent = Get-Content $module.Value -Raw
-                if ($fileContent -match 'function\s+(Test-[\w_-]+)') {
-                    $testFunctionName = $Matches[1]
-                    Invoke-Expression -Command $testFunctionName
-                } else {
-                    Log-Message "Warning: Could not find Test- function in $($module.Name)"
-                }
+                $testFunctionName = "Test-$($module.Name)"
+                Invoke-Expression -Command $testFunctionName
             }
             Read-Host "Press Enter to continue..."
         }
@@ -304,13 +272,8 @@ while ($true) {
 
             if ($selectedTest) {
                 . $selectedTest.Value
-                $fileContent = Get-Content $selectedTest.Value -Raw
-                if ($fileContent -match 'function\s+(Test-[\w_-]+)') {
-                    $testFunctionName = $Matches[1]
-                    Invoke-Expression -Command $testFunctionName
-                } else {
-                    Log-Message "Warning: Could not find Test- function in $($selectedTest.Name)"
-                }
+                $testFunctionName = "Test-$($selectedTest.Name)"
+                Invoke-Expression -Command $testFunctionName
             } else {
                 Write-Host "Invalid selection."
             }

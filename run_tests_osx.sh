@@ -32,12 +32,15 @@ log_message() {
 
 # --- Compilation ---
 compile_binaries() {
-    log_message "Starting parallel compilation of all workspace binaries..."
-    cargo build --workspace --bins --release
-    if [ $? -ne 0 ]; then
-        log_message "ERROR: Workspace compilation failed."
-        return 1
-    fi
+    log_message "Starting compilation of all binaries..."
+    for binary in "${BINARIES[@]}"; do
+        log_message "Compiling $binary..."
+        cargo build --package "$binary" --release
+        if [ $? -ne 0 ]; then
+            log_message "ERROR: Compilation of $binary failed."
+            return 1
+        fi
+    done
     log_message "Compilation complete."
     return 0
 }
@@ -68,26 +71,7 @@ ensure_llvm_cov() {
 
 # --- X32 Connection Detection (macOS) ---
 detect_x32_connection() {
-    local non_interactive_mode=$1
     log_message "Attempting to detect X32 connection..."
-
-    # 0. Check for Local Emulator (127.0.0.1) first
-    log_message "Checking for local X32 emulator (127.0.0.1)..."
-    if command -v nc &> /dev/null; then
-        if nc -z -w 1 127.0.0.1 10023 &> /dev/null; then
-            log_message "Found local X32 Emulator at 127.0.0.1"
-            X32_CONNECTION_TYPE="Network"
-            X32_IP_ADDRESS="127.0.0.1"
-            return
-        fi
-    elif command -v timeout &> /dev/null && command -v bash &> /dev/null; then
-        if timeout 1 bash -c 'cat < /dev/null > /dev/tcp/127.0.0.1/10023' &> /dev/null; then
-            log_message "Found local X32 Emulator at 127.0.0.1"
-            X32_CONNECTION_TYPE="Network"
-            X32_IP_ADDRESS="127.0.0.1"
-            return
-        fi
-    fi
 
     # 1. Check for USB Connection
     log_message "Checking for USB devices..."
@@ -98,46 +82,44 @@ detect_x32_connection() {
         return
     fi
 
-    # 2. Check for Network Connection (skip in non-interactive)
-    if [ "$non_interactive_mode" != "true" ]; then
-        log_message "Checking for network devices... This may take a few minutes."
-        if command -v nmap &> /dev/null; then
-            local iface_info=$(ifconfig | grep "inet " | grep -v "127.0.0.1" | head -n 1)
-            local ip_addr=$(echo "$iface_info" | awk '{print $2}')
-            local netmask=$(echo "$iface_info" | awk '{print $4}' | sed 's/0x//')
+    # 2. Check for Network Connection
+    log_message "Checking for network devices... This may take a few minutes."
+    if command -v nmap &> /dev/null; then
+        local iface_info=$(ifconfig | grep "inet " | grep -v "127.0.0.1" | head -n 1)
+        local ip_addr=$(echo "$iface_info" | awk '{print $2}')
+        local netmask=$(echo "$iface_info" | awk '{print $4}' | sed 's/0x//')
 
-            if [ -n "$ip_addr" ] && [ -n "$netmask" ]; then
-                # Convert netmask from hex to dotted decimal
-                local mask_p1=$((16#${netmask:0:2}))
-                local mask_p2=$((16#${netmask:2:2}))
-                local mask_p3=$((16#${netmask:4:2}))
-                local mask_p4=$((16#${netmask:6:2}))
+        if [ -n "$ip_addr" ] && [ -n "$netmask" ]; then
+            # Convert netmask from hex to dotted decimal
+            local mask_p1=$((16#${netmask:0:2}))
+            local mask_p2=$((16#${netmask:2:2}))
+            local mask_p3=$((16#${netmask:4:2}))
+            local mask_p4=$((16#${netmask:6:2}))
 
-                # Calculate CIDR
-                local cidr=0
-                for octet in $mask_p1 $mask_p2 $mask_p3 $mask_p4; do
-                    while [ $octet -gt 0 ]; do
-                        cidr=$((cidr + (octet % 2)))
-                        octet=$((octet / 2))
-                    done
+            # Calculate CIDR
+            local cidr=0
+            for octet in $mask_p1 $mask_p2 $mask_p3 $mask_p4; do
+                while [ $octet -gt 0 ]; do
+                    cidr=$((cidr + (octet % 2)))
+                    octet=$((octet / 2))
                 done
+            done
 
-                local subnet="$ip_addr/$cidr"
-                log_message "Scanning subnet $subnet for X32 on port 10023..."
-                local found_ip=$(nmap -p 10023 --open -n "$subnet" | awk '/Nmap scan report for/{ip=$NF} /10023\/open/{print ip}' | head -n 1)
-                if [ -n "$found_ip" ]; then
-                    log_message "Found X32 at network address: $found_ip"
-                    X32_CONNECTION_TYPE="Network"
-                    X32_IP_ADDRESS="$found_ip"
-                    return
-                fi
+            local subnet="$ip_addr/$cidr"
+            log_message "Scanning subnet $subnet for X32 on port 10023..."
+            local found_ip=$(nmap -p 10023 --open -n "$subnet" | awk '/Nmap scan report for/{ip=$NF} /10023\/open/{print ip}' | head -n 1)
+            if [ -n "$found_ip" ]; then
+                log_message "Found X32 at network address: $found_ip"
+                X32_CONNECTION_TYPE="Network"
+                X32_IP_ADDRESS="$found_ip"
+                return
             fi
-        else
-            log_message "Warning: 'nmap' is not installed. Skipping network scan. Please install it (e.g., 'brew install nmap')."
         fi
+    else
+        log_message "Warning: 'nmap' is not installed. Skipping network scan. Please install it (e.g., 'brew install nmap')."
     fi
 
-    # 3. Prompt user or auto-start local emulator if auto-detection fails
+    # 3. Prompt user if auto-detection fails
     log_message "Could not auto-detect X32 connection."
 
     if [ "$non_interactive_mode" = "true" ]; then
@@ -278,9 +260,7 @@ for arg in "$@"; do
 done
 
 # Check for non-interactive flag
-if [ "$1" == "--run-tests-and-exit" ] || [ "$2" == "--run-tests-and-exit" ]; then
-    run_all_tests_non_interactive
-elif [ "$1" == "--coverage" ]; then
+if [ "$1" == "--coverage" ]; then
     ensure_llvm_cov non_interactive
     log_message "Running test coverage..."
     cargo llvm-cov --workspace --json --output-path coverage.json
