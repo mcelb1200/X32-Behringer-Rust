@@ -26,7 +26,7 @@ pub async fn run(args: Args) -> Result<()> {
 
     let stdin = io::stdin();
     let mut stdin_lock = stdin.lock();
-    let mut parser = x32_lib::scene_parse::SceneParser::new();
+    let mut parser = x32_lib::scene_parse::SceneParser::with_model(x32_lib::MixerModel::XR18);
 
     loop {
         let mut byte_buf = Vec::new();
