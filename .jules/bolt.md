@@ -114,3 +114,9 @@ When initializing terminal UI state that might fail and return a `Result` (e.g.,
 ## 2026-07-20 - [Replace dynamic vector allocations with fixed stack arrays for predefined strings]
 **Learning:** When initializing static collections of predefined strings (like OSC paths) in `lazy_static!`, using `Vec<String>` (e.g., via `.map(...).collect()`) dynamically allocates a heap buffer. For arrays with bounds known at compile time, this is an unnecessary abstraction that adds a layer of pointer indirection upon every runtime access.
 **Action:** Replace `Vec<String>` with fixed-size arrays (e.g., `[String; 257]`) initialized via `core::array::from_fn`. This avoids the heap allocation for the container and embeds the array directly into the static structure.
+## 2026-07-22 - Prevent Layout Type Inference Errors when caching constraints
+**Learning:** When passing a cached  to 's  in a performance-critical loop, passing it simply as  will cause Rust to throw type inference errors (). This happens because multiple traits exist for converting  to .
+**Action:** Instead, explicitly call  on the cached constraints  (e.g. ) to provide unambiguous typing and avoid redundant dynamic heap vector allocations via  on every single frame draw.
+## 2025-02-12 - Prevent Layout Type Inference Errors when caching constraints
+**Learning:** When passing a cached `Vec<Constraint>` to `ratatui`'s `Layout::constraints()` in a performance-critical loop, passing it simply as `&self.cached_constraints.as_ref()` will cause Rust to throw type inference errors (`E0283`). This happens because multiple traits exist for converting `Vec` to `AsRef`.
+**Action:** Instead, explicitly call `.as_slice()` on the cached constraints `Vec` (e.g. `.constraints(self.cached_constraints.as_slice())`) to provide unambiguous typing and avoid redundant dynamic heap vector allocations via `.collect::<Vec<_>>()` on every single frame draw.
