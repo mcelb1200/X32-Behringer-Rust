@@ -112,21 +112,30 @@
 **Learning:** OSC explicitly defines size prefixes in bundles as signed 32-bit integers (`int32`), but they were mistakenly parsed as unsigned integers. This is a common network packet parsing trap in Rust.
 **Prevention:** Always parse size bounds as `i32` when required by the protocol, and explicitly check if `size < 0` to reject maliciously crafted negative offsets before casting to `usize`.
 
-## $(date +%Y-%m-%d) - Prevent DoS via Integer Overflow in OSC Blob Length Parsing
+## 2026-07-21 - Prevent DoS via Integer Overflow in OSC Blob Length Parsing
 **Vulnerability:** The OSC parser (`libs/osc_lib/src/lib.rs`) read `b` (blob) lengths as `i32` and cast them directly to `usize` without verifying they were non-negative. This allowed malicious network packets to supply negative lengths (e.g., `-1`), which casted to massive values (e.g., `18446744073709551615`) and caused immediate memory exhaustion or an arithmetic overflow panic (`attempt to add with overflow`) when the parser tried to calculate the `end_pos` or allocate a slice.
 **Learning:** Network protocols often use signed integers (like `i32` in OSC 1.0) for length or size fields. In Rust, silently casting from `i32` to `usize` is dangerous because negative bounds turn into maximum capacity requests, creating trivial Denial of Service (DoS) vectors on hot network paths.
 **Prevention:** Always validate size/length fields received from the network before casting to `usize`. Explicitly enforce `if length < 0` to reject malformed or malicious sizes.
 
-## $(date +%Y-%m-%d) - Prevent DoS via Out-of-Bounds Network Slice Parsing
+## 2026-07-21 - Prevent DoS via Out-of-Bounds Network Slice Parsing
 **Vulnerability:** Several tools (like `x32_auto_gain` and `x32_auto_ringout`) directly sliced network byte buffers (`&data[idx..idx + size]`) based on lengths extracted from the packet itself, without first validating that the buffer `data` was sufficiently large. A crafted or truncated OSC packet or network payload could cause the application to panic and crash (Denial of Service).
 **Learning:** External network lengths cannot be trusted. Slicing with `[]` on unvalidated ranges in Rust causes immediate thread panics, crashing the network listener.
 **Prevention:** When extracting byte slices from network data buffers (like OSC blobs), always use safe slice access `data.get(start..end)` and handle the `None` case (e.g., via `match`), rather than direct indexing `data[start..end]` which will panic on malformed or truncated packets.
 
-## $(date +%Y-%m-%d) - Support Diverse Audio Sample Formats
+## 2026-07-21 - Support Diverse Audio Sample Formats
 **Vulnerability:** The `cpal` audio input stream initialization in `x32_feedback_detect` implicitly hardcoded the sample format closure to `f32`. Some audio interfaces default to `I16` or `U16` format, which would result in a runtime crash or failure to initialize the stream.
 **Learning:** Audio APIs must dynamically accommodate the format exposed by the underlying hardware.
 **Prevention:** When using `cpal` to build an input stream, do not hardcode the sample format to `f32`. Always query `device.default_input_config()?.sample_format()` and use a `match` statement to safely handle and cast different native formats (`cpal::SampleFormat::F32`, `cpal::SampleFormat::I16`, `cpal::SampleFormat::U16`).
-## $(date +%Y-%m-%d) - [DoS via Missing Secure Bounds Check on OSC Payload Processing]
+## 2026-07-21 - [DoS via Missing Secure Bounds Check on OSC Payload Processing]
 **Vulnerability:** In `x32_reaper/src/reaper_handler.rs`, the payload processing loop performed a bounds check as `idx + size > len`. Due to `idx + size` potentially overflowing `usize` bounds in Rust on crafted OSC packets, this caused a thread panic in cases where the integer overflow wrapped to a value smaller than `len`, which bypassed the check and resulted in an out-of-bounds slice attempt via `&buf[idx..idx + size]`. This is a classic Denial of Service (DoS).
 **Learning:** Bounds checking logic must be mathematically safe against integer overflows (`idx + size` is inherently unsafe).
 **Prevention:** Avoid unchecked addition when validating sizes against remaining buffer length. Use `size > len.saturating_sub(idx)` to handle length validation securely, and replace raw slicing syntax with `buf.get(idx..idx + size)`.
+## 2024-05-24 - [CRITICAL] Fix integer overflow and panic vulnerability in OSC blob parser
+**Vulnerability:** Integer overflow vulnerability when parsing blob strings in `osc_lib` crate. The parser added an unchecked length (`len`) to the current position (`current_pos`), risking an integer overflow that could bypass boundary checks and cause panics when executing direct slice access (`buf_ref[current_pos..end_pos]`). This presented a Denial-of-Service (DoS) vector from maliciously crafted inputs.
+**Learning:** In networked and protocol parsing functions, unprotected addition of untrusted offsets to current array positions can overflow architectures with smaller integer bounds. Direct indexing into slices will inevitably panic on malformed data.
+**Prevention:** Always use `size > len.saturating_sub(idx)` instead of unprotected addition like `idx + size > len`. Enforce safe slice access using `buf.get(idx..idx + size)` combined with a match statement to handle out-of-bounds gracefully instead of panicking.
+
+## 2026-07-21 - [DoS via Panic on Mutex Poisoning]
+**Vulnerability:** In `apps/x32_auto_ringout/src/lib.rs`, the application used `.unwrap()` on a shared `Mutex` lock (`app_state.lock().unwrap()`). If another thread or task panicked while holding the lock, the mutex would become "poisoned," causing this `.unwrap()` to also panic. This creates a cascading failure scenario where a single panic crashes other threads or the entire application (Denial of Service).
+**Learning:** Using `.unwrap()` on `Mutex::lock()` or similar synchronization primitives is unsafe in multi-threaded environments, particularly in long-running services or daemon tasks. A poisoned mutex should not inherently cause the entire system to crash if the component can gracefully report the error or recover the internal state.
+**Prevention:** Avoid `.unwrap()` on shared Mutex locks. Instead, recover the state from the poisoned lock by using `.unwrap_or_else(|poisoned| poisoned.into_inner())` if it is safe to use the potentially partially-updated state, or handle the poisoning error gracefully to prevent cascading panics.
