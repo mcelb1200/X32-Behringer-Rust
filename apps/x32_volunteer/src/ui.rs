@@ -27,7 +27,10 @@ impl Tui {
         execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
         let backend = CrosstermBackend::new(stdout);
         let terminal = Terminal::new(backend)?;
-        Ok(Self { terminal, cached_constraints: Vec::new() })
+        Ok(Self {
+            terminal,
+            cached_constraints: Vec::new(),
+        })
     }
 
     pub fn draw(&mut self, state: &AppState) -> Result<()> {
