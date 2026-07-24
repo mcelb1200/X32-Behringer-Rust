@@ -12,7 +12,7 @@
 //! *   **Additional concepts by:** mcelb1200
 //! *   **Rust implementation by:** mcelb1200
 
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
 use clap::{Parser, Subcommand};
 use osc_lib::OscArg;
 use std::error::Error;

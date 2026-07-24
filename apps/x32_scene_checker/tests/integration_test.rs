@@ -6,10 +6,10 @@ use std::time::Duration;
 use tempfile::NamedTempFile;
 use tokio::net::UdpSocket;
 use x32_core::Mixer;
-use x32_lib::MixerClient;
 use x32_lib::transport::udp::UdpTransport;
+use x32_lib::MixerClient;
 
-use x32_scene_checker::{Args, RiskLevel, classify_risk, run};
+use x32_scene_checker::{classify_risk, run, Args, RiskLevel};
 
 #[test]
 fn test_classify_risk() {

@@ -13,7 +13,7 @@ use clap::Parser;
 use osc_lib::OscArg;
 use std::time::Duration;
 use tokio::time::{self, Instant};
-use x32_lib::{MixerClient, error::X32Error};
+use x32_lib::{error::X32Error, MixerClient};
 
 /// A command line utility to get scene names when a scene change takes place.
 #[derive(Parser, Debug)]

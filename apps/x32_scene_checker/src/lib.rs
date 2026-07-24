@@ -3,8 +3,8 @@ use osc_lib::OscArg;
 use std::collections::HashMap;
 use std::io::{Read, Write};
 use std::time::Duration;
-use x32_lib::MixerClient;
 use x32_lib::scene_parse::SceneParser;
+use x32_lib::MixerClient;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about = "Intelligent Scene Pre-flight Checker", long_about = None)]
@@ -156,26 +156,24 @@ fn print_report_summary(issues: &[RiskIssue]) {
     println!("║  SCENE PRE-FLIGHT CHECK                          ║");
     println!("╠══════════════════════════════════════════════════╣");
 
-    let criticals: Vec<_> = issues
-        .iter()
-        .filter(|i| i.level == RiskLevel::Critical)
-        .collect();
-    let highs: Vec<_> = issues
-        .iter()
-        .filter(|i| i.level == RiskLevel::High)
-        .collect();
-    let moderates: Vec<_> = issues
-        .iter()
-        .filter(|i| i.level == RiskLevel::Moderate)
-        .collect();
-    let lows: Vec<_> = issues
-        .iter()
-        .filter(|i| i.level == RiskLevel::Low)
-        .collect();
-    let infos: Vec<_> = issues
-        .iter()
-        .filter(|i| i.level == RiskLevel::Info)
-        .collect();
+    // ⚡ Bolt: Iterate through issues once, avoiding 5 separate O(N) heap allocations
+    // from multiple .filter().collect() calls. We only collect references for Critical
+    // and High because we need to display a few examples of them.
+    let mut criticals = Vec::new();
+    let mut highs = Vec::new();
+    let mut moderates_count = 0;
+    let mut lows_count = 0;
+    let mut infos_count = 0;
+
+    for i in issues {
+        match i.level {
+            RiskLevel::Critical => criticals.push(i),
+            RiskLevel::High => highs.push(i),
+            RiskLevel::Moderate => moderates_count += 1,
+            RiskLevel::Low => lows_count += 1,
+            RiskLevel::Info => infos_count += 1,
+        }
+    }
 
     if !criticals.is_empty() {
         let text = format!("║  🔴 CRITICAL ({} issues)", criticals.len());
@@ -201,14 +199,13 @@ fn print_report_summary(issues: &[RiskIssue]) {
         println!("║{:<49}║", "");
     }
 
-    if !moderates.is_empty() {
-        println!("║  🟡 MODERATE ({} changes)", moderates.len());
+    if moderates_count > 0 {
+        println!("║  🟡 MODERATE ({} changes)", moderates_count);
     }
 
     println!(
         "║  🟢 LOW ({} changes)  ⚪ INFO ({} changes)",
-        lows.len(),
-        infos.len()
+        lows_count, infos_count
     );
     println!("╚══════════════════════════════════════════════════╝");
 }

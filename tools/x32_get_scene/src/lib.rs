@@ -15,7 +15,7 @@ use clap::Parser;
 use osc_lib::OscArg;
 use std::io::{self, BufRead, Read};
 use tokio::time::Duration;
-use x32_lib::{MixerClient, error::Result};
+use x32_lib::{error::Result, MixerClient};
 
 /// Command-line arguments for `x32_get_scene`.
 #[derive(Parser, Debug)]

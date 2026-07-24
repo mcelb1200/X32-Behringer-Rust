@@ -6,16 +6,16 @@ use clap::Parser;
 use crossterm::{
     event::{self, Event, KeyCode, KeyEventKind},
     execute,
-    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
+    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use osc_lib::{OscArg, OscMessage};
 use ratatui::{
-    Frame, Terminal,
     backend::{Backend, CrosstermBackend},
     layout::{Constraint, Direction, Layout},
     style::{Color, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Paragraph},
+    Frame, Terminal,
 };
 use std::{
     io,
