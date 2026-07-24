@@ -8,7 +8,7 @@ use osc_lib::OscMessage;
 use std::io::{self, BufRead, Read};
 use std::str::FromStr;
 use std::time::Duration;
-use x32_lib::{error::Result, MixerClient};
+use x32_lib::{MixerClient, error::Result};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]

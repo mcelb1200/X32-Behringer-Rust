@@ -53,8 +53,8 @@ use std::time::Duration;
 use tokio::net::UdpSocket;
 use x32_core::Mixer;
 use x32_feedback_detect::mixer::MixerState;
-use x32_lib::transport::udp::UdpTransport;
 use x32_lib::MixerClient;
+use x32_lib::transport::udp::UdpTransport;
 
 #[tokio::test]
 async fn test_x32_feedback_detect_mixer_state() {

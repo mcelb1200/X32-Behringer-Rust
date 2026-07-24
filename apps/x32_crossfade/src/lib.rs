@@ -2,9 +2,9 @@ use anyhow::{Context, Result};
 use clap::Parser;
 use osc_lib::OscArg;
 use std::collections::HashMap;
-use tokio::time::{interval, Duration};
-use x32_lib::scene_parse::SceneParser;
+use tokio::time::{Duration, interval};
 use x32_lib::MixerClient;
+use x32_lib::scene_parse::SceneParser;
 
 #[derive(Parser, Debug, Clone)]
 #[command(

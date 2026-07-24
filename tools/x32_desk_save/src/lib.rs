@@ -7,8 +7,8 @@ use osc_lib::{OscArg, OscMessage};
 use std::fs::File;
 use std::io::{BufRead, BufWriter, Write};
 use std::path::PathBuf;
-use tokio::time::{timeout, Duration};
-use x32_lib::{error::X32Error, MixerClient};
+use tokio::time::{Duration, timeout};
+use x32_lib::{MixerClient, error::X32Error};
 
 pub mod nodes;
 

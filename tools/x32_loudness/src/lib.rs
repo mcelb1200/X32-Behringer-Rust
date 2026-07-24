@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use clap::{Parser, Subcommand, ValueEnum};
 use osc_lib::OscArg;
 use serde::{Deserialize, Serialize};
