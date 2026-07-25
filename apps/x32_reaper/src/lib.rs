@@ -926,10 +926,13 @@ async fn process_reaper_message(
             }
             let size = size_val as usize;
             idx += 4;
-            if idx + size > data.len() {
+            if size > data.len().saturating_sub(idx) {
                 break;
             }
-            let msg_data = &data[idx..idx + size];
+            let msg_data = match data.get(idx..idx + size) {
+                Some(b) => b,
+                None => break,
+            };
             process_single_reaper_message(msg_data, config, state, x_client, r_sock, r_addr)
                 .await?;
             idx += size;
