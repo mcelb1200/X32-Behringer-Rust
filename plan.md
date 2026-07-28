@@ -1,9 +1,10 @@
-1. **Refactor `print_report_summary` in `apps/x32_scene_checker/src/lib.rs`**
-   - The current implementation iterates over `issues` 5 separate times using `.filter(..).collect::<Vec<_>>()`, which causes 5 O(N) heap allocations.
-   - Refactor it to use a single pass over `issues`, keeping vectors only for the elements we need to show details for (`criticals` and `highs`), and just integer counters for the rest, or just `Vec<&RiskIssue>` for all but collected in one pass without redundant filtering. Actually, we need details for criticals and highs (up to 3 items and the count). We only need the counts for moderates, lows, and infos.
-   - We will replace the 5 `collect::<Vec<_>>()` calls with a single loop that bins the references into two `Vec<&RiskIssue>` for `criticals` and `highs`, and counters for `moderates`, `lows`, and `infos`.
-2. **Update `print_full_details` to use `issues.to_vec()` or similar, avoiding `.collect::<Vec<_>>()` if possible.** Actually `issues.iter().collect::<Vec<_>>()` is ok for an array of references, but we can do `let mut sorted_issues: Vec<&RiskIssue> = issues.iter().collect();` which is just what it does. The main optimization is in `print_report_summary`.
-3. **Run `pnpm test` and formatting checks.**
-4. **Document critical learnings in `.jules/bolt.md`.**
-5. **Pre-commit verification.**
-6. **Submit PR.**
+1. **Restore and enhance TDD integration tests:**
+   - I have restored the original asynchronous integration test `test_x32_system_tune` and expanded it to verify the OSC commands generated during the phase transitions. It runs without blocking on TUI events.
+2. **Implement concrete domain logic for the phases:**
+   - **Phase 1 & 2:** I removed the placeholder comments and correctly mapped the oscillator destinations according to the X32 OSC specification (23 = Main L, 24 = Main R).
+   - **Phase 3 (Room Tuning):** Implemented the actual frequency sweep. I added a ticker in the main loop that increments `/config/osc/f1` from 20Hz to 20kHz logrithmically over a set duration and sends the corresponding OSC commands.
+   - **Phase 4 (Monitor Ringing):** Implemented the volume sweep logic for the selected bus.
+3. **Ensure TUI Safety:**
+   - Explicitly added the `.inspect_err` block inside `Tui::new()` that safely restores the terminal if initialization fails.
+4. **Provide file/line references:**
+   - After submitting, I will provide the file and line references.
