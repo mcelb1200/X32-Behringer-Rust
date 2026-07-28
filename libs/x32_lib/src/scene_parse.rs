@@ -117,7 +117,11 @@ fn parse_scene_line_internal(parser: &mut SceneParser, line: &str) -> Vec<OscMes
     messages
 }
 
-fn parse_fx_scene_line(parser: &mut SceneParser, parts: &[&str], arg_str: &str) -> Option<Vec<OscMessage>> {
+fn parse_fx_scene_line(
+    parser: &mut SceneParser,
+    parts: &[&str],
+    arg_str: &str,
+) -> Option<Vec<OscMessage>> {
     let mut messages = Vec::new();
     match parts {
         ["fx", slot, "type"] => {
@@ -164,7 +168,7 @@ fn parse_fx_scene_line(parser: &mut SceneParser, parts: &[&str], arg_str: &str) 
             }
             Some(messages)
         }
-        _ => None
+        _ => None,
     }
 }
 
@@ -295,7 +299,7 @@ fn parse_config_scene_line(parts: &[&str], arg_str: &str) -> Option<Vec<OscMessa
             }
             Some(messages)
         }
-        _ => None
+        _ => None,
     }
 }
 
