@@ -148,3 +148,7 @@
 **Vulnerability:** A TCP server utility (`x32_tcp`) had its `TcpListener::bind` hardcoded to `0.0.0.0`, exposing the TCP-to-UDP proxy to all local network interfaces instead of just the intended loopback network.
 **Learning:** Hardcoding `0.0.0.0` for local or proxy services creates an unintentional and insecure network footprint. It allows unauthorized actors on the same network to interact with internal services without authentication, potentially triggering a DoS or performing unauthorized actions.
 **Prevention:** For networking services designed for local use, the bind IP should default to `127.0.0.1` and be configurable via CLI flags (e.g. `--bind-ip`), rather than statically locked to `0.0.0.0`.
+## 2026-07-28 - [DoS via Unbounded read_line in x32_scene_checker prompts]
+**Vulnerability:** The `x32_scene_checker` app prompted the user for input but read STDIN using an unbounded `std::io::stdin().read_line(&mut input)?`. An attacker or script piping an infinite stream without a newline could trigger an Out-of-Memory (OOM) Denial of Service.
+**Learning:** Even simple interactive Y/N prompts must safely bound their STDIN reads because STDIN can be hijacked by piped payloads.
+**Prevention:** Always use bounded reads (e.g. `take(1024)` + `read_until`) when reading from STDIN, even for simple interactive prompts.
