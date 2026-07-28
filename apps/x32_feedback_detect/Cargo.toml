@@ -3,6 +3,9 @@ name = "x32_feedback_detect"
 version = "0.1.0"
 edition = "2021"
 
+[dev-dependencies]
+x32_core = { workspace = true }
+
 [dependencies]
 anyhow = { workspace = true }
 clap = { workspace = true }

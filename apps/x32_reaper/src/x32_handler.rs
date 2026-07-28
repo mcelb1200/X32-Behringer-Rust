@@ -6,9 +6,9 @@ use std::sync::Arc;
 use tokio::net::UdpSocket;
 
 lazy_static::lazy_static! {
-    static ref VOLUME_PATHS: Vec<String> = (0..=256).map(|i| format!("/track/{}/volume", i)).collect();
-    static ref PAN_PATHS: Vec<String> = (0..=256).map(|i| format!("/track/{}/pan", i)).collect();
-    static ref MUTE_PATHS: Vec<String> = (0..=256).map(|i| format!("/track/{}/mute", i)).collect();
+    static ref VOLUME_PATHS: [String; 257] = core::array::from_fn(|i| format!("/track/{}/volume", i));
+    static ref PAN_PATHS: [String; 257] = core::array::from_fn(|i| format!("/track/{}/pan", i));
+    static ref MUTE_PATHS: [String; 257] = core::array::from_fn(|i| format!("/track/{}/mute", i));
 }
 
 fn get_volume_path(track_id: i32) -> std::borrow::Cow<'static, str> {

@@ -27,6 +27,10 @@ pub struct Args {
     #[clap(short, long, default_value = "127.0.0.1")]
     pub ip: String,
 
+    /// Server bind IP address
+    #[clap(short = 'a', long, default_value = "127.0.0.1")]
+    pub bind_ip: String,
+
     /// Server port
     #[clap(short, long, default_value_t = 10041)]
     pub port: u16,
@@ -57,7 +61,7 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
         println!("Arguments: {:?}", args);
     }
 
-    let listener = TcpListener::bind(format!("0.0.0.0:{}", args.port))?;
+    let listener = TcpListener::bind(format!("{}:{}", args.bind_ip, args.port))?;
 
     for stream in listener.incoming() {
         match stream {
