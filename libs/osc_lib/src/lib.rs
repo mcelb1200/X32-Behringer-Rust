@@ -200,22 +200,13 @@ impl OscMessage {
                     let current_pos = cursor.position() as usize;
                     let buf_ref = cursor.get_ref();
 
-                    if len > buf_ref.len().saturating_sub(current_pos) {
+                    let end_pos = current_pos + len;
+                    if end_pos > buf_ref.len() {
                         return Err(OscError::ParseError("Unexpected end of buffer".to_string()));
                     }
-                    let end_pos = current_pos.saturating_add(len);
 
-                    match buf_ref.get(current_pos..end_pos) {
-                        Some(slice) => {
-                            let buf = slice.to_vec();
-                            args.push(OscArg::Blob(buf));
-                        }
-                        None => {
-                            return Err(OscError::ParseError(
-                                "Unexpected end of buffer".to_string(),
-                            ));
-                        }
-                    }
+                    let buf = buf_ref[current_pos..end_pos].to_vec();
+                    args.push(OscArg::Blob(buf));
 
                     let next_aligned_pos = (end_pos + 3) & !3;
                     cursor.set_position(next_aligned_pos as u64);

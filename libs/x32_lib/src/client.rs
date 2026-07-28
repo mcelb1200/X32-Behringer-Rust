@@ -25,7 +25,7 @@ impl MixerClient {
         let start = std::time::Instant::now();
 
         while start.elapsed() < timeout_dur {
-            match time::timeout(timeout_dur - start.elapsed(), rx.recv()).await {
+            match time::timeout(timeout_dur.saturating_sub(start.elapsed()), rx.recv()).await {
                 Ok(Ok(msg)) => {
                     if msg.path == "/node" || msg.path == "node" {
                         if let Some(OscArg::String(response_str)) = msg.args.first() {
@@ -100,7 +100,7 @@ impl MixerClient {
         let timeout_dur = Duration::from_millis(250);
         let start = std::time::Instant::now();
         while start.elapsed() < timeout_dur {
-            match time::timeout(timeout_dur - start.elapsed(), rx.recv()).await {
+            match time::timeout(timeout_dur.saturating_sub(start.elapsed()), rx.recv()).await {
                 Ok(Ok(msg)) => {
                     if msg.path == "/info" {
                         return true;
@@ -220,7 +220,7 @@ impl MixerClient {
         let start = std::time::Instant::now();
 
         while start.elapsed() < timeout {
-            match time::timeout(timeout - start.elapsed(), rx.recv()).await {
+            match time::timeout(timeout.saturating_sub(start.elapsed()), rx.recv()).await {
                 Ok(Ok(msg)) => {
                     if msg.path == path {
                         return msg.args.first().cloned().ok_or_else(|| {

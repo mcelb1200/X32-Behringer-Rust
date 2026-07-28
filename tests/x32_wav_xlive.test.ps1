@@ -31,12 +31,12 @@ function New-MonoWavFile {
     # FMT Subchunk
     $writer.Write([char[]]"fmt ")
     $writer.Write([int]16) # Subchunk1Size
-    $writer.Write([int16]1) # AudioFormat (PCM)
-    $writer.Write([int16]$numChannels)
+    $writer.Write([short]1) # AudioFormat (PCM)
+    $writer.Write([short]$numChannels)
     $writer.Write([int]$SampleRate)
     $writer.Write([int]$byteRate)
-    $writer.Write([int16]$blockAlign)
-    $writer.Write([int16]$bitsPerSample)
+    $writer.Write([short]$blockAlign)
+    $writer.Write([short]$bitsPerSample)
 
     # DATA Subchunk
     $writer.Write([char[]]"data")
@@ -48,8 +48,8 @@ function New-MonoWavFile {
         $writer.Write($sample)
     }
 
-    $writer.Dispose()
-    $fileStream.Dispose()
+    $writer.Close()
+    $fileStream.Close()
 }
 
 function Test-X32WavXlive {

@@ -17,7 +17,6 @@ use std::{io, time::Duration};
 
 pub struct Tui {
     terminal: Terminal<CrosstermBackend<io::Stdout>>,
-    cached_constraints: Vec<Constraint>,
 }
 
 impl Tui {
@@ -27,20 +26,10 @@ impl Tui {
         execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
         let backend = CrosstermBackend::new(stdout);
         let terminal = Terminal::new(backend)?;
-        Ok(Self {
-            terminal,
-            cached_constraints: Vec::new(),
-        })
+        Ok(Self { terminal })
     }
 
     pub fn draw(&mut self, state: &AppState) -> Result<()> {
-        if self.cached_constraints.len() != state.channels.len() {
-            self.cached_constraints = state
-                .channels
-                .iter()
-                .map(|_| Constraint::Ratio(1, state.channels.len() as u32))
-                .collect();
-        }
         self.terminal.draw(|f| {
             let chunks = Layout::default()
                 .direction(Direction::Vertical)
@@ -84,7 +73,13 @@ impl Tui {
             // 2. Channels (Grid layout ideally, simplify for now to horizontal chunks)
             let channel_chunks = Layout::default()
                 .direction(Direction::Horizontal)
-                .constraints(self.cached_constraints.as_slice())
+                .constraints(
+                    state
+                        .channels
+                        .iter()
+                        .map(|_| Constraint::Ratio(1, state.channels.len() as u32))
+                        .collect::<Vec<_>>(),
+                )
                 .split(chunks[1]);
 
             for (i, ch) in state.channels.iter().enumerate() {

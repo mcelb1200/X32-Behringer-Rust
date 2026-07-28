@@ -44,11 +44,3 @@ x32_dump = { path = "tools/x32_dump" }
 unsafe_code = "forbid"
 missing_docs = "warn"
 unused_imports = "warn"
-
-[profile.dev]
-split-debuginfo = "unpacked"
-
-[profile.release]
-opt-level = 3
-lto = "thin"
-codegen-units = 16

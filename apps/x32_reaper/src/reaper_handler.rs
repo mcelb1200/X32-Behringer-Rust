@@ -29,13 +29,10 @@ pub async fn handle_reaper_message(
             let size = size_val as usize;
             idx += 4;
 
-            if size > len.saturating_sub(idx) {
+            if idx + size > len {
                 break;
             }
-            let element_buf = match buf.get(idx..idx + size) {
-                Some(b) => b,
-                None => break,
-            };
+            let element_buf = &buf[idx..idx + size];
             idx += size;
 
             // Recursively handle element (assuming simple messages inside bundle)

@@ -11,7 +11,6 @@ use ratatui::{
     style::{Color, Style},
     widgets::{Block, Borders, Paragraph},
 };
-use std::fmt::Write;
 use std::{io, time::Duration};
 
 use crate::mixer::AppliedNotch;
@@ -63,12 +62,10 @@ impl AppTui {
                 notch_text.push_str("No active notches.");
             } else {
                 for (band, notch) in notches {
-                    writeln!(
-                        notch_text,
-                        "Band {}: {:.1} Hz | {:.1} dB",
+                    notch_text.push_str(&format!(
+                        "Band {}: {:.1} Hz | {:.1} dB\n",
                         band, notch.frequency, notch.depth
-                    )
-                    .expect("Failed to write to string buffer");
+                    ));
                 }
             }
 

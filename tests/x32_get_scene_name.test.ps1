@@ -26,21 +26,16 @@ function Test-X32GetSceneName {
     Log-Message "Test 1: Interactive Scene Change Detection"
     Write-Host "This test will verify that the tool can detect a scene change." -ForegroundColor Yellow
 
-    if ($Global:NonInteractive) {
-        Log-Message "Non-interactive mode: Mocking scene change output."
-        Set-Content -Path "scene_name_output.txt" -Value "01 - MockScene"
-    } else {
-        Log-Message "Starting x32_get_scene_name in the background..."
-        $process = Start-Process -FilePath $binaryPath -ArgumentList "--ip $ip --onetime 1 --verbose 0" -PassThru -NoNewWindow -RedirectStandardOutput "scene_name_output.txt"
+    Log-Message "Starting x32_get_scene_name in the background..."
+    $process = Start-Process -FilePath $binaryPath -ArgumentList "--ip $ip --onetime 1 --verbose 0" -PassThru -NoNewWindow -RedirectStandardOutput "scene_name_output.txt"
 
-        Write-Host "The scene name listener is running."
-        Write-Host "ACTION: On the X32 console, please load any scene." -ForegroundColor Yellow
-        Write-Host "The test will complete automatically once the scene change is detected."
+    Write-Host "The scene name listener is running."
+    Write-Host "ACTION: On the X32 console, please load any scene." -ForegroundColor Yellow
+    Write-Host "The test will complete automatically once the scene change is detected."
 
-        # Wait for the process to exit (onetime=1)
-        $process.WaitForExit()
-        Log-Message "Process has exited. Checking output..."
-    }
+    # Wait for the process to exit (onetime=1)
+    $process.WaitForExit()
+    Log-Message "Process has exited. Checking output..."
 
     # Verification
     if (-not (Test-Path "scene_name_output.txt")) {
