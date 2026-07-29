@@ -4,7 +4,7 @@ use std::time::Duration;
 use tokio::net::UdpSocket;
 
 use osc_lib::OscArg;
-use x32_dca_spill::{Args, run};
+use x32_dca_spill::{run, Args};
 
 #[tokio::test]
 async fn test_dca_spill_custom_bank_mapping() {
@@ -33,9 +33,7 @@ async fn test_dca_spill_custom_bank_mapping() {
 
         // Run until we receive 24 assignments (3 blocks of 8 faders)
         while received_bank_assignments.len() < 24 {
-            if let Ok(Ok((size, src_addr))) =
-                tokio::time::timeout(Duration::from_millis(50), rx_socket.recv_from(&mut buf)).await
-            {
+            if let Ok(Ok((size, src_addr))) = tokio::time::timeout(Duration::from_millis(50), rx_socket.recv_from(&mut buf)).await {
                 if client_addr.is_none() {
                     client_addr = Some(src_addr);
                 }
@@ -46,11 +44,7 @@ async fn test_dca_spill_custom_bank_mapping() {
                             path: msg.path.clone(),
                             args: vec![OscArg::Int(*mask)],
                         };
-                        let bytes = osc_lib::OscMessage::serialize_to_bytes(
-                            &response.path,
-                            [&OscArg::Int(*mask)],
-                        )
-                        .unwrap();
+                        let bytes = osc_lib::OscMessage::serialize_to_bytes(&response.path, [&OscArg::Int(*mask)]).unwrap();
                         tx_socket.send_to(&bytes, src_addr).await.unwrap();
                     } else if msg.path.starts_with("/-prefs/custom_bank/") {
                         if let Some(OscArg::Int(src_id)) = msg.args.first() {
@@ -62,11 +56,7 @@ async fn test_dca_spill_custom_bank_mapping() {
                             path: "/-stat/selidx".to_string(),
                             args: vec![OscArg::Int(72)],
                         };
-                        let bytes = osc_lib::OscMessage::serialize_to_bytes(
-                            &select_msg.path,
-                            [&OscArg::Int(72)],
-                        )
-                        .unwrap();
+                        let bytes = osc_lib::OscMessage::serialize_to_bytes(&select_msg.path, [&OscArg::Int(72)]).unwrap();
                         tx_socket.send_to(&bytes, src_addr).await.unwrap();
                     }
                 }
@@ -76,9 +66,7 @@ async fn test_dca_spill_custom_bank_mapping() {
                     path: "/-stat/selidx".to_string(),
                     args: vec![OscArg::Int(72)],
                 };
-                let bytes =
-                    osc_lib::OscMessage::serialize_to_bytes(&select_msg.path, [&OscArg::Int(72)])
-                        .unwrap();
+                let bytes = osc_lib::OscMessage::serialize_to_bytes(&select_msg.path, [&OscArg::Int(72)]).unwrap();
                 tx_socket.send_to(&bytes, addr).await.unwrap();
             }
         }
@@ -91,14 +79,11 @@ async fn test_dca_spill_custom_bank_mapping() {
         dca: Some(1),
     };
 
-    let app_handle = tokio::spawn(async move {
+    let _app_handle = tokio::spawn(async move {
         let _ = run(args).await;
     });
 
-    let assignments = tokio::time::timeout(Duration::from_secs(2), server_handle)
-        .await
-        .expect("Timeout")
-        .unwrap();
+    let assignments = tokio::time::timeout(Duration::from_secs(2), server_handle).await.expect("Timeout").unwrap();
 
     // Verify correct OSC paths for custom bank (/-prefs/custom_bank/{block}/{fader})
     assert_eq!(assignments[0].0, "/-prefs/custom_bank/1/1");
