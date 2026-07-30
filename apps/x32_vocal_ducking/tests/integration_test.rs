@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! Vocal Ducking Integration Tests
 use std::sync::Arc;
 use std::time::Duration;

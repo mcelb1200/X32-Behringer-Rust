@@ -152,7 +152,7 @@ async fn spill_dca(
     // Wait, the X32 has custom layers per block:
     // Block 1: `/-prefs/custom_bank/1/1` ... `/-prefs/custom_bank/1/8`
 
-    // Let's map sequentially up to 24 members.
+    // Let's map sequentially up to 24 members across 3 blocks of 8 faders.
     for i in 0..24 {
         let source_id = if i < members.len() {
             members[i]
@@ -160,9 +160,10 @@ async fn spill_dca(
             0 // 0 = OFF
         };
 
-        let path = format!("/-prefs/custom_bank/{}", i + 1);
-        // Note: Some docs say `/-prefs/custom_bank/{bank}/{channel}`. The memory just says `/-prefs/custom_bank/`.
-        // Let's assume it's `/-prefs/custom_bank/{1..24}`.
+        let block = (i / 8) + 1; // 1 to 3
+        let fader = (i % 8) + 1; // 1 to 8
+
+        let path = format!("/-prefs/custom_bank/{}/{}", block, fader);
         client
             .send_message(&path, vec![OscArg::Int(source_id)])
             .await?;
