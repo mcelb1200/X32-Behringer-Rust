@@ -27,6 +27,8 @@ async fn test_dca_spill_custom_bank_mapping() {
         dca_members.insert("/ch/02/grp/dca".to_string(), 1);
         // Auxin 1 in DCA 1
         dca_members.insert("/auxin/01/grp/dca".to_string(), 1);
+        // Fxrtn 1 in DCA 1
+        dca_members.insert("/fxrtn/01/grp/dca".to_string(), 1);
 
         let mut received_bank_assignments = Vec::new();
         let mut client_addr = None;
@@ -111,7 +113,10 @@ async fn test_dca_spill_custom_bank_mapping() {
     assert_eq!(assignments[2].1, 33); // auxin 1 (src id 33)
 
     assert_eq!(assignments[3].0, "/-prefs/custom_bank/1/4");
-    assert_eq!(assignments[3].1, 0); // off
+    assert_eq!(assignments[3].1, 41); // fxrtn 1 (src id 41)
+
+    assert_eq!(assignments[4].0, "/-prefs/custom_bank/1/5");
+    assert_eq!(assignments[4].1, 0); // off
 
     assert_eq!(assignments[7].0, "/-prefs/custom_bank/1/8");
 

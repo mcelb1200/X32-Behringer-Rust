@@ -49,7 +49,10 @@ pub async fn run(args: Args) -> Result<()> {
         let path = format!("/auxin/{:02}/grp/dca", i);
         client.send_message(&path, vec![]).await?;
     }
-    // We also need fxrtn but let's stick to ch/auxin for now.
+    for i in 1..=8 {
+        let path = format!("/fxrtn/{:02}/grp/dca", i);
+        client.send_message(&path, vec![]).await?;
+    }
 
     println!("Listening for DCA selects...");
 
@@ -125,6 +128,16 @@ async fn spill_dca(
         }
     }
 
+    for i in 1..=8 {
+        let path = format!("/fxrtn/{:02}/grp/dca", i);
+        if let Some(mask) = assignments.get(&path) {
+            if (mask & dca_bit) != 0 {
+                // The source ID for FxRtn 1 is 41
+                members.push(i + 40);
+            }
+        }
+    }
+
     println!("DCA {} members (source IDs): {:?}", dca_num, members);
 
     // X32 User Bank (custom bank) mapping:
@@ -187,6 +200,8 @@ mod tests {
         assignments.insert("/ch/05/grp/dca".to_string(), 2);
         // Auxin 1 is in DCA 1
         assignments.insert("/auxin/01/grp/dca".to_string(), 1);
+        // Fxrtn 2 is in DCA 3
+        assignments.insert("/fxrtn/02/grp/dca".to_string(), 4);
 
         let dca1_bit = 1;
         let dca2_bit = 2;
@@ -200,5 +215,8 @@ mod tests {
         assert_ne!(assignments.get("/ch/05/grp/dca").unwrap() & dca2_bit, 0);
 
         assert_ne!(assignments.get("/auxin/01/grp/dca").unwrap() & dca1_bit, 0);
+
+        assert_eq!(assignments.get("/fxrtn/02/grp/dca").unwrap() & dca1_bit, 0);
+        assert_ne!(assignments.get("/fxrtn/02/grp/dca").unwrap() & dca3_bit, 0);
     }
 }
