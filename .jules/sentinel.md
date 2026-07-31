@@ -148,3 +148,8 @@
 **Vulnerability:** A TCP server utility (`x32_tcp`) had its `TcpListener::bind` hardcoded to `0.0.0.0`, exposing the TCP-to-UDP proxy to all local network interfaces instead of just the intended loopback network.
 **Learning:** Hardcoding `0.0.0.0` for local or proxy services creates an unintentional and insecure network footprint. It allows unauthorized actors on the same network to interact with internal services without authentication, potentially triggering a DoS or performing unauthorized actions.
 **Prevention:** For networking services designed for local use, the bind IP should default to `127.0.0.1` and be configurable via CLI flags (e.g. `--bind-ip`), rather than statically locked to `0.0.0.0`.
+
+## 2025-02-05 - Fix Unbounded CLI Input Read (OOM DoS Risk)
+**Vulnerability:** Unbounded `std::io::stdin().read_line(&mut string_buf)` was used in the interactive CLI tool `x32_scene_checker`. If piped input or a malicious automated stream provides a massive string without a newline character, this will allocate unbounded heap memory leading to an Out-Of-Memory (OOM) crash (Denial of Service).
+**Learning:** Even simple CLI prompts must assume standard input can be piped from infinite streams (e.g. `/dev/zero`) or massive files rather than human users typing safely at a keyboard.
+**Prevention:** Always safely bound standard input reads using the `.take(limit)` adapter combined with `.read_until` (e.g. `stdin.lock().take(1024).read_until(b'\n', &mut byte_buf)`) and then lossy convert to a string to avoid UTF-8 boundary panic risks.

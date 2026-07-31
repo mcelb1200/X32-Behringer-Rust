@@ -1,7 +1,7 @@
 use clap::Parser;
 use osc_lib::OscArg;
 use std::collections::HashMap;
-use std::io::{Read, Write};
+use std::io::{BufRead, Read, Write};
 use std::time::Duration;
 use x32_lib::MixerClient;
 use x32_lib::scene_parse::SceneParser;
@@ -321,8 +321,12 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
         print!("> ");
         let _ = std::io::stdout().flush();
 
-        let mut input = String::new();
-        std::io::stdin().read_line(&mut input)?;
+        let mut byte_buf = Vec::new();
+        std::io::stdin()
+            .lock()
+            .take(1024)
+            .read_until(b'\n', &mut byte_buf)?;
+        let input = String::from_utf8_lossy(&byte_buf);
 
         let trimmed = input.trim().to_lowercase();
         match trimmed.as_str() {
