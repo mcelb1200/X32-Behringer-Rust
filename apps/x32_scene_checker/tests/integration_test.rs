@@ -134,9 +134,15 @@ async fn test_x32_scene_checker_locked_paths() {
 
     // /ch/02/mix/on should not be set (so the query should return an error or None)
     let res = client.query_value("/ch/02/mix/on").await;
-    assert!(res.is_err(), "Expected query to fail because path was not set due to lock");
+    assert!(
+        res.is_err(),
+        "Expected query to fail because path was not set due to lock"
+    );
 
     // /routing/in/1 should not be set
     let res = client.query_value("/routing/in/1").await;
-    assert!(res.is_err(), "Expected query to fail because path was not set due to lock");
+    assert!(
+        res.is_err(),
+        "Expected query to fail because path was not set due to lock"
+    );
 }

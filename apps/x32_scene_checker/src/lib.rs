@@ -18,7 +18,10 @@ pub struct Args {
     #[arg(long)]
     pub auto_load: bool,
 
-    #[arg(long, help = "Comma-separated list of OSC paths or prefixes to lock (e.g. /routing,/main/st/mix/on)")]
+    #[arg(
+        long,
+        help = "Comma-separated list of OSC paths or prefixes to lock (e.g. /routing,/main/st/mix/on)"
+    )]
     pub locked_paths: Option<String>,
 }
 
@@ -374,7 +377,10 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
                 let mut skipped = 0;
                 let mut applied = 0;
                 for issue in &issues {
-                    if issue.level == RiskLevel::Critical || issue.level == RiskLevel::High || locked_prefixes.iter().any(|p| issue.path.starts_with(p)) {
+                    if issue.level == RiskLevel::Critical
+                        || issue.level == RiskLevel::High
+                        || locked_prefixes.iter().any(|p| issue.path.starts_with(p))
+                    {
                         skipped += 1;
                         continue;
                     }
