@@ -412,7 +412,9 @@ fn ui(f: &mut Frame, app: &AppState) {
     let logs: Vec<Line> = app
         .logs
         .iter()
-        .map(|msg| Line::from(Span::raw(msg.clone())))
+        // ⚡ Bolt: Pass reference via .as_ref() instead of .clone() to prevent
+        // allocating a new String on every single frame render for owned Cow variants.
+        .map(|msg| Line::from(Span::raw(msg.as_ref())))
         .collect();
     let log_p = Paragraph::new(logs).block(Block::default().borders(Borders::ALL).title("Logs"));
     f.render_widget(log_p, chunks[2]);
