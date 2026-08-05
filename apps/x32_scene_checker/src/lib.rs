@@ -17,6 +17,12 @@ pub struct Args {
 
     #[arg(long)]
     pub auto_load: bool,
+
+    #[arg(
+        long,
+        help = "Comma-separated list of OSC paths or prefixes to lock (e.g. /routing,/main/st/mix/on)"
+    )]
+    pub locked_paths: Option<String>,
 }
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
@@ -301,20 +307,38 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
         return Ok(());
     }
 
+    let locked_prefixes: Vec<String> = args
+        .locked_paths
+        .unwrap_or_default()
+        .split(',')
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
+        .collect();
+
     if args.auto_load {
         println!("Auto-loading entire scene...");
+        let mut skipped = 0;
+        let mut applied = 0;
         for issue in &issues {
+            if locked_prefixes.iter().any(|p| issue.path.starts_with(p)) {
+                skipped += 1;
+                continue;
+            }
             client
                 .send_message(&issue.path, vec![issue.to.clone()])
                 .await?;
             tokio::time::sleep(Duration::from_millis(2)).await; // avoid overwhelming
+            applied += 1;
         }
-        println!("Scene loaded.");
+        println!("Scene loaded. Applied {}, skipped {}.", applied, skipped);
         return Ok(());
     }
 
     loop {
         print_report_summary(&issues);
+        if !locked_prefixes.is_empty() {
+            println!("Active locks: {:?}", locked_prefixes);
+        }
         println!(
             "Options: [L]oad anyway | [S]afe-load (skip critical/high) | [R]eview details | [C]ancel"
         );
@@ -355,13 +379,20 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
         match trimmed.as_str() {
             "l" | "load" => {
                 println!("Loading entire scene...");
+                let mut skipped = 0;
+                let mut applied = 0;
                 for issue in &issues {
+                    if locked_prefixes.iter().any(|p| issue.path.starts_with(p)) {
+                        skipped += 1;
+                        continue;
+                    }
                     client
                         .send_message(&issue.path, vec![issue.to.clone()])
                         .await?;
                     tokio::time::sleep(Duration::from_millis(2)).await; // avoid overwhelming
+                    applied += 1;
                 }
-                println!("Scene loaded.");
+                println!("Scene loaded. Applied {}, skipped {}.", applied, skipped);
                 break;
             }
             "s" | "safe-load" | "safe" => {
@@ -369,7 +400,10 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
                 let mut skipped = 0;
                 let mut applied = 0;
                 for issue in &issues {
-                    if issue.level == RiskLevel::Critical || issue.level == RiskLevel::High {
+                    if issue.level == RiskLevel::Critical
+                        || issue.level == RiskLevel::High
+                        || locked_prefixes.iter().any(|p| issue.path.starts_with(p))
+                    {
                         skipped += 1;
                         continue;
                     }

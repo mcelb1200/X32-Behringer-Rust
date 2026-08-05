@@ -124,3 +124,7 @@ When initializing terminal UI state that might fail and return a `Result` (e.g.,
 ## 2024-07-29 - Fixed-size arrays for static vectors
 **Learning:** Initializing static collections of pre-computed structures (like `Vec<Command>`) using dynamic allocations (`Vec::collect()`) within `lazy_static!` causes unnecessary heap allocations during program startup and adds a layer of pointer indirection during hot-path data access.
 **Action:** When sizes are known ahead of time, use fixed-size arrays with `core::array::from_fn` in `lazy_static!` blocks instead of `.map(...).collect()`. This forces the collection into a contiguous stack/static memory block avoiding heap buffers.
+
+## 2024-08-05 - [Avoid string clone in TUI hot loops with Cow]
+**Learning:** In Ratatui applications, when rendering text that uses `Cow<'static, str>`, calling `.clone()` inside the `.draw()` rendering closure will allocate a new `String` on every frame if the `Cow` variant is `Owned` (e.g. dynamic log messages).
+**Action:** Use `.as_ref()` to pass a string slice `&str` reference into `Span::raw()` instead, eliminating the per-frame string allocation bottleneck in the render loop.
