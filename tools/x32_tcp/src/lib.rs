@@ -66,18 +66,22 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
     for stream in listener.incoming() {
         match stream {
             Ok(stream) => {
+                // Sentinel: Always log new incoming connections for security auditing
+                let peer_addr = stream.peer_addr().map(|addr| addr.to_string()).unwrap_or_else(|_| "unknown".to_string());
+                println!("[AUDIT] New client connected: {}", peer_addr);
+
                 if args.verbose {
-                    println!("New client connected: {}", stream.peer_addr()?);
+                    println!("Verbose: handling connection from {}", peer_addr);
                 }
                 let args_clone = args.clone();
                 tokio::spawn(async move {
                     if let Err(e) = handle_client(stream, args_clone).await {
-                        eprintln!("Error handling client: {}", e);
+                        eprintln!("[AUDIT ERROR] Error handling client: {}", e);
                     }
                 });
             }
             Err(e) => {
-                eprintln!("Error accepting connection: {}", e);
+                eprintln!("[AUDIT ERROR] Error accepting connection: {}", e);
             }
         }
     }
@@ -183,8 +187,12 @@ async fn handle_client(mut stream: TcpStream, args: Args) -> Result<()> {
         }
     }
 
+    // Sentinel: Always log client disconnects for security auditing
+    let peer_addr = stream.peer_addr().map(|addr| addr.to_string()).unwrap_or_else(|_| "unknown".to_string());
+    println!("[AUDIT] Client disconnected: {}", peer_addr);
+
     if args.verbose {
-        println!("Client disconnected: {}", stream.peer_addr()?);
+        println!("Verbose: {} finished", peer_addr);
     }
 
     Ok(())
