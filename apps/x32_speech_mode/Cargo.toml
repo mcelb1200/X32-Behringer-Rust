@@ -4,6 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+dirs = "5.0"
 x32_lib = { path = "../../libs/x32_lib" }
 osc_lib = { path = "../../libs/osc_lib" }
 tokio = { version = "1.28", features = ["full"] }

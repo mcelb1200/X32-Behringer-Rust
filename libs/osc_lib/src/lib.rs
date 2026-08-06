@@ -105,7 +105,7 @@ impl From<FromUtf8Error> for OscError {
 pub type Result<T> = std::result::Result<T, OscError>;
 
 /// Represents a single argument in an OSC message.
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, serde::Serialize, serde::Deserialize)]
 pub enum OscArg {
     /// A 32-bit integer (`i` in OSC type tags).
     Int(i32),
@@ -123,7 +123,7 @@ fn padded_size(len: usize) -> usize {
 }
 
 /// Represents a single OSC message, containing a path and a list of arguments.
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, serde::Serialize, serde::Deserialize)]
 pub struct OscMessage {
     /// The OSC address pattern (e.g., `/ch/01/mix/fader`).
     pub path: String,
