@@ -143,11 +143,31 @@ pub async fn run(args: Args) -> Result<()> {
 
     // List of paths we will modify and need to save
     let paths_to_save = vec![
-        "eq/1/type", "eq/1/f", "eq/6/type", "eq/6/f",
-        "eq/3/type", "eq/3/f", "eq/3/g", "eq/2/type", "eq/2/f", "eq/2/g", "eq/2/q",
-        "dyn/on", "dyn/mode", "dyn/ratio", "dyn/thr", "dyn/attack", "dyn/release", "dyn/knee",
-        "gate/on", "gate/mode", "gate/thr", "gate/range", "gate/attack", "gate/release",
-        "automix/group"
+        "eq/1/type",
+        "eq/1/f",
+        "eq/6/type",
+        "eq/6/f",
+        "eq/3/type",
+        "eq/3/f",
+        "eq/3/g",
+        "eq/2/type",
+        "eq/2/f",
+        "eq/2/g",
+        "eq/2/q",
+        "dyn/on",
+        "dyn/mode",
+        "dyn/ratio",
+        "dyn/thr",
+        "dyn/attack",
+        "dyn/release",
+        "dyn/knee",
+        "gate/on",
+        "gate/mode",
+        "gate/thr",
+        "gate/range",
+        "gate/attack",
+        "gate/release",
+        "automix/group",
     ];
 
     for ch in &channels {
@@ -155,7 +175,10 @@ pub async fn run(args: Args) -> Result<()> {
         for sub_path in &paths_to_save {
             let path = format!("/ch/{:02}/{}", ch, sub_path);
             if let Ok(val) = client.query_value(&path).await {
-                original_msgs.push(OscMessage { path, args: vec![val] });
+                original_msgs.push(OscMessage {
+                    path,
+                    args: vec![val],
+                });
             }
             tokio::time::sleep(delay).await;
         }
