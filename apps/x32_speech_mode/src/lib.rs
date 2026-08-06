@@ -5,6 +5,10 @@
 use anyhow::Result;
 use clap::Parser;
 use osc_lib::{OscArg, OscMessage};
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::fs;
+use std::path::PathBuf;
 use std::time::Duration;
 use x32_lib::MixerClient;
 
@@ -18,6 +22,11 @@ pub struct Args {
     /// Comma-separated list of channel numbers (1-32) to apply speech mode to (e.g. 1,2,3)
     #[arg(short, long)]
     pub channels: String,
+}
+
+#[derive(Serialize, Deserialize, Default)]
+struct SavedState {
+    channels: HashMap<u8, Vec<OscMessage>>,
 }
 
 // Frequency mapping helper (returns f32 for OSC float scale [0.0, 1.0])
@@ -67,6 +76,12 @@ fn dyn_release_to_osc(release_ms: f32) -> f32 {
     (release_ms / 4000.0).clamp(0.0, 1.0)
 }
 
+fn get_state_file_path() -> PathBuf {
+    dirs::data_dir()
+        .unwrap_or_else(|| PathBuf::from("."))
+        .join(".x32_speech_mode_state.json")
+}
+
 pub async fn run(args: Args) -> Result<()> {
     let mut channels: Vec<u8> = Vec::new();
     for part in args.channels.split(',') {
@@ -89,12 +104,63 @@ pub async fn run(args: Args) -> Result<()> {
         format!("{}:10023", args.ip)
     };
     let client = MixerClient::connect(&ip, true).await?;
-    println!(
-        "Connected. Applying speech mode to channels: {:?}",
-        channels
-    );
-
     let delay = Duration::from_millis(10);
+    let state_file = get_state_file_path();
+
+    // Check if we are toggling OFF
+    if state_file.exists() {
+        println!("Found saved state. Disengaging speech mode (restoring original state)...");
+        let state_data = fs::read_to_string(&state_file)?;
+        let mut saved_state: SavedState = serde_json::from_str(&state_data)?;
+
+        for ch in channels.clone() {
+            if let Some(msgs) = saved_state.channels.remove(&ch) {
+                println!("Restoring channel {:02}", ch);
+                for msg in msgs {
+                    let _ = client.send_message(&msg.path, msg.args).await;
+                    tokio::time::sleep(delay).await;
+                }
+            } else {
+                println!("No saved state found for channel {:02}", ch);
+            }
+        }
+
+        // Remove the state file or update it if some channels remain
+        if saved_state.channels.is_empty() {
+            fs::remove_file(&state_file)?;
+        } else {
+            let state_data = serde_json::to_string(&saved_state)?;
+            fs::write(&state_file, state_data)?;
+        }
+
+        println!("Restoration complete.");
+        return Ok(());
+    }
+
+    // Otherwise, we are turning ON. Save state first.
+    println!("Engaging speech mode on channels: {:?}", channels);
+    let mut saved_state = SavedState::default();
+
+    // List of paths we will modify and need to save
+    let paths_to_save = vec![
+        "eq/1/type", "eq/1/f", "eq/6/type", "eq/6/f",
+        "eq/3/type", "eq/3/f", "eq/3/g", "eq/2/type", "eq/2/f", "eq/2/g", "eq/2/q",
+        "dyn/on", "dyn/mode", "dyn/ratio", "dyn/thr", "dyn/attack", "dyn/release", "dyn/knee",
+        "gate/on", "gate/mode", "gate/thr", "gate/range", "gate/attack", "gate/release",
+        "automix/group"
+    ];
+
+    for ch in &channels {
+        let mut original_msgs = Vec::new();
+        for sub_path in &paths_to_save {
+            let path = format!("/ch/{:02}/{}", ch, sub_path);
+            if let Ok(val) = client.query_value(&path).await {
+                original_msgs.push(OscMessage { path, args: vec![val] });
+            }
+            tokio::time::sleep(delay).await;
+        }
+        saved_state.channels.insert(*ch, original_msgs);
+    }
 
     for ch in channels {
         println!("Processing channel {:02}", ch);
@@ -202,6 +268,11 @@ pub async fn run(args: Args) -> Result<()> {
                 path: format!("/ch/{:02}/gate/release", ch),
                 args: vec![OscArg::Float(dyn_release_to_osc(200.0))],
             },
+            // 7. Dugan Automixer
+            OscMessage {
+                path: format!("/ch/{:02}/automix/group", ch),
+                args: vec![OscArg::Int(1)], // Group X
+            },
         ];
 
         for msg in msgs {
@@ -212,5 +283,29 @@ pub async fn run(args: Args) -> Result<()> {
         println!("Configured channel {:02} for speech mode.", ch);
     }
 
+    let state_data = serde_json::to_string(&saved_state)?;
+    fs::write(&state_file, state_data)?;
+
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_gate_range_mapping() {
+        assert_eq!(gate_range_to_osc(-20.0), 40.0 / 60.0);
+        assert_eq!(gate_range_to_osc(-60.0), 0.0);
+        assert_eq!(gate_range_to_osc(0.0), 1.0);
+    }
+
+    #[test]
+    fn test_speech_mode_osc_generation() {
+        let mut res = (80.0_f32 / 20.0).ln() / 6.907_755_4;
+        res = (res * 200.0).round() / 200.0;
+        res = res.clamp(0.0, 1.0);
+        assert_eq!(freq_to_osc(80.0), res);
+        assert_eq!(gain_to_osc(3.0), (3.0 + 15.0) / 30.0);
+    }
 }
