@@ -152,18 +152,3 @@
 **Vulnerability:** The `x32_scene_checker` app prompted the user for input but read STDIN using an unbounded `std::io::stdin().read_line(&mut input)?`. An attacker or script piping an infinite stream without a newline could trigger an Out-of-Memory (OOM) Denial of Service.
 **Learning:** Even simple interactive Y/N prompts must safely bound their STDIN reads because STDIN can be hijacked by piped payloads.
 **Prevention:** Always use bounded reads (e.g. `take(1024)` + `read_until`) when reading from STDIN, even for simple interactive prompts.
-
-## 2025-02-05 - Fix Unbounded CLI Input Read (OOM DoS Risk)
-**Vulnerability:** Unbounded `std::io::stdin().read_line(&mut string_buf)` was used in the interactive CLI tool `x32_scene_checker`. If piped input or a malicious automated stream provides a massive string without a newline character, this will allocate unbounded heap memory leading to an Out-Of-Memory (OOM) crash (Denial of Service).
-**Learning:** Even simple CLI prompts must assume standard input can be piped from infinite streams (e.g. `/dev/zero`) or massive files rather than human users typing safely at a keyboard.
-**Prevention:** Always safely bound standard input reads using the `.take(limit)` adapter combined with `.read_until` (e.g. `stdin.lock().take(1024).read_until(b'\n', &mut byte_buf)`) and then lossy convert to a string to avoid UTF-8 boundary panic risks.
-
-## 2024-03-20 - [HIGH] Fix UDP server binding to 0.0.0.0 in x32_reaper
-**Vulnerability:** The UDP listener in `x32_reaper` was hardcoded to bind to `0.0.0.0`, listening on all local network interfaces by default.
-**Learning:** Hardcoding `0.0.0.0` for local UDP/TCP services meant for local DAW synchronization creates an insecure network footprint, potentially allowing unauthorized actors on the same network to intercept or send malicious OSC packets to the application.
-**Prevention:** Always default to binding to `127.0.0.1` for services intended for local communication, and expose a CLI argument (like `--bind-ip`) to allow users to intentionally open the service to the network only if required.
-
-## 2024-05-28 - Prevent Unauthorized Network Access to Local Emulator Service
-**Vulnerability:** The X32 emulator (`x32_emulator`) UDP server had its listener hardcoded to bind to `0.0.0.0` by default. This exposed the mock emulator service to all local network interfaces instead of just the intended loopback network.
-**Learning:** Hardcoding `0.0.0.0` as the default bind IP for local mock services creates an unintentional and insecure network footprint. It allows unauthorized actors on the same network to interact with the mock service without authentication, potentially triggering unexpected states or flooding it.
-**Prevention:** For mock servers and networking services designed for local use or testing, the bind IP should default to `127.0.0.1` and be configurable via CLI flags (e.g. `--ip`), rather than defaulting to `0.0.0.0`.

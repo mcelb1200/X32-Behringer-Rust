@@ -64,7 +64,6 @@ async fn test_x32_scene_checker_integration() {
         ip: addr.clone(),
         scene: file_path,
         auto_load: true,
-        locked_paths: None,
     };
 
     // We run the tool, which creates its own MixerClient internally.
@@ -81,68 +80,4 @@ async fn test_x32_scene_checker_integration() {
     } else {
         panic!("Failed to query mute state");
     }
-}
-
-#[tokio::test]
-async fn test_x32_scene_checker_locked_paths() {
-    let socket = UdpSocket::bind("127.0.0.1:0").await.unwrap();
-    let port = socket.local_addr().unwrap().port();
-    let addr = format!("127.0.0.1:{}", port);
-
-    let mut mixer = Mixer::new();
-    let socket_arc = Arc::new(socket);
-    let socket_rx = socket_arc.clone();
-
-    let _ = tokio::spawn(async move {
-        let mut buf = [0u8; 1024];
-        while let Ok((len, src)) = socket_rx.recv_from(&mut buf).await {
-            let responses_opt = mixer.dispatch(&buf[..len], src).ok();
-            if let Some(responses) = responses_opt {
-                for (addr, response_bytes) in responses {
-                    let _ = socket_rx.send_to(&response_bytes, addr).await;
-                }
-            }
-        }
-    });
-
-    let mut temp_file = NamedTempFile::new().unwrap();
-    writeln!(temp_file, "/ch/01/mix/on 1").unwrap();
-    writeln!(temp_file, "/ch/02/mix/on 1").unwrap();
-    writeln!(temp_file, "/routing/in/1 3").unwrap();
-    let file_path = temp_file.path().to_str().unwrap().to_string();
-
-    let args = Args {
-        ip: addr.clone(),
-        scene: file_path,
-        auto_load: true,
-        locked_paths: Some("/routing,/ch/02".to_string()),
-    };
-
-    let _ = run(args).await;
-
-    tokio::time::sleep(Duration::from_millis(50)).await;
-
-    let transport = UdpTransport::connect(&addr).await.unwrap();
-    let client = MixerClient::new(Arc::new(transport), true);
-
-    // /ch/01/mix/on should be set to 1
-    if let Ok(OscArg::Int(val)) = client.query_value("/ch/01/mix/on").await {
-        assert_eq!(val, 1);
-    } else {
-        panic!("Failed to query /ch/01/mix/on");
-    }
-
-    // /ch/02/mix/on should not be set (so the query should return an error or None)
-    let res = client.query_value("/ch/02/mix/on").await;
-    assert!(
-        res.is_err(),
-        "Expected query to fail because path was not set due to lock"
-    );
-
-    // /routing/in/1 should not be set
-    let res = client.query_value("/routing/in/1").await;
-    assert!(
-        res.is_err(),
-        "Expected query to fail because path was not set due to lock"
-    );
 }

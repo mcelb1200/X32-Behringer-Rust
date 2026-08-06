@@ -36,8 +36,8 @@ pub fn get_fx_commands(fx_num: u8) -> Vec<Command<'static>> {
 
 lazy_static! {
     /// A pre-computed, static vector containing the command lists for all 8 effects processors.
-    pub static ref XFX_COMMANDS: [Vec<Command<'static>>; 8] =
-        core::array::from_fn(|i| get_fx_commands((i + 1) as u8));
+    pub static ref XFX_COMMANDS: Vec<Vec<Command<'static>>> =
+        (1..=8).map(get_fx_commands).collect();
 }
 
 // --- OSC Message Setters ---

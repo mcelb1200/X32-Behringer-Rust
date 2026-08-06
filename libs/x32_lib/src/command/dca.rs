@@ -42,8 +42,8 @@ pub fn get_dca_commands(dca_num: u8) -> Vec<Command<'static>> {
 
 lazy_static! {
     /// A pre-computed, static vector containing the command lists for all 8 DCAs.
-    pub static ref XDCA_COMMANDS: [Vec<Command<'static>>; 8] =
-        core::array::from_fn(|i| get_dca_commands((i + 1) as u8));
+    pub static ref XDCA_COMMANDS: Vec<Vec<Command<'static>>> =
+        (1..=8).map(get_dca_commands).collect();
 }
 
 // --- OSC Message Setters ---

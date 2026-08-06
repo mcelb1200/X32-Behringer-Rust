@@ -585,8 +585,8 @@ lazy_static! {
     /// This is initialized at compile time and avoids the need to repeatedly generate the
     /// command list for each channel at runtime. Access the commands for a specific
     /// channel using `XCHANNEL_COMMANDS[channel_num - 1]`.
-    pub static ref XCHANNEL_COMMANDS: [Vec<Command<'static>>; 32] =
-        core::array::from_fn(|i| get_channel_commands((i + 1) as u8));
+    pub static ref XCHANNEL_COMMANDS: Vec<Vec<Command<'static>>> =
+        (1..=32).map(get_channel_commands).collect();
 }
 
 #[cfg(test)]

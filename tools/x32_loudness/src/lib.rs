@@ -423,8 +423,8 @@ async fn run_calibration(
     println!("Please ensure Main volume is down or comfortable before starting.");
     print!("Press ENTER to start tone generator...");
     io::stdout().flush()?;
-    let mut buf = Vec::new();
-    io::stdin().lock().take(1024).read_until(b'\n', &mut buf)?;
+    let mut input = String::new();
+    io::stdin().lock().take(1024).read_line(&mut input)?;
 
     // Configure oscillator: Pink Noise, target L/R, level -18 dBFS, Active = 1
     println!("Activating oscillator...");
@@ -448,8 +448,8 @@ async fn run_calibration(
     );
     print!("Press ENTER when done...");
     io::stdout().flush()?;
-    buf.clear();
-    io::stdin().lock().take(1024).read_until(b'\n', &mut buf)?;
+    input.clear();
+    io::stdin().lock().take(1024).read_line(&mut input)?;
 
     // Query main fader value
     println!("Querying main fader level...");

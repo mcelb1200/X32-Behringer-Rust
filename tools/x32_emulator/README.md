@@ -10,7 +10,7 @@ The emulator runs as a server that binds to a specified IP address and port, lis
 
 | Argument   | Short Flag | Long Flag | Default Value | Description                                  |
 | ---------- | ---------- | --------- | ------------- | -------------------------------------------- |
-| IP Address | `-i`       | `--ip`    | `127.0.0.1`   | The IP address to bind the server to.        |
+| IP Address | `-i`       | `--ip`    | `0.0.0.0`     | The IP address to bind the server to.        |
 | Port       | `-p`       | `--port`  | `10023`       | The port number to bind the server to.       |
 
 ## Example Usage

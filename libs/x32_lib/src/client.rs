@@ -231,7 +231,7 @@ impl MixerClient {
                 _ => break,
             }
         }
-        Err(OscError::ParseError(format!("Query timeout for path: {}", path).to_string()).into())
+        Err(OscError::ParseError("Query timeout".to_string()).into())
     }
 
     /// Subscribes to all incoming OSC messages.

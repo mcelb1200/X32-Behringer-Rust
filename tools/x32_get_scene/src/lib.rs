@@ -42,9 +42,9 @@ pub async fn run(args: Args) -> Result<()> {
         Some(name) => name,
         None => {
             println!("Please enter scene name: ");
-            let mut buf = Vec::new();
-            io::stdin().lock().take(4096).read_until(b'\n', &mut buf)?;
-            std::str::from_utf8(&buf).unwrap_or("").trim().to_string()
+            let mut name = String::new();
+            io::stdin().lock().take(4096).read_line(&mut name)?;
+            name.trim().to_string()
         }
     };
 
@@ -52,9 +52,9 @@ pub async fn run(args: Args) -> Result<()> {
         Some(note) => note,
         None => {
             println!("Please enter note data: ");
-            let mut buf = Vec::new();
-            io::stdin().lock().take(4096).read_until(b'\n', &mut buf)?;
-            std::str::from_utf8(&buf).unwrap_or("").trim().to_string()
+            let mut note = String::new();
+            io::stdin().lock().take(4096).read_line(&mut note)?;
+            note.trim().to_string()
         }
     };
 

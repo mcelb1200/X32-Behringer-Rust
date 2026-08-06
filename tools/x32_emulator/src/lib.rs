@@ -88,7 +88,7 @@ use clap::Parser;
 #[command(author, version, about, long_about = None)]
 pub struct Cli {
     /// IP address to bind to.
-    #[arg(short, long, default_value_t = String::from("127.0.0.1"))]
+    #[arg(short, long, default_value_t = String::from("0.0.0.0"))]
     pub ip: String,
 
     /// Port number to bind to.
