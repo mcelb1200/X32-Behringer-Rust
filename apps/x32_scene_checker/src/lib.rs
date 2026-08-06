@@ -346,12 +346,35 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
         let _ = std::io::stdout().flush();
 
         let mut byte_buf = Vec::new();
-        std::io::stdin()
-            .lock()
-            .take(1024)
-            .read_until(b'\n', &mut byte_buf)?;
-        let input = String::from_utf8_lossy(&byte_buf);
+        let stdin = std::io::stdin();
+        let mut stdin_lock = stdin.lock();
+        let mut handle = stdin_lock.by_ref().take(1024);
 
+        match handle.read_until(b'\n', &mut byte_buf) {
+            Ok(0) => return Ok(()),
+            Err(e) => return Err(e.into()),
+            Ok(len) => {
+                if len == 1024 && !byte_buf.ends_with(b"\n") {
+                    // Line too long, discard remainder
+                    let mut discard = Vec::with_capacity(1024);
+                    loop {
+                        discard.clear();
+                        let mut chunk_handle = stdin_lock.by_ref().take(1024);
+                        match chunk_handle.read_until(b'\n', &mut discard) {
+                            Ok(0) => break,
+                            Err(e) => return Err(e.into()),
+                            Ok(_) => {
+                                if discard.ends_with(b"\n") {
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        let input = String::from_utf8_lossy(&byte_buf).into_owned();
         let trimmed = input.trim().to_lowercase();
         match trimmed.as_str() {
             "l" | "load" => {
