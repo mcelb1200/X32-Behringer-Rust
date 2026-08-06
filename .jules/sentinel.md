@@ -158,3 +158,8 @@
 **Vulnerability:** The UDP listener in `x32_reaper` was hardcoded to bind to `0.0.0.0`, listening on all local network interfaces by default.
 **Learning:** Hardcoding `0.0.0.0` for local UDP/TCP services meant for local DAW synchronization creates an insecure network footprint, potentially allowing unauthorized actors on the same network to intercept or send malicious OSC packets to the application.
 **Prevention:** Always default to binding to `127.0.0.1` for services intended for local communication, and expose a CLI argument (like `--bind-ip`) to allow users to intentionally open the service to the network only if required.
+
+## 2024-05-28 - Prevent Unauthorized Network Access to Local Emulator Service
+**Vulnerability:** The X32 emulator (`x32_emulator`) UDP server had its listener hardcoded to bind to `0.0.0.0` by default. This exposed the mock emulator service to all local network interfaces instead of just the intended loopback network.
+**Learning:** Hardcoding `0.0.0.0` as the default bind IP for local mock services creates an unintentional and insecure network footprint. It allows unauthorized actors on the same network to interact with the mock service without authentication, potentially triggering unexpected states or flooding it.
+**Prevention:** For mock servers and networking services designed for local use or testing, the bind IP should default to `127.0.0.1` and be configurable via CLI flags (e.g. `--ip`), rather than defaulting to `0.0.0.0`.
