@@ -110,7 +110,14 @@ pub async fn run(args: Args) -> Result<()> {
     // Check if we are toggling OFF
     if state_file.exists() {
         println!("Found saved state. Disengaging speech mode (restoring original state)...");
-        let state_data = fs::read_to_string(&state_file)?;
+
+        let f = fs::File::open(&state_file)?;
+        let mut state_data = String::new();
+        use std::io::Read;
+        f.take(1024 * 1024 + 1).read_to_string(&mut state_data)?;
+        if state_data.len() > 1024 * 1024 {
+            anyhow::bail!("State file too large to load (max 1MB)");
+        }
         let mut saved_state: SavedState = serde_json::from_str(&state_data)?;
 
         for ch in channels.clone() {
