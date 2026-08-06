@@ -1,5 +1,5 @@
-use std::process::Command;
 use std::path::Path;
+use std::process::Command;
 
 #[test]
 fn run_scripts_integration_tests() {
@@ -11,9 +11,23 @@ fn run_scripts_integration_tests() {
         .expect("Failed to get workspace root");
 
     let (shell, args) = if cfg!(target_os = "windows") {
-        ("powershell", vec!["-ExecutionPolicy", "Bypass", "-File", "./run_tests.ps1", "-Mode", "non_interactive", "-SkipBuild"])
+        (
+            "powershell",
+            vec![
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                "./run_tests.ps1",
+                "-Mode",
+                "non_interactive",
+                "-SkipBuild",
+            ],
+        )
     } else {
-        ("bash", vec!["./run_tests.sh", "--run-tests-and-exit", "--skip-build"])
+        (
+            "bash",
+            vec!["./run_tests.sh", "--run-tests-and-exit", "--skip-build"],
+        )
     };
 
     println!("Executing integration tests via: {} {:?}", shell, args);
