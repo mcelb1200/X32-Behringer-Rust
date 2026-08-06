@@ -67,7 +67,10 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
         match stream {
             Ok(stream) => {
                 // Sentinel: Always log new incoming connections for security auditing
-                let peer_addr = stream.peer_addr().map(|addr| addr.to_string()).unwrap_or_else(|_| "unknown".to_string());
+                let peer_addr = stream
+                    .peer_addr()
+                    .map(|addr| addr.to_string())
+                    .unwrap_or_else(|_| "unknown".to_string());
                 println!("[AUDIT] New client connected: {}", peer_addr);
 
                 if args.verbose {
@@ -188,7 +191,10 @@ async fn handle_client(mut stream: TcpStream, args: Args) -> Result<()> {
     }
 
     // Sentinel: Always log client disconnects for security auditing
-    let peer_addr = stream.peer_addr().map(|addr| addr.to_string()).unwrap_or_else(|_| "unknown".to_string());
+    let peer_addr = stream
+        .peer_addr()
+        .map(|addr| addr.to_string())
+        .unwrap_or_else(|_| "unknown".to_string());
     println!("[AUDIT] Client disconnected: {}", peer_addr);
 
     if args.verbose {
