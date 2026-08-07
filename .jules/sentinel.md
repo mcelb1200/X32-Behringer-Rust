@@ -163,3 +163,8 @@
 **Vulnerability:** The X32 emulator (`x32_emulator`) UDP server had its listener hardcoded to bind to `0.0.0.0` by default. This exposed the mock emulator service to all local network interfaces instead of just the intended loopback network.
 **Learning:** Hardcoding `0.0.0.0` as the default bind IP for local mock services creates an unintentional and insecure network footprint. It allows unauthorized actors on the same network to interact with the mock service without authentication, potentially triggering unexpected states or flooding it.
 **Prevention:** For mock servers and networking services designed for local use or testing, the bind IP should default to `127.0.0.1` and be configurable via CLI flags (e.g. `--ip`), rather than defaulting to `0.0.0.0`.
+
+## 2024-05-28 - Prevent OOM DoS via Unbounded File Reads
+**Vulnerability:** In `apps/x32_speech_mode/src/lib.rs`, the application read the entire `.x32_speech_mode_state.json` state file into memory using `fs::read_to_string(&state_file)`. If a malicious actor or an automated process replaced or appended to this local file with gigabytes of data, it would trigger an Out-Of-Memory (OOM) panic, resulting in a Denial of Service.
+**Learning:** Any file read operations, even for local configuration or state files that are usually small, should not assume the file size is safe. `fs::read_to_string` loads the entire file into heap memory unconditionally.
+**Prevention:** Replace unbounded file reading functions with explicitly bounded reads using the `.take(limit)` adapter on an open `File` (e.g. `f.take(1024 * 1024 + 1).read_to_string(&mut state_data)`), safely capping memory allocation while providing a clear error if the limit is exceeded.
