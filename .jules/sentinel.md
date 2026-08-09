@@ -148,3 +148,23 @@
 **Vulnerability:** A TCP server utility (`x32_tcp`) had its `TcpListener::bind` hardcoded to `0.0.0.0`, exposing the TCP-to-UDP proxy to all local network interfaces instead of just the intended loopback network.
 **Learning:** Hardcoding `0.0.0.0` for local or proxy services creates an unintentional and insecure network footprint. It allows unauthorized actors on the same network to interact with internal services without authentication, potentially triggering a DoS or performing unauthorized actions.
 **Prevention:** For networking services designed for local use, the bind IP should default to `127.0.0.1` and be configurable via CLI flags (e.g. `--bind-ip`), rather than statically locked to `0.0.0.0`.
+
+## 2025-02-05 - Fix Unbounded CLI Input Read (OOM DoS Risk)
+**Vulnerability:** Unbounded `std::io::stdin().read_line(&mut string_buf)` was used in the interactive CLI tool `x32_scene_checker`. If piped input or a malicious automated stream provides a massive string without a newline character, this will allocate unbounded heap memory leading to an Out-Of-Memory (OOM) crash (Denial of Service).
+**Learning:** Even simple CLI prompts must assume standard input can be piped from infinite streams (e.g. `/dev/zero`) or massive files rather than human users typing safely at a keyboard.
+**Prevention:** Always safely bound standard input reads using the `.take(limit)` adapter combined with `.read_until` (e.g. `stdin.lock().take(1024).read_until(b'\n', &mut byte_buf)`) and then lossy convert to a string to avoid UTF-8 boundary panic risks.
+
+## 2024-03-20 - [HIGH] Fix UDP server binding to 0.0.0.0 in x32_reaper
+**Vulnerability:** The UDP listener in `x32_reaper` was hardcoded to bind to `0.0.0.0`, listening on all local network interfaces by default.
+**Learning:** Hardcoding `0.0.0.0` for local UDP/TCP services meant for local DAW synchronization creates an insecure network footprint, potentially allowing unauthorized actors on the same network to intercept or send malicious OSC packets to the application.
+**Prevention:** Always default to binding to `127.0.0.1` for services intended for local communication, and expose a CLI argument (like `--bind-ip`) to allow users to intentionally open the service to the network only if required.
+
+## 2024-05-28 - Prevent Unauthorized Network Access to Local Emulator Service
+**Vulnerability:** The X32 emulator (`x32_emulator`) UDP server had its listener hardcoded to bind to `0.0.0.0` by default. This exposed the mock emulator service to all local network interfaces instead of just the intended loopback network.
+**Learning:** Hardcoding `0.0.0.0` as the default bind IP for local mock services creates an unintentional and insecure network footprint. It allows unauthorized actors on the same network to interact with the mock service without authentication, potentially triggering unexpected states or flooding it.
+**Prevention:** For mock servers and networking services designed for local use or testing, the bind IP should default to `127.0.0.1` and be configurable via CLI flags (e.g. `--ip`), rather than defaulting to `0.0.0.0`.
+
+## 2024-05-28 - Prevent OOM DoS via Unbounded File Reads
+**Vulnerability:** In `apps/x32_speech_mode/src/lib.rs`, the application read the entire `.x32_speech_mode_state.json` state file into memory using `fs::read_to_string(&state_file)`. If a malicious actor or an automated process replaced or appended to this local file with gigabytes of data, it would trigger an Out-Of-Memory (OOM) panic, resulting in a Denial of Service.
+**Learning:** Any file read operations, even for local configuration or state files that are usually small, should not assume the file size is safe. `fs::read_to_string` loads the entire file into heap memory unconditionally.
+**Prevention:** Replace unbounded file reading functions with explicitly bounded reads using the `.take(limit)` adapter on an open `File` (e.g. `f.take(1024 * 1024 + 1).read_to_string(&mut state_data)`), safely capping memory allocation while providing a clear error if the limit is exceeded.

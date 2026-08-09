@@ -49,7 +49,10 @@ pub async fn run(args: Args) -> Result<()> {
         let path = format!("/auxin/{:02}/grp/dca", i);
         client.send_message(&path, vec![]).await?;
     }
-    // We also need fxrtn but let's stick to ch/auxin for now.
+    for i in 1..=8 {
+        let path = format!("/fxrtn/{:02}/grp/dca", i);
+        client.send_message(&path, vec![]).await?;
+    }
 
     println!("Listening for DCA selects...");
 
@@ -125,34 +128,21 @@ async fn spill_dca(
         }
     }
 
+    for i in 1..=8 {
+        let path = format!("/fxrtn/{:02}/grp/dca", i);
+        if let Some(mask) = assignments.get(&path) {
+            if (mask & dca_bit) != 0 {
+                // The source ID for FxRtn 1 is 41
+                members.push(i + 40);
+            }
+        }
+    }
+
     println!("DCA {} members (source IDs): {:?}", dca_num, members);
 
     // X32 User Bank (custom bank) mapping:
     // It's mapped across 3 blocks of 8 faders, totaling 24 faders.
-    // However, on standard X32, the custom bank can be addressed by `/-prefs/custom_bank/...`
-    // Let's assume we map the first N faders of the User Bank to these members.
-    // The specific paths for User Bank assignments on X32 are:
-    // `/-prefs/custom_bank/1/1` to `/-prefs/custom_bank/1/8`  (Left bank)
-    // `/-prefs/custom_bank/2/1` to `/-prefs/custom_bank/2/8`  (Center bank)
-    // `/-prefs/custom_bank/3/1` to `/-prefs/custom_bank/3/8`  (Right bank)
-    // Wait, the standard X32 only has one layer per section. The "User" layer.
-
-    // Actually, checking X32 OSC documentation, the paths for the user assignment are:
-    // `/-prefs/user_bank/1/1` ? No, let's look for how it's done.
-
-    // We'll write to `/-prefs/custom_bank/X` where X is 1..24? Or similar.
-    // For now we'll send to `/-prefs/user_rout/...` or similar. Let's check `x32_lib` or `osc` for exact path.
-    // Actually, memory says: dynamically rewrite custom layer mappings (`/-prefs/custom_bank/`).
-
-    // Memory: `/-prefs/custom_bank/` is the path mentioned in the TODO.
-
-    // But how is it addressed? Let's just output a sequential list to `/-prefs/custom_bank/1` ... `/-prefs/custom_bank/N`.
-    // Wait, let's look at `x32_core` to see if it supports `/-prefs/custom_bank`.
-    // Since `x32_core` didn't have it explicitly, it might just accept it as a string prefix.
-    // Wait, the X32 has custom layers per block:
-    // Block 1: `/-prefs/custom_bank/1/1` ... `/-prefs/custom_bank/1/8`
-
-    // Let's map sequentially up to 24 members.
+    // Map sequentially up to 24 members across 3 blocks of 8 faders using `/-prefs/custom_bank/{block}/{fader}`
     for i in 0..24 {
         let source_id = if i < members.len() {
             members[i]
@@ -160,9 +150,10 @@ async fn spill_dca(
             0 // 0 = OFF
         };
 
-        let path = format!("/-prefs/custom_bank/{}", i + 1);
-        // Note: Some docs say `/-prefs/custom_bank/{bank}/{channel}`. The memory just says `/-prefs/custom_bank/`.
-        // Let's assume it's `/-prefs/custom_bank/{1..24}`.
+        let block = (i / 8) + 1; // 1 to 3
+        let fader = (i % 8) + 1; // 1 to 8
+
+        let path = format!("/-prefs/custom_bank/{}/{}", block, fader);
         client
             .send_message(&path, vec![OscArg::Int(source_id)])
             .await?;
@@ -186,6 +177,8 @@ mod tests {
         assignments.insert("/ch/05/grp/dca".to_string(), 2);
         // Auxin 1 is in DCA 1
         assignments.insert("/auxin/01/grp/dca".to_string(), 1);
+        // Fxrtn 2 is in DCA 3
+        assignments.insert("/fxrtn/02/grp/dca".to_string(), 4);
 
         let dca1_bit = 1;
         let dca2_bit = 2;
@@ -199,5 +192,8 @@ mod tests {
         assert_ne!(assignments.get("/ch/05/grp/dca").unwrap() & dca2_bit, 0);
 
         assert_ne!(assignments.get("/auxin/01/grp/dca").unwrap() & dca1_bit, 0);
+
+        assert_eq!(assignments.get("/fxrtn/02/grp/dca").unwrap() & dca1_bit, 0);
+        assert_ne!(assignments.get("/fxrtn/02/grp/dca").unwrap() & dca3_bit, 0);
     }
 }

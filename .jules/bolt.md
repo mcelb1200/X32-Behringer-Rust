@@ -121,3 +121,10 @@ When initializing terminal UI state that might fail and return a `Result` (e.g.,
 ## 2026-10-25 - [Eliminate redundant vector allocations by replacing multiple filters with a single pass]
 **Learning:** In reporting and UI tools (like `x32_scene_checker`), iterating over a collection multiple times using `.iter().filter(...).collect::<Vec<_>>()` to group items by category forces multiple O(N) dynamic heap allocations for the vectors. This becomes a bottleneck when only summary statistics or a small subset of the filtered items are actually needed.
 **Action:** Replace multiple `.filter().collect()` chains with a single loop that iterates over the collection once. Use `Vec::new()` and `.push()` only for categories where the individual items need to be preserved (e.g. for displaying a subset), and use simple integer counters (e.g. `count += 1`) for categories where only the total length is required. This completely eliminates redundant heap allocations.
+## 2024-07-29 - Fixed-size arrays for static vectors
+**Learning:** Initializing static collections of pre-computed structures (like `Vec<Command>`) using dynamic allocations (`Vec::collect()`) within `lazy_static!` causes unnecessary heap allocations during program startup and adds a layer of pointer indirection during hot-path data access.
+**Action:** When sizes are known ahead of time, use fixed-size arrays with `core::array::from_fn` in `lazy_static!` blocks instead of `.map(...).collect()`. This forces the collection into a contiguous stack/static memory block avoiding heap buffers.
+
+## 2024-08-05 - [Avoid string clone in TUI hot loops with Cow]
+**Learning:** In Ratatui applications, when rendering text that uses `Cow<'static, str>`, calling `.clone()` inside the `.draw()` rendering closure will allocate a new `String` on every frame if the `Cow` variant is `Owned` (e.g. dynamic log messages).
+**Action:** Use `.as_ref()` to pass a string slice `&str` reference into `Span::raw()` instead, eliminating the per-frame string allocation bottleneck in the render loop.

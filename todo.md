@@ -538,3 +538,20 @@ Tuning a sound system to a room ("ringing out the mains") and verifying that all
 
 ### Real-world use case
 > A high school drama teacher is setting up the PA in a reverberant gymnasium. They don't have a measurement mic, but they have three chorus mics on stage. They select "Auto-Tune Room" on the TUI. The system plays a slow, sweeping tone through the main speakers. At 250 Hz and 4 kHz, the gym echoes loudly into the chorus mics. The system detects this, automatically cuts those frequencies on the Main EQ. Next, they select "Ring Monitors". The system routes the sweeping tone to the stage wedges, catches a 3.1 kHz ring building up, inserts a notch on the monitor bus EQ, and turns off the tone. The teacher's PA and monitors are now tuned for maximum volume without feedback.
+
+
+## Missing Tools to Port from C
+
+- [ ] rpncalc
+- [ ] testparams
+- [ ] xsprint
+- [ ] xscene2x
+- [ ] validateip4dotted
+- [ ] xdump
+- [ ] logf
+- [ ] connect
+- [ ] xcparse
+- [ ] fxparse1
+- [ ] fxparse5
+- [ ] setsceneparse
+- [ ] fxparse

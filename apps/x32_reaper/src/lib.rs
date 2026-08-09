@@ -34,6 +34,10 @@ pub struct Args {
     /// Path to config file (default: .X32Reaper.ini)
     #[arg(long, default_value = ".X32Reaper.ini")]
     pub config: String,
+
+    /// IP address to bind the UDP listener to (default: 127.0.0.1)
+    #[arg(long, default_value = "127.0.0.1")]
+    pub bind_ip: String,
 }
 
 // Flags
@@ -87,7 +91,7 @@ pub async fn run(args: Args) -> Result<()> {
 
     let state = Arc::new(Mutex::new(AppState::new(&config)));
 
-    let reaper_bind_addr = format!("0.0.0.0:{}", config.reaper_recv_port);
+    let reaper_bind_addr = format!("{}:{}", args.bind_ip, config.reaper_recv_port);
     let reaper_sock = UdpSocket::bind(&reaper_bind_addr)
         .await
         .context("Failed to bind Reaper socket")?;
