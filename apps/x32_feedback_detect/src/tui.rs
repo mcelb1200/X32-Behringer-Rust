@@ -34,10 +34,7 @@ impl AppTui {
         execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
         let backend = CrosstermBackend::new(stdout);
         let terminal = Terminal::new(backend)?;
-        Ok(Self {
-            terminal,
-            notch_text: String::with_capacity(512),
-        })
+        Ok(Self { terminal, notch_text: String::with_capacity(512) })
     }
 
     pub fn draw(
