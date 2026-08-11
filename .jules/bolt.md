@@ -128,3 +128,6 @@ When initializing terminal UI state that might fail and return a `Result` (e.g.,
 ## 2024-08-05 - [Avoid string clone in TUI hot loops with Cow]
 **Learning:** In Ratatui applications, when rendering text that uses `Cow<'static, str>`, calling `.clone()` inside the `.draw()` rendering closure will allocate a new `String` on every frame if the `Cow` variant is `Owned` (e.g. dynamic log messages).
 **Action:** Use `.as_ref()` to pass a string slice `&str` reference into `Span::raw()` instead, eliminating the per-frame string allocation bottleneck in the render loop.
+## 2024-05-24 - [Avoid reallocating strings in TUI render loop]
+**Learning:** Instantiating `String::new()` in a hot loop, such as a Ratatui `draw` loop, results in a heap allocation on every single frame rendering iteration.
+**Action:** When building strings in a TUI rendering loop, cache the `String` buffer in the App or Tui struct state (with `String::with_capacity`), clear it via `.clear()` at the start of the render function, and then format into it. To pass the formatted string into the rendering closure without borrow checker issues, extract a `&str` reference from `self.buffer` just before invoking `terminal.draw(|f| ...)`.

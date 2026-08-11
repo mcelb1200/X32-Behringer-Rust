@@ -18,6 +18,7 @@ use crate::mixer::AppliedNotch;
 
 pub struct AppTui {
     terminal: Terminal<CrosstermBackend<io::Stdout>>,
+    notch_text: String,
 }
 
 pub enum TuiEvent {
@@ -33,7 +34,10 @@ impl AppTui {
         execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
         let backend = CrosstermBackend::new(stdout);
         let terminal = Terminal::new(backend)?;
-        Ok(Self { terminal })
+        Ok(Self {
+            terminal,
+            notch_text: String::with_capacity(512),
+        })
     }
 
     pub fn draw(
@@ -41,6 +45,22 @@ impl AppTui {
         status: &str,
         notches: &std::collections::HashMap<u8, AppliedNotch>,
     ) -> Result<()> {
+        self.notch_text.clear();
+        if notches.is_empty() {
+            self.notch_text.push_str("No active notches.");
+        } else {
+            for (band, notch) in notches {
+                writeln!(
+                    self.notch_text,
+                    "Band {}: {:.1} Hz | {:.1} dB",
+                    band, notch.frequency, notch.depth
+                )
+                .expect("Failed to write to string buffer");
+            }
+        }
+
+        let notch_text_ref: &str = &self.notch_text;
+
         self.terminal.draw(|f| {
             let chunks = Layout::default()
                 .direction(Direction::Vertical)
@@ -58,27 +78,14 @@ impl AppTui {
                 .style(Style::default().fg(status_color));
             f.render_widget(status_p, chunks[0]);
 
-            let mut notch_text = String::new();
-            if notches.is_empty() {
-                notch_text.push_str("No active notches.");
-            } else {
-                for (band, notch) in notches {
-                    writeln!(
-                        notch_text,
-                        "Band {}: {:.1} Hz | {:.1} dB",
-                        band, notch.frequency, notch.depth
-                    )
-                    .expect("Failed to write to string buffer");
-                }
-            }
-
-            let notch_p = Paragraph::new(notch_text).block(
+            let notch_p = Paragraph::new(notch_text_ref).block(
                 Block::default()
                     .title("Active Notches")
                     .borders(Borders::ALL),
             );
             f.render_widget(notch_p, chunks[1]);
         })?;
+
         Ok(())
     }
 
