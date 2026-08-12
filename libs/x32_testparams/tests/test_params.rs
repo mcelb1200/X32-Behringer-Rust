@@ -37,7 +37,10 @@ fn test_parse_string() -> Result<()> {
     let mut defs = vec![ParamDefinition::new("my_str", ParamType::String)];
 
     parse_line("my_str=hello world", &mut defs)?;
-    assert_eq!(defs[0].value, Some(ParamValue::String("hello world".to_string())));
+    assert_eq!(
+        defs[0].value,
+        Some(ParamValue::String("hello world".to_string()))
+    );
 
     Ok(())
 }
@@ -49,7 +52,10 @@ fn test_parse_hex_string() -> Result<()> {
     // Test params expects hex strings to be read byte by byte, separated by space maybe?
     // "f0 f1 f2" -> vec![0xf0, 0xf1, 0xf2]
     parse_line("my_hstr=f0 f1 f2", &mut defs)?;
-    assert_eq!(defs[0].value, Some(ParamValue::HexString(vec![0xf0, 0xf1, 0xf2])));
+    assert_eq!(
+        defs[0].value,
+        Some(ParamValue::HexString(vec![0xf0, 0xf1, 0xf2]))
+    );
 
     Ok(())
 }
@@ -96,7 +102,10 @@ my_float=1.23
     parse_file_content(content, &mut defs)?;
 
     assert_eq!(defs[0].value, Some(ParamValue::Int(100)));
-    assert_eq!(defs[1].value, Some(ParamValue::String("test string".to_string())));
+    assert_eq!(
+        defs[1].value,
+        Some(ParamValue::String("test string".to_string()))
+    );
     assert_eq!(defs[2].value, Some(ParamValue::Float(1.23)));
 
     Ok(())

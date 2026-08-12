@@ -3,7 +3,7 @@
 //! This is a Rust port of `Testparams.c` from the original C codebase. It supports parsing
 //! lines in the format `key=value` into various strongly-typed parameter values.
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::Path;
@@ -86,11 +86,15 @@ pub fn parse_line(line: &str, defs: &mut [ParamDefinition]) -> Result<()> {
                     ParamValue::Char(c)
                 }
                 ParamType::Int => {
-                    let i = val_str.parse::<i32>().map_err(|e| anyhow!("Failed to parse int '{}': {}", val_str, e))?;
+                    let i = val_str
+                        .parse::<i32>()
+                        .map_err(|e| anyhow!("Failed to parse int '{}': {}", val_str, e))?;
                     ParamValue::Int(i)
                 }
                 ParamType::Float => {
-                    let f = val_str.parse::<f32>().map_err(|e| anyhow!("Failed to parse float '{}': {}", val_str, e))?;
+                    let f = val_str
+                        .parse::<f32>()
+                        .map_err(|e| anyhow!("Failed to parse float '{}': {}", val_str, e))?;
                     ParamValue::Float(f)
                 }
                 ParamType::String => ParamValue::String(val_str.to_string()),
