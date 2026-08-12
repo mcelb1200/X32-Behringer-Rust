@@ -134,3 +134,7 @@ When initializing terminal UI state that might fail and return a `Result` (e.g.,
 ## 2024-05-18 - [TUI Per-Frame String Allocation via .clone()]
 **Learning:** Ratatui `.draw()` loops run frequently (e.g. at 60 FPS). Using `.clone()` on Strings inside this loop (e.g. `Line::from(ch.name.clone())`) causes a new memory allocation on every single frame. This hurts performance and increases memory fragmentation.
 **Action:** Replace `.clone()` inside TUI render loops with references (`&str`) by using `.as_str()` or similar. Ratatui's `Line::from` and `Span::raw` accept `&str` directly.
+
+## 2024-05-24 - [Avoid reallocating strings in TUI render loop]
+**Learning:** Initializing format string using `format!("{bpm:.1} BPM ({})", state.algorithm)` inside `.draw()` in a Ratatui hot loop allocates a new heap `String` on every single frame.
+**Action:** When building text strings in a TUI render loop, cache the `String` buffer (using `String::with_capacity()`) inside the Tui component struct, clear it (`.clear()`) just prior to the render call (`.draw()`), and use `write!` to format the string. In the rendering closure, use `self.bpm_buffer.as_str()` to pass a reference directly without a per-frame allocation.
