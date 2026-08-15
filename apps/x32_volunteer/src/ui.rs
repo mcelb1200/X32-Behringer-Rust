@@ -68,17 +68,16 @@ impl Tui {
                 Status::Problem => "🔴 PROBLEM",
             };
 
-            let header_text = format!(
-                "  🎛️  SOUND DESK — Volunteer Mode              {}",
-                status_text
-            );
-            let header = Paragraph::new(header_text)
-                .style(
-                    Style::default()
-                        .fg(status_color)
-                        .add_modifier(Modifier::BOLD),
-                )
-                .block(Block::default().borders(Borders::ALL));
+            let header = Paragraph::new(Line::from(vec![
+                Span::raw("  🎛️  SOUND DESK — Volunteer Mode              "),
+                Span::raw(status_text),
+            ]))
+            .style(
+                Style::default()
+                    .fg(status_color)
+                    .add_modifier(Modifier::BOLD),
+            )
+            .block(Block::default().borders(Borders::ALL));
             f.render_widget(header, chunks[0]);
 
             // 2. Channels (Grid layout ideally, simplify for now to horizontal chunks)
@@ -124,7 +123,10 @@ impl Tui {
                 Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
             ))];
             for alert in &state.alerts {
-                alert_lines.push(Line::from(format!("• {}", alert)));
+                alert_lines.push(Line::from(vec![
+                    Span::raw("• "),
+                    Span::raw(alert.as_str()),
+                ]));
             }
             if state.alerts.is_empty() {
                 alert_lines.push(Line::from(Span::styled(

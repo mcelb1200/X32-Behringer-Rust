@@ -138,3 +138,7 @@ When initializing terminal UI state that might fail and return a `Result` (e.g.,
 ## 2024-05-24 - [Avoid reallocating strings in TUI render loop]
 **Learning:** Initializing format string using `format!("{bpm:.1} BPM ({})", state.algorithm)` inside `.draw()` in a Ratatui hot loop allocates a new heap `String` on every single frame.
 **Action:** When building text strings in a TUI render loop, cache the `String` buffer (using `String::with_capacity()`) inside the Tui component struct, clear it (`.clear()`) just prior to the render call (`.draw()`), and use `write!` to format the string. In the rendering closure, use `self.bpm_buffer.as_str()` to pass a reference directly without a per-frame allocation.
+
+## 2024-05-18 - Eliminating String format! allocations in TUI render loops using Span composition
+**Learning:** In Ratatui applications, calling `format!` to build display strings within the hot `.draw()` closure results in continuous per-frame heap allocations.
+**Action:** Instead of formatting into a single String, compose a Ratatui `Line` from multiple `Span::raw` elements, passing existing references or static strings (e.g. `Line::from(vec![Span::raw("Static text: "), Span::raw(dynamic_ref.as_str())])`). This avoids allocating a new formatted string on every frame.
