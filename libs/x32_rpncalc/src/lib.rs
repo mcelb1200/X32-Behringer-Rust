@@ -124,8 +124,14 @@ impl RpnCalc {
                         || c == '.'
                         || c == 'e'
                         || c == 'E'
-                        || (end_idx > 0 && c == '+' && (bytes[end_idx - 1] as char == 'e' || bytes[end_idx - 1] as char == 'E'))
-                        || (end_idx > 0 && c == '-' && (bytes[end_idx - 1] as char == 'e' || bytes[end_idx - 1] as char == 'E'))
+                        || (end_idx > 0
+                            && c == '+'
+                            && (bytes[end_idx - 1] as char == 'e'
+                                || bytes[end_idx - 1] as char == 'E'))
+                        || (end_idx > 0
+                            && c == '-'
+                            && (bytes[end_idx - 1] as char == 'e'
+                                || bytes[end_idx - 1] as char == 'E'))
                     {
                         end_idx += 1;
                     } else {
@@ -289,7 +295,9 @@ impl RpnCalc {
     }
 
     fn pop(&mut self) -> Result<f64, String> {
-        self.stack.pop().ok_or_else(|| "stack underflow".to_string())
+        self.stack
+            .pop()
+            .ok_or_else(|| "stack underflow".to_string())
     }
 }
 
@@ -403,9 +411,9 @@ mod tests {
     }
 }
 
-    #[test]
-    fn test_modulo_by_zero_does_not_panic() {
-        let mut calc = RpnCalc::new();
-        // 5 0 % -> shouldn't panic
-        assert_eq!(calc.evaluate("5 0 %", None).unwrap().0, 0.0);
-    }
+#[test]
+fn test_modulo_by_zero_does_not_panic() {
+    let mut calc = RpnCalc::new();
+    // 5 0 % -> shouldn't panic
+    assert_eq!(calc.evaluate("5 0 %", None).unwrap().0, 0.0);
+}
