@@ -53,11 +53,14 @@ impl Tui {
         // ⚡ Bolt: Resize buffers to match dynamic state length using resize_with to ensure
         // each new String actually starts with the requested capacity, preventing allocations.
         if self.fader_bufs.len() != state.channels.len() {
-            self.fader_bufs.resize_with(state.channels.len(), || String::with_capacity(32));
-            self.level_bufs.resize_with(state.channels.len(), || String::with_capacity(32));
+            self.fader_bufs
+                .resize_with(state.channels.len(), || String::with_capacity(32));
+            self.level_bufs
+                .resize_with(state.channels.len(), || String::with_capacity(32));
         }
         if self.alert_bufs.len() != state.alerts.len() {
-            self.alert_bufs.resize_with(state.alerts.len(), || String::with_capacity(128));
+            self.alert_bufs
+                .resize_with(state.alerts.len(), || String::with_capacity(128));
         }
 
         // ⚡ Bolt: Clear and populate stateful string buffers using `write!` instead
@@ -73,8 +76,12 @@ impl Tui {
             Status::Caution => "🟡 CAUTION",
             Status::Problem => "🔴 PROBLEM",
         };
-        write!(self.header_buf, "  🎛️  SOUND DESK — Volunteer Mode              {}", status_text)
-            .expect("Write to header buffer failed");
+        write!(
+            self.header_buf,
+            "  🎛️  SOUND DESK — Volunteer Mode              {}",
+            status_text
+        )
+        .expect("Write to header buffer failed");
 
         for i in 0..state.channels.len() {
             self.fader_bufs[i].clear();
@@ -87,8 +94,7 @@ impl Tui {
 
         for i in 0..state.alerts.len() {
             self.alert_bufs[i].clear();
-            write!(self.alert_bufs[i], "• {}", state.alerts[i])
-                .expect("Write alert buffer failed");
+            write!(self.alert_bufs[i], "• {}", state.alerts[i]).expect("Write alert buffer failed");
         }
 
         self.terminal.draw(|f| {
