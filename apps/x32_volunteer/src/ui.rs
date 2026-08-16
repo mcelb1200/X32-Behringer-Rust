@@ -13,11 +13,15 @@ use ratatui::{
     text::{Line, Span},
     widgets::{Block, Borders, Paragraph},
 };
-use std::{io, time::Duration};
+use std::{fmt::Write, io, time::Duration};
 
 pub struct Tui {
     terminal: Terminal<CrosstermBackend<io::Stdout>>,
     cached_constraints: Vec<Constraint>,
+    header_buf: String,
+    fader_bufs: Vec<String>,
+    level_bufs: Vec<String>,
+    alert_bufs: Vec<String>,
 }
 
 impl Tui {
@@ -30,6 +34,10 @@ impl Tui {
         Ok(Self {
             terminal,
             cached_constraints: Vec::new(),
+            header_buf: String::with_capacity(128),
+            fader_bufs: Vec::new(),
+            level_bufs: Vec::new(),
+            alert_bufs: Vec::new(),
         })
     }
 
@@ -41,6 +49,48 @@ impl Tui {
                 .map(|_| Constraint::Ratio(1, state.channels.len() as u32))
                 .collect();
         }
+
+        // ⚡ Bolt: Resize buffers to match dynamic state length using resize_with to ensure
+        // each new String actually starts with the requested capacity, preventing allocations.
+        if self.fader_bufs.len() != state.channels.len() {
+            self.fader_bufs.resize_with(state.channels.len(), || String::with_capacity(32));
+            self.level_bufs.resize_with(state.channels.len(), || String::with_capacity(32));
+        }
+        if self.alert_bufs.len() != state.alerts.len() {
+            self.alert_bufs.resize_with(state.alerts.len(), || String::with_capacity(128));
+        }
+
+        // ⚡ Bolt: Clear and populate stateful string buffers using `write!` instead
+        // of `format!` to completely eliminate per-frame allocations in the hot render loop.
+        self.header_buf.clear();
+        let status_color = match state.status {
+            Status::Ok => Color::Green,
+            Status::Caution => Color::Yellow,
+            Status::Problem => Color::Red,
+        };
+        let status_text = match state.status {
+            Status::Ok => "🟢 ALL OK",
+            Status::Caution => "🟡 CAUTION",
+            Status::Problem => "🔴 PROBLEM",
+        };
+        write!(self.header_buf, "  🎛️  SOUND DESK — Volunteer Mode              {}", status_text)
+            .expect("Write to header buffer failed");
+
+        for i in 0..state.channels.len() {
+            self.fader_bufs[i].clear();
+            write!(self.fader_bufs[i], "Fader: {:.2}", state.channels[i].fader)
+                .expect("Write fader buffer failed");
+            self.level_bufs[i].clear();
+            write!(self.level_bufs[i], "{:.0} dB", state.channels[i].level_db)
+                .expect("Write level buffer failed");
+        }
+
+        for i in 0..state.alerts.len() {
+            self.alert_bufs[i].clear();
+            write!(self.alert_bufs[i], "• {}", state.alerts[i])
+                .expect("Write alert buffer failed");
+        }
+
         self.terminal.draw(|f| {
             let chunks = Layout::default()
                 .direction(Direction::Vertical)
@@ -57,22 +107,7 @@ impl Tui {
                 .split(f.size());
 
             // 1. Header
-            let status_color = match state.status {
-                Status::Ok => Color::Green,
-                Status::Caution => Color::Yellow,
-                Status::Problem => Color::Red,
-            };
-            let status_text = match state.status {
-                Status::Ok => "🟢 ALL OK",
-                Status::Caution => "🟡 CAUTION",
-                Status::Problem => "🔴 PROBLEM",
-            };
-
-            let header_text = format!(
-                "  🎛️  SOUND DESK — Volunteer Mode              {}",
-                status_text
-            );
-            let header = Paragraph::new(header_text)
+            let header = Paragraph::new(self.header_buf.as_str())
                 .style(
                     Style::default()
                         .fg(status_color)
@@ -105,8 +140,8 @@ impl Tui {
 
                     let ch_text = vec![
                         Line::from(ch.name.as_str()),
-                        Line::from(format!("Fader: {:.2}", ch.fader)),
-                        Line::from(format!("{:.0} dB", ch.level_db)),
+                        Line::from(self.fader_bufs[i].as_str()),
+                        Line::from(self.level_bufs[i].as_str()),
                         Line::from(mute_text),
                     ];
 
@@ -123,8 +158,8 @@ impl Tui {
                 "ALERTS",
                 Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
             ))];
-            for alert in &state.alerts {
-                alert_lines.push(Line::from(format!("• {}", alert)));
+            for alert_buf in &self.alert_bufs {
+                alert_lines.push(Line::from(alert_buf.as_str()));
             }
             if state.alerts.is_empty() {
                 alert_lines.push(Line::from(Span::styled(
