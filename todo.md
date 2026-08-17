@@ -543,7 +543,7 @@ Tuning a sound system to a room ("ringing out the mains") and verifying that all
 ## Missing Tools to Port from C
 
 - [ ] rpncalc
-- [ ] testparams
+- [x] testparams
 - [ ] xsprint
 - [ ] xscene2x
 - [ ] validateip4dotted

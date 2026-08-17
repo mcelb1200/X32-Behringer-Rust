@@ -145,6 +145,9 @@ impl Tui {
                     };
 
                     let ch_text = vec![
+                        Line::from(ch.name.clone()),
+                        Line::from(format!("Fader: {:.2}", ch.fader)),
+                        Line::from(format!("{:.0} dB", ch.level_db)),
                         Line::from(ch.name.as_str()),
                         Line::from(self.fader_bufs[i].as_str()),
                         Line::from(self.level_bufs[i].as_str()),
