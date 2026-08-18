@@ -1,8 +1,8 @@
 //! Provides functions to validate IP addresses in a dotted format.
 //! Port of validateIP4Dotted.c
 
-use std::str::FromStr;
 use std::net::Ipv4Addr;
+use std::str::FromStr;
 
 /// Validates an IPv4 address string in dotted decimal notation.
 ///
