@@ -23,6 +23,11 @@ pub struct AppState {
     pub slot_input: String,
     pub ch_input: String,
     pub sens_input: String,
+
+    // Cached UI strings
+    pub ip_text: String,
+    pub mode_text: String,
+    pub slot_text: String,
 }
 
 #[derive(PartialEq)]
@@ -61,6 +66,10 @@ impl AppState {
             slot_input: "1".to_string(),
             ch_input: "1".to_string(),
             sens_input: "0.5".to_string(),
+
+            ip_text: String::with_capacity(32),
+            mode_text: String::with_capacity(64),
+            slot_text: String::with_capacity(32),
         }
     }
 

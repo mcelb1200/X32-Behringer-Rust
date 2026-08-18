@@ -144,3 +144,6 @@ When initializing terminal UI state that might fail and return a `Result` (e.g.,
 ## 2024-08-17 - Caching Ratatui Layout Chunk Calculation
 **Learning:** In Ratatui TUI applications running at 60fps, re-calculating `Layout::split()` inside the `terminal.draw` loop is a common performance bottleneck because it allocates a new `Vec<Rect>` on every frame.
 **Action:** Cache layout constraint constraints and layout chunks in the application's `Tui` state. Update the cached layout chunk vector only when the terminal size changes (`self.terminal.size()`) to eliminate this per-frame heap allocation.
+## 2024-08-18 - Safe TUI Buffer Updates without Re-allocation
+**Learning:** Trying to mutate cached strings inside `AppState` immediately before a closure that takes `&app_state` (like `terminal.draw(|f| ui(f, &app_state))`) leads to mutable vs immutable borrow conflicts. Simply using `.clone()` on the struct's inner fields beforehand defeats the purpose of the optimization by doing heap allocations.
+**Action:** The correct pattern is to pass `&mut AppState` into the `ui` drawing function closure, and then perform `.clear()` and `write!` inside the `ui` function immediately before constructing the layout. This appeases the borrow checker AND prevents all per-frame `format!` and `.clone()` String allocations.
