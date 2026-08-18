@@ -322,7 +322,8 @@ fn ui(f: &mut Frame, app: &mut AppState) {
         "Mode: {}\nCheck: {}",
         if app.is_auto { "Auto" } else { "Manual" },
         app.delay_type
-    ).expect("Write to mode_text failed");
+    )
+    .expect("Write to mode_text failed");
 
     app.slot_text.clear();
     write!(app.slot_text, "Delay Slot: {}", app.slot_input).expect("Write to slot_text failed");
@@ -378,8 +379,8 @@ fn ui(f: &mut Frame, app: &mut AppState) {
     f.render_widget(ip_p, left_chunks[0]);
 
     // Mode / Settings
-    let mode_p =
-        Paragraph::new(app.mode_text.as_str()).block(Block::default().borders(Borders::ALL).title("Status"));
+    let mode_p = Paragraph::new(app.mode_text.as_str())
+        .block(Block::default().borders(Borders::ALL).title("Status"));
     f.render_widget(mode_p, left_chunks[1]);
 
     // Delay Slot
