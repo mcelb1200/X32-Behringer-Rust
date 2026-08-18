@@ -2643,6 +2643,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "x32_ip"
+version = "0.1.0"
+
+[[package]]
 name = "x32_jog4xlive"
 version = "0.1.0"
 dependencies = [
@@ -2971,6 +2975,13 @@ dependencies = [
  "hound",
  "predicates",
  "tempfile",
+]
+
+[[package]]
+name = "x32_xcparse"
+version = "0.1.0"
+dependencies = [
+ "osc_lib",
 ]
 
 [[package]]

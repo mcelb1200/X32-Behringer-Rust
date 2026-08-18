@@ -546,11 +546,11 @@ Tuning a sound system to a room ("ringing out the mains") and verifying that all
 - [ ] testparams
 - [ ] xsprint
 - [ ] xscene2x
-- [ ] validateip4dotted
+- [x] validateip4dotted
 - [ ] xdump
 - [ ] logf
-- [ ] connect
-- [ ] xcparse
+- [x] connect
+- [x] xcparse
 - [ ] fxparse1
 - [ ] fxparse5
 - [ ] setsceneparse
