@@ -144,3 +144,7 @@ When initializing terminal UI state that might fail and return a `Result` (e.g.,
 ## 2024-08-17 - Caching Ratatui Layout Chunk Calculation
 **Learning:** In Ratatui TUI applications running at 60fps, re-calculating `Layout::split()` inside the `terminal.draw` loop is a common performance bottleneck because it allocates a new `Vec<Rect>` on every frame.
 **Action:** Cache layout constraint constraints and layout chunks in the application's `Tui` state. Update the cached layout chunk vector only when the terminal size changes (`self.terminal.size()`) to eliminate this per-frame heap allocation.
+
+## 2024-12-05 - [Avoid string.repeat() in TUI render loops]
+**Learning:** Using `String::repeat()` and string concatenation (`+`) inside a TUI `draw` loop (e.g., to build progress bars or meters dynamically like `"█".repeat(len) + "░".repeat(rem)`) allocates multiple Strings on the heap per visual element on every single frame. This severely degrades performance and causes memory fragmentation when dealing with multiple tracked components (like channels or buses) rendered at 60 FPS.
+**Action:** For bounded/fixed-length visual elements like level meters, use a static array of pre-computed `&'static str` slices (e.g., `const METER_BARS: [&str; 11] = [...]`) and index into it (`METER_BARS[meter_len]`). This replaces dynamic string construction with O(1) references without any heap allocations.
