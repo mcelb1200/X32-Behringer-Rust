@@ -94,7 +94,12 @@ impl Tui {
 
         for i in 0..state.alerts.len() {
             self.alert_bufs[i].clear();
-            write!(self.alert_bufs[i], "• {}", state.alerts[i]).expect("Write alert buffer failed");
+            write!(
+                self.alert_bufs[i],
+                "• 🟡 {} level is high — consider lowering fader.",
+                state.channels[state.alerts[i]].name
+            )
+            .expect("Write alert buffer failed");
         }
 
         self.terminal.draw(|f| {

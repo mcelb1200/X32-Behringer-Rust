@@ -4,7 +4,7 @@ pub struct AppState {
     pub channels: Vec<ChannelState>,
     pub main_fader: f32,
     pub main_muted: bool,
-    pub alerts: Vec<String>,
+    pub alerts: Vec<usize>,
     pub status: Status,
     pub message: String,
 }
