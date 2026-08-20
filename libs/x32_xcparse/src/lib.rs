@@ -4,7 +4,7 @@
 //! (like `/ch/01/mix/fader ,f 0.75`) and append it as a serialized
 //! OSC message to a byte buffer.
 
-use x32_xsprint::{xsprint, XsprintValue};
+use x32_xsprint::{XsprintValue, xsprint};
 
 /// Parses a text string representation of an OSC message and appends the
 /// serialized binary format to the provided byte buffer.
@@ -42,9 +42,7 @@ pub fn xcparse(buf: &mut Vec<u8>, input: &str) -> usize {
     if let Some(rest_str) = rest {
         // Find the end of the format string (the comma followed by 's', 'i', 'f')
         // We'll read the word starting with comma.
-        let end_format = rest_str
-            .find(' ')
-            .unwrap_or(rest_str.len());
+        let end_format = rest_str.find(' ').unwrap_or(rest_str.len());
         let format_str = &rest_str[..end_format];
         let mut data_str = rest_str[end_format..].trim_start();
 
