@@ -1,0 +1,10 @@
+[package]
+name = "x32_xcparse"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+x32_xsprint = { version = "0.1.0", path = "../x32_xsprint" }
+
+[lints]
+workspace = true

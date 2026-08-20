@@ -2974,6 +2974,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "x32_xcparse"
+version = "0.1.0"
+dependencies = [
+ "x32_xsprint",
+]
+
+[[package]]
 name = "x32_xlive_wav"
 version = "0.1.0"
 dependencies = [
