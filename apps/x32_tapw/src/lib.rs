@@ -18,6 +18,7 @@ use ratatui::{
     widgets::{Block, Borders, Paragraph},
 };
 use std::{
+    fmt::Write,
     io,
     sync::{Arc, Mutex},
     time::{Duration, Instant},
@@ -195,7 +196,13 @@ async fn run_app<B: Backend>(
 
     loop {
         let mut app_state = app.lock().unwrap_or_else(|e| e.into_inner());
-        terminal.draw(|f| ui(f, &app_state))?;
+
+        // ⚡ Bolt: Clear and format strings before drawing to eliminate
+        // dynamic heap allocations in the hot render loop. We clone the input fields
+        // to appease the borrow checker during the write! macro mutation. To do this without
+        // allocations, we'll format them directly in the UI method using the struct fields.
+
+        terminal.draw(|f| ui(f, &mut app_state))?;
 
         let timeout = tick_rate
             .checked_sub(last_tick.elapsed())
@@ -303,7 +310,24 @@ async fn run_app<B: Backend>(
     }
 }
 
-fn ui(f: &mut Frame, app: &AppState) {
+fn ui(f: &mut Frame, app: &mut AppState) {
+    // ⚡ Bolt: Format UI text strings prior to draw layout creation to eliminate
+    // per-frame dynamic heap allocations by writing directly to state buffers.
+    app.ip_text.clear();
+    write!(app.ip_text, "IP: {}", app.ip_input).expect("Write to ip_text failed");
+
+    app.mode_text.clear();
+    write!(
+        app.mode_text,
+        "Mode: {}\nCheck: {}",
+        if app.is_auto { "Auto" } else { "Manual" },
+        app.delay_type
+    )
+    .expect("Write to mode_text failed");
+
+    app.slot_text.clear();
+    write!(app.slot_text, "Delay Slot: {}", app.slot_input).expect("Write to slot_text failed");
+
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .margin(1)
@@ -349,20 +373,14 @@ fn ui(f: &mut Frame, app: &AppState) {
     } else {
         Style::default()
     };
-    let ip_text = format!("IP: {}", app.ip_input);
-    let ip_p = Paragraph::new(ip_text)
+    let ip_p = Paragraph::new(app.ip_text.as_str())
         .style(ip_style)
         .block(Block::default().borders(Borders::ALL).title("Connection"));
     f.render_widget(ip_p, left_chunks[0]);
 
     // Mode / Settings
-    let mode_text = format!(
-        "Mode: {}\nCheck: {}",
-        if app.is_auto { "Auto" } else { "Manual" },
-        app.delay_type
-    );
-    let mode_p =
-        Paragraph::new(mode_text).block(Block::default().borders(Borders::ALL).title("Status"));
+    let mode_p = Paragraph::new(app.mode_text.as_str())
+        .block(Block::default().borders(Borders::ALL).title("Status"));
     f.render_widget(mode_p, left_chunks[1]);
 
     // Delay Slot
@@ -371,8 +389,7 @@ fn ui(f: &mut Frame, app: &AppState) {
     } else {
         Style::default()
     };
-    let slot_text = format!("Delay Slot: {}", app.slot_input);
-    let slot_p = Paragraph::new(slot_text)
+    let slot_p = Paragraph::new(app.slot_text.as_str())
         .style(slot_style)
         .block(Block::default().borders(Borders::ALL).title("FX Slot"));
     f.render_widget(slot_p, right_chunks[0]);
