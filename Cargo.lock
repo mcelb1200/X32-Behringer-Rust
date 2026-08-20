@@ -2983,6 +2983,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "x32_xsprint"
+version = "0.1.0"
+
+[[package]]
 name = "xair_command"
 version = "0.1.0"
 dependencies = [

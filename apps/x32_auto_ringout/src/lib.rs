@@ -364,7 +364,20 @@ fn ui(f: &mut Frame, state: &AppState) {
 
         // Fake meter
         let meter_len = ((bus.current_level_db + 90.0) / 100.0 * 10.0).clamp(0.0, 10.0) as usize;
-        let meter_str = "█".repeat(meter_len) + &"░".repeat(10 - meter_len);
+        const METER_BARS: [&str; 11] = [
+            "░░░░░░░░░░",
+            "█░░░░░░░░░",
+            "██░░░░░░░░",
+            "███░░░░░░░",
+            "████░░░░░░",
+            "█████░░░░░",
+            "██████░░░░",
+            "███████░░░",
+            "████████░░",
+            "█████████░",
+            "██████████",
+        ];
+        let meter_str = METER_BARS[meter_len];
 
         lines.push(Line::from(vec![
             Span::raw(format!("  Bus {:02}   ", bus.bus_idx)),

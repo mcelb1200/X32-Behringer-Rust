@@ -544,7 +544,6 @@ Tuning a sound system to a room ("ringing out the mains") and verifying that all
 
 - [ ] rpncalc
 - [ ] testparams
-- [ ] xsprint
 - [ ] xscene2x
 - [ ] validateip4dotted
 - [ ] xdump
