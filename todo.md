@@ -545,7 +545,7 @@ Tuning a sound system to a room ("ringing out the mains") and verifying that all
 - [ ] rpncalc
 - [ ] testparams
 - [ ] xscene2x
-- [ ] validateip4dotted
+- [x] validateip4dotted
 - [ ] xdump
 - [ ] logf
 - [ ] connect
