@@ -358,8 +358,8 @@ fn ui(f: &mut Frame, app: &AppState) {
     f.render_widget(ip_p, left_chunks[0]);
 
     // Mode / Settings
-    let mode_p =
-        Paragraph::new(app.display_mode_text.as_str()).block(Block::default().borders(Borders::ALL).title("Status"));
+    let mode_p = Paragraph::new(app.display_mode_text.as_str())
+        .block(Block::default().borders(Borders::ALL).title("Status"));
     f.render_widget(mode_p, left_chunks[1]);
 
     // Delay Slot
