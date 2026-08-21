@@ -195,6 +195,7 @@ async fn run_app<B: Backend>(
 
     loop {
         let mut app_state = app.lock().unwrap_or_else(|e| e.into_inner());
+        app_state.update_display_strings();
         terminal.draw(|f| ui(f, &app_state))?;
 
         let timeout = tick_rate
@@ -344,25 +345,21 @@ fn ui(f: &mut Frame, app: &AppState) {
         .split(controls_chunks[1]);
 
     // IP Input
+    // ⚡ Bolt: Cache formatted Strings in AppState instead of allocating
+    // per-frame during terminal.draw.
     let ip_style = if app.active_input == InputMode::EditingIp {
         Style::default().fg(Color::Yellow)
     } else {
         Style::default()
     };
-    let ip_text = format!("IP: {}", app.ip_input);
-    let ip_p = Paragraph::new(ip_text)
+    let ip_p = Paragraph::new(app.display_ip_text.as_str())
         .style(ip_style)
         .block(Block::default().borders(Borders::ALL).title("Connection"));
     f.render_widget(ip_p, left_chunks[0]);
 
     // Mode / Settings
-    let mode_text = format!(
-        "Mode: {}\nCheck: {}",
-        if app.is_auto { "Auto" } else { "Manual" },
-        app.delay_type
-    );
     let mode_p =
-        Paragraph::new(mode_text).block(Block::default().borders(Borders::ALL).title("Status"));
+        Paragraph::new(app.display_mode_text.as_str()).block(Block::default().borders(Borders::ALL).title("Status"));
     f.render_widget(mode_p, left_chunks[1]);
 
     // Delay Slot
@@ -371,8 +368,7 @@ fn ui(f: &mut Frame, app: &AppState) {
     } else {
         Style::default()
     };
-    let slot_text = format!("Delay Slot: {}", app.slot_input);
-    let slot_p = Paragraph::new(slot_text)
+    let slot_p = Paragraph::new(app.display_slot_text.as_str())
         .style(slot_style)
         .block(Block::default().borders(Borders::ALL).title("FX Slot"));
     f.render_widget(slot_p, right_chunks[0]);
