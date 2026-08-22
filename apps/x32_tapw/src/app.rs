@@ -23,6 +23,11 @@ pub struct AppState {
     pub slot_input: String,
     pub ch_input: String,
     pub sens_input: String,
+
+    // Formatted strings to avoid per-frame format allocations in the TUI loop
+    pub display_ip_text: String,
+    pub display_mode_text: String,
+    pub display_slot_text: String,
 }
 
 #[derive(PartialEq)]
@@ -61,7 +66,28 @@ impl AppState {
             slot_input: "1".to_string(),
             ch_input: "1".to_string(),
             sens_input: "0.5".to_string(),
+
+            display_ip_text: "IP: 192.168.0.64".to_string(),
+            display_mode_text: "Mode: Manual\nCheck: Check".to_string(),
+            display_slot_text: "Delay Slot: 1".to_string(),
         }
+    }
+
+    pub fn update_display_strings(&mut self) {
+        self.display_ip_text.clear();
+        use std::fmt::Write;
+        let _ = write!(self.display_ip_text, "IP: {}", self.ip_input);
+
+        self.display_mode_text.clear();
+        let _ = write!(
+            self.display_mode_text,
+            "Mode: {}\nCheck: {}",
+            if self.is_auto { "Auto" } else { "Manual" },
+            self.delay_type
+        );
+
+        self.display_slot_text.clear();
+        let _ = write!(self.display_slot_text, "Delay Slot: {}", self.slot_input);
     }
 
     pub fn log(&mut self, msg: String) {
