@@ -1,5 +1,5 @@
-#![allow(missing_docs)]
 //! Vocal Ducking Integration Tests
+#![allow(missing_docs)]
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::net::UdpSocket;
