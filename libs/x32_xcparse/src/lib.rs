@@ -3,7 +3,7 @@
 //! This module provides a single entrypoint function to parse a string input
 //! into an OSC-formatted byte buffer.
 
-use x32_xsprint::{xsprint, XsprintValue};
+use x32_xsprint::{XsprintValue, xsprint};
 
 /// Parses an input string (e.g. `/ch/01/mix/fader ,f 0.75`) into an OSC byte buffer.
 /// Returns the length of the written buffer.
