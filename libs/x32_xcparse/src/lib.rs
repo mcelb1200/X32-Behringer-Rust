@@ -3,7 +3,7 @@
 //! This module provides the `xcparse` function which takes a formatted input string
 //! and encodes it into an OSC byte buffer using `x32_xsprint`.
 
-use x32_xsprint::{xsprint, XsprintValue};
+use x32_xsprint::{XsprintValue, xsprint};
 
 /// Parses an input string (e.g., "/ch/01/mix/fader ,f 0.75") and encodes it into the provided
 /// buffer as an OSC message.
