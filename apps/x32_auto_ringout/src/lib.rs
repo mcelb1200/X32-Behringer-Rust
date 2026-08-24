@@ -14,7 +14,6 @@ use ratatui::{
     text::{Line, Span},
     widgets::{Block, Borders, Paragraph},
 };
-
 use std::io;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
@@ -80,14 +79,16 @@ impl AppState {
         for part in args.buses.split(',') {
             if let Ok(ch) = part.trim().parse::<u8>() {
                 if (1..=16).contains(&ch) {
-                    buses_vec.push(BusState {
-                        bus_idx: ch,
-                        status: BusStatus::Disarmed,
-                        current_level_db: -90.0,
-                        original_level_db: -90.0,
-                        target_level_db: args.target_dbfs,
-                        notches: Vec::new(),
-                    });
+                    buses_vec.push(
+                        BusState {
+                            bus_idx: ch,
+                            status: BusStatus::Disarmed,
+                            current_level_db: -90.0,
+                            original_level_db: -90.0,
+                            target_level_db: args.target_dbfs,
+                            notches: Vec::new(),
+                        }
+                    );
                 }
             }
         }
