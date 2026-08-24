@@ -151,3 +151,7 @@ When initializing terminal UI state that might fail and return a `Result` (e.g.,
 ## 2023-10-27 - [Ratatui String Caching Optimization]
 **Learning:** While trying to optimize string allocations using `Line::from(vec![Span::raw(...)])` in Ratatui to avoid `format!`, replacing a single `String` allocation with multiple `Vec` heap allocations is a de-optimization. Depending on library versions and lifetimes, relying on primitive composition alone without arrays can increase heap traffic.
 **Action:** In immediate-mode rendering loops like Ratatui's `draw`, the most robust way to eliminate allocations for changing string data is often to cache a `String` buffer (using `String::with_capacity` or just reusing strings), `.clear()` it, and populate it via `write!` (which retains capacity), passing the result as a `&str` reference into the UI widgets.
+
+## 2026-08-24 - [Replace HashMap with pre-sorted Vec in TUI loops]
+**Learning:** In Ratatui TUI applications, iterating over a `HashMap` using `.values().collect::<Vec<_>>()` and then sorting it on every frame inside the `draw` loop forces a continuous stream of vector heap allocations and O(N log N) sorting overhead. This severely impacts performance when rendering at 60 FPS.
+**Action:** When a collection's keys/sizes are static and known at initialization (e.g., a fixed list of monitored channels or buses), store the data in a `Vec` within the AppState instead of a `HashMap`. Sort this `Vec` once during initialization, completely eliminating per-frame allocations and sorting in the hot render loop.
