@@ -14,7 +14,6 @@ use ratatui::{
     text::{Line, Span},
     widgets::{Block, Borders, Paragraph},
 };
-use std::collections::HashMap;
 use std::io;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
@@ -67,35 +66,35 @@ pub struct BusState {
 }
 
 pub struct AppState {
-    pub buses: HashMap<u8, BusState>,
+    // ⚡ Bolt: Store buses as a sorted Vec instead of HashMap to eliminate per-frame Vec allocation and sorting in the TUI render loop.
+    pub buses: Vec<BusState>,
     pub should_quit: bool,
     pub pause_ramp: bool,
 }
 
 impl AppState {
     pub fn new(args: &Args) -> Self {
-        let mut buses_map = HashMap::new();
+        let mut buses_vec = Vec::new();
 
         for part in args.buses.split(',') {
             if let Ok(ch) = part.trim().parse::<u8>() {
                 if (1..=16).contains(&ch) {
-                    buses_map.insert(
-                        ch,
-                        BusState {
-                            bus_idx: ch,
-                            status: BusStatus::Disarmed,
-                            current_level_db: -90.0,
-                            original_level_db: -90.0,
-                            target_level_db: args.target_dbfs,
-                            notches: Vec::new(),
-                        },
-                    );
+                    buses_vec.push(BusState {
+                        bus_idx: ch,
+                        status: BusStatus::Disarmed,
+                        current_level_db: -90.0,
+                        original_level_db: -90.0,
+                        target_level_db: args.target_dbfs,
+                        notches: Vec::new(),
+                    });
                 }
             }
         }
 
+        buses_vec.sort_by_key(|b| b.bus_idx);
+
         Self {
-            buses: buses_map,
+            buses: buses_vec,
             should_quit: false,
             pause_ramp: false,
         }
@@ -161,8 +160,8 @@ pub async fn run(args: Args) -> Result<()> {
                             KeyCode::Char('p') => state.pause_ramp = !state.pause_ramp,
                             KeyCode::Char('a') => {
                                 // Toggle arm all
-                                let all_armed = state.buses.values().all(|b| b.status == BusStatus::Armed || b.status == BusStatus::Active);
-                                for bus in state.buses.values_mut() {
+                                let all_armed = state.buses.iter().all(|b| b.status == BusStatus::Armed || b.status == BusStatus::Active);
+                                for bus in state.buses.iter_mut() {
                                     if all_armed {
                                         bus.status = BusStatus::Disarmed;
                                     } else if bus.status == BusStatus::Disarmed {
@@ -188,7 +187,7 @@ pub async fn run(args: Args) -> Result<()> {
                     }
 
                     // Level ramping logic
-                    for bus in state.buses.values_mut() {
+                    for bus in state.buses.iter_mut() {
                         if bus.status == BusStatus::Armed || bus.status == BusStatus::Active {
                             bus.status = BusStatus::Active;
 
@@ -243,7 +242,7 @@ pub async fn run(args: Args) -> Result<()> {
 
                         {
                             let mut state = app_state.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
-                            for bus in state.buses.values_mut() {
+                            for bus in state.buses.iter_mut() {
                                 if bus.status != BusStatus::Active || bus.notches.len() >= args.max_notches as usize {
                                     continue;
                                 }
@@ -343,11 +342,7 @@ fn ui(f: &mut Frame, state: &AppState) {
         Style::default().fg(Color::Yellow),
     )])];
 
-    // Sort buses by index
-    let mut sorted_buses: Vec<_> = state.buses.values().collect();
-    sorted_buses.sort_by_key(|b| b.bus_idx);
-
-    for bus in sorted_buses {
+    for bus in &state.buses {
         let status_str = match bus.status {
             BusStatus::Disarmed => "DISARMED",
             BusStatus::Armed => "ARMED",
