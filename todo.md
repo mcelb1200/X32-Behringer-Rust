@@ -549,7 +549,7 @@ Tuning a sound system to a room ("ringing out the mains") and verifying that all
 - [ ] xdump
 - [ ] logf
 - [ ] connect
-- [ ] xcparse
+- [x] xcparse
 - [ ] fxparse1
 - [ ] fxparse5
 - [ ] setsceneparse
