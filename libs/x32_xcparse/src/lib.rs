@@ -1,6 +1,6 @@
 //! Parses text strings into OSC messages, porting the original `Xcparse.c`.
 
-use x32_xsprint::{xsprint, XsprintValue};
+use x32_xsprint::{XsprintValue, xsprint};
 
 /// Parses a command string into an OSC byte buffer.
 ///
@@ -136,7 +136,6 @@ pub fn xcparse(buf: &mut Vec<u8>, input: &str) -> usize {
                 _ => {}
             }
         }
-
     } else {
         // No comma found, treat whole input as string path
         let path = input.trim();
