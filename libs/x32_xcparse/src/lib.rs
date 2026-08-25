@@ -1,6 +1,6 @@
 //! Port of Xcparse.c for parsing text strings into OSC messages
 
-use x32_xsprint::{xsprint, XsprintValue};
+use x32_xsprint::{XsprintValue, xsprint};
 
 /// Parses a string into an OSC byte buffer
 pub fn xcparse(input: &str) -> Vec<u8> {
