@@ -128,8 +128,14 @@ impl AppState {
             );
 
             // Match number of notch buffers to actual notches + 1 for "waiting" (if active)
-            let target_len = bus.notches.len() + if bus.notches.len() < 5 && matches!(bus.status, BusStatus::Active) { 1 } else { 0 };
-            bus.notch_bufs.resize_with(target_len, || String::with_capacity(64));
+            let target_len = bus.notches.len()
+                + if bus.notches.len() < 5 && matches!(bus.status, BusStatus::Active) {
+                    1
+                } else {
+                    0
+                };
+            bus.notch_bufs
+                .resize_with(target_len, || String::with_capacity(64));
 
             for (i, notch) in bus.notches.iter().enumerate() {
                 bus.notch_bufs[i].clear();
@@ -146,11 +152,7 @@ impl AppState {
             if bus.notches.len() < 5 && matches!(bus.status, BusStatus::Active) {
                 let idx = bus.notches.len();
                 bus.notch_bufs[idx].clear();
-                let _ = write!(
-                    bus.notch_bufs[idx],
-                    "    Notch {}: — waiting —",
-                    idx + 1
-                );
+                let _ = write!(bus.notch_bufs[idx], "    Notch {}: — waiting —", idx + 1);
             }
         }
     }
@@ -426,10 +428,7 @@ fn ui(f: &mut Frame, state: &AppState) {
         lines.push(Line::from(vec![
             Span::raw(bus.title_buf.as_str()),
             Span::styled(meter_str, Style::default().fg(color)),
-            Span::styled(
-                bus.status_buf.as_str(),
-                Style::default().fg(color),
-            ),
+            Span::styled(bus.status_buf.as_str(), Style::default().fg(color)),
         ]));
 
         for i in 0..bus.notches.len() {
