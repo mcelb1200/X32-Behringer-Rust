@@ -1,4 +1,4 @@
-use x32_xsprint::{xsprint, XsprintValue};
+use x32_xsprint::{XsprintValue, xsprint};
 
 /// Parses a string formatted text input into a byte buffer for OSC.
 /// Mimics the behavior of Xcparse.c.
@@ -35,7 +35,9 @@ pub fn xcparse(buf: &mut Vec<u8>, input: &str) -> usize {
     if let Some(mut s_comma) = start_comma {
         // Look for end of formatters (s, i, f)
         let mut k = s_comma + 1;
-        while k < input_len && (input_line[k] == 's' || input_line[k] == 'i' || input_line[k] == 'f') {
+        while k < input_len
+            && (input_line[k] == 's' || input_line[k] == 'i' || input_line[k] == 'f')
+        {
             k += 1;
         }
 
@@ -86,7 +88,9 @@ pub fn xcparse(buf: &mut Vec<u8>, input: &str) -> usize {
                     while k < input_len && input_line[k] != ' ' {
                         k += 1;
                     }
-                    let int_str: String = input_line[start_k..std::cmp::min(k, input_len)].iter().collect();
+                    let int_str: String = input_line[start_k..std::cmp::min(k, input_len)]
+                        .iter()
+                        .collect();
                     if let Ok(val) = int_str.parse::<i32>() {
                         xsprint(buf, 'i', XsprintValue::Int(val));
                     }
@@ -96,7 +100,9 @@ pub fn xcparse(buf: &mut Vec<u8>, input: &str) -> usize {
                     while k < input_len && input_line[k] != ' ' {
                         k += 1;
                     }
-                    let float_str: String = input_line[start_k..std::cmp::min(k, input_len)].iter().collect();
+                    let float_str: String = input_line[start_k..std::cmp::min(k, input_len)]
+                        .iter()
+                        .collect();
                     if let Ok(val) = float_str.parse::<f32>() {
                         xsprint(buf, 'f', XsprintValue::Float(val));
                     }
