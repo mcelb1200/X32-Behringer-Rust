@@ -2998,6 +2998,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "x32_xscene2x"
+version = "0.1.0"
+dependencies = [
+ "x32_xsprint",
+]
+
+[[package]]
 name = "x32_xsprint"
 version = "0.1.0"
 
