@@ -1,12 +1,8 @@
 use std::io::{self, BufRead};
-use x32_xsprint::{xsprint, XsprintValue};
+use x32_xsprint::{XsprintValue, xsprint};
 
 /// Ported from `XOff_On(char *buf, int k, char* Crit_0)`
-pub fn x_off_on<R: BufRead>(
-    buf: &mut Vec<u8>,
-    reader: &mut R,
-    crit_0: &str,
-) -> io::Result<usize> {
+pub fn x_off_on<R: BufRead>(buf: &mut Vec<u8>, reader: &mut R, crit_0: &str) -> io::Result<usize> {
     let mut word = String::new();
     read_word(reader, &mut word)?;
 
@@ -105,7 +101,7 @@ pub fn x_p_logf<R: BufRead>(
 
     // Safety check against invalid log input
     if fval <= 0.0 || xmin <= 0.0 {
-         fval = 0.0;
+        fval = 0.0;
     } else {
         fval = (fval / xmin).ln() / lmaxmin;
         let nsteps_f = nsteps as f32;
@@ -158,11 +154,7 @@ pub fn x_p_str<R: BufRead>(buf: &mut Vec<u8>, reader: &mut R) -> io::Result<usiz
 }
 
 /// Ported from `Xp_list(char *buf, int k, char **list, int list_max)`
-pub fn x_p_list<R: BufRead>(
-    buf: &mut Vec<u8>,
-    reader: &mut R,
-    list: &[&str],
-) -> io::Result<usize> {
+pub fn x_p_list<R: BufRead>(buf: &mut Vec<u8>, reader: &mut R, list: &[&str]) -> io::Result<usize> {
     let mut word = String::new();
     read_word(reader, &mut word)?;
 
@@ -253,11 +245,7 @@ pub fn x_p_frequency<R: BufRead>(
 }
 
 /// Ported from `Xp_level(char *buf, int k, int nsteps)`
-pub fn x_p_level<R: BufRead>(
-    buf: &mut Vec<u8>,
-    reader: &mut R,
-    nsteps: i32,
-) -> io::Result<usize> {
+pub fn x_p_level<R: BufRead>(buf: &mut Vec<u8>, reader: &mut R, nsteps: i32) -> io::Result<usize> {
     let mut word = String::new();
     read_word(reader, &mut word)?;
 
@@ -292,7 +280,6 @@ pub fn x_p_level<R: BufRead>(
     xsprint(buf, 'f', XsprintValue::Float(fval));
     Ok(buf.len())
 }
-
 
 /// Helper function to read a word delimited by whitespace, similar to `fscanf(Xin, "%s", ...)`
 fn read_word<R: BufRead>(reader: &mut R, word: &mut String) -> io::Result<()> {
