@@ -346,7 +346,11 @@ fn ui(f: &mut Frame, app: &mut AppState) {
         }
     }
 
-    if app.cached_chunks.len() < 3 || app.cached_controls_chunks.len() < 2 || app.cached_left_chunks.len() < 2 || app.cached_right_chunks.len() < 2 {
+    if app.cached_chunks.len() < 3
+        || app.cached_controls_chunks.len() < 2
+        || app.cached_left_chunks.len() < 2
+        || app.cached_right_chunks.len() < 2
+    {
         return;
     }
 
