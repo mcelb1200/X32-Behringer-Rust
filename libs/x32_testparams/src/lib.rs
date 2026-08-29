@@ -49,10 +49,7 @@ impl TestParamsParser {
 
         let metadata = file.metadata()?;
         if metadata.len() > 1024 * 1024 {
-            return Err(io::Error::new(
-                io::ErrorKind::InvalidData,
-                "File too large",
-            ));
+            return Err(io::Error::new(io::ErrorKind::InvalidData, "File too large"));
         }
 
         let reader = BufReader::new(file.take(1024 * 1024));
