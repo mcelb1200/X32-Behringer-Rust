@@ -1,4 +1,4 @@
-use x32_xsprint::{xsprint, XsprintValue};
+use x32_xsprint::{XsprintValue, xsprint};
 
 pub struct SceneParser<'a> {
     input: &'a str,
@@ -239,7 +239,8 @@ impl<'a> SceneParser<'a> {
         let token = self.next_token().unwrap_or("");
 
         let mut fval = 0.0;
-        if token == "-oo" || token == "-00" { // Accommodate potential typos, C says "-oo"
+        if token == "-oo" || token == "-00" {
+            // Accommodate potential typos, C says "-oo"
             fval = 0.0;
         } else if let Ok(val) = token.parse::<f32>() {
             fval = val;
