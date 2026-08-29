@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::fs::File;
-use std::io::{self, BufRead, BufReader};
+use std::io::{self, BufRead, BufReader, Read};
 use std::path::Path;
 
 /// Represents the expected type of a parameter to parse.
@@ -46,7 +46,16 @@ impl TestParamsParser {
     /// Returns an error if the file cannot be read, but ignores unparseable lines or missing parameters.
     pub fn parse_file<P: AsRef<Path>>(&self, path: P) -> io::Result<HashMap<String, ParamValue>> {
         let file = File::open(path)?;
-        let reader = BufReader::new(file);
+
+        let metadata = file.metadata()?;
+        if metadata.len() > 1024 * 1024 {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                "File too large",
+            ));
+        }
+
+        let reader = BufReader::new(file.take(1024 * 1024));
 
         let mut results = HashMap::new();
         for line in reader.lines() {
