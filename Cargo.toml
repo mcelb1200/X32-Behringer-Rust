@@ -8,6 +8,7 @@ members = [
 ]
 
 [workspace.dependencies]
+x32_xscene2x = { path = "libs/x32_xscene2x" }
 # Core Runtime
 tokio = { version = "1.36", features = ["full"] }
 anyhow = "1.0"
@@ -40,6 +41,7 @@ x32_core = { path = "libs/x32_core" }
 x32_fxparse = { path = "libs/x32_fxparse" }
 x32_dump = { path = "tools/x32_dump" }
 x32_ip = { path = "libs/x32_ip" }
+x32_xsprint = { path = "libs/x32_xsprint" }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

@@ -1,0 +1,8 @@
+[package]
+name = "x32_xscene2x"
+version = "0.1.0"
+edition = "2021"
+description = "A port of Xscene2X.c for parsing X32 scene formats"
+
+[dependencies]
+x32_xsprint = { workspace = true }
