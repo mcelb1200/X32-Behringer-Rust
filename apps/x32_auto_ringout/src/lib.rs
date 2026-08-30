@@ -63,6 +63,10 @@ pub struct BusState {
     pub original_level_db: f32,
     pub target_level_db: f32,
     pub notches: Vec<Notch>,
+    // ⚡ Bolt: Cached string buffers to prevent per-frame allocations
+    pub title_buf: String,
+    pub status_buf: String,
+    pub notch_bufs: Vec<String>,
 }
 
 pub struct AppState {
@@ -86,6 +90,9 @@ impl AppState {
                         original_level_db: -90.0,
                         target_level_db: args.target_dbfs,
                         notches: Vec::new(),
+                        title_buf: String::with_capacity(32),
+                        status_buf: String::with_capacity(64),
+                        notch_bufs: Vec::new(),
                     });
                 }
             }
@@ -97,6 +104,56 @@ impl AppState {
             buses: buses_vec,
             should_quit: false,
             pause_ramp: false,
+        }
+    }
+
+    pub fn update_display_strings(&mut self) {
+        use std::fmt::Write;
+        for bus in self.buses.iter_mut() {
+            bus.title_buf.clear();
+            let _ = write!(bus.title_buf, "  Bus {:02}   ", bus.bus_idx);
+
+            let status_str = match bus.status {
+                BusStatus::Disarmed => "DISARMED",
+                BusStatus::Armed => "ARMED",
+                BusStatus::Active => "ACTIVE",
+                BusStatus::Done => "DONE",
+            };
+
+            bus.status_buf.clear();
+            let _ = write!(
+                bus.status_buf,
+                "  {}  ({:.1} dB)",
+                status_str, bus.current_level_db
+            );
+
+            // Match number of notch buffers to actual notches + 1 for "waiting" (if active)
+            let target_len = bus.notches.len()
+                + if bus.notches.len() < 5 && matches!(bus.status, BusStatus::Active) {
+                    1
+                } else {
+                    0
+                };
+            bus.notch_bufs
+                .resize_with(target_len, || String::with_capacity(64));
+
+            for (i, notch) in bus.notches.iter().enumerate() {
+                bus.notch_bufs[i].clear();
+                let _ = write!(
+                    bus.notch_bufs[i],
+                    "    Notch {}: {:.0} Hz   ({:.1} dB, Q={:.1})",
+                    i + 1,
+                    notch.freq_hz,
+                    notch.gain_db,
+                    notch.q
+                );
+            }
+
+            if bus.notches.len() < 5 && matches!(bus.status, BusStatus::Active) {
+                let idx = bus.notches.len();
+                bus.notch_bufs[idx].clear();
+                let _ = write!(bus.notch_bufs[idx], "    Notch {}: — waiting —", idx + 1);
+            }
         }
     }
 }
@@ -133,9 +190,10 @@ pub async fn run(args: Args) -> Result<()> {
     loop {
         // Render
         {
-            let state = app_state
+            let mut state = app_state
                 .lock()
                 .unwrap_or_else(|poisoned| poisoned.into_inner());
+            state.update_display_strings();
             terminal.draw(|f| ui(f, &state))?;
             if state.should_quit {
                 break;
@@ -343,13 +401,6 @@ fn ui(f: &mut Frame, state: &AppState) {
     )])];
 
     for bus in &state.buses {
-        let status_str = match bus.status {
-            BusStatus::Disarmed => "DISARMED",
-            BusStatus::Armed => "ARMED",
-            BusStatus::Active => "ACTIVE",
-            BusStatus::Done => "DONE",
-        };
-
         let color = match bus.status {
             BusStatus::Disarmed => Color::DarkGray,
             BusStatus::Armed => Color::Cyan,
@@ -375,29 +426,18 @@ fn ui(f: &mut Frame, state: &AppState) {
         let meter_str = METER_BARS[meter_len];
 
         lines.push(Line::from(vec![
-            Span::raw(format!("  Bus {:02}   ", bus.bus_idx)),
+            Span::raw(bus.title_buf.as_str()),
             Span::styled(meter_str, Style::default().fg(color)),
-            Span::styled(
-                format!("  {}  ({:.1} dB)", status_str, bus.current_level_db),
-                Style::default().fg(color),
-            ),
+            Span::styled(bus.status_buf.as_str(), Style::default().fg(color)),
         ]));
 
-        for (i, notch) in bus.notches.iter().enumerate() {
-            lines.push(Line::from(vec![Span::raw(format!(
-                "    Notch {}: {:.0} Hz   ({:.1} dB, Q={:.1})",
-                i + 1,
-                notch.freq_hz,
-                notch.gain_db,
-                notch.q
-            ))]));
+        for i in 0..bus.notches.len() {
+            lines.push(Line::from(vec![Span::raw(bus.notch_bufs[i].as_str())]));
         }
 
         if bus.notches.len() < 5 && matches!(bus.status, BusStatus::Active) {
-            lines.push(Line::from(vec![Span::raw(format!(
-                "    Notch {}: — waiting —",
-                bus.notches.len() + 1
-            ))]));
+            let idx = bus.notches.len();
+            lines.push(Line::from(vec![Span::raw(bus.notch_bufs[idx].as_str())]));
         }
     }
 
