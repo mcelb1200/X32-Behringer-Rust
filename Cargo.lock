@@ -2739,10 +2739,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "x32_rpncalc"
-version = "0.1.0"
-
-[[package]]
 name = "x32_safe_mute"
 version = "0.1.0"
 dependencies = [
