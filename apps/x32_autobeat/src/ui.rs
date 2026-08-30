@@ -8,7 +8,7 @@ use crossterm::{
 use ratatui::{
     Terminal,
     backend::CrosstermBackend,
-    layout::{Constraint, Direction, Layout},
+    layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Gauge, Paragraph, Tabs},
@@ -33,6 +33,8 @@ pub struct AppState<'a> {
 pub struct Tui {
     terminal: Terminal<CrosstermBackend<io::Stdout>>,
     bpm_buffer: String,
+    cached_area: Rect,
+    cached_chunks: Vec<Rect>,
 }
 
 impl Tui {
@@ -45,6 +47,8 @@ impl Tui {
         Ok(Self {
             terminal,
             bpm_buffer: String::with_capacity(32),
+            cached_area: Rect::default(),
+            cached_chunks: Vec::new(),
         })
     }
 
@@ -57,21 +61,31 @@ impl Tui {
         }
 
         self.terminal.draw(|f| {
-            let chunks = Layout::default()
-                .direction(Direction::Vertical)
-                .margin(1)
-                .constraints(
-                    [
-                        Constraint::Length(3), // Title
-                        Constraint::Length(3), // Slots Tabs
-                        Constraint::Min(5),    // Active Slot Details
-                        Constraint::Length(3), // BPM
-                        Constraint::Length(3), // Input Gauge
-                        Constraint::Length(3), // Status
-                    ]
-                    .as_ref(),
-                )
-                .split(f.size());
+            let size = f.size();
+
+            // ⚡ Bolt: Cache layout chunk splits inside the draw closure to avoid
+            // layout solver overhead per frame, eliminating Vec<Rect> allocations.
+            if self.cached_area != size || self.cached_chunks.is_empty() {
+                self.cached_area = size;
+                let chunks = Layout::default()
+                    .direction(Direction::Vertical)
+                    .margin(1)
+                    .constraints(
+                        [
+                            Constraint::Length(3), // Title
+                            Constraint::Length(3), // Slots Tabs
+                            Constraint::Min(5),    // Active Slot Details
+                            Constraint::Length(3), // BPM
+                            Constraint::Length(3), // Input Gauge
+                            Constraint::Length(3), // Status
+                        ]
+                        .as_ref(),
+                    )
+                    .split(size);
+                self.cached_chunks = chunks.to_vec();
+            }
+
+            let chunks = &self.cached_chunks;
 
             // 1. Title
             let header = Paragraph::new("X32 AutoBeat - Multi-FX Control")
