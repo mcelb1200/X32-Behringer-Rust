@@ -1,0 +1,7 @@
+[package]
+name = "x32_xscene2x"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+x32_xsprint = { path = "../x32_xsprint" }
