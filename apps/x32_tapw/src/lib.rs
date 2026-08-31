@@ -196,7 +196,7 @@ async fn run_app<B: Backend>(
     loop {
         let mut app_state = app.lock().unwrap_or_else(|e| e.into_inner());
         app_state.update_display_strings();
-        terminal.draw(|f| ui(f, &app_state))?;
+        terminal.draw(|f| ui(f, &mut app_state))?;
 
         let timeout = tick_rate
             .checked_sub(last_tick.elapsed())
@@ -304,19 +304,46 @@ async fn run_app<B: Backend>(
     }
 }
 
-fn ui(f: &mut Frame, app: &AppState) {
-    let chunks = Layout::default()
-        .direction(Direction::Vertical)
-        .margin(1)
-        .constraints(
-            [
-                Constraint::Length(3), // Help
-                Constraint::Length(8), // Controls
-                Constraint::Min(5),    // Log
-            ]
-            .as_ref(),
-        )
-        .split(f.size());
+fn ui(f: &mut Frame, app: &mut AppState) {
+    let size = f.size();
+    // ⚡ Bolt: Cache layout chunk splits inside the draw closure to avoid
+    // layout solver overhead per frame, eliminating Vec<Rect> allocations.
+    if app.cached_area != size || app.cached_chunks.is_empty() {
+        app.cached_area = size;
+        app.cached_chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .margin(1)
+            .constraints(
+                [
+                    Constraint::Length(3), // Help
+                    Constraint::Length(8), // Controls
+                    Constraint::Min(5),    // Log
+                ]
+                .as_ref(),
+            )
+            .split(size)
+            .to_vec();
+
+        app.cached_controls_chunks = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
+            .split(app.cached_chunks[1])
+            .to_vec();
+
+        app.cached_left_chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([Constraint::Length(3), Constraint::Length(3)].as_ref())
+            .split(app.cached_controls_chunks[0])
+            .to_vec();
+
+        app.cached_right_chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([Constraint::Length(3), Constraint::Length(3)].as_ref())
+            .split(app.cached_controls_chunks[1])
+            .to_vec();
+    }
+
+    let chunks = &app.cached_chunks;
 
     // Help block
     let help_msg = match app.active_input {
@@ -329,20 +356,8 @@ fn ui(f: &mut Frame, app: &AppState) {
     f.render_widget(help, chunks[0]);
 
     // Controls block
-    let controls_chunks = Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
-        .split(chunks[1]);
-
-    let left_chunks = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints([Constraint::Length(3), Constraint::Length(3)].as_ref())
-        .split(controls_chunks[0]);
-
-    let right_chunks = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints([Constraint::Length(3), Constraint::Length(3)].as_ref())
-        .split(controls_chunks[1]);
+    let left_chunks = &app.cached_left_chunks;
+    let right_chunks = &app.cached_right_chunks;
 
     // IP Input
     // ⚡ Bolt: Cache formatted Strings in AppState instead of allocating

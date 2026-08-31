@@ -1,5 +1,6 @@
 use std::borrow::Cow;
 use std::time::Instant;
+use ratatui::layout::Rect;
 
 /// AppState holds the internal state of the x32_tapw TUI application.
 pub struct AppState {
@@ -27,7 +28,14 @@ pub struct AppState {
     // Formatted strings to avoid per-frame format allocations in the TUI loop
     pub display_ip_text: String,
     pub display_mode_text: String,
+
     pub display_slot_text: String,
+
+    pub cached_area: Rect,
+    pub cached_chunks: Vec<Rect>,
+    pub cached_controls_chunks: Vec<Rect>,
+    pub cached_left_chunks: Vec<Rect>,
+    pub cached_right_chunks: Vec<Rect>,
 }
 
 #[derive(PartialEq)]
@@ -70,6 +78,12 @@ impl AppState {
             display_ip_text: "IP: 192.168.0.64".to_string(),
             display_mode_text: "Mode: Manual\nCheck: Check".to_string(),
             display_slot_text: "Delay Slot: 1".to_string(),
+
+            cached_area: Rect::default(),
+            cached_chunks: Vec::new(),
+            cached_controls_chunks: Vec::new(),
+            cached_left_chunks: Vec::new(),
+            cached_right_chunks: Vec::new(),
         }
     }
 
