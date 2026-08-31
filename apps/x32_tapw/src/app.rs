@@ -1,6 +1,6 @@
+use ratatui::layout::Rect;
 use std::borrow::Cow;
 use std::time::Instant;
-use ratatui::layout::Rect;
 
 /// AppState holds the internal state of the x32_tapw TUI application.
 pub struct AppState {
