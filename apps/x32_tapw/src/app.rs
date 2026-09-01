@@ -28,6 +28,13 @@ pub struct AppState {
     pub display_ip_text: String,
     pub display_mode_text: String,
     pub display_slot_text: String,
+
+    // Layout cache to avoid per-frame allocations
+    pub cached_area: ratatui::layout::Rect,
+    pub cached_main_chunks: Vec<ratatui::layout::Rect>,
+    pub cached_controls_chunks: Vec<ratatui::layout::Rect>,
+    pub cached_left_chunks: Vec<ratatui::layout::Rect>,
+    pub cached_right_chunks: Vec<ratatui::layout::Rect>,
 }
 
 #[derive(PartialEq)]
@@ -70,6 +77,12 @@ impl AppState {
             display_ip_text: "IP: 192.168.0.64".to_string(),
             display_mode_text: "Mode: Manual\nCheck: Check".to_string(),
             display_slot_text: "Delay Slot: 1".to_string(),
+
+            cached_area: ratatui::layout::Rect::default(),
+            cached_main_chunks: Vec::new(),
+            cached_controls_chunks: Vec::new(),
+            cached_left_chunks: Vec::new(),
+            cached_right_chunks: Vec::new(),
         }
     }
 
