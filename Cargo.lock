@@ -2674,6 +2674,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "x32_logf"
+version = "0.1.0"
+
+[[package]]
 name = "x32_loudness"
 version = "0.1.0"
 dependencies = [
