@@ -196,7 +196,7 @@ async fn run_app<B: Backend>(
     loop {
         let mut app_state = app.lock().unwrap_or_else(|e| e.into_inner());
         app_state.update_display_strings();
-        terminal.draw(|f| ui(f, &app_state))?;
+        terminal.draw(|f| ui(f, &mut app_state))?;
 
         let timeout = tick_rate
             .checked_sub(last_tick.elapsed())
@@ -304,19 +304,46 @@ async fn run_app<B: Backend>(
     }
 }
 
-fn ui(f: &mut Frame, app: &AppState) {
-    let chunks = Layout::default()
-        .direction(Direction::Vertical)
-        .margin(1)
-        .constraints(
-            [
-                Constraint::Length(3), // Help
-                Constraint::Length(8), // Controls
-                Constraint::Min(5),    // Log
-            ]
-            .as_ref(),
-        )
-        .split(f.size());
+fn ui(f: &mut Frame, app: &mut AppState) {
+    let size = f.size();
+
+    // ⚡ Bolt: Cache layout chunks to avoid layout solver overhead per frame,
+    // eliminating multiple Vec<Rect> allocations per frame.
+    if app.cached_area != size || app.cached_chunks.is_empty() {
+        app.cached_area = size;
+
+        let chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .margin(1)
+            .constraints(
+                [
+                    Constraint::Length(3), // Help
+                    Constraint::Length(8), // Controls
+                    Constraint::Min(5),    // Log
+                ]
+                .as_ref(),
+            )
+            .split(size);
+        app.cached_chunks = chunks.to_vec();
+
+        let controls_chunks = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
+            .split(app.cached_chunks[1]);
+        app.cached_controls_chunks = controls_chunks.to_vec();
+
+        let left_chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([Constraint::Length(3), Constraint::Length(3)].as_ref())
+            .split(app.cached_controls_chunks[0]);
+        app.cached_left_chunks = left_chunks.to_vec();
+
+        let right_chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([Constraint::Length(3), Constraint::Length(3)].as_ref())
+            .split(app.cached_controls_chunks[1]);
+        app.cached_right_chunks = right_chunks.to_vec();
+    }
 
     // Help block
     let help_msg = match app.active_input {
@@ -326,23 +353,7 @@ fn ui(f: &mut Frame, app: &AppState) {
         _ => "Enter/Esc: Confirm/Stop Editing",
     };
     let help = Paragraph::new(help_msg).block(Block::default().borders(Borders::ALL).title("Help"));
-    f.render_widget(help, chunks[0]);
-
-    // Controls block
-    let controls_chunks = Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
-        .split(chunks[1]);
-
-    let left_chunks = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints([Constraint::Length(3), Constraint::Length(3)].as_ref())
-        .split(controls_chunks[0]);
-
-    let right_chunks = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints([Constraint::Length(3), Constraint::Length(3)].as_ref())
-        .split(controls_chunks[1]);
+    f.render_widget(help, app.cached_chunks[0]);
 
     // IP Input
     // ⚡ Bolt: Cache formatted Strings in AppState instead of allocating
@@ -355,12 +366,12 @@ fn ui(f: &mut Frame, app: &AppState) {
     let ip_p = Paragraph::new(app.display_ip_text.as_str())
         .style(ip_style)
         .block(Block::default().borders(Borders::ALL).title("Connection"));
-    f.render_widget(ip_p, left_chunks[0]);
+    f.render_widget(ip_p, app.cached_left_chunks[0]);
 
     // Mode / Settings
     let mode_p = Paragraph::new(app.display_mode_text.as_str())
         .block(Block::default().borders(Borders::ALL).title("Status"));
-    f.render_widget(mode_p, left_chunks[1]);
+    f.render_widget(mode_p, app.cached_left_chunks[1]);
 
     // Delay Slot
     let slot_style = if app.active_input == InputMode::EditingSlot {
@@ -371,7 +382,7 @@ fn ui(f: &mut Frame, app: &AppState) {
     let slot_p = Paragraph::new(app.display_slot_text.as_str())
         .style(slot_style)
         .block(Block::default().borders(Borders::ALL).title("FX Slot"));
-    f.render_widget(slot_p, right_chunks[0]);
+    f.render_widget(slot_p, app.cached_right_chunks[0]);
 
     // Channel Settings
     let mut ch_text = vec![];
@@ -402,7 +413,7 @@ fn ui(f: &mut Frame, app: &AppState) {
             .borders(Borders::ALL)
             .title("Auto-Tap Settings"),
     );
-    f.render_widget(ch_p, right_chunks[1]);
+    f.render_widget(ch_p, app.cached_right_chunks[1]);
 
     // Log window
     let logs: Vec<Line> = app
@@ -413,5 +424,5 @@ fn ui(f: &mut Frame, app: &AppState) {
         .map(|msg| Line::from(Span::raw(msg.as_ref())))
         .collect();
     let log_p = Paragraph::new(logs).block(Block::default().borders(Borders::ALL).title("Logs"));
-    f.render_widget(log_p, chunks[2]);
+    f.render_widget(log_p, app.cached_chunks[2]);
 }

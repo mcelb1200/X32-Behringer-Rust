@@ -34,7 +34,7 @@ pub fn xsprint(bd: &mut Vec<u8>, format: char, bs: XsprintValue) -> usize {
             bd.push(0);
 
             // align to 4 bytes boundary
-            while bd.len() % 4 != 0 {
+            while !bd.len().is_multiple_of(4) {
                 bd.push(0);
             }
         }
@@ -62,7 +62,7 @@ pub fn xfprint(bd: &mut Vec<u8>, text: &str, format: char, bs: XsprintValue) -> 
     bd.push(0);
 
     // align to 4 bytes boundary
-    while bd.len() % 4 != 0 {
+    while !bd.len().is_multiple_of(4) {
         bd.push(0);
     }
 
