@@ -161,3 +161,7 @@ When initializing terminal UI state that might fail and return a `Result` (e.g.,
 ## 2026-10-25 - [Simplify TUI Render Closure Captures with Rust 2021]
 **Learning:** In Ratatui applications, when you cache layout data (like `self.cached_chunks`) inside a TUI struct to avoid per-frame allocations, you might worry that accessing `self.cached_chunks` inside `self.terminal.draw(|f| { ... })` will cause a mutable borrow conflict with `self.terminal`. However, thanks to Rust 2021's disjoint closure captures, the closure only captures the specific fields it uses, meaning you can safely read from or mutate `self.cached_chunks` inside the closure while `self.terminal` is simultaneously borrowed by the `draw` method.
 **Action:** When caching layout chunks or formatting buffers in a TUI struct to eliminate dynamic allocations in the hot path, rely on Rust 2021 disjoint closure captures to access them inside `.draw()` without complex workarounds or temporary bindings.
+
+## 2023-11-20 - Avoid Unstable Rust Features
+**Learning:** `is_multiple_of` is a nightly-only feature. Using it breaks stable builds. When optimizing, avoid nightly features unless explicitly allowed.
+**Action:** Use standard modulo operations (`%`) or bitwise logic for checking multiples.
