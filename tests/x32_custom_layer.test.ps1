@@ -29,13 +29,8 @@ function Test-X32CustomLayer {
     Write-Host "SETUP: Please go to Channel 1 and change its name to 'SAVED_STATE'." -ForegroundColor Yellow
     Read-Host "Press Enter when you have set the channel name..."
 
-    Log-Message "Running: x32_custom_layer save $testFile"
-    if ($Global:NonInteractive) {
-        # Mock file generation
-        Set-Content -Path $testFile -Value "/ch/01/config/name `"SAVED_STATE`""
-    } else {
-        & $binaryPath --ip $ip save $testFile
-    }
+    Log-Message "Running: x32_custom_layer save --file $testFile"
+    & $binaryPath --ip $ip save --file $testFile
 
     if (-not (Test-Path $testFile)) {
         Log-Message "Test 1 FAILED: The save command did not create the output file."
@@ -46,10 +41,8 @@ function Test-X32CustomLayer {
     Write-Host "SETUP 2: Now, please change the name of Channel 1 to 'MODIFIED'." -ForegroundColor Yellow
     Read-Host "Press Enter when you have changed the name again..."
 
-    Log-Message "Running: x32_custom_layer restore $testFile"
-    if (-not $Global:NonInteractive) {
-        & $binaryPath --ip $ip restore $testFile
-    }
+    Log-Message "Running: x32_custom_layer restore --file $testFile"
+    & $binaryPath --ip $ip restore --file $testFile
 
     Write-Host "VERIFY: Please check if the name of Channel 1 has been restored to 'SAVED_STATE'."
     $result1 = Read-Host "Did the restore succeed? (y/n)"
@@ -68,8 +61,8 @@ function Test-X32CustomLayer {
     Write-Host "SETUP: Please go to Channel 2 and change its name to 'TO_BE_RESET'." -ForegroundColor Yellow
     Read-Host "Press Enter when you have set the channel name..."
 
-    Log-Message "Running: x32_custom_layer reset 2"
-    & $binaryPath --ip $ip reset "2"
+    Log-Message "Running: x32_custom_layer reset --channels 2"
+    & $binaryPath --ip $ip reset --channels "2"
 
     Write-Host "VERIFY: Please check if Channel 2 has been reset to its default state (name is cleared or default)."
     $result2 = Read-Host "Did the reset succeed? (y/n)"
