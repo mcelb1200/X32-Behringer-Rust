@@ -207,11 +207,7 @@ async fn run_app<B: Backend>(
     loop {
         let mut app_state = app.lock().unwrap_or_else(|e| e.into_inner());
         app_state.update_display_strings();
-        terminal.draw(|f| ui(
-            f,
-            &app_state,
-            &mut layout_cache
-        ))?;
+        terminal.draw(|f| ui(f, &app_state, &mut layout_cache))?;
 
         let timeout = tick_rate
             .checked_sub(last_tick.elapsed())
@@ -319,11 +315,7 @@ async fn run_app<B: Backend>(
     }
 }
 
-fn ui(
-    f: &mut Frame,
-    app: &AppState,
-    cache: &mut LayoutCache,
-) {
+fn ui(f: &mut Frame, app: &AppState, cache: &mut LayoutCache) {
     let size = f.size();
 
     // ⚡ Bolt: Cache layout chunk splits inside the draw closure to avoid
