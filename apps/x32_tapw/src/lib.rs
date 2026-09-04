@@ -185,6 +185,7 @@ async fn run_network(app: Arc<Mutex<AppState>>, mut rx: mpsc::Receiver<OscMessag
     }
 }
 
+#[derive(Default)]
 struct LayoutCache {
     area: ratatui::layout::Rect,
     chunks: Vec<ratatui::layout::Rect>,
@@ -193,17 +194,6 @@ struct LayoutCache {
     right_chunks: Vec<ratatui::layout::Rect>,
 }
 
-impl Default for LayoutCache {
-    fn default() -> Self {
-        Self {
-            area: ratatui::layout::Rect::default(),
-            chunks: Vec::new(),
-            controls_chunks: Vec::new(),
-            left_chunks: Vec::new(),
-            right_chunks: Vec::new(),
-        }
-    }
-}
 async fn run_app<B: Backend>(
     terminal: &mut Terminal<B>,
     app: Arc<Mutex<AppState>>,
@@ -217,7 +207,11 @@ async fn run_app<B: Backend>(
     loop {
         let mut app_state = app.lock().unwrap_or_else(|e| e.into_inner());
         app_state.update_display_strings();
-        terminal.draw(|f| ui(f, &app_state, &mut layout_cache))?;
+        terminal.draw(|f| ui(
+            f,
+            &app_state,
+            &mut layout_cache
+        ))?;
 
         let timeout = tick_rate
             .checked_sub(last_tick.elapsed())
@@ -325,7 +319,11 @@ async fn run_app<B: Backend>(
     }
 }
 
-fn ui(f: &mut Frame, app: &AppState, cache: &mut LayoutCache) {
+fn ui(
+    f: &mut Frame,
+    app: &AppState,
+    cache: &mut LayoutCache,
+) {
     let size = f.size();
 
     // ⚡ Bolt: Cache layout chunk splits inside the draw closure to avoid
