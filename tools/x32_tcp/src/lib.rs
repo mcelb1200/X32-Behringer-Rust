@@ -147,8 +147,14 @@ async fn handle_client(mut stream: TcpStream, args: Args) -> Result<()> {
         match OscMessage::from_str(trimmed_line) {
             Ok(osc_msg) => {
                 let _msg_bytes = osc_msg.to_bytes()?;
-                x32_socket.send_message(&osc_msg.path, osc_msg.args).await?;
+                // If the message contains arguments, we are sending a command to set a value.
+                // We should not immediately query it back because it might not have been applied yet.
+                if !osc_msg.args.is_empty() {
+                    x32_socket.send_message(&osc_msg.path, osc_msg.args).await?;
+                    continue; // Do not send anything back for set commands unless specifically requested.
+                }
 
+                // If it has no arguments, it's a query
                 match x32_socket.query_value(&osc_msg.path).await {
                     Ok(arg) => {
                         let response_str = format!(
