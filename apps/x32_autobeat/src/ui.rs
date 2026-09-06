@@ -8,7 +8,7 @@ use crossterm::{
 use ratatui::{
     Terminal,
     backend::CrosstermBackend,
-    layout::{Constraint, Direction, Layout},
+    layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Gauge, Paragraph, Tabs},
@@ -32,6 +32,9 @@ pub struct AppState<'a> {
 
 pub struct Tui {
     terminal: Terminal<CrosstermBackend<io::Stdout>>,
+    bpm_buffer: String,
+    cached_area: Rect,
+    cached_chunks: Vec<Rect>,
 }
 
 impl Tui {
@@ -41,26 +44,48 @@ impl Tui {
         execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
         let backend = CrosstermBackend::new(stdout);
         let terminal = Terminal::new(backend)?;
-        Ok(Self { terminal })
+        Ok(Self {
+            terminal,
+            bpm_buffer: String::with_capacity(32),
+            cached_area: Rect::default(),
+            cached_chunks: Vec::new(),
+        })
     }
 
     pub fn draw(&mut self, state: &AppState<'_>) -> Result<()> {
+        use std::fmt::Write;
+
+        self.bpm_buffer.clear();
+        if let Some(bpm) = state.current_bpm {
+            let _ = write!(self.bpm_buffer, "{:.1} BPM ({})", bpm, state.algorithm);
+        }
+
         self.terminal.draw(|f| {
-            let chunks = Layout::default()
-                .direction(Direction::Vertical)
-                .margin(1)
-                .constraints(
-                    [
-                        Constraint::Length(3), // Title
-                        Constraint::Length(3), // Slots Tabs
-                        Constraint::Min(5),    // Active Slot Details
-                        Constraint::Length(3), // BPM
-                        Constraint::Length(3), // Input Gauge
-                        Constraint::Length(3), // Status
-                    ]
-                    .as_ref(),
-                )
-                .split(f.size());
+            let size = f.size();
+
+            // ⚡ Bolt: Cache layout chunk splits inside the draw closure to avoid
+            // layout solver overhead per frame, eliminating Vec<Rect> allocations.
+            if self.cached_area != size || self.cached_chunks.is_empty() {
+                self.cached_area = size;
+                let chunks = Layout::default()
+                    .direction(Direction::Vertical)
+                    .margin(1)
+                    .constraints(
+                        [
+                            Constraint::Length(3), // Title
+                            Constraint::Length(3), // Slots Tabs
+                            Constraint::Min(5),    // Active Slot Details
+                            Constraint::Length(3), // BPM
+                            Constraint::Length(3), // Input Gauge
+                            Constraint::Length(3), // Status
+                        ]
+                        .as_ref(),
+                    )
+                    .split(size);
+                self.cached_chunks = chunks.to_vec();
+            }
+
+            let chunks = &self.cached_chunks;
 
             // 1. Title
             let header = Paragraph::new("X32 AutoBeat - Multi-FX Control")
@@ -143,12 +168,10 @@ impl Tui {
             f.render_widget(details, chunks[2]);
 
             // 4. BPM Display
-            let bpm_string;
             let bpm_text = if state.is_panic {
                 "PANIC"
-            } else if let Some(bpm) = state.current_bpm {
-                bpm_string = format!("{bpm:.1} BPM ({})", state.algorithm);
-                &bpm_string
+            } else if state.current_bpm.is_some() {
+                self.bpm_buffer.as_str()
             } else {
                 "Detecting..."
             };

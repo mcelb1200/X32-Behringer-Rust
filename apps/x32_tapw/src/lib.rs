@@ -185,6 +185,15 @@ async fn run_network(app: Arc<Mutex<AppState>>, mut rx: mpsc::Receiver<OscMessag
     }
 }
 
+#[derive(Default)]
+struct LayoutCache {
+    area: ratatui::layout::Rect,
+    chunks: Vec<ratatui::layout::Rect>,
+    controls_chunks: Vec<ratatui::layout::Rect>,
+    left_chunks: Vec<ratatui::layout::Rect>,
+    right_chunks: Vec<ratatui::layout::Rect>,
+}
+
 async fn run_app<B: Backend>(
     terminal: &mut Terminal<B>,
     app: Arc<Mutex<AppState>>,
@@ -193,9 +202,12 @@ async fn run_app<B: Backend>(
     let mut last_tick = Instant::now();
     let tick_rate = Duration::from_millis(250);
 
+    let mut layout_cache = LayoutCache::default();
+
     loop {
         let mut app_state = app.lock().unwrap_or_else(|e| e.into_inner());
-        terminal.draw(|f| ui(f, &app_state))?;
+        app_state.update_display_strings();
+        terminal.draw(|f| ui(f, &app_state, &mut layout_cache))?;
 
         let timeout = tick_rate
             .checked_sub(last_tick.elapsed())
@@ -306,19 +318,58 @@ async fn run_app<B: Backend>(
     }
 }
 
-fn ui(f: &mut Frame, app: &AppState) {
-    let chunks = Layout::default()
-        .direction(Direction::Vertical)
-        .margin(1)
-        .constraints(
-            [
-                Constraint::Length(3), // Help
-                Constraint::Length(8), // Controls
-                Constraint::Min(5),    // Log
-            ]
-            .as_ref(),
-        )
-        .split(f.size());
+fn ui(f: &mut Frame, app: &AppState, cache: &mut LayoutCache) {
+    let size = f.size();
+
+    // ⚡ Bolt: Cache layout chunk splits inside the draw closure to avoid
+    // per-frame Layout allocations in the hot render loop.
+    if cache.area != size || cache.chunks.is_empty() {
+        cache.area = size;
+
+        let chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .margin(1)
+            .constraints(
+                [
+                    Constraint::Length(3), // Help
+                    Constraint::Length(8), // Controls
+                    Constraint::Min(5),    // Log
+                ]
+                .as_ref(),
+            )
+            .split(size);
+        cache.chunks = chunks.to_vec();
+
+        if cache.chunks.len() >= 2 {
+            let controls_chunks = Layout::default()
+                .direction(Direction::Horizontal)
+                .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
+                .split(cache.chunks[1]);
+            cache.controls_chunks = controls_chunks.to_vec();
+
+            if cache.controls_chunks.len() >= 2 {
+                let left_chunks = Layout::default()
+                    .direction(Direction::Vertical)
+                    .constraints([Constraint::Length(3), Constraint::Length(3)].as_ref())
+                    .split(cache.controls_chunks[0]);
+                cache.left_chunks = left_chunks.to_vec();
+
+                let right_chunks = Layout::default()
+                    .direction(Direction::Vertical)
+                    .constraints([Constraint::Length(3), Constraint::Length(3)].as_ref())
+                    .split(cache.controls_chunks[1]);
+                cache.right_chunks = right_chunks.to_vec();
+            }
+        }
+    }
+
+    let chunks = cache.chunks.as_slice();
+    let left_chunks = cache.left_chunks.as_slice();
+    let right_chunks = cache.right_chunks.as_slice();
+
+    if chunks.len() < 3 || left_chunks.len() < 2 || right_chunks.len() < 2 {
+        return;
+    }
 
     // Help block
     let help_msg = match app.active_input {
@@ -330,42 +381,22 @@ fn ui(f: &mut Frame, app: &AppState) {
     let help = Paragraph::new(help_msg).block(Block::default().borders(Borders::ALL).title("Help"));
     f.render_widget(help, chunks[0]);
 
-    // Controls block
-    let controls_chunks = Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
-        .split(chunks[1]);
-
-    let left_chunks = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints([Constraint::Length(3), Constraint::Length(3)].as_ref())
-        .split(controls_chunks[0]);
-
-    let right_chunks = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints([Constraint::Length(3), Constraint::Length(3)].as_ref())
-        .split(controls_chunks[1]);
-
     // IP Input
+    // ⚡ Bolt: Cache formatted Strings in AppState instead of allocating
+    // per-frame during terminal.draw.
     let ip_style = if app.active_input == InputMode::EditingIp {
         Style::default().fg(Color::Yellow)
     } else {
         Style::default()
     };
-    let ip_text = format!("IP: {}", app.ip_input);
-    let ip_p = Paragraph::new(ip_text)
+    let ip_p = Paragraph::new(app.display_ip_text.as_str())
         .style(ip_style)
         .block(Block::default().borders(Borders::ALL).title("Connection"));
     f.render_widget(ip_p, left_chunks[0]);
 
     // Mode / Settings
-    let mode_text = format!(
-        "Mode: {}\nCheck: {}",
-        if app.is_auto { "Auto" } else { "Manual" },
-        app.delay_type
-    );
-    let mode_p =
-        Paragraph::new(mode_text).block(Block::default().borders(Borders::ALL).title("Status"));
+    let mode_p = Paragraph::new(app.display_mode_text.as_str())
+        .block(Block::default().borders(Borders::ALL).title("Status"));
     f.render_widget(mode_p, left_chunks[1]);
 
     // Delay Slot
@@ -374,8 +405,7 @@ fn ui(f: &mut Frame, app: &AppState) {
     } else {
         Style::default()
     };
-    let slot_text = format!("Delay Slot: {}", app.slot_input);
-    let slot_p = Paragraph::new(slot_text)
+    let slot_p = Paragraph::new(app.display_slot_text.as_str())
         .style(slot_style)
         .block(Block::default().borders(Borders::ALL).title("FX Slot"));
     f.render_widget(slot_p, right_chunks[0]);

@@ -2643,6 +2643,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "x32_ip"
+version = "0.1.0"
+
+[[package]]
 name = "x32_jog4xlive"
 version = "0.1.0"
 dependencies = [
@@ -2668,6 +2672,10 @@ dependencies = [
  "x32_emulator",
  "x32_fxparse",
 ]
+
+[[package]]
+name = "x32_logf"
+version = "0.1.0"
 
 [[package]]
 name = "x32_loudness"
@@ -2733,6 +2741,10 @@ dependencies = [
  "tokio",
  "x32_lib",
 ]
+
+[[package]]
+name = "x32_rpncalc"
+version = "0.1.0"
 
 [[package]]
 name = "x32_safe_mute"
@@ -2894,6 +2906,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "x32_testparams"
+version = "0.1.0"
+dependencies = [
+ "tempfile",
+]
+
+[[package]]
 name = "x32_udp"
 version = "0.1.0"
 dependencies = [
@@ -2963,6 +2982,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "x32_xcparse"
+version = "0.1.0"
+dependencies = [
+ "x32_xsprint",
+]
+
+[[package]]
 name = "x32_xlive_wav"
 version = "0.1.0"
 dependencies = [
@@ -2974,6 +3000,17 @@ dependencies = [
  "hound",
  "tempfile",
 ]
+
+[[package]]
+name = "x32_xscene2x"
+version = "0.1.0"
+dependencies = [
+ "x32_xsprint",
+]
+
+[[package]]
+name = "x32_xsprint"
+version = "0.1.0"
 
 [[package]]
 name = "xair_command"

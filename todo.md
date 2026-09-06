@@ -544,13 +544,12 @@ Tuning a sound system to a room ("ringing out the mains") and verifying that all
 
 - [ ] rpncalc
 - [ ] testparams
-- [ ] xsprint
-- [ ] xscene2x
-- [ ] validateip4dotted
+- [x] xscene2x
+- [x] validateip4dotted
 - [ ] xdump
-- [ ] logf
+- [x] logf
 - [ ] connect
-- [ ] xcparse
+- [x] xcparse
 - [ ] fxparse1
 - [ ] fxparse5
 - [ ] setsceneparse
