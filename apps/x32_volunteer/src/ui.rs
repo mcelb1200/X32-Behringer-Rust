@@ -133,7 +133,10 @@ impl Tui {
                     .split(self.layout_cache.main_chunks[1])
                     .to_vec();
             }
-        } else if self.layout_cache.channel_chunks.len() != state.channels.len() && self.layout_cache.main_chunks.len() > 1 && !self.cached_constraints.is_empty() {
+        } else if self.layout_cache.channel_chunks.len() != state.channels.len()
+            && self.layout_cache.main_chunks.len() > 1
+            && !self.cached_constraints.is_empty()
+        {
             self.layout_cache.channel_chunks = Layout::default()
                 .direction(Direction::Horizontal)
                 .constraints(self.cached_constraints.as_slice())
