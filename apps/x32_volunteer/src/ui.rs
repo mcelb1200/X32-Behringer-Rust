@@ -8,16 +8,24 @@ use crossterm::{
 use ratatui::{
     Terminal,
     backend::CrosstermBackend,
-    layout::{Constraint, Direction, Layout},
+    layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Paragraph},
 };
 use std::{fmt::Write, io, time::Duration};
 
+#[derive(Default)]
+struct LayoutCache {
+    area: Rect,
+    main_chunks: Vec<Rect>,
+    channel_chunks: Vec<Rect>,
+}
+
 pub struct Tui {
     terminal: Terminal<CrosstermBackend<io::Stdout>>,
     cached_constraints: Vec<Constraint>,
+    layout_cache: LayoutCache,
     header_buf: String,
     fader_bufs: Vec<String>,
     level_bufs: Vec<String>,
@@ -34,6 +42,7 @@ impl Tui {
         Ok(Self {
             terminal,
             cached_constraints: Vec::new(),
+            layout_cache: LayoutCache::default(),
             header_buf: String::with_capacity(128),
             fader_bufs: Vec::new(),
             level_bufs: Vec::new(),
@@ -97,8 +106,12 @@ impl Tui {
             write!(self.alert_bufs[i], "• {}", state.alerts[i]).expect("Write alert buffer failed");
         }
 
-        self.terminal.draw(|f| {
-            let chunks = Layout::default()
+        // ⚡ Bolt: Cache layout chunk splits before the draw closure to avoid
+        // per-frame Layout allocations in the hot render loop.
+        let f_size = self.terminal.size()?;
+        if self.layout_cache.area != f_size || self.layout_cache.main_chunks.is_empty() {
+            self.layout_cache.area = f_size;
+            self.layout_cache.main_chunks = Layout::default()
                 .direction(Direction::Vertical)
                 .margin(1)
                 .constraints(
@@ -110,7 +123,35 @@ impl Tui {
                     ]
                     .as_ref(),
                 )
-                .split(f.size());
+                .split(f_size)
+                .to_vec();
+
+            if self.layout_cache.main_chunks.len() > 1 && !self.cached_constraints.is_empty() {
+                self.layout_cache.channel_chunks = Layout::default()
+                    .direction(Direction::Horizontal)
+                    .constraints(self.cached_constraints.as_slice())
+                    .split(self.layout_cache.main_chunks[1])
+                    .to_vec();
+            }
+        } else if self.layout_cache.channel_chunks.len() != state.channels.len()
+            && self.layout_cache.main_chunks.len() > 1
+            && !self.cached_constraints.is_empty()
+        {
+            self.layout_cache.channel_chunks = Layout::default()
+                .direction(Direction::Horizontal)
+                .constraints(self.cached_constraints.as_slice())
+                .split(self.layout_cache.main_chunks[1])
+                .to_vec();
+        }
+
+        let layout_cache = &self.layout_cache;
+
+        self.terminal.draw(|f| {
+            let chunks = layout_cache.main_chunks.as_slice();
+
+            if chunks.is_empty() {
+                return;
+            }
 
             // 1. Header
             let header = Paragraph::new(self.header_buf.as_str())
@@ -123,10 +164,7 @@ impl Tui {
             f.render_widget(header, chunks[0]);
 
             // 2. Channels (Grid layout ideally, simplify for now to horizontal chunks)
-            let channel_chunks = Layout::default()
-                .direction(Direction::Horizontal)
-                .constraints(self.cached_constraints.as_slice())
-                .split(chunks[1]);
+            let channel_chunks = layout_cache.channel_chunks.as_slice();
 
             for (i, ch) in state.channels.iter().enumerate() {
                 if i < channel_chunks.len() {
