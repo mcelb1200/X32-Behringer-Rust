@@ -547,7 +547,7 @@ Tuning a sound system to a room ("ringing out the mains") and verifying that all
 - [x] xscene2x
 - [x] validateip4dotted
 - [ ] xdump
-- [ ] logf
+- [x] logf
 - [ ] connect
 - [x] xcparse
 - [ ] fxparse1
