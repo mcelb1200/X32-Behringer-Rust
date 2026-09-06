@@ -71,8 +71,8 @@ function Test-X32CopyFx {
 
     Read-Host "Press Enter to run the reset command with the custom file..."
 
-    Log-Message "Running: x32_copy_fx --from 1 --defaults-file $defaultsFile reset"
-    & $binaryPath --ip $ip --from 1 --defaults-file $defaultsFile reset
+    Log-Message "Running: x32_copy_fx --from 1 reset --defaults-file $defaultsFile"
+    & $binaryPath --ip $ip --from 1 reset --defaults-file $defaultsFile
 
     Write-Host "VERIFY: Please check if the 'Decay' time in FX slot 1 is now set to the maximum possible value (10.0s)."
     $result3 = Read-Host "Did the custom reset succeed? (y/n)"

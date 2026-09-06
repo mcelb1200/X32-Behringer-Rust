@@ -41,12 +41,7 @@ test_x32_desk_save() {
     fi
 
     if [ ! -s "$test_file" ]; then
-        if [ "$non_interactive_mode" = "true" ]; then
-            echo "/ch/01/config/name \"DESK_SAVE_TEST\"" > "$test_file"
-            log_message "Test 1 PASSED: Output file created and populated with mock data for non-interactive test."
-        else
-            log_message "Test 1 FAILED: The output file is empty."
-        fi
+        log_message "Test 1 FAILED: The output file is empty."
     elif [[ $(head -n 1 "$test_file") == /* ]]; then
         log_message "Test 1 PASSED: Output file created and first line appears to be a valid OSC message."
     else
