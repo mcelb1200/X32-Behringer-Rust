@@ -185,6 +185,15 @@ async fn run_network(app: Arc<Mutex<AppState>>, mut rx: mpsc::Receiver<OscMessag
     }
 }
 
+#[derive(Default)]
+struct LayoutCache {
+    area: ratatui::layout::Rect,
+    chunks: Vec<ratatui::layout::Rect>,
+    controls_chunks: Vec<ratatui::layout::Rect>,
+    left_chunks: Vec<ratatui::layout::Rect>,
+    right_chunks: Vec<ratatui::layout::Rect>,
+}
+
 async fn run_app<B: Backend>(
     terminal: &mut Terminal<B>,
     app: Arc<Mutex<AppState>>,
@@ -193,10 +202,12 @@ async fn run_app<B: Backend>(
     let mut last_tick = Instant::now();
     let tick_rate = Duration::from_millis(250);
 
+    let mut layout_cache = LayoutCache::default();
+
     loop {
         let mut app_state = app.lock().unwrap_or_else(|e| e.into_inner());
         app_state.update_display_strings();
-        terminal.draw(|f| ui(f, &mut app_state))?;
+        terminal.draw(|f| ui(f, &app_state, &mut layout_cache))?;
 
         let timeout = tick_rate
             .checked_sub(last_tick.elapsed())
@@ -304,10 +315,13 @@ async fn run_app<B: Backend>(
     }
 }
 
-fn ui(f: &mut Frame, app: &mut AppState) {
+fn ui(f: &mut Frame, app: &AppState, cache: &mut LayoutCache) {
     let size = f.size();
-    if app.cached_area != size || app.cached_chunks.is_empty() {
-        app.cached_area = size;
+
+    // ⚡ Bolt: Cache layout chunk splits inside the draw closure to avoid
+    // per-frame Layout allocations in the hot render loop.
+    if cache.area != size || cache.chunks.is_empty() {
+        cache.area = size;
 
         let chunks = Layout::default()
             .direction(Direction::Vertical)
@@ -321,35 +335,38 @@ fn ui(f: &mut Frame, app: &mut AppState) {
                 .as_ref(),
             )
             .split(size);
+        cache.chunks = chunks.to_vec();
 
-        let controls_chunks = Layout::default()
-            .direction(Direction::Horizontal)
-            .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
-            .split(chunks[1]);
+        if cache.chunks.len() >= 2 {
+            let controls_chunks = Layout::default()
+                .direction(Direction::Horizontal)
+                .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
+                .split(cache.chunks[1]);
+            cache.controls_chunks = controls_chunks.to_vec();
 
-        let left_chunks = Layout::default()
-            .direction(Direction::Vertical)
-            .constraints([Constraint::Length(3), Constraint::Length(3)].as_ref())
-            .split(controls_chunks[0]);
+            if cache.controls_chunks.len() >= 2 {
+                let left_chunks = Layout::default()
+                    .direction(Direction::Vertical)
+                    .constraints([Constraint::Length(3), Constraint::Length(3)].as_ref())
+                    .split(cache.controls_chunks[0]);
+                cache.left_chunks = left_chunks.to_vec();
 
-        let right_chunks = Layout::default()
-            .direction(Direction::Vertical)
-            .constraints([Constraint::Length(3), Constraint::Length(3)].as_ref())
-            .split(controls_chunks[1]);
-
-        // ⚡ Bolt: Store computed layout chunks in AppState to prevent
-        // Vec<Rect> heap allocations on every render frame.
-        app.cached_chunks = vec![
-            chunks.to_vec(),
-            controls_chunks.to_vec(),
-            left_chunks.to_vec(),
-            right_chunks.to_vec(),
-        ];
+                let right_chunks = Layout::default()
+                    .direction(Direction::Vertical)
+                    .constraints([Constraint::Length(3), Constraint::Length(3)].as_ref())
+                    .split(cache.controls_chunks[1]);
+                cache.right_chunks = right_chunks.to_vec();
+            }
+        }
     }
 
-    let chunks = &app.cached_chunks[0];
-    let left_chunks = &app.cached_chunks[2];
-    let right_chunks = &app.cached_chunks[3];
+    let chunks = cache.chunks.as_slice();
+    let left_chunks = cache.left_chunks.as_slice();
+    let right_chunks = cache.right_chunks.as_slice();
+
+    if chunks.len() < 3 || left_chunks.len() < 2 || right_chunks.len() < 2 {
+        return;
+    }
 
     // Help block
     let help_msg = match app.active_input {
