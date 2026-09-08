@@ -2671,6 +2671,7 @@ dependencies = [
  "tokio",
  "x32_emulator",
  "x32_fxparse",
+ "x32_setsceneparse",
 ]
 
 [[package]]
@@ -2803,6 +2804,14 @@ dependencies = [
  "osc_lib",
  "tokio",
  "x32_lib",
+]
+
+[[package]]
+name = "x32_setsceneparse"
+version = "0.1.0"
+dependencies = [
+ "osc_lib",
+ "x32_fxparse",
 ]
 
 [[package]]
