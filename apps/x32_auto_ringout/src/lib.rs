@@ -9,7 +9,7 @@ use osc_lib::OscArg;
 use ratatui::{
     Frame, Terminal,
     backend::CrosstermBackend,
-    layout::{Constraint, Direction, Layout},
+    layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Paragraph},
@@ -101,6 +101,11 @@ impl AppState {
     }
 }
 
+struct LayoutCache {
+    area: Rect,
+    chunks: Vec<Rect>,
+}
+
 pub async fn run(args: Args) -> Result<()> {
     if args.buses.is_empty() {
         println!("No valid buses provided. Expected format: --buses 1,2,5");
@@ -129,6 +134,10 @@ pub async fn run(args: Args) -> Result<()> {
     let mut rx = client.subscribe();
 
     let mut ticker = interval(Duration::from_millis(500)); // Render & ramp ticker
+    let mut layout_cache = LayoutCache {
+        area: Rect::default(),
+        chunks: Vec::new(),
+    };
 
     loop {
         // Render
@@ -136,7 +145,7 @@ pub async fn run(args: Args) -> Result<()> {
             let state = app_state
                 .lock()
                 .unwrap_or_else(|poisoned| poisoned.into_inner());
-            terminal.draw(|f| ui(f, &state))?;
+            terminal.draw(|f| ui(f, &state, &mut layout_cache))?;
             if state.should_quit {
                 break;
             }
@@ -331,11 +340,21 @@ pub async fn run(args: Args) -> Result<()> {
     Ok(())
 }
 
-fn ui(f: &mut Frame, state: &AppState) {
-    let chunks = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints([Constraint::Min(5), Constraint::Length(3)].as_ref())
-        .split(f.size());
+fn ui(f: &mut Frame, state: &AppState, cache: &mut LayoutCache) {
+    let size = f.size();
+    if cache.area != size || cache.chunks.is_empty() {
+        cache.area = size;
+        let chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([Constraint::Min(5), Constraint::Length(3)].as_ref())
+            .split(size);
+        cache.chunks = chunks.to_vec();
+    }
+    let chunks = &cache.chunks;
+
+    if chunks.len() < 2 {
+        return;
+    }
 
     let mut lines = vec![Line::from(vec![Span::styled(
         "  AUTO-RINGOUT",

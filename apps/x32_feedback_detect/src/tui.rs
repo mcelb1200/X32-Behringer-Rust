@@ -7,7 +7,7 @@ use crossterm::{
 use ratatui::{
     Terminal,
     backend::CrosstermBackend,
-    layout::{Constraint, Direction, Layout},
+    layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Style},
     widgets::{Block, Borders, Paragraph},
 };
@@ -19,6 +19,8 @@ use crate::mixer::AppliedNotch;
 pub struct AppTui {
     terminal: Terminal<CrosstermBackend<io::Stdout>>,
     notch_text: String,
+    cached_area: Rect,
+    cached_chunks: Vec<Rect>,
 }
 
 pub enum TuiEvent {
@@ -37,6 +39,8 @@ impl AppTui {
         Ok(Self {
             terminal,
             notch_text: String::with_capacity(512),
+            cached_area: Rect::default(),
+            cached_chunks: Vec::new(),
         })
     }
 
@@ -62,28 +66,40 @@ impl AppTui {
         let notch_text_ref: &str = &self.notch_text;
 
         self.terminal.draw(|f| {
-            let chunks = Layout::default()
-                .direction(Direction::Vertical)
-                .constraints([Constraint::Length(3), Constraint::Min(0)].as_ref())
-                .split(f.size());
+            let size = f.size();
 
-            let status_color = if status.contains("Feedback") {
-                Color::Red
-            } else {
-                Color::Green
-            };
+            // ⚡ Bolt: Cache layout chunk splits inside the draw closure to avoid
+            // per-frame Layout allocations in the hot render loop.
+            if self.cached_area != size || self.cached_chunks.is_empty() {
+                self.cached_area = size;
+                let chunks = Layout::default()
+                    .direction(Direction::Vertical)
+                    .constraints([Constraint::Length(3), Constraint::Min(0)].as_ref())
+                    .split(size);
+                self.cached_chunks = chunks.to_vec();
+            }
 
-            let status_p = Paragraph::new(status)
-                .block(Block::default().title("Status").borders(Borders::ALL))
-                .style(Style::default().fg(status_color));
-            f.render_widget(status_p, chunks[0]);
+            let chunks = &self.cached_chunks;
 
-            let notch_p = Paragraph::new(notch_text_ref).block(
-                Block::default()
-                    .title("Active Notches")
-                    .borders(Borders::ALL),
-            );
-            f.render_widget(notch_p, chunks[1]);
+            if chunks.len() >= 2 {
+                let status_color = if status.contains("Feedback") {
+                    Color::Red
+                } else {
+                    Color::Green
+                };
+
+                let status_p = Paragraph::new(status)
+                    .block(Block::default().title("Status").borders(Borders::ALL))
+                    .style(Style::default().fg(status_color));
+                f.render_widget(status_p, chunks[0]);
+
+                let notch_p = Paragraph::new(notch_text_ref).block(
+                    Block::default()
+                        .title("Active Notches")
+                        .borders(Borders::ALL),
+                );
+                f.render_widget(notch_p, chunks[1]);
+            }
         })?;
 
         Ok(())
