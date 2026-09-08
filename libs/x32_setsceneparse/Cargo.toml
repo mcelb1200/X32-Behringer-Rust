@@ -1,0 +1,8 @@
+[package]
+name = "x32_setsceneparse"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+osc_lib = { workspace = true }
+x32_fxparse = { path = "../x32_fxparse" }
