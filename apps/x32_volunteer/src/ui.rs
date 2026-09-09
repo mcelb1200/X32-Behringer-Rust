@@ -3,20 +3,23 @@ use anyhow::Result;
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
     execute,
-    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
+    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use ratatui::{
-    Terminal,
     backend::CrosstermBackend,
-    layout::{Constraint, Direction, Layout},
+    layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Paragraph},
+    Terminal,
 };
 use std::{fmt::Write, io, time::Duration};
 
 pub struct Tui {
     terminal: Terminal<CrosstermBackend<io::Stdout>>,
+    cached_area: Rect,
+    cached_chunks: Vec<Rect>,
+    cached_channel_chunks: Vec<Rect>,
     cached_constraints: Vec<Constraint>,
     header_buf: String,
     fader_bufs: Vec<String>,
@@ -33,6 +36,9 @@ impl Tui {
         let terminal = Terminal::new(backend)?;
         Ok(Self {
             terminal,
+            cached_area: Rect::default(),
+            cached_chunks: Vec::new(),
+            cached_channel_chunks: Vec::new(),
             cached_constraints: Vec::new(),
             header_buf: String::with_capacity(128),
             fader_bufs: Vec::new(),
@@ -98,19 +104,47 @@ impl Tui {
         }
 
         self.terminal.draw(|f| {
-            let chunks = Layout::default()
-                .direction(Direction::Vertical)
-                .margin(1)
-                .constraints(
-                    [
-                        Constraint::Length(3), // Header
-                        Constraint::Min(10),   // Main View (Channels)
-                        Constraint::Length(5), // Alerts
-                        Constraint::Length(3), // Footer (Shortcuts)
-                    ]
-                    .as_ref(),
-                )
-                .split(f.size());
+            let size = f.size();
+
+            // ⚡ Bolt: Cache layout chunk splits inside the draw closure to avoid
+            // per-frame Layout allocations in the hot render loop. We check if the
+            // terminal size changed or if our constraint array size changed.
+            if self.cached_area != size
+                || self.cached_chunks.is_empty()
+                || self.cached_channel_chunks.len() != self.cached_constraints.len()
+            {
+                self.cached_area = size;
+
+                let chunks = Layout::default()
+                    .direction(Direction::Vertical)
+                    .margin(1)
+                    .constraints(
+                        [
+                            Constraint::Length(3), // Header
+                            Constraint::Min(10),   // Main View (Channels)
+                            Constraint::Length(5), // Alerts
+                            Constraint::Length(3), // Footer (Shortcuts)
+                        ]
+                        .as_ref(),
+                    )
+                    .split(size);
+                self.cached_chunks = chunks.to_vec();
+
+                if self.cached_chunks.len() > 1 {
+                    let channel_chunks = Layout::default()
+                        .direction(Direction::Horizontal)
+                        .constraints(self.cached_constraints.as_slice())
+                        .split(self.cached_chunks[1]);
+                    self.cached_channel_chunks = channel_chunks.to_vec();
+                }
+            }
+
+            let chunks = &self.cached_chunks;
+            let channel_chunks = &self.cached_channel_chunks;
+
+            if chunks.len() < 4 {
+                return;
+            }
 
             // 1. Header
             let header = Paragraph::new(self.header_buf.as_str())
@@ -122,12 +156,7 @@ impl Tui {
                 .block(Block::default().borders(Borders::ALL));
             f.render_widget(header, chunks[0]);
 
-            // 2. Channels (Grid layout ideally, simplify for now to horizontal chunks)
-            let channel_chunks = Layout::default()
-                .direction(Direction::Horizontal)
-                .constraints(self.cached_constraints.as_slice())
-                .split(chunks[1]);
-
+            // 2. Channels
             for (i, ch) in state.channels.iter().enumerate() {
                 if i < channel_chunks.len() {
                     let level_color = if ch.level_db > -10.0 {
