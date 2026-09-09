@@ -407,21 +407,7 @@ async fn handle_restore_command(client: &MixerClient, file_path: &str) -> Result
             Err(e) => return Err(e.into()),
             Ok(len) => {
                 if len == 4096 && !byte_buf.ends_with(b"\n") {
-                    let mut discard = Vec::with_capacity(1024);
-                    loop {
-                        discard.clear();
-                        match reader.by_ref().take(1024).read_until(b'\n', &mut discard) {
-                            Ok(0) => break,
-                            Err(e) => return Err(e.into()),
-                            Ok(_) => {
-                                if discard.ends_with(b"\n") {
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    eprintln!("Input line too long, discarded.");
-                    continue;
+                    return Err(X32Error::Custom("Input line too long (exceeds max bytes)".to_string()));
                 }
             }
         }
