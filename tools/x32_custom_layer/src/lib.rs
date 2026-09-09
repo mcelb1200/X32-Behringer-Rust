@@ -407,7 +407,9 @@ async fn handle_restore_command(client: &MixerClient, file_path: &str) -> Result
             Err(e) => return Err(e.into()),
             Ok(len) => {
                 if len == 4096 && !byte_buf.ends_with(b"\n") {
-                    return Err(X32Error::Custom("Input line too long (exceeds max bytes)".to_string()));
+                    return Err(X32Error::Custom(
+                        "Input line too long (exceeds max bytes)".to_string(),
+                    ));
                 }
             }
         }
