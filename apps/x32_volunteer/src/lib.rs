@@ -10,8 +10,8 @@ use state::AppState;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use ui::{Tui, UIEvent};
-use x32_lib::transport::{udp::UdpTransport, MixerTransport};
 use x32_lib::MixerClient;
+use x32_lib::transport::{MixerTransport, udp::UdpTransport};
 
 #[derive(Parser, Debug, Clone)]
 #[command(author, version, about = "Simplified TUI Dashboard (Volunteer Mode)")]
