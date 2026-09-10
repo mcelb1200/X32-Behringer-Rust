@@ -52,23 +52,7 @@ pub async fn run(args: Args) -> Result<()> {
             Err(e) => return Err(e.into()), // Propagate I/O errors properly
             Ok(len) => {
                 if len == 4096 && !byte_buf.ends_with(b"\n") {
-                    // Line too long, discard remainder
-                    let mut discard = Vec::with_capacity(1024);
-                    loop {
-                        discard.clear();
-                        let mut chunk_handle = stdin_lock.by_ref().take(1024);
-                        match chunk_handle.read_until(b'\n', &mut discard) {
-                            Ok(0) => break,
-                            Err(e) => return Err(e.into()),
-                            Ok(_) => {
-                                if discard.ends_with(b"\n") {
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    eprintln!("Input line too long, discarded.");
-                    continue;
+                    return Err(anyhow::anyhow!("Input line too long (exceeds max bytes)"));
                 }
             }
         }
