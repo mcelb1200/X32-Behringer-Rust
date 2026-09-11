@@ -168,3 +168,6 @@ When initializing terminal UI state that might fail and return a `Result` (e.g.,
 ## 2024-11-20 - [Avoid Vec<Rect> allocations from nested Layout::split() in TUI hot loops]
 **Learning:** In Ratatui TUI applications, executing `Layout::default().split()` dynamically on every frame to define UI chunks generates multiple `Vec<Rect>` heap allocations. These allocations stack up significantly when the layout involves nested chunking (e.g. splitting a parent chunk into multiple smaller chunks).
 **Action:** Always pre-calculate and cache layout chunk slices (as `Vec<Rect>`) inside the application or TUI state when sizes remain static. Only re-evaluate these constraint boundaries and splits when `terminal.size()` genuinely changes, eliminating multiple redundant dynamic vector allocations from the application's core rendering hot path.
+## 2024-10-25 - [Pre-allocate String buffer for dynamic formatting in OSC receive loops]
+**Learning:** When constructing dynamic strings (such as OSC paths for EQ updates) repeatedly inside hot loops (like network receive, event processing, or application update loops), using the `format!` macro triggers dynamic heap allocations on every iteration.
+**Action:** Always pre-allocate a buffer with `String::with_capacity()` outside the loop and use the `write!` macro (requiring `std::fmt::Write`) to populate it efficiently.
