@@ -14,6 +14,7 @@ use ratatui::{
     text::{Line, Span},
     widgets::{Block, Borders, Paragraph},
 };
+use std::fmt::Write;
 use std::io;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
@@ -138,6 +139,13 @@ pub async fn run(args: Args) -> Result<()> {
         area: Rect::default(),
         chunks: Vec::new(),
     };
+
+    // ⚡ Bolt: Pre-allocate String buffers outside the hot OSC receive loop
+    // to prevent dynamic heap re-allocations on every iteration.
+    let mut path_type_buf = String::with_capacity(32);
+    let mut path_freq_buf = String::with_capacity(32);
+    let mut path_gain_buf = String::with_capacity(32);
+    let mut path_q_buf = String::with_capacity(32);
 
     loop {
         // Render
@@ -305,25 +313,29 @@ pub async fn run(args: Args) -> Result<()> {
                         for i in 0..update_count {
                             if let Some(update) = &updates[i] {
                                 // Apply notch via OSC
-                                let path_type = format!("/bus/{:02}/eq/{}/type", update.bus_idx, update.notch_idx);
-                                let path_freq = format!("/bus/{:02}/eq/{}/freq", update.bus_idx, update.notch_idx);
-                                let path_gain = format!("/bus/{:02}/eq/{}/gain", update.bus_idx, update.notch_idx);
-                                let path_q = format!("/bus/{:02}/eq/{}/q", update.bus_idx, update.notch_idx);
+                                path_type_buf.clear();
+                                let _ = write!(path_type_buf, "/bus/{:02}/eq/{}/type", update.bus_idx, update.notch_idx);
+                                path_freq_buf.clear();
+                                let _ = write!(path_freq_buf, "/bus/{:02}/eq/{}/freq", update.bus_idx, update.notch_idx);
+                                path_gain_buf.clear();
+                                let _ = write!(path_gain_buf, "/bus/{:02}/eq/{}/gain", update.bus_idx, update.notch_idx);
+                                path_q_buf.clear();
+                                let _ = write!(path_q_buf, "/bus/{:02}/eq/{}/q", update.bus_idx, update.notch_idx);
 
                                 // type = 3 (PEQ)
-                                let _ = client.send_message(&path_type, vec![OscArg::Int(3)]).await;
+                                let _ = client.send_message(&path_type_buf, vec![OscArg::Int(3)]).await;
 
                                 // Map freq: log scale 20Hz - 20kHz to 0.0 - 1.0 (approx)
                                 let freq_float = ((update.freq.log10() - 20f32.log10()) / (20000f32.log10() - 20f32.log10())).clamp(0.0, 1.0);
-                                let _ = client.send_message(&path_freq, vec![OscArg::Float(freq_float)]).await;
+                                let _ = client.send_message(&path_freq_buf, vec![OscArg::Float(freq_float)]).await;
 
                                 // Map gain: -15 to +15 is 0.0 to 1.0.  (-15 is 0.0, 0 is 0.5, +15 is 1.0)
                                 let gain_float = ((update.gain + 15.0) / 30.0).clamp(0.0, 1.0);
-                                let _ = client.send_message(&path_gain, vec![OscArg::Float(gain_float)]).await;
+                                let _ = client.send_message(&path_gain_buf, vec![OscArg::Float(gain_float)]).await;
 
                                 // Map q: 10.0-0.3 mapped 0.0-1.0
                                 let q_float = 0.8; // Approx narrow Q
-                                let _ = client.send_message(&path_q, vec![OscArg::Float(q_float)]).await;
+                                let _ = client.send_message(&path_q_buf, vec![OscArg::Float(q_float)]).await;
                             }
                         }
                     }
