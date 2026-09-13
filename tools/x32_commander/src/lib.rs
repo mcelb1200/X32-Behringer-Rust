@@ -95,20 +95,7 @@ fn parse_command_file(path: &str) -> io::Result<Vec<Command>> {
             Err(e) => return Err(e),
             Ok(len) => {
                 if len == 4096 && !byte_buf.ends_with(b"\n") {
-                    let mut discard = Vec::with_capacity(1024);
-                    loop {
-                        discard.clear();
-                        match reader.by_ref().take(1024).read_until(b'\n', &mut discard) {
-                            Ok(0) | Err(_) => break,
-                            Ok(_) => {
-                                if discard.ends_with(b"\n") {
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    eprintln!("Input line too long, discarded.");
-                    continue;
+                    return Err(std::io::Error::new(std::io::ErrorKind::InvalidData, "Input line too long"));
                 }
             }
         }
