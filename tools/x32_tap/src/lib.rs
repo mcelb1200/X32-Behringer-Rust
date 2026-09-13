@@ -216,22 +216,11 @@ pub async fn run(args: Args) -> Result<()> {
 
             if bytes_read == 4096 && !input_buffer.ends_with(b"\n") {
                 // Line too long, discard remainder
-                let mut discard = Vec::with_capacity(1024);
-                loop {
-                    discard.clear();
-                    let mut chunk_handle = (&mut stdin).take(1024);
-                    match chunk_handle.read_until(b'\n', &mut discard).await {
-                        Ok(0) => break,
-                        Err(_) => break,
-                        Ok(_) => {
-                            if discard.ends_with(b"\n") {
-                                break;
-                            }
-                        }
-                    }
-                }
-                eprintln!("Input line too long, discarded.");
-                continue;
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::InvalidData,
+                    "Input line too long",
+                )
+                .into());
             }
 
             let input_str = match std::str::from_utf8(&input_buffer) {
