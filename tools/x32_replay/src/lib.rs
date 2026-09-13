@@ -101,7 +101,11 @@ pub async fn run(args: Args) -> Result<()> {
             Ok(0) | Err(_) => break,
             Ok(len) => {
                 if len == 4096 && !byte_buf.ends_with(b"\n") {
-                    return Err(std::io::Error::new(std::io::ErrorKind::InvalidData, "Input line too long").into());
+                    return Err(std::io::Error::new(
+                        std::io::ErrorKind::InvalidData,
+                        "Input line too long",
+                    )
+                    .into());
                 }
             }
         }

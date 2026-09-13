@@ -216,7 +216,11 @@ pub async fn run(args: Args) -> Result<()> {
 
             if bytes_read == 4096 && !input_buffer.ends_with(b"\n") {
                 // Line too long, discard remainder
-                return Err(std::io::Error::new(std::io::ErrorKind::InvalidData, "Input line too long").into());
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::InvalidData,
+                    "Input line too long",
+                )
+                .into());
             }
 
             let input_str = match std::str::from_utf8(&input_buffer) {

@@ -95,7 +95,10 @@ fn parse_command_file(path: &str) -> io::Result<Vec<Command>> {
             Err(e) => return Err(e),
             Ok(len) => {
                 if len == 4096 && !byte_buf.ends_with(b"\n") {
-                    return Err(std::io::Error::new(std::io::ErrorKind::InvalidData, "Input line too long"));
+                    return Err(std::io::Error::new(
+                        std::io::ErrorKind::InvalidData,
+                        "Input line too long",
+                    ));
                 }
             }
         }
