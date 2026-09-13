@@ -117,8 +117,8 @@ fn main() {
     let fx_json_path = root_dir.join("docs/osc_effects.json");
     let fx_json_file = File::open(&fx_json_path).expect("Failed to open osc_effects.json");
     use std::io::Read;
-    let effects: Vec<EffectSpec> =
-        serde_json::from_reader(fx_json_file.take(10 * 1024 * 1024)).expect("Failed to parse FX JSON");
+    let effects: Vec<EffectSpec> = serde_json::from_reader(fx_json_file.take(10 * 1024 * 1024))
+        .expect("Failed to parse FX JSON");
 
     let out_dir = env::var("OUT_DIR").unwrap();
     let fx_dest_path = Path::new(&out_dir).join("fx_parameters_gen.rs");
