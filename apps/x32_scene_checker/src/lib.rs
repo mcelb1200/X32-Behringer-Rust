@@ -262,13 +262,13 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
         "Fetching current mixer state for {} parameters...",
         scene_map.len()
     );
-    let mut current_map: HashMap<String, OscArg> = HashMap::new();
+    let mut current_map: HashMap<&str, OscArg> = HashMap::with_capacity(scene_map.len());
     let mut count = 0;
 
     for path in scene_map.keys() {
         match client.query_value(path).await {
             Ok(arg) => {
-                current_map.insert(path.clone(), arg);
+                current_map.insert(path.as_str(), arg);
             }
             Err(_e) => {
                 // Ignore missing parameters
@@ -284,7 +284,7 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
 
     let mut issues = Vec::new();
     for (path, scene_arg) in &scene_map {
-        if let Some(current_arg) = current_map.get(path) {
+        if let Some(current_arg) = current_map.get(path.as_str()) {
             if let Some(issue) = classify_risk(path, current_arg, scene_arg) {
                 issues.push(issue);
             }
