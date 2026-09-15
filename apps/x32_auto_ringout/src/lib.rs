@@ -375,14 +375,22 @@ fn ui(f: &mut Frame, state: &AppState, cache: &mut LayoutCache) {
     // each new String actually starts with the requested capacity, preventing per-frame allocations.
     let num_buses = state.buses.len();
     if cache.bus_names.len() < num_buses {
-        cache.bus_names.resize_with(num_buses, || String::with_capacity(32));
-        cache.bus_statuses.resize_with(num_buses, || String::with_capacity(32));
-        cache.waiting_notch_strs.resize_with(num_buses, || String::with_capacity(32));
+        cache
+            .bus_names
+            .resize_with(num_buses, || String::with_capacity(32));
+        cache
+            .bus_statuses
+            .resize_with(num_buses, || String::with_capacity(32));
+        cache
+            .waiting_notch_strs
+            .resize_with(num_buses, || String::with_capacity(32));
     }
 
     let total_notches = state.buses.iter().map(|b| b.notches.len()).sum();
     if cache.notch_strs.len() < total_notches {
-        cache.notch_strs.resize_with(total_notches, || String::with_capacity(64));
+        cache
+            .notch_strs
+            .resize_with(total_notches, || String::with_capacity(64));
     }
 
     let mut notch_idx_global = 0;
@@ -428,7 +436,8 @@ fn ui(f: &mut Frame, state: &AppState, cache: &mut LayoutCache) {
                 cache.waiting_notch_strs[bus_idx],
                 "    Notch {}: — waiting —",
                 bus.notches.len() + 1
-            ).unwrap();
+            )
+            .unwrap();
         }
     }
 
@@ -468,12 +477,16 @@ fn ui(f: &mut Frame, state: &AppState, cache: &mut LayoutCache) {
         ]));
 
         for _ in bus.notches.iter() {
-            lines.push(Line::from(vec![Span::raw(cache.notch_strs[notch_idx_global].as_str())]));
+            lines.push(Line::from(vec![Span::raw(
+                cache.notch_strs[notch_idx_global].as_str(),
+            )]));
             notch_idx_global += 1;
         }
 
         if bus.notches.len() < 5 && matches!(bus.status, BusStatus::Active) {
-            lines.push(Line::from(vec![Span::raw(cache.waiting_notch_strs[bus_idx].as_str())]));
+            lines.push(Line::from(vec![Span::raw(
+                cache.waiting_notch_strs[bus_idx].as_str(),
+            )]));
         }
     }
 
