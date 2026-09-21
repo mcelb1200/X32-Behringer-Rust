@@ -45,10 +45,15 @@ impl SharedState {
 
     async fn update_and_check(&self, path: &str, args: &[OscArg]) -> bool {
         let mut cache = self.cache.lock().await;
-        if let Some(existing) = cache.get(path) {
+        if let Some(existing) = cache.get_mut(path) {
             if existing.as_slice() == args {
                 return false; // Loop prevention / split-horizon: unchanged value
             }
+            // ⚡ Bolt: Reuse the existing key string and vector allocation
+            // instead of re-allocating path.to_string() and a new Vec on every update.
+            existing.clear();
+            existing.extend_from_slice(args);
+            return true;
         }
         cache.insert(path.to_string(), args.to_vec());
         true
