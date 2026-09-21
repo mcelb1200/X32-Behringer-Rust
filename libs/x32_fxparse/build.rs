@@ -52,8 +52,9 @@ fn apply_overrides(
     }
     let file = File::open(&path)
         .unwrap_or_else(|e| panic!("Failed to open overrides {}: {}", path.display(), e));
-    let overrides: OverrideSpec = serde_json::from_reader(file)
-        .unwrap_or_else(|e| panic!("Failed to parse overrides {}: {}", path.display(), e));
+    let overrides: OverrideSpec =
+        serde_json::from_reader(std::io::Read::take(file, 10 * 1024 * 1024))
+            .unwrap_or_else(|e| panic!("Failed to parse overrides {}: {}", path.display(), e));
 
     for pattern in overrides.remove {
         specs.remove(&pattern);
@@ -71,8 +72,9 @@ fn resolve_specs_for_model(model: &str, root_dir: &Path) -> Vec<ChannelParamSpec
     let base_path = root_dir.join("docs/osc_channels.json");
     let base_file = File::open(&base_path)
         .unwrap_or_else(|e| panic!("Failed to open base channels spec: {}", e));
-    let base_vec: Vec<ChannelParamSpec> = serde_json::from_reader(base_file)
-        .unwrap_or_else(|e| panic!("Failed to parse base channels: {}", e));
+    let base_vec: Vec<ChannelParamSpec> =
+        serde_json::from_reader(std::io::Read::take(base_file, 10 * 1024 * 1024))
+            .unwrap_or_else(|e| panic!("Failed to parse base channels: {}", e));
 
     let mut specs = BTreeMap::new();
     for spec in base_vec {
@@ -115,7 +117,8 @@ fn main() {
     let fx_json_path = root_dir.join("docs/osc_effects.json");
     let fx_json_file = File::open(&fx_json_path).expect("Failed to open osc_effects.json");
     let effects: Vec<EffectSpec> =
-        serde_json::from_reader(fx_json_file).expect("Failed to parse FX JSON");
+        serde_json::from_reader(std::io::Read::take(fx_json_file, 10 * 1024 * 1024))
+            .expect("Failed to parse FX JSON");
 
     let out_dir = env::var("OUT_DIR").unwrap();
     let fx_dest_path = Path::new(&out_dir).join("fx_parameters_gen.rs");
