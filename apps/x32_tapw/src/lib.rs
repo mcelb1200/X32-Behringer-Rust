@@ -411,30 +411,27 @@ fn ui(f: &mut Frame, app: &AppState, cache: &mut LayoutCache) {
     f.render_widget(slot_p, right_chunks[0]);
 
     // Channel Settings
-    let mut ch_text = vec![];
-    let mut ch_line = vec![Span::raw("Channel: ")];
-    if app.active_input == InputMode::EditingChannel {
-        ch_line.push(Span::styled(
-            &app.ch_input,
-            Style::default().fg(Color::Yellow),
-        ));
+    let ch_style = if app.active_input == InputMode::EditingChannel {
+        Style::default().fg(Color::Yellow)
     } else {
-        ch_line.push(Span::raw(&app.ch_input));
-    }
-    ch_text.push(Line::from(ch_line));
+        Style::default()
+    };
+    let ch_line = Line::from(vec![
+        Span::raw("Channel: "),
+        Span::styled(app.ch_input.as_str(), ch_style),
+    ]);
 
-    let mut sens_line = vec![Span::raw("Sens: ")];
-    if app.active_input == InputMode::EditingSensitivity {
-        sens_line.push(Span::styled(
-            &app.sens_input,
-            Style::default().fg(Color::Yellow),
-        ));
+    let sens_style = if app.active_input == InputMode::EditingSensitivity {
+        Style::default().fg(Color::Yellow)
     } else {
-        sens_line.push(Span::raw(&app.sens_input));
-    }
-    ch_text.push(Line::from(sens_line));
+        Style::default()
+    };
+    let sens_line = Line::from(vec![
+        Span::raw("Sens: "),
+        Span::styled(app.sens_input.as_str(), sens_style),
+    ]);
 
-    let ch_p = Paragraph::new(ch_text).block(
+    let ch_p = Paragraph::new(vec![ch_line, sens_line]).block(
         Block::default()
             .borders(Borders::ALL)
             .title("Auto-Tap Settings"),
@@ -442,13 +439,9 @@ fn ui(f: &mut Frame, app: &AppState, cache: &mut LayoutCache) {
     f.render_widget(ch_p, right_chunks[1]);
 
     // Log window
-    let logs: Vec<Line> = app
-        .logs
-        .iter()
-        // ⚡ Bolt: Pass reference via .as_ref() instead of .clone() to prevent
-        // allocating a new String on every single frame render for owned Cow variants.
-        .map(|msg| Line::from(Span::raw(msg.as_ref())))
-        .collect();
-    let log_p = Paragraph::new(logs).block(Block::default().borders(Borders::ALL).title("Logs"));
+    // ⚡ Bolt: Use a pre-formatted string stored in AppState instead of
+    // mapping and collecting a Vec<Line> on every single frame.
+    let log_p = Paragraph::new(app.display_logs_text.as_str())
+        .block(Block::default().borders(Borders::ALL).title("Logs"));
     f.render_widget(log_p, chunks[2]);
 }
