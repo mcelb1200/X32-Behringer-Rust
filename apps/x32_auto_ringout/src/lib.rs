@@ -63,6 +63,7 @@ pub struct BusState {
     pub original_level_db: f32,
     pub target_level_db: f32,
     pub notches: Vec<Notch>,
+    pub fader_path: String,
 }
 
 pub struct AppState {
@@ -86,6 +87,7 @@ impl AppState {
                         original_level_db: -90.0,
                         target_level_db: args.target_dbfs,
                         notches: Vec::new(),
+                        fader_path: format!("/bus/{:02}/mix/fader", ch),
                     });
                 }
             }
@@ -136,6 +138,10 @@ pub async fn run(args: Args) -> Result<()> {
 
     // Subscribe to OSC
     let mut rx = client.subscribe();
+
+    // ⚡ Bolt: Pre-allocate a path buffer for dynamically constructed OSC paths
+    // instead of format! inside the main loop to avoid heap allocations.
+    let mut osc_path_buf = String::with_capacity(32);
 
     let mut ticker = interval(Duration::from_millis(500)); // Render & ramp ticker
     let mut layout_cache = LayoutCache {
@@ -218,14 +224,14 @@ pub async fn run(args: Args) -> Result<()> {
                                 // Send fader update
                                 let float_val = ((bus.current_level_db + 90.0) / 100.0).clamp(0.0, 1.0);
 
-                                let path = format!("/bus/{:02}/mix/fader", bus.bus_idx);
-                                fader_updates.push((path, float_val));
+                                fader_updates.push((bus.fader_path.clone(), float_val));
                             }
                         }
                     }
                 }
 
                 for (path, float_val) in fader_updates {
+                    // ⚡ Bolt: Using the pre-calculated string from fader_path to prevent per-tick string allocations.
                     let _ = client.send_message(&path, vec![OscArg::Float(float_val)]).await;
                 }
             }
@@ -312,26 +318,32 @@ pub async fn run(args: Args) -> Result<()> {
                         #[allow(clippy::needless_range_loop)]
                         for i in 0..update_count {
                             if let Some(update) = &updates[i] {
+                                use std::fmt::Write;
+
                                 // Apply notch via OSC
-                                let path_type = format!("/bus/{:02}/eq/{}/type", update.bus_idx, update.notch_idx);
-                                let path_freq = format!("/bus/{:02}/eq/{}/freq", update.bus_idx, update.notch_idx);
-                                let path_gain = format!("/bus/{:02}/eq/{}/gain", update.bus_idx, update.notch_idx);
-                                let path_q = format!("/bus/{:02}/eq/{}/q", update.bus_idx, update.notch_idx);
 
                                 // type = 3 (PEQ)
-                                let _ = client.send_message(&path_type, vec![OscArg::Int(3)]).await;
+                                osc_path_buf.clear();
+                                let _ = write!(&mut osc_path_buf, "/bus/{:02}/eq/{}/type", update.bus_idx, update.notch_idx);
+                                let _ = client.send_message(&osc_path_buf, vec![OscArg::Int(3)]).await;
 
                                 // Map freq: log scale 20Hz - 20kHz to 0.0 - 1.0 (approx)
+                                osc_path_buf.clear();
+                                let _ = write!(&mut osc_path_buf, "/bus/{:02}/eq/{}/freq", update.bus_idx, update.notch_idx);
                                 let freq_float = ((update.freq.log10() - 20f32.log10()) / (20000f32.log10() - 20f32.log10())).clamp(0.0, 1.0);
-                                let _ = client.send_message(&path_freq, vec![OscArg::Float(freq_float)]).await;
+                                let _ = client.send_message(&osc_path_buf, vec![OscArg::Float(freq_float)]).await;
 
                                 // Map gain: -15 to +15 is 0.0 to 1.0.  (-15 is 0.0, 0 is 0.5, +15 is 1.0)
+                                osc_path_buf.clear();
+                                let _ = write!(&mut osc_path_buf, "/bus/{:02}/eq/{}/gain", update.bus_idx, update.notch_idx);
                                 let gain_float = ((update.gain + 15.0) / 30.0).clamp(0.0, 1.0);
-                                let _ = client.send_message(&path_gain, vec![OscArg::Float(gain_float)]).await;
+                                let _ = client.send_message(&osc_path_buf, vec![OscArg::Float(gain_float)]).await;
 
                                 // Map q: 10.0-0.3 mapped 0.0-1.0
+                                osc_path_buf.clear();
+                                let _ = write!(&mut osc_path_buf, "/bus/{:02}/eq/{}/q", update.bus_idx, update.notch_idx);
                                 let q_float = 0.8; // Approx narrow Q
-                                let _ = client.send_message(&path_q, vec![OscArg::Float(q_float)]).await;
+                                let _ = client.send_message(&osc_path_buf, vec![OscArg::Float(q_float)]).await;
                             }
                         }
                     }
