@@ -178,3 +178,6 @@ When initializing terminal UI state that might fail and return a `Result` (e.g.,
 ## 2024-05-18 - Optimize HashMap Cache Updates in Hot Loops
 **Learning:** When checking and updating a HashMap containing dynamic types like `HashMap<String, Vec<T>>`, executing `get` followed by `insert` causes unnecessary string allocations for the key and drops the old vector's capacity.
 **Action:** Use `.get_mut` when possible to verify existing values. If they need to be updated, mutate them in-place (e.g. using `clear()` and `extend_from_slice()`) to reuse both the string key and vector allocation.
+## 2024-05-30 - [Avoid per-frame format! in network hot loops]
+**Learning:** Constructing dynamic strings (such as OSC paths) using `format!` inside hot network receive/update loops forces continuous heap allocations, causing fragmentation and performance degradation, particularly in real-time processing tools like Auto-Ringout.
+**Action:** When sending multi-part dynamic network messages (like OSC) that require string formatting, pre-allocate a `String::with_capacity()` outside the loop and reuse it using `.clear()` and `write!` (which implements `std::fmt::Write`). If possible, pre-calculate known paths in a state structure.
