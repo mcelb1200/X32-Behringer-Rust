@@ -8,9 +8,37 @@ use std::str::FromStr;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MixerModel {
     X32,
+    Wing,
     XR18,
     XR16,
     XR12,
+}
+
+impl FromStr for MixerModel {
+    type Err = String;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        match s.to_ascii_uppercase().as_str() {
+            "X32" => Ok(MixerModel::X32),
+            "WING" => Ok(MixerModel::Wing),
+            "XR18" => Ok(MixerModel::XR18),
+            "XR16" => Ok(MixerModel::XR16),
+            "XR12" => Ok(MixerModel::XR12),
+            _ => Err(format!("Unknown mixer model: {}", s)),
+        }
+    }
+}
+
+impl std::fmt::Display for MixerModel {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            MixerModel::X32 => write!(f, "X32"),
+            MixerModel::Wing => write!(f, "Wing"),
+            MixerModel::XR18 => write!(f, "XR18"),
+            MixerModel::XR16 => write!(f, "XR16"),
+            MixerModel::XR12 => write!(f, "XR12"),
+        }
+    }
 }
 
 struct ModelLimits {
@@ -191,6 +219,21 @@ pub fn parse_parameter(model: MixerModel, path: &str, arg_str: &str) -> Option<O
             mtx_eq_bands: 6,
             main_eq_bands: 6,
         },
+        MixerModel::Wing => ModelLimits {
+            channels: 40,
+            buses: 28,
+            auxins: 16,
+            fxrtns: 16,
+            matrices: 8,
+            dcas: 16,
+            fx_slots: 16,
+            channel_eq_bands: 8,
+            auxin_eq_bands: 4,
+            fxrtn_eq_bands: 4,
+            bus_eq_bands: 8,
+            mtx_eq_bands: 8,
+            main_eq_bands: 8,
+        },
         MixerModel::XR18 => ModelLimits {
             channels: 16,
             buses: 6,
@@ -254,6 +297,9 @@ pub fn parse_parameter(model: MixerModel, path: &str, arg_str: &str) -> Option<O
     match model {
         MixerModel::X32 => {
             include!(concat!(env!("OUT_DIR"), "/channel_parameters_x32_gen.rs"));
+        }
+        MixerModel::Wing => {
+            include!(concat!(env!("OUT_DIR"), "/channel_parameters_wing_gen.rs"));
         }
         MixerModel::XR18 => {
             include!(concat!(env!("OUT_DIR"), "/channel_parameters_xr18_gen.rs"));
@@ -459,5 +505,41 @@ mod tests {
     fn test_parse_parameter_invalid_links() {
         assert!(parse_parameter(MixerModel::X32, "/config/chlink/31-33", "ON").is_none());
         assert!(parse_parameter(MixerModel::X32, "/config/chlink/32-33", "ON").is_none());
+    }
+
+    #[test]
+    fn test_mixer_model_from_str_and_display() {
+        assert_eq!("X32".parse::<MixerModel>().unwrap(), MixerModel::X32);
+        assert_eq!("wing".parse::<MixerModel>().unwrap(), MixerModel::Wing);
+        assert_eq!("WING".parse::<MixerModel>().unwrap(), MixerModel::Wing);
+        assert_eq!("xr18".parse::<MixerModel>().unwrap(), MixerModel::XR18);
+        assert_eq!("XR16".parse::<MixerModel>().unwrap(), MixerModel::XR16);
+        assert_eq!("xr12".parse::<MixerModel>().unwrap(), MixerModel::XR12);
+        assert!("invalid".parse::<MixerModel>().is_err());
+
+        assert_eq!(MixerModel::X32.to_string(), "X32");
+        assert_eq!(MixerModel::Wing.to_string(), "Wing");
+        assert_eq!(MixerModel::XR18.to_string(), "XR18");
+        assert_eq!(MixerModel::XR16.to_string(), "XR16");
+        assert_eq!(MixerModel::XR12.to_string(), "XR12");
+    }
+
+    #[test]
+    fn test_parse_parameter_wing_limits() {
+        // Channel limits: Wing supports up to 40 channels
+        assert!(parse_parameter(MixerModel::Wing, "/ch/40/mix/fader", "0.0").is_some());
+        assert!(parse_parameter(MixerModel::Wing, "/ch/41/mix/fader", "0.0").is_none());
+
+        // Bus limits: Wing supports up to 28 buses
+        assert!(parse_parameter(MixerModel::Wing, "/bus/28/mix/fader", "0.0").is_some());
+        assert!(parse_parameter(MixerModel::Wing, "/bus/29/mix/fader", "0.0").is_none());
+
+        // Auxin limits: Wing supports up to 16 auxins
+        assert!(parse_parameter(MixerModel::Wing, "/auxin/16/mix/fader", "0.0").is_some());
+        assert!(parse_parameter(MixerModel::Wing, "/auxin/17/mix/fader", "0.0").is_none());
+
+        // EQ band limits: Wing channel supports up to 8 EQ bands
+        assert!(parse_parameter(MixerModel::Wing, "/ch/01/eq/8/f", "1000.0").is_some());
+        assert!(parse_parameter(MixerModel::Wing, "/ch/01/eq/9/f", "1000.0").is_none());
     }
 }
