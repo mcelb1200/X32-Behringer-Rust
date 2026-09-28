@@ -85,6 +85,12 @@ fn resolve_specs_for_model(model: &str, root_dir: &Path) -> Vec<ChannelParamSpec
         return specs.into_values().collect();
     }
 
+    // Wing inherits from X32
+    if model == "Wing" || model == "WING" {
+        let wing_specs = apply_overrides("wing", specs, root_dir);
+        return wing_specs.into_values().collect();
+    }
+
     // XR18 inherits from X32
     let xr18_specs = apply_overrides("XR18", specs, root_dir);
     if model == "XR18" {
@@ -106,6 +112,7 @@ fn main() {
     println!("cargo:rerun-if-changed=../../docs/osc_effects.json");
     println!("cargo:rerun-if-changed=../../docs/osc_channels.json");
     println!("cargo:rerun-if-changed=../../docs/mixer_models.json");
+    println!("cargo:rerun-if-changed=../../docs/wing_overrides.json");
     println!("cargo:rerun-if-changed=../../docs/xr18_overrides.json");
     println!("cargo:rerun-if-changed=../../docs/xr16_overrides.json");
     println!("cargo:rerun-if-changed=../../docs/xr12_overrides.json");
@@ -184,7 +191,7 @@ fn main() {
     writeln!(fx_out, "}}").unwrap();
 
     // 2. Generate model-specific channel/bus parameter parser
-    let models = vec!["X32", "XR18", "XR16", "XR12"];
+    let models = vec!["X32", "Wing", "XR18", "XR16", "XR12"];
     for model in models {
         let channels_specs = resolve_specs_for_model(model, &root_dir);
         let filename = format!("channel_parameters_{}_gen.rs", model.to_lowercase());

@@ -271,7 +271,7 @@ pub async fn get_parameter_async(client: &MixerClient, address: &str) -> Result<
     }
 }
 
-/// Queries a value from the mixer asynchronously with a bounded timeout (500ms).
+/// Queries a value from the mixer asynchronously with a bounded timeout (2000ms).
 ///
 /// # Arguments
 ///
@@ -282,7 +282,7 @@ pub async fn get_parameter_async(client: &MixerClient, address: &str) -> Result<
 ///
 /// A `Result` containing the first argument of the response as an `OscArg`.
 pub async fn query_value_async(client: &MixerClient, address: &str) -> Result<OscArg> {
-    match tokio::time::timeout(Duration::from_millis(500), client.query_value(address)).await {
+    match tokio::time::timeout(Duration::from_millis(2000), client.query_value(address)).await {
         Ok(res) => res,
         Err(_) => Err(OscError::ParseError("Query timeout".to_string()).into()),
     }
