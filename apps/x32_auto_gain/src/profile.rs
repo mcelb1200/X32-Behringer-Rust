@@ -187,16 +187,34 @@ mod tests {
         assert_eq!(match_instrument_profile("Kick", 0).name, "Kick Drum");
         assert_eq!(match_instrument_profile("Snare Top", 0).target_dbfs, -14.0);
         assert_eq!(match_instrument_profile("Pastor Bob", 0).target_dbfs, -20.0);
-        assert_eq!(match_instrument_profile("Acoustic Gtr", 0).target_dbfs, -18.0);
-        assert_eq!(match_instrument_profile("Wireless Lav", 0).target_dbfs, -22.0);
-        assert_eq!(match_instrument_profile("Tracks L", 0).name, "DJ / Playback");
+        assert_eq!(
+            match_instrument_profile("Acoustic Gtr", 0).target_dbfs,
+            -18.0
+        );
+        assert_eq!(
+            match_instrument_profile("Wireless Lav", 0).target_dbfs,
+            -22.0
+        );
+        assert_eq!(
+            match_instrument_profile("Tracks L", 0).name,
+            "DJ / Playback"
+        );
     }
 
     #[test]
     fn test_match_instrument_profile_by_icon() {
         assert_eq!(match_instrument_profile("Ch 01", 5).name, "Drums (Icon)");
-        assert_eq!(match_instrument_profile("Ch 02", 15).name, "Guitars / Bass (Icon)");
-        assert_eq!(match_instrument_profile("Ch 03", 25).name, "Vocals / Microphones (Icon)");
-        assert_eq!(match_instrument_profile("Ch 04", 0).name, "Default / Unknown");
+        assert_eq!(
+            match_instrument_profile("Ch 02", 15).name,
+            "Guitars / Bass (Icon)"
+        );
+        assert_eq!(
+            match_instrument_profile("Ch 03", 25).name,
+            "Vocals / Microphones (Icon)"
+        );
+        assert_eq!(
+            match_instrument_profile("Ch 04", 0).name,
+            "Default / Unknown"
+        );
     }
 }

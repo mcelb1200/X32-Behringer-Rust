@@ -17,8 +17,14 @@ async fn run_mock_server() -> Result<(String, tokio::task::JoinHandle<()>)> {
         let mut s = state.lock().unwrap();
         s.insert("/headamp/01/gain".to_string(), OscArg::Float(0.5));
         s.insert("/headamp/02/gain".to_string(), OscArg::Float(0.5));
-        s.insert("/ch/01/config/name".to_string(), OscArg::String("Kick".to_string()));
-        s.insert("/ch/02/config/name".to_string(), OscArg::String("Snare".to_string()));
+        s.insert(
+            "/ch/01/config/name".to_string(),
+            OscArg::String("Kick".to_string()),
+        );
+        s.insert(
+            "/ch/02/config/name".to_string(),
+            OscArg::String("Snare".to_string()),
+        );
         s.insert("/ch/01/config/icon".to_string(), OscArg::Int(1));
         s.insert("/ch/02/config/icon".to_string(), OscArg::Int(2));
         s.insert("/config/chlink/1-2".to_string(), OscArg::Int(1));
@@ -32,19 +38,26 @@ async fn run_mock_server() -> Result<(String, tokio::task::JoinHandle<()>)> {
             if let Ok((len, src)) = socket.recv_from(&mut buf).await {
                 if let Ok(msg) = osc_lib::OscMessage::from_bytes(&buf[..len]) {
                     // Update state if set message
-                    if (msg.path.starts_with("/headamp/") || msg.path.starts_with("/ch/")) && !msg.args.is_empty() {
+                    if (msg.path.starts_with("/headamp/") || msg.path.starts_with("/ch/"))
+                        && !msg.args.is_empty()
+                    {
                         let mut s = state_clone.lock().unwrap();
                         s.insert(msg.path.clone(), msg.args[0].clone());
                     }
 
                     // Respond to query/get requests or xremote
-                    if msg.args.is_empty() && !msg.path.starts_with("/meters") && msg.path != "/xremote" {
+                    if msg.args.is_empty()
+                        && !msg.path.starts_with("/meters")
+                        && msg.path != "/xremote"
+                    {
                         let val_opt = {
                             let s = state_clone.lock().unwrap();
                             s.get(&msg.path).cloned()
                         };
                         if let Some(val) = val_opt {
-                            if let Ok(resp_bytes) = osc_lib::OscMessage::serialize_to_bytes(&msg.path, vec![&val]) {
+                            if let Ok(resp_bytes) =
+                                osc_lib::OscMessage::serialize_to_bytes(&msg.path, vec![&val])
+                            {
                                 let _ = socket.send_to(&resp_bytes, src).await;
                             }
                         }
@@ -55,7 +68,9 @@ async fn run_mock_server() -> Result<(String, tokio::task::JoinHandle<()>)> {
                         };
                         let mut resp = Vec::new();
                         for (path, val) in items {
-                            if let Ok(b) = osc_lib::OscMessage::serialize_to_bytes(&path, vec![&val]) {
+                            if let Ok(b) =
+                                osc_lib::OscMessage::serialize_to_bytes(&path, vec![&val])
+                            {
                                 resp.extend(b);
                             }
                         }
