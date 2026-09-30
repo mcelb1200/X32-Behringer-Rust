@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use std::io::{BufRead, Read, Write};
 use std::time::Duration;
 use x32_lib::MixerClient;
+use x32_lib::MixerModel;
 use x32_lib::scene_parse::SceneParser;
 
 #[derive(Parser, Debug)]
@@ -14,6 +15,14 @@ pub struct Args {
 
     #[arg(short, long)]
     pub scene: String,
+
+    #[arg(
+        short,
+        long,
+        default_value = "X32",
+        help = "Mixer model: X32, Wing, XR18, XR16, XR12"
+    )]
+    pub model: MixerModel,
 
     #[arg(long)]
     pub auto_load: bool,
@@ -65,6 +74,15 @@ fn format_arg(arg: &OscArg) -> String {
 }
 
 pub fn classify_risk(path: &str, current: &OscArg, scene: &OscArg) -> Option<RiskIssue> {
+    classify_risk_with_model(MixerModel::X32, path, current, scene)
+}
+
+pub fn classify_risk_with_model(
+    _model: MixerModel,
+    path: &str,
+    current: &OscArg,
+    scene: &OscArg,
+) -> Option<RiskIssue> {
     if current == scene {
         match (current, scene) {
             (OscArg::Float(f1), OscArg::Float(f2)) => {
@@ -91,6 +109,7 @@ pub fn classify_risk(path: &str, current: &OscArg, scene: &OscArg) -> Option<Ris
             format_arg(scene)
         );
     } else if path.starts_with("/main/st/mix/on")
+        || path.starts_with("/main/m/mix/on")
         || (path.contains("/mix/on") && (path.starts_with("/bus/") || path.starts_with("/mtx/")))
     {
         level = RiskLevel::Critical;
@@ -99,7 +118,7 @@ pub fn classify_risk(path: &str, current: &OscArg, scene: &OscArg) -> Option<Ris
             format_arg(current),
             format_arg(scene)
         );
-    } else if path.ends_with("/preamp/trim") {
+    } else if path.ends_with("/preamp/trim") || path.contains("/headamp/") {
         if let (OscArg::Float(c), OscArg::Float(s)) = (current, scene) {
             let diff = (c - s).abs();
             if diff > 0.166 {
@@ -117,7 +136,7 @@ pub fn classify_risk(path: &str, current: &OscArg, scene: &OscArg) -> Option<Ris
                 format_arg(current),
                 format_arg(scene)
             );
-        } else if path.ends_with("/g") {
+        } else if path.ends_with("/g") || path.ends_with("/gain") {
             if let (OscArg::Float(c), OscArg::Float(s)) = (current, scene) {
                 let diff = (c - s).abs();
                 if diff > 0.166 {
@@ -240,7 +259,7 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
         anyhow::bail!("Scene file is too large (exceeds 256KB)");
     }
 
-    let mut parser = SceneParser::new();
+    let mut parser = SceneParser::with_model(args.model);
     let mut scene_map: HashMap<String, OscArg> = HashMap::new();
     for line in scn_content.lines() {
         for msg in parser.parse_scene_line(line) {
@@ -285,7 +304,8 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
     let mut issues = Vec::new();
     for (path, scene_arg) in &scene_map {
         if let Some(current_arg) = current_map.get(path.as_str()) {
-            if let Some(issue) = classify_risk(path, current_arg, scene_arg) {
+            if let Some(issue) = classify_risk_with_model(args.model, path, current_arg, scene_arg)
+            {
                 issues.push(issue);
             }
         } else {

@@ -8,13 +8,21 @@ use osc_lib::OscMessage;
 use std::io::{self, BufRead, Read};
 use std::str::FromStr;
 use std::time::Duration;
-use x32_lib::{MixerClient, error::Result};
+use x32_lib::{MixerClient, MixerModel, error::Result};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 pub struct Args {
     #[arg(short, long, default_value = "192.168.0.64")]
     pub ip: String,
+
+    #[arg(
+        short,
+        long,
+        default_value = "X32",
+        help = "Mixer model: X32, Wing, XR18, XR16, XR12"
+    )]
+    pub model: MixerModel,
 
     #[arg(long, default_value = "auto")]
     pub transport: String,
@@ -42,7 +50,7 @@ pub async fn run(args: Args) -> Result<()> {
 
     let stdin = io::stdin();
     let mut stdin_lock = stdin.lock();
-    let mut parser = x32_lib::scene_parse::SceneParser::new();
+    let mut parser = x32_lib::scene_parse::SceneParser::with_model(args.model);
     loop {
         let mut byte_buf = Vec::new();
         let mut handle = stdin_lock.by_ref().take(4096);
