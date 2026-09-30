@@ -6,8 +6,8 @@ use std::time::Duration;
 use tempfile::NamedTempFile;
 use tokio::net::UdpSocket;
 use x32_core::Mixer;
-use x32_lib::{MixerClient, MixerModel};
 use x32_lib::transport::udp::UdpTransport;
+use x32_lib::{MixerClient, MixerModel};
 
 use x32_scene_checker::{Args, RiskLevel, classify_risk, classify_risk_with_model, run};
 
@@ -45,13 +45,9 @@ fn test_classify_risk_models() {
     ];
 
     for model in models {
-        let issue = classify_risk_with_model(
-            model,
-            "/main/st/mix/on",
-            &OscArg::Int(1),
-            &OscArg::Int(0),
-        )
-        .unwrap();
+        let issue =
+            classify_risk_with_model(model, "/main/st/mix/on", &OscArg::Int(1), &OscArg::Int(0))
+                .unwrap();
         assert_eq!(issue.level, RiskLevel::Critical);
 
         let issue_gain = classify_risk_with_model(
