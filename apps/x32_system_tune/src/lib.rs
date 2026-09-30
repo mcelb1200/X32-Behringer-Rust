@@ -84,7 +84,7 @@ pub async fn run(args: Args) -> Result<()> {
         if last_ui_update.elapsed() > Duration::from_millis(50) {
             let state = AppState {
                 current_phase: current_phase_str,
-                current_step: current_step.clone(),
+                current_step: current_step.as_str(),
                 level: current_level,
                 status_message,
             };

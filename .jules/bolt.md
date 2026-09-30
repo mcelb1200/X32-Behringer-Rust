@@ -181,3 +181,7 @@ When initializing terminal UI state that might fail and return a `Result` (e.g.,
 ## 2024-05-30 - [Avoid per-frame format! in network hot loops]
 **Learning:** Constructing dynamic strings (such as OSC paths) using `format!` inside hot network receive/update loops forces continuous heap allocations, causing fragmentation and performance degradation, particularly in real-time processing tools like Auto-Ringout.
 **Action:** When sending multi-part dynamic network messages (like OSC) that require string formatting, pre-allocate a `String::with_capacity()` outside the loop and reuse it using `.clear()` and `write!` (which implements `std::fmt::Write`). If possible, pre-calculate known paths in a state structure.
+
+## 2024-12-10 - [Avoid string clone in TUI render loops]
+**Learning:** In Ratatui TUI applications, passing a `.clone()` of a string to a TUI render loop elements, such as `Span::styled(&state.current_step, ...)` will unnecessarily cause per-frame heap allocations when creating UI strings and severely affects memory footprint.
+**Action:** Always prefer borrowing references, in particular storing them as `&str` reference to strings if possible, and referencing them directly without `.clone()`. For instance pass `state.current_step.as_str()` or simply `state.current_step` if the struct uses `&'a str` for UI rendering loops to avoid additional allocations.

@@ -16,7 +16,7 @@ use std::{io, time::Duration};
 
 pub struct AppState<'a> {
     pub current_phase: &'a str,
-    pub current_step: String,
+    pub current_step: &'a str,
     pub level: f32,
     pub status_message: &'a str,
 }
@@ -104,7 +104,7 @@ impl Tui {
                     Line::from(""),
                     Line::from(vec![
                         Span::raw("Step: "),
-                        Span::styled(&state.current_step, Style::default().fg(Color::White)),
+                        Span::styled(state.current_step, Style::default().fg(Color::White)),
                     ]),
                 ];
                 let phase_para =
