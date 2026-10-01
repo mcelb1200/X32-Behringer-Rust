@@ -255,7 +255,10 @@ fn check_model_bounds(model: MixerModel, path: &str) -> Option<String> {
             }
         }
         "main" if parts.len() >= 2 && parts[1] == "m" => {
-            if matches!(model, MixerModel::XR18 | MixerModel::XR16 | MixerModel::XR12) {
+            if matches!(
+                model,
+                MixerModel::XR18 | MixerModel::XR16 | MixerModel::XR12
+            ) {
                 return Some(format!("Mono main bus is unsupported on model {}", model));
             }
         }
@@ -685,10 +688,13 @@ mod tests {
                 != RiskLevel::Critical
         );
         let issue =
-            classify_risk_with_model(MixerModel::XR18, "/ch/17/mix/fader", &dummy, &scene)
-                .unwrap();
+            classify_risk_with_model(MixerModel::XR18, "/ch/17/mix/fader", &dummy, &scene).unwrap();
         assert_eq!(issue.level, RiskLevel::Critical);
-        assert!(issue.description.contains("Channel index 17 is out of bounds"));
+        assert!(
+            issue
+                .description
+                .contains("Channel index 17 is out of bounds")
+        );
 
         // XR12: 12 channels
         assert!(
@@ -698,8 +704,7 @@ mod tests {
                 != RiskLevel::Critical
         );
         let issue =
-            classify_risk_with_model(MixerModel::XR12, "/ch/13/mix/fader", &dummy, &scene)
-                .unwrap();
+            classify_risk_with_model(MixerModel::XR12, "/ch/13/mix/fader", &dummy, &scene).unwrap();
         assert_eq!(issue.level, RiskLevel::Critical);
 
         // X32: 32 channels
@@ -710,8 +715,7 @@ mod tests {
                 != RiskLevel::Critical
         );
         let issue =
-            classify_risk_with_model(MixerModel::X32, "/ch/33/mix/fader", &dummy, &scene)
-                .unwrap();
+            classify_risk_with_model(MixerModel::X32, "/ch/33/mix/fader", &dummy, &scene).unwrap();
         assert_eq!(issue.level, RiskLevel::Critical);
 
         // Wing: 40 channels
@@ -722,8 +726,7 @@ mod tests {
                 != RiskLevel::Critical
         );
         let issue =
-            classify_risk_with_model(MixerModel::Wing, "/ch/41/mix/fader", &dummy, &scene)
-                .unwrap();
+            classify_risk_with_model(MixerModel::Wing, "/ch/41/mix/fader", &dummy, &scene).unwrap();
         assert_eq!(issue.level, RiskLevel::Critical);
     }
 
@@ -739,9 +742,8 @@ mod tests {
                 .level
                 != RiskLevel::Critical
         );
-        let issue =
-            classify_risk_with_model(MixerModel::XR12, "/bus/03/mix/fader", &dummy, &scene)
-                .unwrap();
+        let issue = classify_risk_with_model(MixerModel::XR12, "/bus/03/mix/fader", &dummy, &scene)
+            .unwrap();
         assert_eq!(issue.level, RiskLevel::Critical);
 
         // XR16: 4 buses
@@ -751,9 +753,8 @@ mod tests {
                 .level
                 != RiskLevel::Critical
         );
-        let issue =
-            classify_risk_with_model(MixerModel::XR16, "/bus/05/mix/fader", &dummy, &scene)
-                .unwrap();
+        let issue = classify_risk_with_model(MixerModel::XR16, "/bus/05/mix/fader", &dummy, &scene)
+            .unwrap();
         assert_eq!(issue.level, RiskLevel::Critical);
 
         // XR18: 6 buses
@@ -763,9 +764,8 @@ mod tests {
                 .level
                 != RiskLevel::Critical
         );
-        let issue =
-            classify_risk_with_model(MixerModel::XR18, "/bus/07/mix/fader", &dummy, &scene)
-                .unwrap();
+        let issue = classify_risk_with_model(MixerModel::XR18, "/bus/07/mix/fader", &dummy, &scene)
+            .unwrap();
         assert_eq!(issue.level, RiskLevel::Critical);
 
         // X32: 16 buses
@@ -776,8 +776,7 @@ mod tests {
                 != RiskLevel::Critical
         );
         let issue =
-            classify_risk_with_model(MixerModel::X32, "/bus/17/mix/fader", &dummy, &scene)
-                .unwrap();
+            classify_risk_with_model(MixerModel::X32, "/bus/17/mix/fader", &dummy, &scene).unwrap();
         assert_eq!(issue.level, RiskLevel::Critical);
     }
 
@@ -787,28 +786,24 @@ mod tests {
         let scene = OscArg::Float(0.5);
 
         // Matrices unsupported on XR18/16/12
-        let issue =
-            classify_risk_with_model(MixerModel::XR18, "/mtx/01/mix/fader", &dummy, &scene)
-                .unwrap();
+        let issue = classify_risk_with_model(MixerModel::XR18, "/mtx/01/mix/fader", &dummy, &scene)
+            .unwrap();
         assert_eq!(issue.level, RiskLevel::Critical);
         assert!(issue.description.contains("Matrix outputs are unsupported"));
 
         // Mono main unsupported on XR models
-        let issue =
-            classify_risk_with_model(MixerModel::XR18, "/main/m/mix/fader", &dummy, &scene)
-                .unwrap();
+        let issue = classify_risk_with_model(MixerModel::XR18, "/main/m/mix/fader", &dummy, &scene)
+            .unwrap();
         assert_eq!(issue.level, RiskLevel::Critical);
         assert!(issue.description.contains("Mono main bus is unsupported"));
 
         // Matrix valid on X32
         let issue =
-            classify_risk_with_model(MixerModel::X32, "/mtx/06/mix/fader", &dummy, &scene)
-                .unwrap();
+            classify_risk_with_model(MixerModel::X32, "/mtx/06/mix/fader", &dummy, &scene).unwrap();
         assert_eq!(issue.level, RiskLevel::Moderate);
 
         let issue =
-            classify_risk_with_model(MixerModel::X32, "/mtx/07/mix/fader", &dummy, &scene)
-                .unwrap();
+            classify_risk_with_model(MixerModel::X32, "/mtx/07/mix/fader", &dummy, &scene).unwrap();
         assert_eq!(issue.level, RiskLevel::Critical);
     }
 
@@ -819,25 +814,21 @@ mod tests {
 
         // Aux in EQ bands: X32 has 2, XR18 has 4
         let issue =
-            classify_risk_with_model(MixerModel::X32, "/auxin/01/eq/3/f", &dummy, &scene)
-                .unwrap();
+            classify_risk_with_model(MixerModel::X32, "/auxin/01/eq/3/f", &dummy, &scene).unwrap();
         assert_eq!(issue.level, RiskLevel::Critical);
         assert!(issue.description.contains("EQ band 3 exceeds max bands"));
 
         let issue =
-            classify_risk_with_model(MixerModel::XR18, "/auxin/01/eq/3/f", &dummy, &scene)
-                .unwrap();
+            classify_risk_with_model(MixerModel::XR18, "/auxin/01/eq/3/f", &dummy, &scene).unwrap();
         assert_eq!(issue.level, RiskLevel::Low);
 
         // Wing channel has 8 EQ bands
         let issue =
-            classify_risk_with_model(MixerModel::Wing, "/ch/01/eq/8/f", &dummy, &scene)
-                .unwrap();
+            classify_risk_with_model(MixerModel::Wing, "/ch/01/eq/8/f", &dummy, &scene).unwrap();
         assert_eq!(issue.level, RiskLevel::Low);
 
         let issue =
-            classify_risk_with_model(MixerModel::Wing, "/ch/01/eq/9/f", &dummy, &scene)
-                .unwrap();
+            classify_risk_with_model(MixerModel::Wing, "/ch/01/eq/9/f", &dummy, &scene).unwrap();
         assert_eq!(issue.level, RiskLevel::Critical);
     }
 }
