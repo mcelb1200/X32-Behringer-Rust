@@ -16,7 +16,7 @@ async fn test_async_methods() {
     });
 
     // Give emulator a moment to start
-    tokio::time::sleep(Duration::from_millis(100)).await;
+    tokio::time::sleep(Duration::from_millis(200)).await;
 
     let client = MixerClient::connect(&format!("127.0.0.1:{}", udp_port), false)
         .await

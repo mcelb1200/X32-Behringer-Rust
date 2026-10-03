@@ -9,7 +9,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::time::interval;
-use x32_lib::{MixerClient, transport::udp::UdpTransport};
+use x32_lib::{MixerClient, MixerModel, transport::udp::UdpTransport};
 
 use crossterm::{
     event::{self, Event, KeyCode},
@@ -37,6 +37,10 @@ pub struct Args {
     #[arg(short, long)]
     pub ip: String,
 
+    /// Mixer model: X32, Wing, XR18, XR16, XR12
+    #[arg(short, long, default_value = "X32")]
+    pub model: MixerModel,
+
     /// Mode to operate in (all, monitors, main, dca)
     #[arg(short, long, value_enum, default_value_t = Mode::All)]
     pub mode: Mode,
@@ -46,28 +50,36 @@ pub struct Args {
     pub dcas: String,
 }
 
-/// Resolves the base OSC paths for the given mode.
+/// Resolves the base OSC paths for the given mode and mixer model.
 /// Returns a vector of strings representing the base path (e.g. `/main/st/mix` or `/dca/1`).
-pub fn resolve_target_paths(mode: &Mode, dcas: &str) -> Vec<String> {
+pub fn resolve_target_paths(mode: &Mode, dcas: &str, model: MixerModel) -> Vec<String> {
     let mut paths = Vec::new();
+    let (max_buses, max_matrices, max_dcas) = match model {
+        MixerModel::X32 => (16, 6, 8),
+        MixerModel::Wing => (28, 8, 16),
+        MixerModel::XR18 => (6, 0, 4),
+        MixerModel::XR16 => (4, 0, 4),
+        MixerModel::XR12 => (2, 0, 4),
+    };
+
     match mode {
         Mode::All => {
             paths.push("/main/st/mix".to_string());
-            for i in 1..=16 {
+            for i in 1..=max_buses {
                 paths.push(format!("/bus/{:02}/mix", i));
             }
-            for i in 1..=6 {
+            for i in 1..=max_matrices {
                 paths.push(format!("/mtx/{:02}/mix", i));
             }
         }
         Mode::Monitors => {
-            for i in 1..=16 {
+            for i in 1..=max_buses {
                 paths.push(format!("/bus/{:02}/mix", i));
             }
         }
         Mode::Main => {
             paths.push("/main/st/mix".to_string());
-            for i in 1..=6 {
+            for i in 1..=max_matrices {
                 paths.push(format!("/mtx/{:02}/mix", i));
             }
         }
@@ -75,7 +87,7 @@ pub fn resolve_target_paths(mode: &Mode, dcas: &str) -> Vec<String> {
             if !dcas.is_empty() {
                 for part in dcas.split(',') {
                     if let Ok(num) = part.trim().parse::<u8>() {
-                        if num >= 1 && num <= 8 {
+                        if num >= 1 && num <= max_dcas {
                             paths.push(format!("/dca/{}", num));
                         }
                     }
@@ -195,7 +207,7 @@ pub async fn execute_restore(
 
 /// Main entry point for the tool
 pub async fn run(args: Args) -> Result<()> {
-    let paths = resolve_target_paths(&args.mode, &args.dcas);
+    let paths = resolve_target_paths(&args.mode, &args.dcas, args.model);
     let transport = UdpTransport::connect(&args.ip)
         .await
         .context("Failed to connect UDP transport")?;
@@ -299,37 +311,80 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_mode_paths_all() {
-        let paths = resolve_target_paths(&Mode::All, "");
-        assert!(paths.contains(&"/main/st/mix".to_string()));
-        assert!(paths.contains(&"/bus/01/mix".to_string()));
-        assert!(paths.contains(&"/mtx/06/mix".to_string()));
-        assert_eq!(paths.len(), 1 + 16 + 6);
+    fn test_x32_target_paths() {
+        let all_paths = resolve_target_paths(&Mode::All, "", MixerModel::X32);
+        assert!(all_paths.contains(&"/main/st/mix".to_string()));
+        assert!(all_paths.contains(&"/bus/01/mix".to_string()));
+        assert!(all_paths.contains(&"/bus/16/mix".to_string()));
+        assert!(all_paths.contains(&"/mtx/01/mix".to_string()));
+        assert!(all_paths.contains(&"/mtx/06/mix".to_string()));
+        assert_eq!(all_paths.len(), 1 + 16 + 6);
+
+        let mon_paths = resolve_target_paths(&Mode::Monitors, "", MixerModel::X32);
+        assert_eq!(mon_paths.len(), 16);
+        assert!(!mon_paths.contains(&"/main/st/mix".to_string()));
+
+        let main_paths = resolve_target_paths(&Mode::Main, "", MixerModel::X32);
+        assert_eq!(main_paths.len(), 1 + 6);
+
+        let dca_paths = resolve_target_paths(&Mode::Dca, "1, 3, 8, 9, foo", MixerModel::X32);
+        assert_eq!(dca_paths.len(), 3);
+        assert!(dca_paths.contains(&"/dca/1".to_string()));
+        assert!(dca_paths.contains(&"/dca/3".to_string()));
+        assert!(dca_paths.contains(&"/dca/8".to_string()));
+        assert!(!dca_paths.contains(&"/dca/9".to_string()));
     }
 
     #[test]
-    fn test_mode_paths_main() {
-        let paths = resolve_target_paths(&Mode::Main, "");
-        assert!(paths.contains(&"/main/st/mix".to_string()));
-        assert!(paths.contains(&"/mtx/01/mix".to_string()));
-        assert_eq!(paths.len(), 1 + 6);
+    fn test_wing_target_paths() {
+        let all_paths = resolve_target_paths(&Mode::All, "", MixerModel::Wing);
+        assert_eq!(all_paths.len(), 1 + 28 + 8);
+        assert!(all_paths.contains(&"/bus/28/mix".to_string()));
+        assert!(all_paths.contains(&"/mtx/08/mix".to_string()));
+
+        let mon_paths = resolve_target_paths(&Mode::Monitors, "", MixerModel::Wing);
+        assert_eq!(mon_paths.len(), 28);
+
+        let main_paths = resolve_target_paths(&Mode::Main, "", MixerModel::Wing);
+        assert_eq!(main_paths.len(), 1 + 8);
+
+        let dca_paths = resolve_target_paths(&Mode::Dca, "1, 10, 16, 17", MixerModel::Wing);
+        assert_eq!(dca_paths.len(), 3);
+        assert!(dca_paths.contains(&"/dca/16".to_string()));
+        assert!(!dca_paths.contains(&"/dca/17".to_string()));
     }
 
     #[test]
-    fn test_mode_paths_monitors() {
-        let paths = resolve_target_paths(&Mode::Monitors, "");
-        assert!(!paths.contains(&"/main/st/mix".to_string()));
-        assert!(paths.contains(&"/bus/16/mix".to_string()));
-        assert_eq!(paths.len(), 16);
+    fn test_xr18_target_paths() {
+        let all_paths = resolve_target_paths(&Mode::All, "", MixerModel::XR18);
+        assert_eq!(all_paths.len(), 1 + 6 + 0);
+        assert!(all_paths.contains(&"/bus/06/mix".to_string()));
+        assert!(!all_paths.contains(&"/bus/07/mix".to_string()));
+
+        let main_paths = resolve_target_paths(&Mode::Main, "", MixerModel::XR18);
+        assert_eq!(main_paths.len(), 1);
+
+        let dca_paths = resolve_target_paths(&Mode::Dca, "1, 4, 5", MixerModel::XR18);
+        assert_eq!(dca_paths.len(), 2);
+        assert!(dca_paths.contains(&"/dca/4".to_string()));
+        assert!(!dca_paths.contains(&"/dca/5".to_string()));
     }
 
     #[test]
-    fn test_mode_paths_dca() {
-        let paths = resolve_target_paths(&Mode::Dca, "1, 3, 9, foo, 8");
-        assert!(paths.contains(&"/dca/1".to_string()));
-        assert!(paths.contains(&"/dca/3".to_string()));
-        assert!(paths.contains(&"/dca/8".to_string()));
-        assert!(!paths.contains(&"/dca/9".to_string())); // out of range
-        assert_eq!(paths.len(), 3);
+    fn test_xr16_target_paths() {
+        let all_paths = resolve_target_paths(&Mode::All, "", MixerModel::XR16);
+        assert_eq!(all_paths.len(), 1 + 4 + 0);
+
+        let mon_paths = resolve_target_paths(&Mode::Monitors, "", MixerModel::XR16);
+        assert_eq!(mon_paths.len(), 4);
+    }
+
+    #[test]
+    fn test_xr12_target_paths() {
+        let all_paths = resolve_target_paths(&Mode::All, "", MixerModel::XR12);
+        assert_eq!(all_paths.len(), 1 + 2 + 0);
+
+        let dca_paths = resolve_target_paths(&Mode::Dca, "1, 2, 3, 4, 5", MixerModel::XR12);
+        assert_eq!(dca_paths.len(), 4);
     }
 }
