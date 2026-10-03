@@ -29,6 +29,7 @@ pub struct AppState {
     pub display_ip_text: String,
     pub display_mode_text: String,
     pub display_slot_text: String,
+    pub display_logs_text: String,
 
     pub cached_area: Rect,
     pub cached_chunks: Vec<Vec<Rect>>,
@@ -74,6 +75,7 @@ impl AppState {
             display_ip_text: "IP: 192.168.0.64".to_string(),
             display_mode_text: "Mode: Manual\nCheck: Check".to_string(),
             display_slot_text: "Delay Slot: 1".to_string(),
+            display_logs_text: String::with_capacity(1024),
 
             cached_area: Rect::default(),
             cached_chunks: Vec::new(),
@@ -101,6 +103,12 @@ impl AppState {
         self.logs.push(Cow::Owned(msg));
         if self.logs.len() > 100 {
             self.logs.remove(0);
+        }
+
+        self.display_logs_text.clear();
+        use std::fmt::Write;
+        for log_msg in &self.logs {
+            let _ = writeln!(self.display_logs_text, "{}", log_msg);
         }
     }
 
