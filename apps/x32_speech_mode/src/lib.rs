@@ -11,6 +11,7 @@ use std::fs;
 use std::path::PathBuf;
 use std::time::Duration;
 use x32_lib::MixerClient;
+use x32_lib::MixerModel;
 
 #[derive(Parser, Debug, Clone)]
 #[command(author, version, about = "One-Touch Speech Mode Macro for X32/M32", long_about = None)]
@@ -19,9 +20,13 @@ pub struct Args {
     #[arg(short, long)]
     pub ip: String,
 
-    /// Comma-separated list of channel numbers (1-32) to apply speech mode to (e.g. 1,2,3)
+    /// Comma-separated list of channel numbers to apply speech mode to (e.g. 1,2,3)
     #[arg(short, long)]
     pub channels: String,
+
+    /// Mixer model: X32, Wing, XR18, XR16, XR12
+    #[arg(short, long, default_value = "X32")]
+    pub model: MixerModel,
 }
 
 #[derive(Serialize, Deserialize, Default)]
@@ -82,18 +87,31 @@ fn get_state_file_path() -> PathBuf {
         .join(".x32_speech_mode_state.json")
 }
 
+fn max_channels_for_model(model: MixerModel) -> u8 {
+    match model {
+        MixerModel::X32 => 32,
+        MixerModel::Wing => 40,
+        MixerModel::XR18 | MixerModel::XR16 => 16,
+        MixerModel::XR12 => 12,
+    }
+}
+
 pub async fn run(args: Args) -> Result<()> {
+    let max_ch = max_channels_for_model(args.model);
     let mut channels: Vec<u8> = Vec::new();
     for part in args.channels.split(',') {
         if let Ok(ch) = part.trim().parse::<u8>() {
-            if ch >= 1 && ch <= 32 {
+            if ch >= 1 && ch <= max_ch {
                 channels.push(ch);
             }
         }
     }
 
     if channels.is_empty() {
-        println!("No valid channels provided. Expected format: --channels 1,2,3");
+        println!(
+            "No valid channels provided for model {} (max channel: {}). Expected format: --channels 1,2,3",
+            args.model, max_ch
+        );
         return Ok(());
     }
 
@@ -149,7 +167,7 @@ pub async fn run(args: Args) -> Result<()> {
     let mut saved_state = SavedState::default();
 
     // List of paths we will modify and need to save
-    let paths_to_save = vec![
+    let mut paths_to_save = vec![
         "eq/1/type",
         "eq/1/f",
         "eq/6/type",
@@ -174,8 +192,16 @@ pub async fn run(args: Args) -> Result<()> {
         "gate/range",
         "gate/attack",
         "gate/release",
-        "automix/group",
     ];
+
+    // Automix is supported on X32 and XAir models
+    let supports_automix = matches!(
+        args.model,
+        MixerModel::X32 | MixerModel::XR18 | MixerModel::XR16 | MixerModel::XR12
+    );
+    if supports_automix {
+        paths_to_save.push("automix/group");
+    }
 
     for ch in &channels {
         let mut original_msgs = Vec::new();
@@ -195,7 +221,7 @@ pub async fn run(args: Args) -> Result<()> {
     for ch in channels {
         println!("Processing channel {:02}", ch);
 
-        let msgs = vec![
+        let mut msgs = vec![
             // 1. High-pass filter: 80 Hz, 18 dB/oct slope (type = 5 is Low Cut on eq/1/type, freq = 80Hz)
             OscMessage {
                 path: format!("/ch/{:02}/eq/1/type", ch),
@@ -298,12 +324,14 @@ pub async fn run(args: Args) -> Result<()> {
                 path: format!("/ch/{:02}/gate/release", ch),
                 args: vec![OscArg::Float(dyn_release_to_osc(200.0))],
             },
-            // 7. Dugan Automixer
-            OscMessage {
-                path: format!("/ch/{:02}/automix/group", ch),
-                args: vec![OscArg::Int(1)], // Group X
-            },
         ];
+
+        if supports_automix {
+            msgs.push(OscMessage {
+                path: format!("/ch/{:02}/automix/group", ch),
+                args: vec![OscArg::Int(1)], // Group X / Group 1
+            });
+        }
 
         for msg in msgs {
             client.send_message(&msg.path, msg.args).await?;
@@ -337,5 +365,47 @@ mod tests {
         res = res.clamp(0.0, 1.0);
         assert_eq!(freq_to_osc(80.0), res);
         assert_eq!(gain_to_osc(3.0), (3.0 + 15.0) / 30.0);
+    }
+
+    #[test]
+    fn test_max_channels_for_model() {
+        assert_eq!(max_channels_for_model(MixerModel::X32), 32);
+        assert_eq!(max_channels_for_model(MixerModel::Wing), 40);
+        assert_eq!(max_channels_for_model(MixerModel::XR18), 16);
+        assert_eq!(max_channels_for_model(MixerModel::XR16), 16);
+        assert_eq!(max_channels_for_model(MixerModel::XR12), 12);
+    }
+
+    #[test]
+    fn test_model_channel_filtering() {
+        let parse_channels = |input: &str, model: MixerModel| -> Vec<u8> {
+            let max_ch = max_channels_for_model(model);
+            let mut channels = Vec::new();
+            for part in input.split(',') {
+                if let Ok(ch) = part.trim().parse::<u8>() {
+                    if ch >= 1 && ch <= max_ch {
+                        channels.push(ch);
+                    }
+                }
+            }
+            channels
+        };
+
+        assert_eq!(
+            parse_channels("1,12,13,16,32,40", MixerModel::XR12),
+            vec![1, 12]
+        );
+        assert_eq!(
+            parse_channels("1,12,13,16,32,40", MixerModel::XR18),
+            vec![1, 12, 13, 16]
+        );
+        assert_eq!(
+            parse_channels("1,12,13,16,32,40", MixerModel::X32),
+            vec![1, 12, 13, 16, 32]
+        );
+        assert_eq!(
+            parse_channels("1,12,13,16,32,40", MixerModel::Wing),
+            vec![1, 12, 13, 16, 32, 40]
+        );
     }
 }
