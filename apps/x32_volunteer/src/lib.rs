@@ -154,12 +154,9 @@ async fn run_tui_loop(
         if last_ui_update.elapsed() > Duration::from_millis(30) {
             // Update alerts based on actual metered level
             state.alerts.clear();
-            for ch in &state.channels {
+            for (i, ch) in state.channels.iter().enumerate() {
                 if !ch.muted && ch.level_db > -5.0 && !ch.is_dca {
-                    state.alerts.push(format!(
-                        "🟡 {} level is high — consider lowering fader.",
-                        ch.name
-                    ));
+                    state.alerts.push(i);
                 }
             }
 
