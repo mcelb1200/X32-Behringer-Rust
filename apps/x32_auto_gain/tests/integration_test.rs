@@ -80,13 +80,13 @@ async fn run_mock_server() -> Result<(String, tokio::task::JoinHandle<()>)> {
                     // Reply to /meters
                     if msg.path == "/meters" {
                         let mut blob = Vec::new();
-                        blob.extend_from_slice(&128i32.to_le_bytes()); // length 128 bytes
+                        blob.extend_from_slice(&160i32.to_le_bytes()); // length 160 bytes for 40 channels
 
                         // Ch 1 = 0.8 (~ -1.9 dBFS -> triggers clip protection)
                         let ch1_val: f32 = 0.8;
                         let ch2_val: f32 = 0.01;
 
-                        for i in 0..32 {
+                        for i in 0..40 {
                             let val = if i == 0 {
                                 ch1_val
                             } else if i == 1 {
@@ -122,6 +122,36 @@ async fn test_auto_gain_adjusts_levels() -> Result<()> {
         &mock_ip,
         "--channels",
         "1,2",
+        "--model",
+        "X32",
+        "--target-dbfs=-18.0",
+        "--rate-ms",
+        "50",
+    ]);
+
+    let app_handle = tokio::spawn(async move {
+        run(args).await.unwrap();
+    });
+
+    sleep(Duration::from_millis(500)).await;
+
+    app_handle.abort();
+    server_handle.abort();
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_auto_gain_wing_model() -> Result<()> {
+    let (mock_ip, server_handle) = run_mock_server().await?;
+
+    let args = Args::parse_from([
+        "x32_auto_gain",
+        "--ip",
+        &mock_ip,
+        "--channels",
+        "1,40",
+        "--model",
+        "Wing",
         "--target-dbfs=-18.0",
         "--rate-ms",
         "50",
