@@ -5,7 +5,7 @@ use ringbuf::HeapRb;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::Mutex;
-use x32_lib::MixerClient;
+use x32_lib::{MixerClient, MixerModel};
 
 pub mod detector;
 pub mod mixer;
@@ -15,19 +15,42 @@ use detector::FeedbackDetector;
 use mixer::MixerState;
 use tui::{AppTui, TuiEvent};
 
-#[derive(Parser, Debug)]
-#[command(author, version, about, long_about = None)]
+#[derive(Parser, Debug, Clone)]
+#[command(author, version, about = "Automatic Feedback Detection and Management", long_about = None)]
 pub struct Args {
-    /// IP address of the X32 console
+    /// IP address of the console
     #[arg(short, long, default_value = "192.168.1.100")]
     pub ip: String,
 
     /// Target channel to insert EQ notches (e.g., 1 for Ch 01)
     #[arg(short, long, default_value_t = 1)]
     pub channel: u8,
+
+    /// Mixer model: X32, Wing, XR18, XR16, XR12
+    #[arg(short = 'M', long, default_value = "X32")]
+    pub model: MixerModel,
+}
+
+/// Returns maximum allowed input channels for the specified mixer model.
+pub fn max_channels_for_model(model: MixerModel) -> u8 {
+    match model {
+        MixerModel::X32 => 32,
+        MixerModel::Wing => 40,
+        MixerModel::XR18 | MixerModel::XR16 => 16,
+        MixerModel::XR12 => 12,
+    }
 }
 
 pub async fn run(args: Args) -> Result<()> {
+    let max_ch = max_channels_for_model(args.model);
+    if args.channel < 1 || args.channel > max_ch {
+        anyhow::bail!(
+            "Invalid target channel {} for model {} (valid range: 1-{})",
+            args.channel,
+            args.model,
+            max_ch
+        );
+    }
     // 1. Set up audio capture using cpal
     let host = cpal::default_host();
     let device = host
@@ -81,9 +104,13 @@ pub async fn run(args: Args) -> Result<()> {
 
     stream.play()?;
 
-    // 2. Setup X32 connection
+    // 2. Setup Mixer connection
     let client = MixerClient::connect(&args.ip, true).await?;
-    let mixer_state = Arc::new(Mutex::new(MixerState::new(client, args.channel)));
+    let mixer_state = Arc::new(Mutex::new(MixerState::new(
+        client,
+        args.channel,
+        args.model,
+    )));
 
     // 3. Setup UI
     let mut tui = AppTui::new()?;
@@ -149,4 +176,34 @@ pub async fn run(args: Args) -> Result<()> {
 
     tui.cleanup()?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_max_channels_for_model() {
+        assert_eq!(max_channels_for_model(MixerModel::X32), 32);
+        assert_eq!(max_channels_for_model(MixerModel::Wing), 40);
+        assert_eq!(max_channels_for_model(MixerModel::XR18), 16);
+        assert_eq!(max_channels_for_model(MixerModel::XR16), 16);
+        assert_eq!(max_channels_for_model(MixerModel::XR12), 12);
+    }
+
+    #[test]
+    fn test_channel_bounds_validation() {
+        let models = [
+            (MixerModel::X32, 32),
+            (MixerModel::Wing, 40),
+            (MixerModel::XR18, 16),
+            (MixerModel::XR16, 16),
+            (MixerModel::XR12, 12),
+        ];
+
+        for (model, max_ch) in models {
+            assert!(1 <= max_ch);
+            assert_eq!(max_channels_for_model(model), max_ch);
+        }
+    }
 }
