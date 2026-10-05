@@ -98,9 +98,14 @@ impl Tui {
                 .expect("Write level buffer failed");
         }
 
-        for i in 0..state.alerts.len() {
+        for (i, &ch_idx) in state.alerts.iter().enumerate() {
             self.alert_bufs[i].clear();
-            write!(self.alert_bufs[i], "• {}", state.alerts[i]).expect("Write alert buffer failed");
+            write!(
+                self.alert_bufs[i],
+                "• 🟡 {} level is high — consider lowering fader.",
+                state.channels[ch_idx].name
+            )
+            .expect("Write alert buffer failed");
         }
 
         self.terminal.draw(|f| {
