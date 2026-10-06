@@ -556,7 +556,10 @@ mod tests {
         assert_eq!(get_bus_fader_path(MixerModel::X32, 16), "/bus/16/mix/fader");
         assert_eq!(get_bus_fader_path(MixerModel::X32, 17), "");
 
-        assert_eq!(get_bus_fader_path(MixerModel::Wing, 28), "/bus/28/mix/fader");
+        assert_eq!(
+            get_bus_fader_path(MixerModel::Wing, 28),
+            "/bus/28/mix/fader"
+        );
         assert_eq!(get_bus_fader_path(MixerModel::Wing, 29), "");
 
         assert_eq!(get_bus_fader_path(MixerModel::XR18, 6), "/bus/06/mix/fader");
