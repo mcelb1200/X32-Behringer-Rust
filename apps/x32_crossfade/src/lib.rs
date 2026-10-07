@@ -137,17 +137,20 @@ fn parse_scene_to_map(contents: &str) -> HashMap<String, OscArg> {
 }
 
 #[derive(Debug)]
-struct CrossfadePlan {
-    pub floats: HashMap<String, (f32, f32)>,
-    pub discrete: HashMap<String, (OscArg, OscArg)>,
+struct CrossfadePlan<'a> {
+    pub floats: HashMap<&'a str, (f32, f32)>,
+    pub discrete: HashMap<&'a str, (OscArg, OscArg)>,
 }
 
-fn plan_crossfade(
-    scene_a: &HashMap<String, OscArg>,
+fn plan_crossfade<'a>(
+    scene_a: &'a HashMap<String, OscArg>,
     scene_b: &HashMap<String, OscArg>,
-) -> CrossfadePlan {
-    let mut floats = HashMap::new();
-    let mut discrete = HashMap::new();
+) -> CrossfadePlan<'a> {
+    // ⚡ Bolt: Pre-allocate target maps with scene_a's capacity and
+    // reuse &'a str keys from the source map via path.as_str()
+    // to eliminate thousands of redundant String clones during crossfade planning.
+    let mut floats = HashMap::with_capacity(scene_a.len());
+    let mut discrete = HashMap::with_capacity(scene_a.len());
 
     // Iterate through everything in A, if it's in B we transition it
     for (path, arg_a) in scene_a {
@@ -155,12 +158,12 @@ fn plan_crossfade(
             match (arg_a, arg_b) {
                 (OscArg::Float(f_a), OscArg::Float(f_b)) => {
                     if (f_a - f_b).abs() > f32::EPSILON {
-                        floats.insert(path.clone(), (*f_a, *f_b));
+                        floats.insert(path.as_str(), (*f_a, *f_b));
                     }
                 }
                 (a, b) => {
                     if a != b {
-                        discrete.insert(path.clone(), (a.clone(), b.clone()));
+                        discrete.insert(path.as_str(), (a.clone(), b.clone()));
                     }
                 }
             }

@@ -18,7 +18,7 @@ use std::io;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tokio::time::interval;
-use x32_lib::MixerClient;
+use x32_lib::{MixerClient, MixerModel};
 
 #[derive(Parser, Debug, Clone)]
 #[command(author, version, about = "Auto-Ringout / Smart Monitor Tuning for X32/M32", long_about = None)]
@@ -27,7 +27,11 @@ pub struct Args {
     #[arg(short, long)]
     pub ip: String,
 
-    /// Comma-separated list of bus numbers (1-16) to ringout (e.g. 1,2,5)
+    /// Mixer model: X32, Wing, XR18, XR16, XR12
+    #[arg(short = 'M', long, default_value = "X32")]
+    pub model: MixerModel,
+
+    /// Comma-separated list of bus numbers to ringout (e.g. 1,2,5)
     #[arg(short, long)]
     pub buses: String,
 
@@ -38,6 +42,35 @@ pub struct Args {
     /// Maximum number of notches to apply per bus
     #[arg(short, long, default_value_t = 5)]
     pub max_notches: u8,
+}
+
+/// Returns maximum supported bus count for the given mixer model.
+pub fn max_buses_for_model(model: MixerModel) -> u8 {
+    match model {
+        MixerModel::X32 => 16,
+        MixerModel::Wing => 28,
+        MixerModel::XR18 => 6,
+        MixerModel::XR16 => 4,
+        MixerModel::XR12 => 2,
+    }
+}
+
+/// Returns the OSC fader path for a bus on the given mixer model.
+pub fn get_bus_fader_path(model: MixerModel, bus_idx: u8) -> String {
+    let max_buses = max_buses_for_model(model);
+    if bus_idx < 1 || bus_idx > max_buses {
+        return String::new();
+    }
+    format!("/bus/{:02}/mix/fader", bus_idx)
+}
+
+/// Returns the OSC EQ parameter path for a bus notch filter on the given mixer model.
+pub fn get_bus_eq_path(model: MixerModel, bus_idx: u8, notch_idx: usize, param: &str) -> String {
+    let max_buses = max_buses_for_model(model);
+    if bus_idx < 1 || bus_idx > max_buses {
+        return String::new();
+    }
+    format!("/bus/{:02}/eq/{}/{}", bus_idx, notch_idx, param)
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -76,10 +109,11 @@ pub struct AppState {
 impl AppState {
     pub fn new(args: &Args) -> Self {
         let mut buses_vec = Vec::new();
+        let max_buses = max_buses_for_model(args.model);
 
         for part in args.buses.split(',') {
             if let Ok(ch) = part.trim().parse::<u8>() {
-                if (1..=16).contains(&ch) {
+                if ch >= 1 && ch <= max_buses {
                     buses_vec.push(BusState {
                         bus_idx: ch,
                         status: BusStatus::Disarmed,
@@ -87,7 +121,7 @@ impl AppState {
                         original_level_db: -90.0,
                         target_level_db: args.target_dbfs,
                         notches: Vec::new(),
-                        fader_path: format!("/bus/{:02}/mix/fader", ch),
+                        fader_path: get_bus_fader_path(args.model, ch),
                     });
                 }
             }
@@ -138,10 +172,6 @@ pub async fn run(args: Args) -> Result<()> {
 
     // Subscribe to OSC
     let mut rx = client.subscribe();
-
-    // ⚡ Bolt: Pre-allocate a path buffer for dynamically constructed OSC paths
-    // instead of format! inside the main loop to avoid heap allocations.
-    let mut osc_path_buf = String::with_capacity(32);
 
     let mut ticker = interval(Duration::from_millis(500)); // Render & ramp ticker
     let mut layout_cache = LayoutCache {
@@ -318,32 +348,26 @@ pub async fn run(args: Args) -> Result<()> {
                         #[allow(clippy::needless_range_loop)]
                         for i in 0..update_count {
                             if let Some(update) = &updates[i] {
-                                use std::fmt::Write;
-
                                 // Apply notch via OSC
 
                                 // type = 3 (PEQ)
-                                osc_path_buf.clear();
-                                let _ = write!(&mut osc_path_buf, "/bus/{:02}/eq/{}/type", update.bus_idx, update.notch_idx);
-                                let _ = client.send_message(&osc_path_buf, vec![OscArg::Int(3)]).await;
+                                let path = get_bus_eq_path(args.model, update.bus_idx, update.notch_idx, "type");
+                                let _ = client.send_message(&path, vec![OscArg::Int(3)]).await;
 
                                 // Map freq: log scale 20Hz - 20kHz to 0.0 - 1.0 (approx)
-                                osc_path_buf.clear();
-                                let _ = write!(&mut osc_path_buf, "/bus/{:02}/eq/{}/freq", update.bus_idx, update.notch_idx);
+                                let path = get_bus_eq_path(args.model, update.bus_idx, update.notch_idx, "freq");
                                 let freq_float = ((update.freq.log10() - 20f32.log10()) / (20000f32.log10() - 20f32.log10())).clamp(0.0, 1.0);
-                                let _ = client.send_message(&osc_path_buf, vec![OscArg::Float(freq_float)]).await;
+                                let _ = client.send_message(&path, vec![OscArg::Float(freq_float)]).await;
 
                                 // Map gain: -15 to +15 is 0.0 to 1.0.  (-15 is 0.0, 0 is 0.5, +15 is 1.0)
-                                osc_path_buf.clear();
-                                let _ = write!(&mut osc_path_buf, "/bus/{:02}/eq/{}/gain", update.bus_idx, update.notch_idx);
+                                let path = get_bus_eq_path(args.model, update.bus_idx, update.notch_idx, "gain");
                                 let gain_float = ((update.gain + 15.0) / 30.0).clamp(0.0, 1.0);
-                                let _ = client.send_message(&osc_path_buf, vec![OscArg::Float(gain_float)]).await;
+                                let _ = client.send_message(&path, vec![OscArg::Float(gain_float)]).await;
 
                                 // Map q: 10.0-0.3 mapped 0.0-1.0
-                                osc_path_buf.clear();
-                                let _ = write!(&mut osc_path_buf, "/bus/{:02}/eq/{}/q", update.bus_idx, update.notch_idx);
+                                let path = get_bus_eq_path(args.model, update.bus_idx, update.notch_idx, "q");
                                 let q_float = 0.8; // Approx narrow Q
-                                let _ = client.send_message(&osc_path_buf, vec![OscArg::Float(q_float)]).await;
+                                let _ = client.send_message(&path, vec![OscArg::Float(q_float)]).await;
                             }
                         }
                     }
@@ -511,4 +535,97 @@ fn ui(f: &mut Frame, state: &AppState, cache: &mut LayoutCache) {
     )]))
     .block(Block::default().borders(Borders::ALL));
     f.render_widget(footer, chunks[1]);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_max_buses_for_model() {
+        assert_eq!(max_buses_for_model(MixerModel::X32), 16);
+        assert_eq!(max_buses_for_model(MixerModel::Wing), 28);
+        assert_eq!(max_buses_for_model(MixerModel::XR18), 6);
+        assert_eq!(max_buses_for_model(MixerModel::XR16), 4);
+        assert_eq!(max_buses_for_model(MixerModel::XR12), 2);
+    }
+
+    #[test]
+    fn test_bus_fader_and_eq_paths() {
+        assert_eq!(get_bus_fader_path(MixerModel::X32, 1), "/bus/01/mix/fader");
+        assert_eq!(get_bus_fader_path(MixerModel::X32, 16), "/bus/16/mix/fader");
+        assert_eq!(get_bus_fader_path(MixerModel::X32, 17), "");
+
+        assert_eq!(
+            get_bus_fader_path(MixerModel::Wing, 28),
+            "/bus/28/mix/fader"
+        );
+        assert_eq!(get_bus_fader_path(MixerModel::Wing, 29), "");
+
+        assert_eq!(get_bus_fader_path(MixerModel::XR18, 6), "/bus/06/mix/fader");
+        assert_eq!(get_bus_fader_path(MixerModel::XR18, 7), "");
+
+        assert_eq!(get_bus_fader_path(MixerModel::XR16, 4), "/bus/04/mix/fader");
+        assert_eq!(get_bus_fader_path(MixerModel::XR16, 5), "");
+
+        assert_eq!(get_bus_fader_path(MixerModel::XR12, 2), "/bus/02/mix/fader");
+        assert_eq!(get_bus_fader_path(MixerModel::XR12, 3), "");
+
+        assert_eq!(
+            get_bus_eq_path(MixerModel::X32, 1, 2, "freq"),
+            "/bus/01/eq/2/freq"
+        );
+        assert_eq!(get_bus_eq_path(MixerModel::XR12, 3, 1, "gain"), "");
+    }
+
+    #[test]
+    fn test_app_state_model_bounds() {
+        // X32 allows up to bus 16
+        let x32_args = Args {
+            ip: "127.0.0.1".to_string(),
+            model: MixerModel::X32,
+            buses: "1,5,16,17".to_string(),
+            target_dbfs: -6.0,
+            max_notches: 5,
+        };
+        let x32_state = AppState::new(&x32_args);
+        assert_eq!(x32_state.buses.len(), 3);
+        assert_eq!(x32_state.buses[0].bus_idx, 1);
+        assert_eq!(x32_state.buses[1].bus_idx, 5);
+        assert_eq!(x32_state.buses[2].bus_idx, 16);
+
+        // Wing allows up to bus 28
+        let wing_args = Args {
+            ip: "127.0.0.1".to_string(),
+            model: MixerModel::Wing,
+            buses: "1,20,28,29".to_string(),
+            target_dbfs: -6.0,
+            max_notches: 5,
+        };
+        let wing_state = AppState::new(&wing_args);
+        assert_eq!(wing_state.buses.len(), 3);
+        assert_eq!(wing_state.buses[2].bus_idx, 28);
+
+        // XR18 allows up to bus 6
+        let xr18_args = Args {
+            ip: "127.0.0.1".to_string(),
+            model: MixerModel::XR18,
+            buses: "1,6,7".to_string(),
+            target_dbfs: -6.0,
+            max_notches: 5,
+        };
+        let xr18_state = AppState::new(&xr18_args);
+        assert_eq!(xr18_state.buses.len(), 2);
+
+        // XR12 allows up to bus 2
+        let xr12_args = Args {
+            ip: "127.0.0.1".to_string(),
+            model: MixerModel::XR12,
+            buses: "1,2,3".to_string(),
+            target_dbfs: -6.0,
+            max_notches: 5,
+        };
+        let xr12_state = AppState::new(&xr12_args);
+        assert_eq!(xr12_state.buses.len(), 2);
+    }
 }
