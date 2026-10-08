@@ -1,4 +1,3 @@
-
 #[test]
 fn test_detector_finds_feedback() {
     let sample_rate = 44100;
