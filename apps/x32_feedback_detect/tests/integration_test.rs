@@ -1,3 +1,6 @@
+use std::f32::consts::PI;
+use x32_feedback_detect::detector::FeedbackDetector;
+
 #[test]
 fn test_detector_finds_feedback() {
     let sample_rate = 44100;
@@ -50,8 +53,8 @@ use std::time::Duration;
 use tokio::net::UdpSocket;
 use x32_core::Mixer;
 use x32_feedback_detect::mixer::MixerState;
+use x32_lib::MixerClient;
 use x32_lib::transport::udp::UdpTransport;
-use x32_lib::{MixerClient, MixerModel};
 
 #[tokio::test]
 async fn test_x32_feedback_detect_mixer_state() {
@@ -90,9 +93,7 @@ async fn test_x32_feedback_detect_mixer_state() {
     let transport = UdpTransport::connect(&addr).await.unwrap();
     let client = MixerClient::new(Arc::new(transport), true);
 
-    let mut state = MixerState::new(client, 1, MixerModel::X32);
-    assert_eq!(state.model(), MixerModel::X32);
-    assert_eq!(state.target_channel(), 1);
+    let mut state = MixerState::new(client, 1);
 
     // Test applying notch
     state.apply_notch(1000.0).await.unwrap();
@@ -116,27 +117,4 @@ async fn test_x32_feedback_detect_mixer_state() {
     // Reset
     state.reset_notches().await.unwrap();
     assert!(state.applied_notches.is_empty());
-}
-
-#[tokio::test]
-async fn test_multi_model_mixer_states() {
-    let socket = UdpSocket::bind("127.0.0.1:0").await.unwrap();
-    let port = socket.local_addr().unwrap().port();
-    let addr = format!("127.0.0.1:{}", port);
-
-    let transport = Arc::new(UdpTransport::connect(&addr).await.unwrap());
-
-    let test_cases = [
-        (MixerModel::Wing, 40),
-        (MixerModel::XR18, 16),
-        (MixerModel::XR16, 16),
-        (MixerModel::XR12, 12),
-    ];
-
-    for (model, ch) in test_cases {
-        let client = MixerClient::new(transport.clone(), true);
-        let state = MixerState::new(client, ch, model);
-        assert_eq!(state.model(), model);
-        assert_eq!(state.target_channel(), ch);
-    }
 }

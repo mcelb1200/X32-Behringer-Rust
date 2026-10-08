@@ -17,7 +17,7 @@ where
         )
         .unwrap();
     });
-    thread::sleep(Duration::from_millis(500));
+    thread::sleep(Duration::from_millis(200));
     (handle, tx)
 }
 
@@ -29,9 +29,7 @@ fn test_not_connected() {
 
     let output = cmd.output().unwrap();
     assert!(!output.status.success());
-    let stdout = String::from_utf8(output.stdout)
-        .unwrap()
-        .replace("\r\n", "\n");
+    let stdout = String::from_utf8(output.stdout).unwrap();
     assert!(stdout.contains("Not connected to X32."));
 }
 
@@ -52,9 +50,7 @@ fn test_ls_command() {
 
     let output = cmd.output().unwrap();
     assert!(output.status.success());
-    let stdout = String::from_utf8(output.stdout)
-        .unwrap()
-        .replace("\r\n", "\n");
+    let stdout = String::from_utf8(output.stdout).unwrap();
     assert_eq!(
         stdout,
         "FileEntry { index: 1, name: \"[..]\", file_type: Parent }\n\
@@ -87,9 +83,7 @@ fn test_file_operations() {
 
     let output = cmd.output().unwrap();
     assert!(output.status.success());
-    let stdout = String::from_utf8(output.stdout)
-        .unwrap()
-        .replace("\r\n", "\n");
+    let stdout = String::from_utf8(output.stdout).unwrap();
     assert_eq!(stdout, "Changed directory to [MyScenes]\n");
 
     let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("x32_usb");
@@ -100,9 +94,7 @@ fn test_file_operations() {
 
     let output = cmd.output().unwrap();
     assert!(!output.status.success());
-    let stdout = String::from_utf8(output.stdout)
-        .unwrap()
-        .replace("\r\n", "\n");
+    let stdout = String::from_utf8(output.stdout).unwrap();
     assert!(stdout.contains("Not connected to X32."));
 
     let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("x32_usb");
@@ -110,9 +102,7 @@ fn test_file_operations() {
 
     let output = cmd.output().unwrap();
     assert!(output.status.success());
-    let stdout = String::from_utf8(output.stdout)
-        .unwrap()
-        .replace("\r\n", "\n");
+    let stdout = String::from_utf8(output.stdout).unwrap();
     assert_eq!(stdout, "Playing file: track02.wav\n");
 
     let _ = tx.send(());
