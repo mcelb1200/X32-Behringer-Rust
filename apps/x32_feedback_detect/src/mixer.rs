@@ -1,9 +1,9 @@
 use anyhow::Result;
 use osc_lib::OscArg;
 use std::collections::HashMap;
-use x32_lib::MixerClient;
+use x32_lib::{MixerClient, MixerModel};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct AppliedNotch {
     pub frequency: f32,
     pub depth: f32, // in dB, typically negative
@@ -13,17 +13,27 @@ pub struct AppliedNotch {
 pub struct MixerState {
     client: MixerClient,
     target_channel: u8,
+    model: MixerModel,
     // Max 3 notches. Key is eq band index (1..=6)
     pub applied_notches: HashMap<u8, AppliedNotch>,
 }
 
 impl MixerState {
-    pub fn new(client: MixerClient, target_channel: u8) -> Self {
+    pub fn new(client: MixerClient, target_channel: u8, model: MixerModel) -> Self {
         Self {
             client,
             target_channel,
+            model,
             applied_notches: HashMap::new(),
         }
+    }
+
+    pub fn model(&self) -> MixerModel {
+        self.model
+    }
+
+    pub fn target_channel(&self) -> u8 {
+        self.target_channel
     }
 
     /// Map a real frequency to X32 float parameter [0.0, 1.0] representing 20Hz-20kHz.
@@ -157,5 +167,30 @@ impl MixerState {
 
         self.applied_notches.clear();
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_freq_to_float() {
+        assert_eq!(MixerState::freq_to_float(20.0), 0.0);
+        assert_eq!(MixerState::freq_to_float(20000.0), 1.0);
+        let mid = MixerState::freq_to_float(632.45553);
+        assert!((mid - 0.5).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_gain_to_float() {
+        assert_eq!(MixerState::gain_to_float(-15.0), 0.0);
+        assert_eq!(MixerState::gain_to_float(0.0), 0.5);
+        assert_eq!(MixerState::gain_to_float(15.0), 1.0);
+    }
+
+    #[test]
+    fn test_q_to_float() {
+        assert_eq!(MixerState::q_to_float(10.0), 1.0);
     }
 }
