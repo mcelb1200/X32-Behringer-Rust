@@ -188,10 +188,10 @@ async fn run_network(app: Arc<Mutex<AppState>>, mut rx: mpsc::Receiver<OscMessag
 #[derive(Default)]
 struct LayoutCache {
     area: ratatui::layout::Rect,
-    chunks: Vec<ratatui::layout::Rect>,
-    controls_chunks: Vec<ratatui::layout::Rect>,
-    left_chunks: Vec<ratatui::layout::Rect>,
-    right_chunks: Vec<ratatui::layout::Rect>,
+    chunks: std::rc::Rc<[ratatui::layout::Rect]>,
+    controls_chunks: std::rc::Rc<[ratatui::layout::Rect]>,
+    left_chunks: std::rc::Rc<[ratatui::layout::Rect]>,
+    right_chunks: std::rc::Rc<[ratatui::layout::Rect]>,
 }
 
 async fn run_app<B: Backend>(
@@ -338,34 +338,34 @@ fn ui(f: &mut Frame, app: &AppState, cache: &mut LayoutCache) {
                 .as_ref(),
             )
             .split(size);
-        cache.chunks = chunks.to_vec();
+        cache.chunks = chunks;
 
         if cache.chunks.len() >= 2 {
             let controls_chunks = Layout::default()
                 .direction(Direction::Horizontal)
                 .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
                 .split(cache.chunks[1]);
-            cache.controls_chunks = controls_chunks.to_vec();
+            cache.controls_chunks = controls_chunks;
 
             if cache.controls_chunks.len() >= 2 {
                 let left_chunks = Layout::default()
                     .direction(Direction::Vertical)
                     .constraints([Constraint::Length(3), Constraint::Length(3)].as_ref())
                     .split(cache.controls_chunks[0]);
-                cache.left_chunks = left_chunks.to_vec();
+                cache.left_chunks = left_chunks;
 
                 let right_chunks = Layout::default()
                     .direction(Direction::Vertical)
                     .constraints([Constraint::Length(3), Constraint::Length(3)].as_ref())
                     .split(cache.controls_chunks[1]);
-                cache.right_chunks = right_chunks.to_vec();
+                cache.right_chunks = right_chunks;
             }
         }
     }
 
-    let chunks = cache.chunks.as_slice();
-    let left_chunks = cache.left_chunks.as_slice();
-    let right_chunks = cache.right_chunks.as_slice();
+    let chunks = &*cache.chunks;
+    let left_chunks = &*cache.left_chunks;
+    let right_chunks = &*cache.right_chunks;
 
     if chunks.len() < 3 || left_chunks.len() < 2 || right_chunks.len() < 2 {
         return;
