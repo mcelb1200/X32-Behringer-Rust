@@ -839,15 +839,22 @@ mod tests {
 
         // Identical values return None
         assert!(classify_risk("/ch/01/mix/fader", &cur_f, &scn_f).is_none());
-        assert!(classify_risk(
-            "/ch/01/config/name",
-            &OscArg::String("Vox".into()),
-            &OscArg::String("Vox".into())
-        )
-        .is_none());
+        assert!(
+            classify_risk(
+                "/ch/01/config/name",
+                &OscArg::String("Vox".into()),
+                &OscArg::String("Vox".into())
+            )
+            .is_none()
+        );
 
         // classify_risk wrapper uses X32 default
-        let issue = classify_risk("/ch/01/config/name", &OscArg::String("Vox1".into()), &OscArg::String("Vox2".into())).unwrap();
+        let issue = classify_risk(
+            "/ch/01/config/name",
+            &OscArg::String("Vox1".into()),
+            &OscArg::String("Vox2".into()),
+        )
+        .unwrap();
         assert_eq!(issue.level, RiskLevel::Info);
 
         // Routing critical
@@ -865,44 +872,83 @@ mod tests {
         assert_eq!(issue.level, RiskLevel::Critical);
 
         // Preamp gain: >0.166 => High, <=0.166 => Moderate
-        let issue = classify_risk("/ch/01/preamp/trim", &OscArg::Float(0.0), &OscArg::Float(0.2)).unwrap();
+        let issue = classify_risk(
+            "/ch/01/preamp/trim",
+            &OscArg::Float(0.0),
+            &OscArg::Float(0.2),
+        )
+        .unwrap();
         assert_eq!(issue.level, RiskLevel::High);
 
-        let issue = classify_risk("/ch/01/preamp/trim", &OscArg::Float(0.0), &OscArg::Float(0.1)).unwrap();
+        let issue = classify_risk(
+            "/ch/01/preamp/trim",
+            &OscArg::Float(0.0),
+            &OscArg::Float(0.1),
+        )
+        .unwrap();
         assert_eq!(issue.level, RiskLevel::Moderate);
 
         // EQ bypass & EQ gain
         let issue = classify_risk("/ch/01/eq/on", &OscArg::Int(0), &OscArg::Int(1)).unwrap();
         assert_eq!(issue.level, RiskLevel::High);
 
-        let issue = classify_risk("/ch/01/eq/1/g", &OscArg::Float(0.0), &OscArg::Float(0.3)).unwrap();
+        let issue =
+            classify_risk("/ch/01/eq/1/g", &OscArg::Float(0.0), &OscArg::Float(0.3)).unwrap();
         assert_eq!(issue.level, RiskLevel::High);
 
         // Fader: >0.25 => Moderate, <=0.25 => Low
-        let issue = classify_risk("/ch/01/mix/fader", &OscArg::Float(0.0), &OscArg::Float(0.3)).unwrap();
+        let issue =
+            classify_risk("/ch/01/mix/fader", &OscArg::Float(0.0), &OscArg::Float(0.3)).unwrap();
         assert_eq!(issue.level, RiskLevel::Moderate);
 
-        let issue = classify_risk("/ch/01/mix/fader", &OscArg::Float(0.0), &OscArg::Float(0.1)).unwrap();
+        let issue =
+            classify_risk("/ch/01/mix/fader", &OscArg::Float(0.0), &OscArg::Float(0.1)).unwrap();
         assert_eq!(issue.level, RiskLevel::Low);
 
         // Dynamics / Gate => Low
-        let issue = classify_risk("/ch/01/dyn/ratio", &OscArg::Float(2.0), &OscArg::Float(4.0)).unwrap();
+        let issue =
+            classify_risk("/ch/01/dyn/ratio", &OscArg::Float(2.0), &OscArg::Float(4.0)).unwrap();
         assert_eq!(issue.level, RiskLevel::Low);
 
-        let issue = classify_risk("/ch/01/gate/thr", &OscArg::Float(-50.0), &OscArg::Float(-40.0)).unwrap();
+        let issue = classify_risk(
+            "/ch/01/gate/thr",
+            &OscArg::Float(-50.0),
+            &OscArg::Float(-40.0),
+        )
+        .unwrap();
         assert_eq!(issue.level, RiskLevel::Low);
 
         // Auxin, FX return, DCA, FX bounds
-        let issue = classify_risk_with_model(MixerModel::XR18, "/auxin/03/mix/fader", &cur_f, &OscArg::Float(0.5)).unwrap();
+        let issue = classify_risk_with_model(
+            MixerModel::XR18,
+            "/auxin/03/mix/fader",
+            &cur_f,
+            &OscArg::Float(0.5),
+        )
+        .unwrap();
         assert_eq!(issue.level, RiskLevel::Critical); // max 2 auxins on XR18
 
-        let issue = classify_risk_with_model(MixerModel::XR18, "/fxrtn/05/mix/fader", &cur_f, &OscArg::Float(0.5)).unwrap();
+        let issue = classify_risk_with_model(
+            MixerModel::XR18,
+            "/fxrtn/05/mix/fader",
+            &cur_f,
+            &OscArg::Float(0.5),
+        )
+        .unwrap();
         assert_eq!(issue.level, RiskLevel::Critical); // max 4 fxrtns on XR18
 
-        let issue = classify_risk_with_model(MixerModel::XR18, "/dca/05/fader", &cur_f, &OscArg::Float(0.5)).unwrap();
+        let issue = classify_risk_with_model(
+            MixerModel::XR18,
+            "/dca/05/fader",
+            &cur_f,
+            &OscArg::Float(0.5),
+        )
+        .unwrap();
         assert_eq!(issue.level, RiskLevel::Critical); // max 4 dcas on XR18
 
-        let issue = classify_risk_with_model(MixerModel::XR18, "/fx/05/type", &cur_f, &OscArg::Float(0.5)).unwrap();
+        let issue =
+            classify_risk_with_model(MixerModel::XR18, "/fx/05/type", &cur_f, &OscArg::Float(0.5))
+                .unwrap();
         assert_eq!(issue.level, RiskLevel::Critical); // max 4 fx slots on XR18
     }
 }
