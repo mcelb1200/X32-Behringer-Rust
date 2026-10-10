@@ -15,8 +15,8 @@
 
 use anyhow::Result;
 use clap::{Parser, ValueEnum};
-use tokio::time::{sleep, Duration};
-use x32_lib::{get_parameter_async, set_parameter_async, verify_fx_type_async, MixerClient};
+use tokio::time::{Duration, sleep};
+use x32_lib::{MixerClient, get_parameter_async, set_parameter_async, verify_fx_type_async};
 
 /// Command-line arguments for the `x32_geq2_cpy` tool.
 #[derive(Parser, Debug)]

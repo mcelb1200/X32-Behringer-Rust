@@ -1,5 +1,5 @@
 use clap::Parser;
-use x32_feedback_detect::{run, Args};
+use x32_feedback_detect::{Args, run};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
