@@ -9,8 +9,8 @@ use osc_lib::OscArg;
 use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
-use tokio::time::{Duration, timeout};
-use x32_lib::{MixerClient, error::X32Error};
+use tokio::time::{timeout, Duration};
+use x32_lib::{error::X32Error, MixerClient};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]

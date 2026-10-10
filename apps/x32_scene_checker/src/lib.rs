@@ -3,9 +3,9 @@ use osc_lib::OscArg;
 use std::collections::HashMap;
 use std::io::{BufRead, Read, Write};
 use std::time::Duration;
+use x32_lib::scene_parse::SceneParser;
 use x32_lib::MixerClient;
 use x32_lib::MixerModel;
-use x32_lib::scene_parse::SceneParser;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about = "Intelligent Scene Pre-flight Checker", long_about = None)]
@@ -690,11 +690,9 @@ mod tests {
         let issue =
             classify_risk_with_model(MixerModel::XR18, "/ch/17/mix/fader", &dummy, &scene).unwrap();
         assert_eq!(issue.level, RiskLevel::Critical);
-        assert!(
-            issue
-                .description
-                .contains("Channel index 17 is out of bounds")
-        );
+        assert!(issue
+            .description
+            .contains("Channel index 17 is out of bounds"));
 
         // XR12: 12 channels
         assert!(

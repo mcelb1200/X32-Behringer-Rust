@@ -4,8 +4,8 @@ use async_trait::async_trait;
 use midir::{Ignore, MidiInput, MidiOutput, MidiOutputConnection};
 use osc_lib::OscMessage;
 use std::sync::Mutex;
-use tokio::sync::Mutex as TokioMutex;
 use tokio::sync::mpsc;
+use tokio::sync::Mutex as TokioMutex;
 
 /// A MIDI Sysex transport implementation of `MixerTransport` for USB connection.
 pub struct MidiTransport {

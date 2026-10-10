@@ -1,4 +1,4 @@
-use x32_xsprint::{XsprintValue, xsprint};
+use x32_xsprint::{xsprint, XsprintValue};
 
 pub struct Xscene2xParser<'a> {
     input: &'a [u8],

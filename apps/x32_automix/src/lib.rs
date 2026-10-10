@@ -14,7 +14,7 @@
 use clap::Parser;
 use osc_lib::OscArg;
 use std::time::Duration;
-use x32_lib::{MixerClient, error::Result};
+use x32_lib::{error::Result, MixerClient};
 
 /// A utility to provide automixing functionality for the Behringer X32/X-Air consoles.
 #[derive(Parser, Debug)]

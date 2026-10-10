@@ -4,7 +4,7 @@ use std::time::Duration;
 use tokio::net::UdpSocket;
 
 use osc_lib::OscArg;
-use x32_dca_spill::{Args, run};
+use x32_dca_spill::{run, Args};
 
 #[tokio::test]
 async fn test_dca_spill_custom_bank_mapping() {

@@ -1,4 +1,4 @@
-use x32_xsprint::{XsprintValue, xsprint};
+use x32_xsprint::{xsprint, XsprintValue};
 
 /// Parses a string formatted text input into a byte buffer for OSC.
 /// Mimics the behavior of Xcparse.c.

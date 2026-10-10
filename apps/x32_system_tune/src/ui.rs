@@ -2,15 +2,15 @@ use anyhow::Result;
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
     execute,
-    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
+    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use ratatui::{
-    Terminal,
     backend::CrosstermBackend,
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Gauge, Paragraph},
+    Terminal,
 };
 use std::{io, time::Duration};
 
@@ -32,7 +32,7 @@ impl Drop for TuiDropGuard {
 pub struct Tui {
     terminal: Terminal<CrosstermBackend<io::Stdout>>,
     _guard: TuiDropGuard,
-    cached_chunks: Vec<Rect>,
+    cached_chunks: std::rc::Rc<[ratatui::layout::Rect]>,
     cached_area: Rect,
 }
 
@@ -49,7 +49,7 @@ impl Tui {
         Ok(Self {
             terminal,
             _guard: TuiDropGuard,
-            cached_chunks: Vec::new(),
+            cached_chunks: std::rc::Rc::from([]),
             cached_area: Rect::default(),
         })
     }
@@ -59,7 +59,7 @@ impl Tui {
             let size = f.size();
 
             // ⚡ Bolt: Cache layout chunk splits inside the draw closure to avoid
-            // an extra ioctl size fetch per frame, eliminating Vec<Rect> allocations.
+            // an extra ioctl size fetch per frame, eliminating std::rc::Rc<[ratatui::layout::Rect]> allocations.
             if self.cached_area != size {
                 self.cached_area = size;
                 let chunks = Layout::default()
@@ -75,7 +75,7 @@ impl Tui {
                         .as_ref(),
                     )
                     .split(size);
-                self.cached_chunks = chunks.to_vec();
+                self.cached_chunks = chunks;
             }
 
             let chunks = &self.cached_chunks;

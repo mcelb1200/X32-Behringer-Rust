@@ -3,23 +3,23 @@ use anyhow::Result;
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
     execute,
-    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
+    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use ratatui::{
-    Terminal,
     backend::CrosstermBackend,
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Paragraph},
+    Terminal,
 };
 use std::{fmt::Write, io, time::Duration};
 
 pub struct Tui {
     terminal: Terminal<CrosstermBackend<io::Stdout>>,
     cached_area: Rect,
-    cached_chunks: Vec<Rect>,
-    cached_channel_chunks: Vec<Rect>,
+    cached_chunks: Vec<ratatui::layout::Rect>,
+    cached_channel_chunks: Vec<ratatui::layout::Rect>,
     cached_constraints: Vec<Constraint>,
     header_buf: String,
     fader_bufs: Vec<String>,
