@@ -20,7 +20,7 @@ pub struct AppTui {
     terminal: Terminal<CrosstermBackend<io::Stdout>>,
     notch_text: String,
     cached_area: Rect,
-    cached_chunks: Vec<Rect>,
+    cached_chunks: std::rc::Rc<[ratatui::layout::Rect]>,
 }
 
 pub enum TuiEvent {
@@ -40,7 +40,7 @@ impl AppTui {
             terminal,
             notch_text: String::with_capacity(512),
             cached_area: Rect::default(),
-            cached_chunks: Vec::new(),
+            cached_chunks: std::rc::Rc::from([]),
         })
     }
 
@@ -76,7 +76,7 @@ impl AppTui {
                     .direction(Direction::Vertical)
                     .constraints([Constraint::Length(3), Constraint::Min(0)].as_ref())
                     .split(size);
-                self.cached_chunks = chunks.to_vec();
+                self.cached_chunks = chunks;
             }
 
             let chunks = &self.cached_chunks;

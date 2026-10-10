@@ -105,7 +105,7 @@ impl AppState {
 
 struct LayoutCache {
     area: Rect,
-    chunks: Vec<Rect>,
+    chunks: std::rc::Rc<[ratatui::layout::Rect]>,
     bus_names: Vec<String>,
     bus_statuses: Vec<String>,
     notch_strs: Vec<String>,
@@ -146,7 +146,7 @@ pub async fn run(args: Args) -> Result<()> {
     let mut ticker = interval(Duration::from_millis(500)); // Render & ramp ticker
     let mut layout_cache = LayoutCache {
         area: Rect::default(),
-        chunks: Vec::new(),
+        chunks: std::rc::Rc::from([]),
         bus_names: Vec::new(),
         bus_statuses: Vec::new(),
         notch_strs: Vec::new(),
@@ -370,7 +370,7 @@ fn ui(f: &mut Frame, state: &AppState, cache: &mut LayoutCache) {
             .direction(Direction::Vertical)
             .constraints([Constraint::Min(5), Constraint::Length(3)].as_ref())
             .split(size);
-        cache.chunks = chunks.to_vec();
+        cache.chunks = chunks;
     }
     let chunks = &cache.chunks;
 

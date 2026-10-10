@@ -18,8 +18,8 @@ use std::{fmt::Write, io, time::Duration};
 pub struct Tui {
     terminal: Terminal<CrosstermBackend<io::Stdout>>,
     cached_area: Rect,
-    cached_chunks: Vec<Rect>,
-    cached_channel_chunks: Vec<Rect>,
+    cached_chunks: Vec<ratatui::layout::Rect>,
+    cached_channel_chunks: Vec<ratatui::layout::Rect>,
     cached_constraints: Vec<Constraint>,
     header_buf: String,
     fader_bufs: Vec<String>,

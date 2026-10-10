@@ -34,7 +34,7 @@ pub struct Tui {
     terminal: Terminal<CrosstermBackend<io::Stdout>>,
     bpm_buffer: String,
     cached_area: Rect,
-    cached_chunks: Vec<Rect>,
+    cached_chunks: std::rc::Rc<[ratatui::layout::Rect]>,
 }
 
 impl Tui {
@@ -48,7 +48,7 @@ impl Tui {
             terminal,
             bpm_buffer: String::with_capacity(32),
             cached_area: Rect::default(),
-            cached_chunks: Vec::new(),
+            cached_chunks: std::rc::Rc::from([]),
         })
     }
 
@@ -64,7 +64,7 @@ impl Tui {
             let size = f.size();
 
             // ⚡ Bolt: Cache layout chunk splits inside the draw closure to avoid
-            // layout solver overhead per frame, eliminating Vec<Rect> allocations.
+            // layout solver overhead per frame, eliminating std::rc::Rc<[ratatui::layout::Rect]> allocations.
             if self.cached_area != size || self.cached_chunks.is_empty() {
                 self.cached_area = size;
                 let chunks = Layout::default()
@@ -82,7 +82,7 @@ impl Tui {
                         .as_ref(),
                     )
                     .split(size);
-                self.cached_chunks = chunks.to_vec();
+                self.cached_chunks = chunks;
             }
 
             let chunks = &self.cached_chunks;
