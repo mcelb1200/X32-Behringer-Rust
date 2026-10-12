@@ -14,12 +14,16 @@
 use clap::Parser;
 use osc_lib::OscArg;
 use std::time::Duration;
-use x32_lib::{MixerClient, error::Result};
+use x32_lib::{MixerClient, MixerModel, error::Result};
 
 /// A utility to provide automixing functionality for the Behringer X32/X-Air consoles.
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 pub struct Args {
+    /// Digital mixer model
+    #[arg(short, long, default_value = "X32")]
+    pub model: MixerModel,
+
     /// IP address of the X32 console
     #[arg(short, long)]
     pub ip: String,
@@ -66,6 +70,25 @@ pub async fn run(args: Args) -> Result<()> {
     run_automix(args, client).await
 }
 
+/// Returns the maximum channel count for the specified digital mixer model.
+pub fn max_channels_for_model(model: MixerModel) -> u8 {
+    match model {
+        MixerModel::X32 => 32,
+        MixerModel::Wing => 40,
+        MixerModel::XR18 | MixerModel::XR16 => 16,
+        MixerModel::XR12 => 12,
+    }
+}
+
+/// Generates the OSC path for controlling fader level or bus send level on a channel.
+pub fn get_fader_or_bus_path(_model: MixerModel, ch: u8, use_bus: bool, bus_number: u8) -> String {
+    if use_bus {
+        format!("/ch/{:02}/mix/{:02}/level", ch, bus_number)
+    } else {
+        format!("/ch/{:02}/mix/fader", ch)
+    }
+}
+
 /// Runs the automixing loop.
 ///
 /// This function continuously monitors channel levels and adjusts faders based on the
@@ -76,21 +99,21 @@ pub async fn run(args: Args) -> Result<()> {
 /// * `args` - The command-line arguments containing the automix configuration.
 /// * `client` - The MixerClient connected to the mixer.
 async fn run_automix(args: Args, client: MixerClient) -> Result<()> {
+    let max_channels = max_channels_for_model(args.model) as usize;
+
     // We maintain state for Dugan UDP throttling and noise tracking
-    let mut last_sent_levels: [f32; 32] = [0.0; 32];
-    let mut smoothed_levels: [f32; 32] = [0.0; 32];
+    let mut last_sent_levels: [f32; 40] = [0.0; 40];
+    let mut smoothed_levels: [f32; 40] = [0.0; 40];
 
     let attack_coef = 0.8;
     let release_coef = 0.2;
 
-    let fader_addresses: [String; 32] = core::array::from_fn(|i| {
-        let ch = i + 1;
-        if args.use_bus {
-            format!("/ch/{:02}/mix/{:02}/level", ch, args.bus_number)
-        } else {
-            format!("/ch/{:02}/mix/fader", ch)
-        }
-    });
+    let fader_addresses: Vec<String> = (0..max_channels)
+        .map(|i| {
+            let ch = (i + 1) as u8;
+            get_fader_or_bus_path(args.model, ch, args.use_bus, args.bus_number)
+        })
+        .collect();
 
     let mut rx = client.subscribe();
     let mut meter_interval = tokio::time::interval(Duration::from_secs(9));
@@ -116,11 +139,11 @@ async fn run_automix(args: Args, client: MixerClient) -> Result<()> {
                 };
                 if response.path == "/meters/1" {
                     if let Some(OscArg::Blob(data)) = response.args.first() {
-                        let start_ch = args.start_channel.saturating_sub(1) as usize;
-                        let stop_ch = args.stop_channel as usize;
+                        let start_ch = (args.start_channel.saturating_sub(1) as usize).min(max_channels);
+                        let stop_ch = (args.stop_channel as usize).min(max_channels);
 
                         // 1. Parse levels and apply fast attack / slow release envelope
-                        let mut current_levels = [0.0; 32];
+                        let mut current_levels = [0.0; 40];
                         for ch in start_ch..stop_ch {
                             let start = ch * 4;
                             let end = start + 4;
@@ -138,10 +161,10 @@ async fn run_automix(args: Args, client: MixerClient) -> Result<()> {
                         }
 
                         // 2. Calculate Dugan gains if NOM is enabled, else simple threshold
-                        let mut full_gains = [0.0; 32];
+                        let mut full_gains = [0.0; 40];
                         if args.nom {
                             let levels_slice = &current_levels[start_ch..stop_ch];
-                            let mut temp_gains = [0.0; 32];
+                            let mut temp_gains = [0.0; 40];
                             calculate_dugan_gains(levels_slice, args.sensitivity, &mut temp_gains);
                             for (i, &g) in temp_gains.iter().enumerate().take(levels_slice.len()) {
                                 full_gains[start_ch + i] = g;
@@ -212,7 +235,7 @@ fn db_to_level(db: f32) -> f32 {
 /// We also apply priority ducking by only including channels above the noise_floor.
 fn calculate_dugan_gains(levels: &[f32], noise_floor: f32, gains_out: &mut [f32]) {
     // ⚡ Bolt: Use a stack-allocated array to prevent Vec heap allocations on every audio frame
-    let mut weights = [0.0; 32];
+    let mut weights = [0.0; 40];
     let mut sum_weights = 0.0;
 
     for (i, &level) in levels.iter().enumerate() {
@@ -251,8 +274,51 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_max_channels_for_model() {
+        assert_eq!(max_channels_for_model(MixerModel::X32), 32);
+        assert_eq!(max_channels_for_model(MixerModel::Wing), 40);
+        assert_eq!(max_channels_for_model(MixerModel::XR18), 16);
+        assert_eq!(max_channels_for_model(MixerModel::XR16), 16);
+        assert_eq!(max_channels_for_model(MixerModel::XR12), 12);
+    }
+
+    #[test]
+    fn test_model_fader_or_bus_path() {
+        assert_eq!(
+            get_fader_or_bus_path(MixerModel::X32, 1, false, 1),
+            "/ch/01/mix/fader"
+        );
+        assert_eq!(
+            get_fader_or_bus_path(MixerModel::Wing, 40, false, 1),
+            "/ch/40/mix/fader"
+        );
+        assert_eq!(
+            get_fader_or_bus_path(MixerModel::XR18, 16, true, 4),
+            "/ch/16/mix/04/level"
+        );
+        assert_eq!(
+            get_fader_or_bus_path(MixerModel::XR12, 12, true, 2),
+            "/ch/12/mix/02/level"
+        );
+    }
+
+    #[test]
+    fn test_dugan_gain_calculation_edge_cases() {
+        // Multi-mic gain sharing: 4 equal mics at unity (0.75 level) -> 1/4 = -12.04 dB
+        let levels = vec![0.75, 0.75, 0.75, 0.75];
+        let mut gains = [0.0; 40];
+        calculate_dugan_gains(&levels, 0.01, &mut gains);
+        // -12.04 dB maps to db_to_level(-12.04) = (-12.04 + 50) / 80 = 37.96 / 80 = ~0.4745
+        assert!((gains[0] - 0.4745).abs() < 0.01);
+        assert!((gains[1] - 0.4745).abs() < 0.01);
+        assert!((gains[2] - 0.4745).abs() < 0.01);
+        assert!((gains[3] - 0.4745).abs() < 0.01);
+    }
+
+    #[test]
     fn test_fader_address_generation_main_mix() {
         let args = Args {
+            model: MixerModel::X32,
             ip: "127.0.0.1".to_string(),
             down_delay: 5,
             meter_rate_ms: 50,
@@ -281,6 +347,7 @@ mod tests {
     #[test]
     fn test_fader_address_generation_bus_mix() {
         let args = Args {
+            model: MixerModel::X32,
             ip: "127.0.0.1".to_string(),
             down_delay: 5,
             meter_rate_ms: 50,
