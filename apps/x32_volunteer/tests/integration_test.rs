@@ -68,6 +68,8 @@ async fn test_x32_volunteer_integration() {
     let args = Args {
         ip: addr.clone(),
         channels: "ch1".to_string(),
+        model: x32_lib::MixerModel::X32,
+        config: None,
     };
 
     // run will block because of the crossterm event loop, but we can verify initialization finishes

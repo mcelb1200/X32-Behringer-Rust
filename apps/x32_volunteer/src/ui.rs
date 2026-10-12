@@ -64,9 +64,10 @@ impl Tui {
             self.level_bufs
                 .resize_with(state.channels.len(), || String::with_capacity(32));
         }
-        if self.alert_bufs.len() != state.alerts.len() {
+        let total_alerts = state.alerts.len() + state.fader_alerts.len();
+        if self.alert_bufs.len() != total_alerts {
             self.alert_bufs
-                .resize_with(state.alerts.len(), || String::with_capacity(128));
+                .resize_with(total_alerts, || String::with_capacity(128));
         }
 
         // ⚡ Bolt: Clear and populate stateful string buffers using `write!` instead
@@ -98,14 +99,29 @@ impl Tui {
                 .expect("Write level buffer failed");
         }
 
-        for (i, &ch_idx) in state.alerts.iter().enumerate() {
-            self.alert_bufs[i].clear();
+        let mut alert_idx = 0;
+        for &ch_idx in &state.alerts {
+            self.alert_bufs[alert_idx].clear();
             write!(
-                self.alert_bufs[i],
+                self.alert_bufs[alert_idx],
                 "• 🟡 {} level is high — consider lowering fader.",
                 state.channels[ch_idx].name
             )
             .expect("Write alert buffer failed");
+            alert_idx += 1;
+        }
+
+        for &ch_idx in &state.fader_alerts {
+            self.alert_bufs[alert_idx].clear();
+            let f_db = crate::fader_to_db(state.channels[ch_idx].fader);
+            let limit = state.max_fader_limit_db.unwrap_or(0.0);
+            write!(
+                self.alert_bufs[alert_idx],
+                "• 🔴 {} fader ({:.1} dB) exceeds limit ({:.1} dB).",
+                state.channels[ch_idx].name, f_db, limit
+            )
+            .expect("Write fader alert buffer failed");
+            alert_idx += 1;
         }
 
         self.terminal.draw(|f| {
