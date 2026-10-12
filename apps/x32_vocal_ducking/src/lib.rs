@@ -12,19 +12,23 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, Instant};
 use tokio::sync::mpsc;
 use tokio::time::sleep;
-use x32_lib::MixerClient;
+use x32_lib::{MixerClient, MixerModel};
 
 #[derive(Parser, Debug)]
 #[command(
     name = "x32_vocal_ducking",
     version = "0.1.0",
-    about = "Dynamic Vocal Ducking & Spectral Carver for X32"
+    about = "Dynamic Vocal Ducking & Spectral Carver for X32/Wing/XAir"
 )]
 /// Command-line arguments.
 pub struct Cli {
-    /// X32 IP Address
+    /// Digital mixer IP Address
     #[arg(long, default_value = "192.168.1.50")]
     pub ip: String,
+
+    /// Mixer model: X32, Wing, XR18, XR16, XR12
+    #[arg(short, long, default_value = "X32")]
+    pub model: MixerModel,
 
     /// Substring match for audio device name (USB Mode)
     #[arg(long)]
@@ -34,11 +38,11 @@ pub struct Cli {
     #[arg(long)]
     pub card_channel: Option<usize>,
 
-    /// Vocal bus index on the X32 (1-16) to act as trigger
+    /// Vocal bus index on the mixer to act as trigger
     #[arg(long)]
     pub vocal_bus: Option<usize>,
 
-    /// Instrument bus index on the X32 to duck (1-16)
+    /// Instrument bus index on the mixer to duck
     #[arg(long, default_value_t = 1)]
     pub instrument_bus: usize,
 
@@ -69,6 +73,80 @@ pub struct Cli {
     /// List available audio devices and exit
     #[arg(long)]
     pub list_devices: bool,
+}
+
+/// Get maximum number of mix buses supported by the mixer model.
+pub fn max_buses_for_model(model: MixerModel) -> usize {
+    match model {
+        MixerModel::X32 => 16,
+        MixerModel::Wing => 28,
+        MixerModel::XR18 => 6,
+        MixerModel::XR16 => 4,
+        MixerModel::XR12 => 2,
+    }
+}
+
+/// Get target PEQ band index for the given mixer model.
+pub fn target_eq_band_for_model(model: MixerModel) -> usize {
+    match model {
+        MixerModel::Wing => 8,
+        MixerModel::X32 => 3,
+        MixerModel::XR18 | MixerModel::XR16 | MixerModel::XR12 => 3,
+    }
+}
+
+/// Generate OSC path for bus PEQ gain.
+pub fn get_bus_eq_g_path(model: MixerModel, bus_idx: usize) -> String {
+    let band = target_eq_band_for_model(model);
+    format!("/bus/{:02}/eq/{}/g", bus_idx, band)
+}
+
+/// Generate OSC path for bus PEQ frequency.
+pub fn get_bus_eq_f_path(model: MixerModel, bus_idx: usize) -> String {
+    let band = target_eq_band_for_model(model);
+    format!("/bus/{:02}/eq/{}/f", bus_idx, band)
+}
+
+/// Generate OSC path for bus compressor dynamic key filter frequency.
+pub fn get_bus_dyn_filter_path(_model: MixerModel, bus_idx: usize) -> String {
+    format!("/bus/{:02}/dyn/filter/f", bus_idx)
+}
+
+/// Get OSC meter subscription path for bus levels.
+pub fn get_bus_meter_path(model: MixerModel) -> &'static str {
+    match model {
+        MixerModel::X32 => "/meters/2",
+        MixerModel::Wing => "/meters/3",
+        MixerModel::XR18 | MixerModel::XR16 | MixerModel::XR12 => "/meters/2",
+    }
+}
+
+/// Validate instrument and vocal bus indices against model capabilities.
+pub fn validate_bus_indices(
+    model: MixerModel,
+    instrument_bus: usize,
+    vocal_bus: Option<usize>,
+) -> Result<()> {
+    let max_buses = max_buses_for_model(model);
+    if instrument_bus == 0 || instrument_bus > max_buses {
+        return Err(anyhow!(
+            "Instrument bus {} out of bounds for model {} (valid: 1-{})",
+            instrument_bus,
+            model,
+            max_buses
+        ));
+    }
+    if let Some(v_bus) = vocal_bus {
+        if v_bus == 0 || v_bus > max_buses {
+            return Err(anyhow!(
+                "Vocal bus {} out of bounds for model {} (valid: 1-{})",
+                v_bus,
+                model,
+                max_buses
+            ));
+        }
+    }
+    Ok(())
 }
 
 // Convert frequency [20..20000] Hz to logarithmic float [0..1]
@@ -107,7 +185,9 @@ pub async fn run(cli: Cli) -> Result<()> {
         return list_devices();
     }
 
-    // Connect to X32
+    validate_bus_indices(cli.model, cli.instrument_bus, cli.vocal_bus)?;
+
+    // Connect to mixer
     println!("Connecting to X32 at {}...", cli.ip);
     let client = Arc::new(MixerClient::connect(&cli.ip, true).await?);
     if !client.probe().await {
@@ -250,12 +330,13 @@ pub async fn run(cli: Cli) -> Result<()> {
     if _stream.is_none() {
         if let Some(v_bus) = cli.vocal_bus {
             println!("Initializing Pure OSC Mode (Vocal Bus: Bus {})...", v_bus);
+            let meter_path = get_bus_meter_path(cli.model);
+            let meter_path_str = meter_path.to_string();
             tokio::spawn(async move {
-                // Subscribe to /meters/2 (contains bus levels)
                 let subscribe_msg = OscMessage::new(
                     "/meters".to_string(),
                     vec![
-                        OscArg::String("/meters/2".to_string()),
+                        OscArg::String(meter_path_str.clone()),
                         OscArg::Int(50), // 50ms update rate
                     ],
                 );
@@ -269,7 +350,7 @@ pub async fn run(cli: Cli) -> Result<()> {
 
                 while r_clone.load(Ordering::Relaxed) {
                     if let Ok(msg) = osc_rx.recv().await {
-                        if msg.path == "/meters/2" {
+                        if msg.path == meter_path_str {
                             if let Some(OscArg::Blob(data)) = msg.args.first() {
                                 // Bus offset is (v_bus - 1) * 4 bytes
                                 let start = (v_bus - 1) * 4;
@@ -348,8 +429,7 @@ pub async fn run(cli: Cli) -> Result<()> {
                 last_update_time = Instant::now();
 
                 // Send Surgical PEQ notch gain update
-                // Instrument bus EQ Band 3 path: /bus/[bus_idx]/eq/3/g
-                let eq_path_g = format!("/bus/{:02}/eq/3/g", cli.instrument_bus);
+                let eq_path_g = get_bus_eq_g_path(cli.model, cli.instrument_bus);
                 let _ = client
                     .send_message(&eq_path_g, vec![OscArg::Float(db_to_eq_gain(target_gain))])
                     .await;
@@ -357,7 +437,7 @@ pub async fn run(cli: Cli) -> Result<()> {
 
                 // Send Surgical PEQ notch frequency if peak frequency is dynamic (USB mode)
                 if _stream.is_some() && freq_changed {
-                    let eq_path_f = format!("/bus/{:02}/eq/3/f", cli.instrument_bus);
+                    let eq_path_f = get_bus_eq_f_path(cli.model, cli.instrument_bus);
                     let freq_float = log2float(msg.peak_freq, 20.0, range_log);
                     let _ = client
                         .send_message(&eq_path_f, vec![OscArg::Float(freq_float)])
@@ -365,7 +445,7 @@ pub async fn run(cli: Cli) -> Result<()> {
 
                     // Dynamically tune dynamic sidechain key filter if enabled
                     if cli.use_key_filter {
-                        let filter_path = format!("/bus/{:02}/dyn/filter/f", cli.instrument_bus);
+                        let filter_path = get_bus_dyn_filter_path(cli.model, cli.instrument_bus);
                         let _ = client
                             .send_message(&filter_path, vec![OscArg::Float(freq_float)])
                             .await;
@@ -385,11 +465,83 @@ pub async fn run(cli: Cli) -> Result<()> {
     }
 
     // Graceful cleanup: restore EQ band to flat (0dB) before exit
-    let eq_path_cleanup = format!("/bus/{:02}/eq/3/g", cli.instrument_bus);
+    let eq_path_cleanup = get_bus_eq_g_path(cli.model, cli.instrument_bus);
     let _ = client
         .send_message(&eq_path_cleanup, vec![OscArg::Float(db_to_eq_gain(0.0))])
         .await;
     println!("\nSettings restored. Exiting.");
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_max_buses_for_model() {
+        assert_eq!(max_buses_for_model(MixerModel::X32), 16);
+        assert_eq!(max_buses_for_model(MixerModel::Wing), 28);
+        assert_eq!(max_buses_for_model(MixerModel::XR18), 6);
+        assert_eq!(max_buses_for_model(MixerModel::XR16), 4);
+        assert_eq!(max_buses_for_model(MixerModel::XR12), 2);
+    }
+
+    #[test]
+    fn test_target_eq_band_for_model() {
+        assert_eq!(target_eq_band_for_model(MixerModel::Wing), 8);
+        assert_eq!(target_eq_band_for_model(MixerModel::X32), 3);
+        assert_eq!(target_eq_band_for_model(MixerModel::XR18), 3);
+        assert_eq!(target_eq_band_for_model(MixerModel::XR16), 3);
+        assert_eq!(target_eq_band_for_model(MixerModel::XR12), 3);
+    }
+
+    #[test]
+    fn test_osc_path_generation() {
+        assert_eq!(get_bus_eq_g_path(MixerModel::X32, 1), "/bus/01/eq/3/g");
+        assert_eq!(get_bus_eq_g_path(MixerModel::Wing, 5), "/bus/05/eq/8/g");
+        assert_eq!(get_bus_eq_f_path(MixerModel::XR18, 2), "/bus/02/eq/3/f");
+
+        assert_eq!(
+            get_bus_dyn_filter_path(MixerModel::X32, 3),
+            "/bus/03/dyn/filter/f"
+        );
+
+        assert_eq!(get_bus_meter_path(MixerModel::X32), "/meters/2");
+        assert_eq!(get_bus_meter_path(MixerModel::Wing), "/meters/3");
+        assert_eq!(get_bus_meter_path(MixerModel::XR12), "/meters/2");
+    }
+
+    #[test]
+    fn test_validate_bus_indices_valid() {
+        assert!(validate_bus_indices(MixerModel::X32, 16, Some(1)).is_ok());
+        assert!(validate_bus_indices(MixerModel::Wing, 28, Some(14)).is_ok());
+        assert!(validate_bus_indices(MixerModel::XR18, 6, Some(2)).is_ok());
+        assert!(validate_bus_indices(MixerModel::XR16, 4, None).is_ok());
+        assert!(validate_bus_indices(MixerModel::XR12, 2, Some(1)).is_ok());
+    }
+
+    #[test]
+    fn test_validate_bus_indices_out_of_bounds() {
+        // Zero index is invalid
+        assert!(validate_bus_indices(MixerModel::X32, 0, None).is_err());
+        assert!(validate_bus_indices(MixerModel::X32, 1, Some(0)).is_err());
+
+        // Exceeding model max
+        assert!(validate_bus_indices(MixerModel::XR12, 3, None).is_err());
+        assert!(validate_bus_indices(MixerModel::XR12, 1, Some(3)).is_err());
+        assert!(validate_bus_indices(MixerModel::XR16, 5, None).is_err());
+        assert!(validate_bus_indices(MixerModel::XR18, 7, None).is_err());
+        assert!(validate_bus_indices(MixerModel::X32, 17, None).is_err());
+        assert!(validate_bus_indices(MixerModel::Wing, 29, None).is_err());
+    }
+
+    #[test]
+    fn test_db_to_eq_gain_mapping() {
+        assert_eq!(db_to_eq_gain(0.0), 0.5);
+        assert_eq!(db_to_eq_gain(-15.0), 0.0);
+        assert_eq!(db_to_eq_gain(15.0), 1.0);
+        assert_eq!(db_to_eq_gain(-20.0), 0.0);
+        assert_eq!(db_to_eq_gain(20.0), 1.0);
+    }
 }
