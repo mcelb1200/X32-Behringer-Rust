@@ -4,7 +4,8 @@ use std::time::Duration;
 use tokio::net::UdpSocket;
 
 use osc_lib::OscArg;
-use x32_dca_spill::{Args, run};
+use x32_dca_spill::{Args, run, spill_dca};
+use x32_lib::MixerModel;
 
 #[tokio::test]
 async fn test_dca_spill_custom_bank_mapping() {
@@ -90,6 +91,7 @@ async fn test_dca_spill_custom_bank_mapping() {
     // Run the app in a task
     let args = Args {
         ip: ip.clone(),
+        model: MixerModel::X32,
         dca: Some(1),
     };
 
@@ -125,4 +127,72 @@ async fn test_dca_spill_custom_bank_mapping() {
 
     assert_eq!(assignments[16].0, "/-prefs/custom_bank/3/1");
     assert_eq!(assignments[23].0, "/-prefs/custom_bank/3/8");
+}
+
+#[tokio::test]
+async fn test_invalid_dca_bounds_error() {
+    let args = Args {
+        ip: "127.0.0.1:0".to_string(),
+        model: MixerModel::X32,
+        dca: Some(9), // X32 only has 8 DCAs
+    };
+
+    let res = run(args).await;
+    assert!(res.is_err());
+    assert!(res.unwrap_err().to_string().contains("Invalid DCA number 9"));
+
+    let xair_args = Args {
+        ip: "127.0.0.1:0".to_string(),
+        model: MixerModel::XR18,
+        dca: Some(5), // XR18 only has 4 DCAs
+    };
+    let xair_res = run(xair_args).await;
+    assert!(xair_res.is_err());
+}
+
+#[tokio::test]
+async fn test_dca_spill_wing_member_source_offset() {
+    let mut assignments = HashMap::new();
+    // Channel 40 in DCA 1
+    assignments.insert("/ch/40/grp/dca".to_string(), 1);
+    // Auxin 8 in DCA 1
+    assignments.insert("/auxin/08/grp/dca".to_string(), 1);
+    // Fxrtn 8 in DCA 1
+    assignments.insert("/fxrtn/08/grp/dca".to_string(), 1);
+
+    // Wing: 40 ch + 8 aux + 8 fx = 56 total
+    // Ch 40 -> 40
+    // Aux 8 -> 40 + 8 = 48
+    // Fx 8 -> 40 + 8 + 8 = 56
+
+    let server_socket = UdpSocket::bind("127.0.0.1:0").await.unwrap();
+    let port = server_socket.local_addr().unwrap().port();
+    let ip = format!("127.0.0.1:{}", port);
+
+    let transport = x32_lib::transport::udp::UdpTransport::connect(&ip).await.unwrap();
+    let mut client = x32_lib::MixerClient::new(std::sync::Arc::new(transport), false);
+
+    let client_task = tokio::spawn(async move {
+        spill_dca(&mut client, MixerModel::Wing, 1, &assignments).await
+    });
+
+    let mut buf = [0; 1024];
+    let mut received = Vec::new();
+
+    while received.len() < 24 {
+        if let Ok(Ok((size, _))) = tokio::time::timeout(Duration::from_millis(100), server_socket.recv_from(&mut buf)).await {
+            if let Ok(msg) = osc_lib::OscMessage::from_bytes(&buf[..size]) {
+                if let Some(OscArg::Int(val)) = msg.args.first() {
+                    received.push((msg.path, *val));
+                }
+            }
+        }
+    }
+
+    client_task.await.unwrap().unwrap();
+
+    assert_eq!(received[0], ("/-prefs/custom_bank/1/1".to_string(), 40));
+    assert_eq!(received[1], ("/-prefs/custom_bank/1/2".to_string(), 48));
+    assert_eq!(received[2], ("/-prefs/custom_bank/1/3".to_string(), 56));
+    assert_eq!(received[3], ("/-prefs/custom_bank/1/4".to_string(), 0));
 }
