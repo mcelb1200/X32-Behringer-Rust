@@ -139,7 +139,11 @@ async fn test_invalid_dca_bounds_error() {
 
     let res = run(args).await;
     assert!(res.is_err());
-    assert!(res.unwrap_err().to_string().contains("Invalid DCA number 9"));
+    assert!(
+        res.unwrap_err()
+            .to_string()
+            .contains("Invalid DCA number 9")
+    );
 
     let xair_args = Args {
         ip: "127.0.0.1:0".to_string(),
@@ -169,18 +173,26 @@ async fn test_dca_spill_wing_member_source_offset() {
     let port = server_socket.local_addr().unwrap().port();
     let ip = format!("127.0.0.1:{}", port);
 
-    let transport = x32_lib::transport::udp::UdpTransport::connect(&ip).await.unwrap();
+    let transport = x32_lib::transport::udp::UdpTransport::connect(&ip)
+        .await
+        .unwrap();
     let mut client = x32_lib::MixerClient::new(std::sync::Arc::new(transport), false);
 
-    let client_task = tokio::spawn(async move {
-        spill_dca(&mut client, MixerModel::Wing, 1, &assignments).await
-    });
+    let client_task =
+        tokio::spawn(
+            async move { spill_dca(&mut client, MixerModel::Wing, 1, &assignments).await },
+        );
 
     let mut buf = [0; 1024];
     let mut received = Vec::new();
 
     while received.len() < 24 {
-        if let Ok(Ok((size, _))) = tokio::time::timeout(Duration::from_millis(100), server_socket.recv_from(&mut buf)).await {
+        if let Ok(Ok((size, _))) = tokio::time::timeout(
+            Duration::from_millis(100),
+            server_socket.recv_from(&mut buf),
+        )
+        .await
+        {
             if let Ok(msg) = osc_lib::OscMessage::from_bytes(&buf[..size]) {
                 if let Some(OscArg::Int(val)) = msg.args.first() {
                     received.push((msg.path, *val));

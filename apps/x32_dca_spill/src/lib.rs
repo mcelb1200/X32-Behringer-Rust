@@ -94,7 +94,10 @@ pub async fn run(args: Args) -> Result<()> {
         }
     }
 
-    println!("Connecting to {:?} at {} for DCA Spills...", args.model, args.ip);
+    println!(
+        "Connecting to {:?} at {} for DCA Spills...",
+        args.model, args.ip
+    );
 
     // Pass true to enable heartbeat / xremote background task
     let mut client = MixerClient::connect(&args.ip, true)
@@ -302,9 +305,21 @@ mod tests {
 
     #[test]
     fn test_custom_bank_path_formatting() {
-        assert_eq!(get_custom_bank_path(MixerModel::X32, 0), "/-prefs/custom_bank/1/1");
-        assert_eq!(get_custom_bank_path(MixerModel::X32, 7), "/-prefs/custom_bank/1/8");
-        assert_eq!(get_custom_bank_path(MixerModel::Wing, 8), "/-prefs/custom_bank/2/1");
-        assert_eq!(get_custom_bank_path(MixerModel::XR18, 23), "/-prefs/custom_bank/3/8");
+        assert_eq!(
+            get_custom_bank_path(MixerModel::X32, 0),
+            "/-prefs/custom_bank/1/1"
+        );
+        assert_eq!(
+            get_custom_bank_path(MixerModel::X32, 7),
+            "/-prefs/custom_bank/1/8"
+        );
+        assert_eq!(
+            get_custom_bank_path(MixerModel::Wing, 8),
+            "/-prefs/custom_bank/2/1"
+        );
+        assert_eq!(
+            get_custom_bank_path(MixerModel::XR18, 23),
+            "/-prefs/custom_bank/3/8"
+        );
     }
 }
