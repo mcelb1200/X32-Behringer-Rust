@@ -64,6 +64,35 @@ pub struct RiskIssue {
     pub to: OscArg,
 }
 
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub enum LoadMode {
+    All,
+    Safe,
+}
+
+pub fn filter_issues<'a>(
+    issues: &'a [RiskIssue],
+    mode: LoadMode,
+    locked_prefixes: &[String],
+) -> (Vec<&'a RiskIssue>, usize) {
+    let mut to_apply = Vec::new();
+    let mut skipped = 0;
+
+    for issue in issues {
+        let is_locked = locked_prefixes.iter().any(|p| issue.path.starts_with(p));
+        let is_high_risk = mode == LoadMode::Safe
+            && (issue.level == RiskLevel::Critical || issue.level == RiskLevel::High);
+
+        if is_locked || is_high_risk {
+            skipped += 1;
+        } else {
+            to_apply.push(issue);
+        }
+    }
+
+    (to_apply, skipped)
+}
+
 fn format_arg(arg: &OscArg) -> String {
     match arg {
         OscArg::Int(i) => i.to_string(),
@@ -562,20 +591,14 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
 
     if args.auto_load {
         println!("Auto-loading entire scene...");
-        let mut skipped = 0;
-        let mut applied = 0;
-        for issue in &issues {
-            if locked_prefixes.iter().any(|p| issue.path.starts_with(p)) {
-                skipped += 1;
-                continue;
-            }
+        let (to_apply, skipped) = filter_issues(&issues, LoadMode::All, &locked_prefixes);
+        for issue in &to_apply {
             client
                 .send_message(&issue.path, vec![issue.to.clone()])
                 .await?;
             tokio::time::sleep(Duration::from_millis(2)).await; // avoid overwhelming
-            applied += 1;
         }
-        println!("Scene loaded. Applied {}, skipped {}.", applied, skipped);
+        println!("Scene loaded. Applied {}, skipped {}.", to_apply.len(), skipped);
         return Ok(());
     }
 
@@ -615,43 +638,28 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
         match trimmed.as_str() {
             "l" | "load" => {
                 println!("Loading entire scene...");
-                let mut skipped = 0;
-                let mut applied = 0;
-                for issue in &issues {
-                    if locked_prefixes.iter().any(|p| issue.path.starts_with(p)) {
-                        skipped += 1;
-                        continue;
-                    }
+                let (to_apply, skipped) = filter_issues(&issues, LoadMode::All, &locked_prefixes);
+                for issue in &to_apply {
                     client
                         .send_message(&issue.path, vec![issue.to.clone()])
                         .await?;
                     tokio::time::sleep(Duration::from_millis(2)).await; // avoid overwhelming
-                    applied += 1;
                 }
-                println!("Scene loaded. Applied {}, skipped {}.", applied, skipped);
+                println!("Scene loaded. Applied {}, skipped {}.", to_apply.len(), skipped);
                 break;
             }
             "s" | "safe-load" | "safe" => {
                 println!("Loading scene safely (skipping CRITICAL and HIGH)...");
-                let mut skipped = 0;
-                let mut applied = 0;
-                for issue in &issues {
-                    if issue.level == RiskLevel::Critical
-                        || issue.level == RiskLevel::High
-                        || locked_prefixes.iter().any(|p| issue.path.starts_with(p))
-                    {
-                        skipped += 1;
-                        continue;
-                    }
+                let (to_apply, skipped) = filter_issues(&issues, LoadMode::Safe, &locked_prefixes);
+                for issue in &to_apply {
                     client
                         .send_message(&issue.path, vec![issue.to.clone()])
                         .await?;
                     tokio::time::sleep(Duration::from_millis(2)).await;
-                    applied += 1;
                 }
                 println!(
                     "Safe load complete. Applied {}, skipped {}.",
-                    applied, skipped
+                    to_apply.len(), skipped
                 );
                 break;
             }
@@ -950,5 +958,58 @@ mod tests {
             classify_risk_with_model(MixerModel::XR18, "/fx/05/type", &cur_f, &OscArg::Float(0.5))
                 .unwrap();
         assert_eq!(issue.level, RiskLevel::Critical); // max 4 fx slots on XR18
+    }
+
+    #[test]
+    fn test_filter_issues_all_mode_and_safe_mode() {
+        let issues = vec![
+            RiskIssue {
+                level: RiskLevel::Critical,
+                path: "/routing/in".to_string(),
+                description: "Routing change".to_string(),
+                from: OscArg::Int(0),
+                to: OscArg::Int(1),
+            },
+            RiskIssue {
+                level: RiskLevel::High,
+                path: "/ch/01/preamp/trim".to_string(),
+                description: "Gain jump".to_string(),
+                from: OscArg::Float(0.0),
+                to: OscArg::Float(0.5),
+            },
+            RiskIssue {
+                level: RiskLevel::Moderate,
+                path: "/ch/01/mix/fader".to_string(),
+                description: "Fader change".to_string(),
+                from: OscArg::Float(0.0),
+                to: OscArg::Float(0.3),
+            },
+            RiskIssue {
+                level: RiskLevel::Info,
+                path: "/ch/01/config/name".to_string(),
+                description: "Name change".to_string(),
+                from: OscArg::String("Vox1".into()),
+                to: OscArg::String("Vox2".into()),
+            },
+        ];
+
+        // Test LoadMode::All with no locks
+        let (apply_all, skipped_all) = filter_issues(&issues, LoadMode::All, &[]);
+        assert_eq!(apply_all.len(), 4);
+        assert_eq!(skipped_all, 0);
+
+        // Test LoadMode::Safe with no locks (should skip Critical and High)
+        let (apply_safe, skipped_safe) = filter_issues(&issues, LoadMode::Safe, &[]);
+        assert_eq!(apply_safe.len(), 2);
+        assert_eq!(skipped_safe, 2);
+        assert_eq!(apply_safe[0].path, "/ch/01/mix/fader");
+        assert_eq!(apply_safe[1].path, "/ch/01/config/name");
+
+        // Test LoadMode::All with locked prefix "/ch/01/config"
+        let locks = vec!["/ch/01/config".to_string()];
+        let (apply_locked, skipped_locked) = filter_issues(&issues, LoadMode::All, &locks);
+        assert_eq!(apply_locked.len(), 3);
+        assert_eq!(skipped_locked, 1);
+        assert!(!apply_locked.iter().any(|i| i.path.starts_with("/ch/01/config")));
     }
 }
