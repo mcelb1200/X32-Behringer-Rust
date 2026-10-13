@@ -598,7 +598,11 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
                 .await?;
             tokio::time::sleep(Duration::from_millis(2)).await; // avoid overwhelming
         }
-        println!("Scene loaded. Applied {}, skipped {}.", to_apply.len(), skipped);
+        println!(
+            "Scene loaded. Applied {}, skipped {}.",
+            to_apply.len(),
+            skipped
+        );
         return Ok(());
     }
 
@@ -645,7 +649,11 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
                         .await?;
                     tokio::time::sleep(Duration::from_millis(2)).await; // avoid overwhelming
                 }
-                println!("Scene loaded. Applied {}, skipped {}.", to_apply.len(), skipped);
+                println!(
+                    "Scene loaded. Applied {}, skipped {}.",
+                    to_apply.len(),
+                    skipped
+                );
                 break;
             }
             "s" | "safe-load" | "safe" => {
@@ -659,7 +667,8 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
                 }
                 println!(
                     "Safe load complete. Applied {}, skipped {}.",
-                    to_apply.len(), skipped
+                    to_apply.len(),
+                    skipped
                 );
                 break;
             }
@@ -1010,6 +1019,10 @@ mod tests {
         let (apply_locked, skipped_locked) = filter_issues(&issues, LoadMode::All, &locks);
         assert_eq!(apply_locked.len(), 3);
         assert_eq!(skipped_locked, 1);
-        assert!(!apply_locked.iter().any(|i| i.path.starts_with("/ch/01/config")));
+        assert!(
+            !apply_locked
+                .iter()
+                .any(|i| i.path.starts_with("/ch/01/config"))
+        );
     }
 }
