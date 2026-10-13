@@ -152,7 +152,7 @@ pub fn parse_node_line(line: &str) -> Option<OscMessage> {
         "/-prefs/rta/mode" => parse_list(path, arg_str, R_B_AR),
         "/-prefs/rta/option" => parse_bits(path, arg_str),
         "/-prefs/rta/det" => parse_list(path, arg_str, R_R_MS),
-        "/-prefs/rta/decay" => parse_flog(path, arg_str, 0.25, 15.75, 19.0),
+        "/-prefs/rta/decay" => parse_flog(path, arg_str, 0.25, (16.0 / 0.25f32).ln(), 19.0),
         "/-prefs/rta/peakhold" => parse_list(path, arg_str, R_R_PH),
 
         // --- prefs ip ---
@@ -315,5 +315,31 @@ mod tests {
             msg2.args,
             vec![OscArg::String("test file with spaces.wav".to_string())]
         );
+    }
+
+    #[test]
+    fn test_parse_node_line_flog_decay() {
+        let msg_min = parse_node_line("/-prefs/rta/decay 0.25").unwrap();
+        if let OscArg::Float(f) = msg_min.args[0] {
+            assert!((f - 0.0).abs() < 0.0001);
+        } else {
+            panic!("Expected Float");
+        }
+
+        let msg_max = parse_node_line("/-prefs/rta/decay 16.00").unwrap();
+        if let OscArg::Float(f) = msg_max.args[0] {
+            assert!((f - 1.0).abs() < 0.0001);
+        } else {
+            panic!("Expected Float");
+        }
+
+        let msg_mid = parse_node_line("/-prefs/rta/decay 2.00").unwrap();
+        if let OscArg::Float(f) = msg_mid.args[0] {
+            let expected = (2.0f32 / 0.25).ln() / (16.0f32 / 0.25).ln();
+            let expected_rounded = (expected * 19.0).round() / 19.0;
+            assert!((f - expected_rounded).abs() < 0.0001);
+        } else {
+            panic!("Expected Float");
+        }
     }
 }
