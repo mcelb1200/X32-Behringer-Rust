@@ -29,9 +29,21 @@ pub struct Args {
 
     #[arg(
         long,
+        help = "Automatically load scene in safe mode (skip critical and high risk issues)"
+    )]
+    pub safe_load: bool,
+
+    #[arg(
+        long,
         help = "Comma-separated list of OSC paths or prefixes to lock (e.g. /routing,/main/st/mix/on)"
     )]
     pub locked_paths: Option<String>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, clap::ValueEnum)]
+pub enum LoadMode {
+    All,
+    Safe,
 }
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
@@ -75,6 +87,28 @@ fn format_arg(arg: &OscArg) -> String {
 
 pub fn classify_risk(path: &str, current: &OscArg, scene: &OscArg) -> Option<RiskIssue> {
     classify_risk_with_model(MixerModel::X32, path, current, scene)
+}
+
+pub fn filter_issues(
+    issues: &[RiskIssue],
+    mode: LoadMode,
+    locked_prefixes: &[&str],
+) -> Vec<RiskIssue> {
+    issues
+        .iter()
+        .filter(|issue| {
+            if locked_prefixes.iter().any(|p| issue.path.starts_with(p)) {
+                return false;
+            }
+            match mode {
+                LoadMode::All => true,
+                LoadMode::Safe => {
+                    issue.level != RiskLevel::Critical && issue.level != RiskLevel::High
+                }
+            }
+        })
+        .cloned()
+        .collect()
 }
 
 struct ModelLimits {
@@ -560,22 +594,33 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
         .filter(|s| !s.is_empty())
         .collect();
 
-    if args.auto_load {
-        println!("Auto-loading entire scene...");
-        let mut skipped = 0;
-        let mut applied = 0;
-        for issue in &issues {
-            if locked_prefixes.iter().any(|p| issue.path.starts_with(p)) {
-                skipped += 1;
-                continue;
-            }
+    let locked_strs: Vec<&str> = locked_prefixes.iter().map(|s| s.as_str()).collect();
+
+    if args.auto_load || args.safe_load {
+        let mode = if args.safe_load {
+            LoadMode::Safe
+        } else {
+            LoadMode::All
+        };
+        let to_apply = filter_issues(&issues, mode, &locked_strs);
+        let skipped = issues.len() - to_apply.len();
+        println!(
+            "Auto-loading scene (mode: {:?})... Applying {}, skipping {}",
+            mode,
+            to_apply.len(),
+            skipped
+        );
+        for issue in &to_apply {
             client
                 .send_message(&issue.path, vec![issue.to.clone()])
                 .await?;
-            tokio::time::sleep(Duration::from_millis(2)).await; // avoid overwhelming
-            applied += 1;
+            tokio::time::sleep(Duration::from_millis(2)).await;
         }
-        println!("Scene loaded. Applied {}, skipped {}.", applied, skipped);
+        println!(
+            "Scene loaded. Applied {}, skipped {}.",
+            to_apply.len(),
+            skipped
+        );
         return Ok(());
     }
 
@@ -615,43 +660,35 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
         match trimmed.as_str() {
             "l" | "load" => {
                 println!("Loading entire scene...");
-                let mut skipped = 0;
-                let mut applied = 0;
-                for issue in &issues {
-                    if locked_prefixes.iter().any(|p| issue.path.starts_with(p)) {
-                        skipped += 1;
-                        continue;
-                    }
-                    client
-                        .send_message(&issue.path, vec![issue.to.clone()])
-                        .await?;
-                    tokio::time::sleep(Duration::from_millis(2)).await; // avoid overwhelming
-                    applied += 1;
-                }
-                println!("Scene loaded. Applied {}, skipped {}.", applied, skipped);
-                break;
-            }
-            "s" | "safe-load" | "safe" => {
-                println!("Loading scene safely (skipping CRITICAL and HIGH)...");
-                let mut skipped = 0;
-                let mut applied = 0;
-                for issue in &issues {
-                    if issue.level == RiskLevel::Critical
-                        || issue.level == RiskLevel::High
-                        || locked_prefixes.iter().any(|p| issue.path.starts_with(p))
-                    {
-                        skipped += 1;
-                        continue;
-                    }
+                let to_apply = filter_issues(&issues, LoadMode::All, &locked_strs);
+                let skipped = issues.len() - to_apply.len();
+                for issue in &to_apply {
                     client
                         .send_message(&issue.path, vec![issue.to.clone()])
                         .await?;
                     tokio::time::sleep(Duration::from_millis(2)).await;
-                    applied += 1;
+                }
+                println!(
+                    "Scene loaded. Applied {}, skipped {}.",
+                    to_apply.len(),
+                    skipped
+                );
+                break;
+            }
+            "s" | "safe-load" | "safe" => {
+                println!("Loading scene safely (skipping CRITICAL and HIGH)...");
+                let to_apply = filter_issues(&issues, LoadMode::Safe, &locked_strs);
+                let skipped = issues.len() - to_apply.len();
+                for issue in &to_apply {
+                    client
+                        .send_message(&issue.path, vec![issue.to.clone()])
+                        .await?;
+                    tokio::time::sleep(Duration::from_millis(2)).await;
                 }
                 println!(
                     "Safe load complete. Applied {}, skipped {}.",
-                    applied, skipped
+                    to_apply.len(),
+                    skipped
                 );
                 break;
             }
@@ -950,5 +987,75 @@ mod tests {
             classify_risk_with_model(MixerModel::XR18, "/fx/05/type", &cur_f, &OscArg::Float(0.5))
                 .unwrap();
         assert_eq!(issue.level, RiskLevel::Critical); // max 4 fx slots on XR18
+    }
+
+    #[test]
+    fn test_filter_issues_load_modes() {
+        let dummy = OscArg::Float(0.0);
+        let scene = OscArg::Float(0.5);
+
+        let issues = vec![
+            RiskIssue {
+                level: RiskLevel::Critical,
+                path: "/routing/in".to_string(),
+                description: "Routing".to_string(),
+                from: dummy.clone(),
+                to: scene.clone(),
+            },
+            RiskIssue {
+                level: RiskLevel::High,
+                path: "/ch/01/preamp/trim".to_string(),
+                description: "High Gain".to_string(),
+                from: dummy.clone(),
+                to: scene.clone(),
+            },
+            RiskIssue {
+                level: RiskLevel::Moderate,
+                path: "/ch/01/mix/fader".to_string(),
+                description: "Fader".to_string(),
+                from: dummy.clone(),
+                to: scene.clone(),
+            },
+            RiskIssue {
+                level: RiskLevel::Low,
+                path: "/ch/01/dyn/ratio".to_string(),
+                description: "Dyn".to_string(),
+                from: dummy.clone(),
+                to: scene.clone(),
+            },
+            RiskIssue {
+                level: RiskLevel::Info,
+                path: "/ch/01/config/name".to_string(),
+                description: "Name".to_string(),
+                from: dummy.clone(),
+                to: scene.clone(),
+            },
+        ];
+
+        // Test LoadMode::All (no locked prefixes)
+        let filtered_all = filter_issues(&issues, LoadMode::All, &[]);
+        assert_eq!(filtered_all.len(), 5);
+
+        // Test LoadMode::Safe (excludes Critical and High)
+        let filtered_safe = filter_issues(&issues, LoadMode::Safe, &[]);
+        assert_eq!(filtered_safe.len(), 3);
+        assert!(
+            !filtered_safe
+                .iter()
+                .any(|i| i.level == RiskLevel::Critical || i.level == RiskLevel::High)
+        );
+
+        // Test with locked path prefixes under LoadMode::All
+        let filtered_locked = filter_issues(&issues, LoadMode::All, &["/routing", "/ch/01/config"]);
+        assert_eq!(filtered_locked.len(), 3);
+        assert!(
+            !filtered_locked
+                .iter()
+                .any(|i| i.path.starts_with("/routing") || i.path.starts_with("/ch/01/config"))
+        );
+
+        // Test with locked path prefixes under LoadMode::Safe
+        let filtered_safe_locked = filter_issues(&issues, LoadMode::Safe, &["/ch/01/mix"]);
+        assert_eq!(filtered_safe_locked.len(), 2); // Moderate (/ch/01/mix) locked out, Critical & High filtered out
     }
 }
