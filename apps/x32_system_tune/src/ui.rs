@@ -32,7 +32,7 @@ impl Drop for TuiDropGuard {
 pub struct Tui {
     terminal: Terminal<CrosstermBackend<io::Stdout>>,
     _guard: TuiDropGuard,
-    cached_chunks: Vec<Rect>,
+    cached_chunks: std::rc::Rc<[Rect]>,
     cached_area: Rect,
 }
 
@@ -49,7 +49,7 @@ impl Tui {
         Ok(Self {
             terminal,
             _guard: TuiDropGuard,
-            cached_chunks: Vec::new(),
+            cached_chunks: std::rc::Rc::from([]),
             cached_area: Rect::default(),
         })
     }
@@ -75,7 +75,7 @@ impl Tui {
                         .as_ref(),
                     )
                     .split(size);
-                self.cached_chunks = chunks.to_vec();
+                self.cached_chunks = chunks;
             }
 
             let chunks = &self.cached_chunks;
