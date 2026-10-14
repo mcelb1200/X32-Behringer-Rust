@@ -1104,9 +1104,10 @@ int main(int argc, char **argv) {
 //				if ((l = X_List(line_in, l, r_rMs, l_rMs)) < 0) return (l);
 //				SEND_TO(s_buf, s_len) // send to X32
 //
-////todo: Decay sent as a logf or as a float with 2 digits after decimal point?
+// Decay is dumped/saved as a float with 2 decimal places (0.25 to 16.00 via Slogf),
+// and sent to X32 over OSC as a normalized log-scaled float (0.0 to 1.0) via X_Flog.
 //				s_len = Xsprint(s_buf, 0, 's', "/-prefs/rta/decay");
-//				if ((l = X_Flog(line_in, l, .25, 15.75, 19)) < 0) return (l);
+//				if ((l = X_Flog(line_in, l, .25, 4.158883, 19)) < 0) return (l);
 //				SEND_TO(s_buf, s_len) // send to X32
 //
 //				s_len = Xsprint(s_buf, 0, 's', "/-prefs/rta/peakhold");
