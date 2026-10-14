@@ -92,6 +92,7 @@ async fn test_x32_scene_checker_integration() {
         scene: file_path,
         model: MixerModel::X32,
         auto_load: true,
+        safe_load: false,
         locked_paths: None,
     };
 
@@ -144,6 +145,7 @@ async fn test_x32_scene_checker_locked_paths() {
         scene: file_path,
         model: MixerModel::X32,
         auto_load: true,
+        safe_load: false,
         locked_paths: Some("/routing,/ch/02".to_string()),
     };
 
@@ -209,6 +211,7 @@ async fn test_x32_scene_checker_xr18_model_integration() {
         scene: file_path,
         model: MixerModel::XR18,
         auto_load: true,
+        safe_load: false,
         locked_paths: None,
     };
 
@@ -265,6 +268,7 @@ async fn test_x32_scene_checker_wing_model_integration() {
         scene: file_path,
         model: MixerModel::Wing,
         auto_load: true,
+        safe_load: false,
         locked_paths: None,
     };
 
