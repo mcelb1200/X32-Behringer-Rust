@@ -27,7 +27,10 @@ pub struct Args {
     #[arg(long)]
     pub auto_load: bool,
 
-    #[arg(long, help = "Automatically load scene in safe mode (skip critical and high risk issues)")]
+    #[arg(
+        long,
+        help = "Automatically load scene in safe mode (skip critical and high risk issues)"
+    )]
     pub safe_load: bool,
 
     #[arg(
@@ -613,7 +616,11 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
                 .await?;
             tokio::time::sleep(Duration::from_millis(2)).await;
         }
-        println!("Scene loaded. Applied {}, skipped {}.", to_apply.len(), skipped);
+        println!(
+            "Scene loaded. Applied {}, skipped {}.",
+            to_apply.len(),
+            skipped
+        );
         return Ok(());
     }
 
@@ -661,7 +668,11 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
                         .await?;
                     tokio::time::sleep(Duration::from_millis(2)).await;
                 }
-                println!("Scene loaded. Applied {}, skipped {}.", to_apply.len(), skipped);
+                println!(
+                    "Scene loaded. Applied {}, skipped {}.",
+                    to_apply.len(),
+                    skipped
+                );
                 break;
             }
             "s" | "safe-load" | "safe" => {
@@ -1028,12 +1039,20 @@ mod tests {
         // Test LoadMode::Safe (excludes Critical and High)
         let filtered_safe = filter_issues(&issues, LoadMode::Safe, &[]);
         assert_eq!(filtered_safe.len(), 3);
-        assert!(!filtered_safe.iter().any(|i| i.level == RiskLevel::Critical || i.level == RiskLevel::High));
+        assert!(
+            !filtered_safe
+                .iter()
+                .any(|i| i.level == RiskLevel::Critical || i.level == RiskLevel::High)
+        );
 
         // Test with locked path prefixes under LoadMode::All
         let filtered_locked = filter_issues(&issues, LoadMode::All, &["/routing", "/ch/01/config"]);
         assert_eq!(filtered_locked.len(), 3);
-        assert!(!filtered_locked.iter().any(|i| i.path.starts_with("/routing") || i.path.starts_with("/ch/01/config")));
+        assert!(
+            !filtered_locked
+                .iter()
+                .any(|i| i.path.starts_with("/routing") || i.path.starts_with("/ch/01/config"))
+        );
 
         // Test with locked path prefixes under LoadMode::Safe
         let filtered_safe_locked = filter_issues(&issues, LoadMode::Safe, &["/ch/01/mix"]);
