@@ -896,7 +896,11 @@ mod tests {
         // Mode::Safe excludes Critical and High issues
         let safe_filtered = filter_issues(&issues, LoadMode::Safe, &locked);
         assert_eq!(safe_filtered.len(), 3);
-        assert!(safe_filtered.iter().all(|i| i.level != RiskLevel::Critical && i.level != RiskLevel::High));
+        assert!(
+            safe_filtered
+                .iter()
+                .all(|i| i.level != RiskLevel::Critical && i.level != RiskLevel::High)
+        );
     }
 
     #[test]
