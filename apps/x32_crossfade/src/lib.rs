@@ -4,6 +4,7 @@ use osc_lib::OscArg;
 use std::collections::HashMap;
 use tokio::time::{Duration, interval};
 use x32_lib::MixerClient;
+use x32_lib::MixerModel;
 use x32_lib::scene_parse::SceneParser;
 
 #[derive(Parser, Debug, Clone)]
@@ -25,6 +26,10 @@ pub struct Args {
     /// Path to the second scene file (.scn)
     #[arg(short = 'b', long)]
     pub scene_b: String,
+
+    /// Mixer model: X32, Wing, XR18, XR16, XR12
+    #[arg(short, long, default_value = "X32", help = "Mixer model: X32, Wing, XR18, XR16, XR12")]
+    pub model: MixerModel,
 
     /// Duration of the crossfade in seconds
     #[arg(short, long, default_value_t = 5.0)]
@@ -58,8 +63,8 @@ pub async fn run(args: Args) -> Result<()> {
         anyhow::bail!("Scene B file is too large (exceeds 256KB)");
     }
 
-    let map_a = parse_scene_to_map(&scn_a_content);
-    let map_b = parse_scene_to_map(&scn_b_content);
+    let map_a = parse_scene_to_map(&scn_a_content, args.model);
+    let map_b = parse_scene_to_map(&scn_b_content, args.model);
 
     let plan = plan_crossfade(&map_a, &map_b);
 
@@ -123,8 +128,8 @@ pub async fn run(args: Args) -> Result<()> {
     Ok(())
 }
 
-fn parse_scene_to_map(contents: &str) -> HashMap<String, OscArg> {
-    let mut parser = SceneParser::new();
+fn parse_scene_to_map(contents: &str, model: MixerModel) -> HashMap<String, OscArg> {
+    let mut parser = SceneParser::with_model(model);
     let mut map = HashMap::new();
     for line in contents.lines() {
         for msg in parser.parse_scene_line(line) {
@@ -175,9 +180,27 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_cli_model_parsing() {
+        let args_x32 = Args::parse_from(["x32_crossfade", "-i", "127.0.0.1", "-a", "a.scn", "-b", "b.scn"]);
+        assert_eq!(args_x32.model, MixerModel::X32);
+
+        let args_wing = Args::parse_from(["x32_crossfade", "-i", "127.0.0.1", "-a", "a.scn", "-b", "b.scn", "-m", "wing"]);
+        assert_eq!(args_wing.model, MixerModel::Wing);
+
+        let args_xr18 = Args::parse_from(["x32_crossfade", "-i", "127.0.0.1", "-a", "a.scn", "-b", "b.scn", "--model", "XR18"]);
+        assert_eq!(args_xr18.model, MixerModel::XR18);
+
+        let args_xr16 = Args::parse_from(["x32_crossfade", "-i", "127.0.0.1", "-a", "a.scn", "-b", "b.scn", "-m", "xr16"]);
+        assert_eq!(args_xr16.model, MixerModel::XR16);
+
+        let args_xr12 = Args::parse_from(["x32_crossfade", "-i", "127.0.0.1", "-a", "a.scn", "-b", "b.scn", "-m", "XR12"]);
+        assert_eq!(args_xr12.model, MixerModel::XR12);
+    }
+
+    #[test]
     fn test_parse_scene_to_map() {
         let scn = "/ch/01/mix/fader 0.5\n/ch/01/config/name \"Lead\"";
-        let map = parse_scene_to_map(scn);
+        let map = parse_scene_to_map(scn, MixerModel::X32);
 
         // As per memory, parsing true floats yields scaled representations,
         // /ch/01/mix/fader 0.5 yields 0.7625
@@ -185,6 +208,46 @@ mod tests {
         assert_eq!(
             map.get("/ch/01/config/name").unwrap(),
             &OscArg::String("Lead".to_string())
+        );
+    }
+
+    #[test]
+    fn test_model_aware_scene_parsing() {
+        let scn_wing = "/ch/40/mix/fader 0.0\n/ch/40/config/name \"Wing Ch 40\"";
+        let map_wing = parse_scene_to_map(scn_wing, MixerModel::Wing);
+        assert!(map_wing.contains_key("/ch/40/mix/fader"));
+        assert_eq!(
+            map_wing.get("/ch/40/config/name"),
+            Some(&OscArg::String("Wing Ch 40".to_string()))
+        );
+
+        let map_x32_for_wing_scn = parse_scene_to_map(scn_wing, MixerModel::X32);
+        assert!(!map_x32_for_wing_scn.contains_key("/ch/40/mix/fader"));
+
+        let scn_xr12 = "/ch/12/mix/fader 0.0\n/ch/13/mix/fader 0.0";
+        let map_xr12 = parse_scene_to_map(scn_xr12, MixerModel::XR12);
+        assert!(map_xr12.contains_key("/ch/12/mix/fader"));
+        assert!(!map_xr12.contains_key("/ch/13/mix/fader"));
+    }
+
+    #[test]
+    fn test_model_crossfade_planning() {
+        let scn_a = "/ch/40/mix/fader -10.0\n/ch/40/config/name \"Solo\"";
+        let scn_b = "/ch/40/mix/fader 0.0\n/ch/40/config/name \"Lead Solo\"";
+
+        let map_a = parse_scene_to_map(scn_a, MixerModel::Wing);
+        let map_b = parse_scene_to_map(scn_b, MixerModel::Wing);
+
+        let plan = plan_crossfade(&map_a, &map_b);
+        assert_eq!(plan.floats.len(), 1);
+        assert!(plan.floats.contains_key("/ch/40/mix/fader"));
+        assert_eq!(plan.discrete.len(), 1);
+        assert_eq!(
+            plan.discrete.get("/ch/40/config/name"),
+            Some(&(
+                OscArg::String("Solo".to_string()),
+                OscArg::String("Lead Solo".to_string())
+            ))
         );
     }
 
