@@ -28,7 +28,12 @@ pub struct Args {
     pub scene_b: String,
 
     /// Mixer model: X32, Wing, XR18, XR16, XR12
-    #[arg(short, long, default_value = "X32", help = "Mixer model: X32, Wing, XR18, XR16, XR12")]
+    #[arg(
+        short,
+        long,
+        default_value = "X32",
+        help = "Mixer model: X32, Wing, XR18, XR16, XR12"
+    )]
     pub model: MixerModel,
 
     /// Duration of the crossfade in seconds
@@ -181,19 +186,67 @@ mod tests {
 
     #[test]
     fn test_cli_model_parsing() {
-        let args_x32 = Args::parse_from(["x32_crossfade", "-i", "127.0.0.1", "-a", "a.scn", "-b", "b.scn"]);
+        let args_x32 = Args::parse_from([
+            "x32_crossfade",
+            "-i",
+            "127.0.0.1",
+            "-a",
+            "a.scn",
+            "-b",
+            "b.scn",
+        ]);
         assert_eq!(args_x32.model, MixerModel::X32);
 
-        let args_wing = Args::parse_from(["x32_crossfade", "-i", "127.0.0.1", "-a", "a.scn", "-b", "b.scn", "-m", "wing"]);
+        let args_wing = Args::parse_from([
+            "x32_crossfade",
+            "-i",
+            "127.0.0.1",
+            "-a",
+            "a.scn",
+            "-b",
+            "b.scn",
+            "-m",
+            "wing",
+        ]);
         assert_eq!(args_wing.model, MixerModel::Wing);
 
-        let args_xr18 = Args::parse_from(["x32_crossfade", "-i", "127.0.0.1", "-a", "a.scn", "-b", "b.scn", "--model", "XR18"]);
+        let args_xr18 = Args::parse_from([
+            "x32_crossfade",
+            "-i",
+            "127.0.0.1",
+            "-a",
+            "a.scn",
+            "-b",
+            "b.scn",
+            "--model",
+            "XR18",
+        ]);
         assert_eq!(args_xr18.model, MixerModel::XR18);
 
-        let args_xr16 = Args::parse_from(["x32_crossfade", "-i", "127.0.0.1", "-a", "a.scn", "-b", "b.scn", "-m", "xr16"]);
+        let args_xr16 = Args::parse_from([
+            "x32_crossfade",
+            "-i",
+            "127.0.0.1",
+            "-a",
+            "a.scn",
+            "-b",
+            "b.scn",
+            "-m",
+            "xr16",
+        ]);
         assert_eq!(args_xr16.model, MixerModel::XR16);
 
-        let args_xr12 = Args::parse_from(["x32_crossfade", "-i", "127.0.0.1", "-a", "a.scn", "-b", "b.scn", "-m", "XR12"]);
+        let args_xr12 = Args::parse_from([
+            "x32_crossfade",
+            "-i",
+            "127.0.0.1",
+            "-a",
+            "a.scn",
+            "-b",
+            "b.scn",
+            "-m",
+            "XR12",
+        ]);
         assert_eq!(args_xr12.model, MixerModel::XR12);
     }
 
