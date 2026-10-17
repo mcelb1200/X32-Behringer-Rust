@@ -206,10 +206,7 @@ pub async fn run(args: Args) -> Result<()> {
                                 )
                                 .await;
                             let _ = client
-                                .send_message(
-                                    "/config/osc/level",
-                                    vec![OscArg::Float(safe_level)],
-                                )
+                                .send_message("/config/osc/level", vec![OscArg::Float(safe_level)])
                                 .await;
                             let _ = client
                                 .send_message("/config/osc", vec![OscArg::Int(1)])
@@ -231,10 +228,7 @@ pub async fn run(args: Args) -> Result<()> {
                                 )
                                 .await;
                             let _ = client
-                                .send_message(
-                                    "/config/osc/level",
-                                    vec![OscArg::Float(safe_level)],
-                                )
+                                .send_message("/config/osc/level", vec![OscArg::Float(safe_level)])
                                 .await;
                             let _ = client
                                 .send_message("/config/osc", vec![OscArg::Int(1)])
@@ -256,10 +250,7 @@ pub async fn run(args: Args) -> Result<()> {
                                 )
                                 .await;
                             let _ = client
-                                .send_message(
-                                    "/config/osc/level",
-                                    vec![OscArg::Float(safe_level)],
-                                )
+                                .send_message("/config/osc/level", vec![OscArg::Float(safe_level)])
                                 .await;
                             let _ = client
                                 .send_message("/config/osc", vec![OscArg::Int(1)])
@@ -278,10 +269,7 @@ pub async fn run(args: Args) -> Result<()> {
                                 .send_message("/config/osc/dest", vec![OscArg::Int(1)])
                                 .await; // Bus 1
                             let _ = client
-                                .send_message(
-                                    "/config/osc/level",
-                                    vec![OscArg::Float(safe_level)],
-                                )
+                                .send_message("/config/osc/level", vec![OscArg::Float(safe_level)])
                                 .await;
                             let _ = client
                                 .send_message("/config/osc", vec![OscArg::Int(1)])
@@ -329,10 +317,7 @@ pub async fn run(args: Args) -> Result<()> {
                                 )
                                 .await;
                             let _ = client
-                                .send_message(
-                                    "/config/osc/level",
-                                    vec![OscArg::Float(safe_level)],
-                                )
+                                .send_message("/config/osc/level", vec![OscArg::Float(safe_level)])
                                 .await;
                             let _ = client
                                 .send_message("/config/osc", vec![OscArg::Int(1)])
@@ -426,10 +411,7 @@ mod tests {
             get_main_eq_path(MixerModel::Wing, 2, "gain"),
             "/main/1/eq/2/gain"
         );
-        assert_eq!(
-            get_main_eq_path(MixerModel::XR18, 3, "q"),
-            "/main/b/eq/3/q"
-        );
+        assert_eq!(get_main_eq_path(MixerModel::XR18, 3, "q"), "/main/b/eq/3/q");
 
         assert_eq!(
             get_bus_eq_path(MixerModel::X32, 5, 2, "freq"),
