@@ -3,30 +3,124 @@ use clap::Parser;
 use osc_lib::OscArg;
 use std::time::Instant;
 use tokio::time::Duration;
-use x32_lib::MixerClient;
+use x32_lib::{MixerClient, MixerModel};
 
 pub mod ui;
 use ui::{AppState, Tui, UIEvent};
+
+/// Strict EBU R128 limit for oscillator level (-18 dBFS digital headroom limit)
+pub const MAX_EBU_R128_LEVEL: f32 = 0.25;
 
 #[derive(Parser, Debug, Clone)]
 #[command(
     author,
     version,
     about = "Automated System Tuning (Oscillator-Assisted)",
-    long_about = "Guided oscillator testing using the X32's built-in signal generator."
+    long_about = "Guided oscillator testing using the X32/M32/Wing/XAir built-in signal generator."
 )]
 pub struct Args {
-    /// IP address of the X32 console
+    /// IP address of the console
     #[arg(short, long)]
     pub ip: String,
 
-    /// Max level as a float 0.0 to 1.0 (to restrict max dBFS conservatively)
-    #[arg(short, long, default_value_t = 0.5)]
+    /// Mixer model (X32, Wing, XR18, XR16, XR12)
+    #[arg(short, long, default_value = "X32")]
+    pub model: MixerModel,
+
+    /// Max level as a float 0.0 to 0.25 (capped at -18 dBFS for EBU R128 compliance)
+    #[arg(short, long, default_value_t = 0.25)]
     pub max_level: f32,
 
     /// Interval in milliseconds for ramping volume
     #[arg(short = 'r', long, default_value_t = 250)]
     pub ramp_interval_ms: u64,
+}
+
+impl Args {
+    /// Returns the oscillator level clamped to the strict EBU R128 safety limit (-18 dBFS / 0.25 float).
+    pub fn safe_level(&self) -> f32 {
+        self.max_level.clamp(0.0, MAX_EBU_R128_LEVEL)
+    }
+}
+
+/// Represents an output destination for Guided Output Verification.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OutputDest {
+    pub name: &'static str,
+    pub path: &'static str,
+    pub dest_index: i32,
+}
+
+/// Returns model-specific main output destinations for Guided Output Verification.
+pub fn get_main_outputs(model: MixerModel) -> Vec<OutputDest> {
+    match model {
+        MixerModel::X32 => vec![
+            OutputDest {
+                name: "Main L",
+                path: "/config/osc/dest",
+                dest_index: 23,
+            },
+            OutputDest {
+                name: "Main R",
+                path: "/config/osc/dest",
+                dest_index: 24,
+            },
+            OutputDest {
+                name: "Main C/M",
+                path: "/config/osc/dest",
+                dest_index: 25,
+            },
+        ],
+        MixerModel::Wing => vec![
+            OutputDest {
+                name: "Main L",
+                path: "/config/osc/dest",
+                dest_index: 1,
+            },
+            OutputDest {
+                name: "Main R",
+                path: "/config/osc/dest",
+                dest_index: 2,
+            },
+        ],
+        MixerModel::XR18 | MixerModel::XR16 | MixerModel::XR12 => vec![OutputDest {
+            name: "Main L/R",
+            path: "/config/osc/dest",
+            dest_index: 1,
+        }],
+    }
+}
+
+/// Returns the maximum number of mix/aux buses supported by the mixer model.
+pub fn get_max_buses(model: MixerModel) -> u8 {
+    match model {
+        MixerModel::X32 => 16,
+        MixerModel::Wing => 28,
+        MixerModel::XR18 => 6,
+        MixerModel::XR16 => 4,
+        MixerModel::XR12 => 2,
+    }
+}
+
+/// Formats the OSC path for the main stereo EQ band.
+pub fn get_main_eq_path(model: MixerModel, band: u8, param: &str) -> String {
+    match model {
+        MixerModel::X32 => format!("/main/st/eq/{}/{}", band, param),
+        MixerModel::Wing => format!("/main/1/eq/{}/{}", band, param),
+        MixerModel::XR18 | MixerModel::XR16 | MixerModel::XR12 => {
+            format!("/main/b/eq/{}/{}", band, param)
+        }
+    }
+}
+
+/// Formats the OSC path for a bus EQ band.
+pub fn get_bus_eq_path(model: MixerModel, bus_idx: u8, band: u8, param: &str) -> String {
+    match model {
+        MixerModel::X32 | MixerModel::Wing => format!("/bus/{:02}/eq/{}/{}", bus_idx, band, param),
+        MixerModel::XR18 | MixerModel::XR16 | MixerModel::XR12 => {
+            format!("/bus/{}/eq/{}/{}", bus_idx, band, param)
+        }
+    }
 }
 
 enum Phase {
@@ -42,17 +136,14 @@ pub async fn run(args: Args) -> Result<()> {
     let client = MixerClient::connect(&args.ip, true).await?;
     let mut tui = Tui::new()?;
 
+    let safe_level = args.safe_level();
+    let main_outputs = get_main_outputs(args.model);
+
     let mut current_phase = Phase::Init;
     let mut current_phase_str = "Connecting...";
     let mut current_step = "Waiting...".to_string();
     let mut status_message = "Press Enter to start Phase 1: Guided Output Verification";
     let mut current_level = 0.0;
-
-    // Dest map based on X32 OSC (/config/osc/dest): 23=Main L, 24=Main R, 25=Main C/M
-    let main_outputs = [
-        ("Main L", "/config/osc/dest", 23),
-        ("Main R", "/config/osc/dest", 24),
-    ];
 
     let mut is_active = true;
     let mut last_ui_update = Instant::now();
@@ -102,7 +193,7 @@ pub async fn run(args: Args) -> Result<()> {
                         Phase::Init => {
                             current_phase = Phase::GuidedOutputVerification(0);
                             current_phase_str = "Phase 1: Guided Output Verification";
-                            current_step = format!("Testing {}", main_outputs[0].0);
+                            current_step = format!("Testing {}", main_outputs[0].name);
                             status_message = "Press 'y' if you hear pink noise, 'n' if not.";
 
                             let _ = client
@@ -110,20 +201,20 @@ pub async fn run(args: Args) -> Result<()> {
                                 .await; // Pink Noise
                             let _ = client
                                 .send_message(
-                                    main_outputs[0].1,
-                                    vec![OscArg::Int(main_outputs[0].2)],
+                                    main_outputs[0].path,
+                                    vec![OscArg::Int(main_outputs[0].dest_index)],
                                 )
                                 .await;
                             let _ = client
                                 .send_message(
                                     "/config/osc/level",
-                                    vec![OscArg::Float(args.max_level)],
+                                    vec![OscArg::Float(safe_level)],
                                 )
                                 .await;
                             let _ = client
                                 .send_message("/config/osc", vec![OscArg::Int(1)])
                                 .await;
-                            current_level = args.max_level;
+                            current_level = safe_level;
                         }
                         Phase::GuidedOutputVerification(_) => {
                             current_phase = Phase::AssistedGainStaging;
@@ -135,14 +226,14 @@ pub async fn run(args: Args) -> Result<()> {
                                 .await; // Sine
                             let _ = client
                                 .send_message(
-                                    main_outputs[0].1,
-                                    vec![OscArg::Int(main_outputs[0].2)],
+                                    main_outputs[0].path,
+                                    vec![OscArg::Int(main_outputs[0].dest_index)],
                                 )
                                 .await;
                             let _ = client
                                 .send_message(
                                     "/config/osc/level",
-                                    vec![OscArg::Float(args.max_level)],
+                                    vec![OscArg::Float(safe_level)],
                                 )
                                 .await;
                             let _ = client
@@ -160,14 +251,14 @@ pub async fn run(args: Args) -> Result<()> {
                                 .await; // Sine
                             let _ = client
                                 .send_message(
-                                    main_outputs[0].1,
-                                    vec![OscArg::Int(main_outputs[0].2)],
+                                    main_outputs[0].path,
+                                    vec![OscArg::Int(main_outputs[0].dest_index)],
                                 )
                                 .await;
                             let _ = client
                                 .send_message(
                                     "/config/osc/level",
-                                    vec![OscArg::Float(args.max_level)],
+                                    vec![OscArg::Float(safe_level)],
                                 )
                                 .await;
                             let _ = client
@@ -189,7 +280,7 @@ pub async fn run(args: Args) -> Result<()> {
                             let _ = client
                                 .send_message(
                                     "/config/osc/level",
-                                    vec![OscArg::Float(args.max_level)],
+                                    vec![OscArg::Float(safe_level)],
                                 )
                                 .await;
                             let _ = client
@@ -216,11 +307,11 @@ pub async fn run(args: Args) -> Result<()> {
                         let next_idx = idx + 1;
                         if next_idx < main_outputs.len() {
                             current_phase = Phase::GuidedOutputVerification(next_idx);
-                            current_step = format!("Testing {}", main_outputs[next_idx].0);
+                            current_step = format!("Testing {}", main_outputs[next_idx].name);
                             let _ = client
                                 .send_message(
-                                    main_outputs[next_idx].1,
-                                    vec![OscArg::Int(main_outputs[next_idx].2)],
+                                    main_outputs[next_idx].path,
+                                    vec![OscArg::Int(main_outputs[next_idx].dest_index)],
                                 )
                                 .await;
                         } else {
@@ -233,14 +324,14 @@ pub async fn run(args: Args) -> Result<()> {
                                 .await; // Sine wave
                             let _ = client
                                 .send_message(
-                                    main_outputs[0].1,
-                                    vec![OscArg::Int(main_outputs[0].2)],
+                                    main_outputs[0].path,
+                                    vec![OscArg::Int(main_outputs[0].dest_index)],
                                 )
                                 .await;
                             let _ = client
                                 .send_message(
                                     "/config/osc/level",
-                                    vec![OscArg::Float(args.max_level)],
+                                    vec![OscArg::Float(safe_level)],
                                 )
                                 .await;
                             let _ = client
@@ -271,14 +362,100 @@ mod tests {
     use tokio::net::UdpSocket;
     use x32_core::Mixer;
 
+    #[test]
+    fn test_ebu_r128_safety_level_clamping() {
+        let args_over = Args {
+            ip: "127.0.0.1:0".to_string(),
+            model: MixerModel::X32,
+            max_level: 0.8,
+            ramp_interval_ms: 10,
+        };
+        assert_eq!(args_over.safe_level(), MAX_EBU_R128_LEVEL);
+
+        let args_safe = Args {
+            ip: "127.0.0.1:0".to_string(),
+            model: MixerModel::X32,
+            max_level: 0.15,
+            ramp_interval_ms: 10,
+        };
+        assert_eq!(args_safe.safe_level(), 0.15);
+
+        let args_under = Args {
+            ip: "127.0.0.1:0".to_string(),
+            model: MixerModel::X32,
+            max_level: -0.1,
+            ramp_interval_ms: 10,
+        };
+        assert_eq!(args_under.safe_level(), 0.0);
+    }
+
+    #[test]
+    fn test_main_outputs_per_model() {
+        let x32_outs = get_main_outputs(MixerModel::X32);
+        assert_eq!(x32_outs.len(), 3);
+        assert_eq!(x32_outs[0].dest_index, 23);
+        assert_eq!(x32_outs[1].dest_index, 24);
+        assert_eq!(x32_outs[2].dest_index, 25);
+
+        let wing_outs = get_main_outputs(MixerModel::Wing);
+        assert_eq!(wing_outs.len(), 2);
+        assert_eq!(wing_outs[0].dest_index, 1);
+        assert_eq!(wing_outs[1].dest_index, 2);
+
+        let xr18_outs = get_main_outputs(MixerModel::XR18);
+        assert_eq!(xr18_outs.len(), 1);
+        assert_eq!(xr18_outs[0].dest_index, 1);
+    }
+
+    #[test]
+    fn test_max_buses_per_model() {
+        assert_eq!(get_max_buses(MixerModel::X32), 16);
+        assert_eq!(get_max_buses(MixerModel::Wing), 28);
+        assert_eq!(get_max_buses(MixerModel::XR18), 6);
+        assert_eq!(get_max_buses(MixerModel::XR16), 4);
+        assert_eq!(get_max_buses(MixerModel::XR12), 2);
+    }
+
+    #[test]
+    fn test_eq_paths_per_model() {
+        assert_eq!(
+            get_main_eq_path(MixerModel::X32, 1, "freq"),
+            "/main/st/eq/1/freq"
+        );
+        assert_eq!(
+            get_main_eq_path(MixerModel::Wing, 2, "gain"),
+            "/main/1/eq/2/gain"
+        );
+        assert_eq!(
+            get_main_eq_path(MixerModel::XR18, 3, "q"),
+            "/main/b/eq/3/q"
+        );
+
+        assert_eq!(
+            get_bus_eq_path(MixerModel::X32, 5, 2, "freq"),
+            "/bus/05/eq/2/freq"
+        );
+        assert_eq!(
+            get_bus_eq_path(MixerModel::Wing, 12, 1, "gain"),
+            "/bus/12/eq/1/gain"
+        );
+        assert_eq!(
+            get_bus_eq_path(MixerModel::XR18, 4, 3, "q"),
+            "/bus/4/eq/3/q"
+        );
+    }
+
     #[tokio::test]
     async fn test_x32_system_tune_args() {
         let args = Args {
             ip: "127.0.0.1:0".to_string(),
+            model: MixerModel::Wing,
             max_level: 0.2,
             ramp_interval_ms: 10,
         };
         assert_eq!(args.max_level, 0.2);
+        assert_eq!(args.safe_level(), 0.2);
+        assert_eq!(args.model, MixerModel::Wing);
     }
 
     #[tokio::test]
