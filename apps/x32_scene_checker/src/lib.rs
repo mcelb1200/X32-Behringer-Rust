@@ -43,6 +43,33 @@ pub enum RiskLevel {
     Critical,
 }
 
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub enum LoadMode {
+    All,
+    Safe,
+}
+
+pub fn filter_issues<'a>(
+    issues: &'a [RiskIssue],
+    mode: LoadMode,
+    locked_prefixes: &[String],
+) -> Vec<&'a RiskIssue> {
+    issues
+        .iter()
+        .filter(|issue| {
+            if locked_prefixes.iter().any(|p| issue.path.starts_with(p)) {
+                return false;
+            }
+            match mode {
+                LoadMode::All => true,
+                LoadMode::Safe => {
+                    issue.level != RiskLevel::Critical && issue.level != RiskLevel::High
+                }
+            }
+        })
+        .collect()
+}
+
 impl RiskLevel {
     fn name(&self) -> &'static str {
         match self {
@@ -562,13 +589,10 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
 
     if args.auto_load {
         println!("Auto-loading entire scene...");
-        let mut skipped = 0;
+        let to_apply = filter_issues(&issues, LoadMode::All, &locked_prefixes);
+        let skipped = issues.len() - to_apply.len();
         let mut applied = 0;
-        for issue in &issues {
-            if locked_prefixes.iter().any(|p| issue.path.starts_with(p)) {
-                skipped += 1;
-                continue;
-            }
+        for issue in to_apply {
             client
                 .send_message(&issue.path, vec![issue.to.clone()])
                 .await?;
@@ -615,13 +639,10 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
         match trimmed.as_str() {
             "l" | "load" => {
                 println!("Loading entire scene...");
-                let mut skipped = 0;
+                let to_apply = filter_issues(&issues, LoadMode::All, &locked_prefixes);
+                let skipped = issues.len() - to_apply.len();
                 let mut applied = 0;
-                for issue in &issues {
-                    if locked_prefixes.iter().any(|p| issue.path.starts_with(p)) {
-                        skipped += 1;
-                        continue;
-                    }
+                for issue in to_apply {
                     client
                         .send_message(&issue.path, vec![issue.to.clone()])
                         .await?;
@@ -633,16 +654,10 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
             }
             "s" | "safe-load" | "safe" => {
                 println!("Loading scene safely (skipping CRITICAL and HIGH)...");
-                let mut skipped = 0;
+                let to_apply = filter_issues(&issues, LoadMode::Safe, &locked_prefixes);
+                let skipped = issues.len() - to_apply.len();
                 let mut applied = 0;
-                for issue in &issues {
-                    if issue.level == RiskLevel::Critical
-                        || issue.level == RiskLevel::High
-                        || locked_prefixes.iter().any(|p| issue.path.starts_with(p))
-                    {
-                        skipped += 1;
-                        continue;
-                    }
+                for issue in to_apply {
                     client
                         .send_message(&issue.path, vec![issue.to.clone()])
                         .await?;
@@ -830,6 +845,88 @@ mod tests {
         let issue =
             classify_risk_with_model(MixerModel::Wing, "/ch/01/eq/9/f", &dummy, &scene).unwrap();
         assert_eq!(issue.level, RiskLevel::Critical);
+    }
+
+    #[test]
+    fn test_filter_issues_all_and_safe_mode() {
+        let issues = vec![
+            RiskIssue {
+                level: RiskLevel::Critical,
+                path: "/routing/in".to_string(),
+                description: "Critical routing change".to_string(),
+                from: OscArg::Int(0),
+                to: OscArg::Int(1),
+            },
+            RiskIssue {
+                level: RiskLevel::High,
+                path: "/ch/01/preamp/trim".to_string(),
+                description: "High gain jump".to_string(),
+                from: OscArg::Float(0.0),
+                to: OscArg::Float(0.5),
+            },
+            RiskIssue {
+                level: RiskLevel::Moderate,
+                path: "/ch/01/mix/fader".to_string(),
+                description: "Moderate fader change".to_string(),
+                from: OscArg::Float(0.0),
+                to: OscArg::Float(0.3),
+            },
+            RiskIssue {
+                level: RiskLevel::Low,
+                path: "/ch/01/dyn/ratio".to_string(),
+                description: "Low dynamics change".to_string(),
+                from: OscArg::Float(2.0),
+                to: OscArg::Float(3.0),
+            },
+            RiskIssue {
+                level: RiskLevel::Info,
+                path: "/ch/01/config/name".to_string(),
+                description: "Info cosmetic change".to_string(),
+                from: OscArg::String("Ch1".to_string()),
+                to: OscArg::String("Vocals".to_string()),
+            },
+        ];
+
+        let locked = Vec::new();
+
+        // Mode::All returns all issues when no locks exist
+        let all_filtered = filter_issues(&issues, LoadMode::All, &locked);
+        assert_eq!(all_filtered.len(), 5);
+
+        // Mode::Safe excludes Critical and High issues
+        let safe_filtered = filter_issues(&issues, LoadMode::Safe, &locked);
+        assert_eq!(safe_filtered.len(), 3);
+        assert!(
+            safe_filtered
+                .iter()
+                .all(|i| i.level != RiskLevel::Critical && i.level != RiskLevel::High)
+        );
+    }
+
+    #[test]
+    fn test_filter_issues_locked_paths() {
+        let issues = vec![
+            RiskIssue {
+                level: RiskLevel::Moderate,
+                path: "/ch/01/mix/fader".to_string(),
+                description: "Moderate fader change".to_string(),
+                from: OscArg::Float(0.0),
+                to: OscArg::Float(0.3),
+            },
+            RiskIssue {
+                level: RiskLevel::Low,
+                path: "/ch/02/mix/fader".to_string(),
+                description: "Low fader change".to_string(),
+                from: OscArg::Float(0.0),
+                to: OscArg::Float(0.1),
+            },
+        ];
+
+        let locked = vec!["/ch/01".to_string()];
+
+        let filtered = filter_issues(&issues, LoadMode::All, &locked);
+        assert_eq!(filtered.len(), 1);
+        assert_eq!(filtered[0].path, "/ch/02/mix/fader");
     }
 
     #[test]
