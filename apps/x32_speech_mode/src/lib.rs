@@ -96,6 +96,80 @@ fn max_channels_for_model(model: MixerModel) -> u8 {
     }
 }
 
+/// Model-specific EQ bands assigned for Speech Mode processing.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct SpeechEqBands {
+    pub hpf_band: u8,
+    pub lpf_band: u8,
+    pub presence_band: u8,
+    pub scoop_band: u8,
+}
+
+/// Returns model-specific EQ band assignments for Speech Mode.
+pub fn get_speech_eq_bands(model: MixerModel) -> SpeechEqBands {
+    match model {
+        MixerModel::Wing => SpeechEqBands {
+            hpf_band: 1,
+            lpf_band: 8,
+            presence_band: 3,
+            scoop_band: 2,
+        },
+        MixerModel::X32 => SpeechEqBands {
+            hpf_band: 1,
+            lpf_band: 6,
+            presence_band: 3,
+            scoop_band: 2,
+        },
+        MixerModel::XR18 | MixerModel::XR16 | MixerModel::XR12 => SpeechEqBands {
+            hpf_band: 1,
+            lpf_band: 4,
+            presence_band: 3,
+            scoop_band: 2,
+        },
+    }
+}
+
+/// Returns the model-aware parameter paths to save and restore for Speech Mode.
+pub fn get_speech_mode_paths(model: MixerModel) -> Vec<String> {
+    let bands = get_speech_eq_bands(model);
+    let mut paths = vec![
+        format!("eq/{}/type", bands.hpf_band),
+        format!("eq/{}/f", bands.hpf_band),
+        format!("eq/{}/type", bands.lpf_band),
+        format!("eq/{}/f", bands.lpf_band),
+        format!("eq/{}/type", bands.presence_band),
+        format!("eq/{}/f", bands.presence_band),
+        format!("eq/{}/g", bands.presence_band),
+        format!("eq/{}/type", bands.scoop_band),
+        format!("eq/{}/f", bands.scoop_band),
+        format!("eq/{}/g", bands.scoop_band),
+        format!("eq/{}/q", bands.scoop_band),
+        "dyn/on".to_string(),
+        "dyn/mode".to_string(),
+        "dyn/ratio".to_string(),
+        "dyn/thr".to_string(),
+        "dyn/attack".to_string(),
+        "dyn/release".to_string(),
+        "dyn/knee".to_string(),
+        "gate/on".to_string(),
+        "gate/mode".to_string(),
+        "gate/thr".to_string(),
+        "gate/range".to_string(),
+        "gate/attack".to_string(),
+        "gate/release".to_string(),
+    ];
+
+    let supports_automix = matches!(
+        model,
+        MixerModel::X32 | MixerModel::XR18 | MixerModel::XR16 | MixerModel::XR12
+    );
+    if supports_automix {
+        paths.push("automix/group".to_string());
+    }
+
+    paths
+}
+
 pub async fn run(args: Args) -> Result<()> {
     let max_ch = max_channels_for_model(args.model);
     let mut channels: Vec<u8> = Vec::new();
@@ -167,41 +241,7 @@ pub async fn run(args: Args) -> Result<()> {
     let mut saved_state = SavedState::default();
 
     // List of paths we will modify and need to save
-    let mut paths_to_save = vec![
-        "eq/1/type",
-        "eq/1/f",
-        "eq/6/type",
-        "eq/6/f",
-        "eq/3/type",
-        "eq/3/f",
-        "eq/3/g",
-        "eq/2/type",
-        "eq/2/f",
-        "eq/2/g",
-        "eq/2/q",
-        "dyn/on",
-        "dyn/mode",
-        "dyn/ratio",
-        "dyn/thr",
-        "dyn/attack",
-        "dyn/release",
-        "dyn/knee",
-        "gate/on",
-        "gate/mode",
-        "gate/thr",
-        "gate/range",
-        "gate/attack",
-        "gate/release",
-    ];
-
-    // Automix is supported on X32 and XAir models
-    let supports_automix = matches!(
-        args.model,
-        MixerModel::X32 | MixerModel::XR18 | MixerModel::XR16 | MixerModel::XR12
-    );
-    if supports_automix {
-        paths_to_save.push("automix/group");
-    }
+    let paths_to_save = get_speech_mode_paths(args.model);
 
     for ch in &channels {
         let mut original_msgs = Vec::new();
@@ -218,56 +258,62 @@ pub async fn run(args: Args) -> Result<()> {
         saved_state.channels.insert(*ch, original_msgs);
     }
 
+    let bands = get_speech_eq_bands(args.model);
+    let supports_automix = matches!(
+        args.model,
+        MixerModel::X32 | MixerModel::XR18 | MixerModel::XR16 | MixerModel::XR12
+    );
+
     for ch in channels {
         println!("Processing channel {:02}", ch);
 
         let mut msgs = vec![
-            // 1. High-pass filter: 80 Hz, 18 dB/oct slope (type = 5 is Low Cut on eq/1/type, freq = 80Hz)
+            // 1. High-pass filter: 80 Hz, 18 dB/oct slope
             OscMessage {
-                path: format!("/ch/{:02}/eq/1/type", ch),
+                path: format!("/ch/{:02}/eq/{}/type", ch, bands.hpf_band),
                 args: vec![OscArg::Int(5)],
             },
             OscMessage {
-                path: format!("/ch/{:02}/eq/1/f", ch),
+                path: format!("/ch/{:02}/eq/{}/f", ch, bands.hpf_band),
                 args: vec![OscArg::Float(freq_to_osc(80.0))],
             },
-            // 2. Low-pass filter: 12 kHz, 12 dB/oct slope (type = 6 is High Cut)
+            // 2. Low-pass filter: 12 kHz, 12 dB/oct slope
             OscMessage {
-                path: format!("/ch/{:02}/eq/6/type", ch),
+                path: format!("/ch/{:02}/eq/{}/type", ch, bands.lpf_band),
                 args: vec![OscArg::Int(6)],
             },
             OscMessage {
-                path: format!("/ch/{:02}/eq/6/f", ch),
+                path: format!("/ch/{:02}/eq/{}/f", ch, bands.lpf_band),
                 args: vec![OscArg::Float(freq_to_osc(12000.0))],
             },
-            // 3. Presence boost: +3 dB shelf at 3.5 kHz (type = 3 is PEQ)
+            // 3. Presence boost: +3 dB shelf at 3.5 kHz
             OscMessage {
-                path: format!("/ch/{:02}/eq/3/type", ch),
+                path: format!("/ch/{:02}/eq/{}/type", ch, bands.presence_band),
                 args: vec![OscArg::Int(3)],
             },
             OscMessage {
-                path: format!("/ch/{:02}/eq/3/f", ch),
+                path: format!("/ch/{:02}/eq/{}/f", ch, bands.presence_band),
                 args: vec![OscArg::Float(freq_to_osc(3500.0))],
             },
             OscMessage {
-                path: format!("/ch/{:02}/eq/3/g", ch),
+                path: format!("/ch/{:02}/eq/{}/g", ch, bands.presence_band),
                 args: vec![OscArg::Float(gain_to_osc(3.0))],
             },
-            // 4. Low-mid scoop: -2 dB at 300 Hz, Q=1.5 (type = 3 PEQ)
+            // 4. Low-mid scoop: -2 dB at 300 Hz, Q=1.5
             OscMessage {
-                path: format!("/ch/{:02}/eq/2/type", ch),
+                path: format!("/ch/{:02}/eq/{}/type", ch, bands.scoop_band),
                 args: vec![OscArg::Int(3)],
             },
             OscMessage {
-                path: format!("/ch/{:02}/eq/2/f", ch),
+                path: format!("/ch/{:02}/eq/{}/f", ch, bands.scoop_band),
                 args: vec![OscArg::Float(freq_to_osc(300.0))],
             },
             OscMessage {
-                path: format!("/ch/{:02}/eq/2/g", ch),
+                path: format!("/ch/{:02}/eq/{}/g", ch, bands.scoop_band),
                 args: vec![OscArg::Float(gain_to_osc(-2.0))],
             },
             OscMessage {
-                path: format!("/ch/{:02}/eq/2/q", ch),
+                path: format!("/ch/{:02}/eq/{}/q", ch, bands.scoop_band),
                 args: vec![OscArg::Float(q_to_osc(1.5))],
             },
             // 5. Compressor: Ratio 3:1, threshold -20 dBFS, attack 10 ms, release 100 ms, knee soft
@@ -374,6 +420,56 @@ mod tests {
         assert_eq!(max_channels_for_model(MixerModel::XR18), 16);
         assert_eq!(max_channels_for_model(MixerModel::XR16), 16);
         assert_eq!(max_channels_for_model(MixerModel::XR12), 12);
+    }
+
+    #[test]
+    fn test_speech_eq_bands_per_model() {
+        assert_eq!(
+            get_speech_eq_bands(MixerModel::X32),
+            SpeechEqBands {
+                hpf_band: 1,
+                lpf_band: 6,
+                presence_band: 3,
+                scoop_band: 2,
+            }
+        );
+
+        assert_eq!(
+            get_speech_eq_bands(MixerModel::Wing),
+            SpeechEqBands {
+                hpf_band: 1,
+                lpf_band: 8,
+                presence_band: 3,
+                scoop_band: 2,
+            }
+        );
+
+        for model in [MixerModel::XR18, MixerModel::XR16, MixerModel::XR12] {
+            assert_eq!(
+                get_speech_eq_bands(model),
+                SpeechEqBands {
+                    hpf_band: 1,
+                    lpf_band: 4,
+                    presence_band: 3,
+                    scoop_band: 2,
+                }
+            );
+        }
+    }
+
+    #[test]
+    fn test_speech_mode_paths_per_model() {
+        let x32_paths = get_speech_mode_paths(MixerModel::X32);
+        assert!(x32_paths.contains(&"eq/6/type".to_string()));
+        assert!(x32_paths.contains(&"automix/group".to_string()));
+
+        let wing_paths = get_speech_mode_paths(MixerModel::Wing);
+        assert!(wing_paths.contains(&"eq/8/type".to_string()));
+        assert!(!wing_paths.contains(&"automix/group".to_string()));
+
+        let xr18_paths = get_speech_mode_paths(MixerModel::XR18);
+        assert!(xr18_paths.contains(&"eq/4/type".to_string()));
+        assert!(xr18_paths.contains(&"automix/group".to_string()));
     }
 
     #[test]
