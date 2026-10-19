@@ -3,9 +3,9 @@ use osc_lib::OscArg;
 use std::collections::HashMap;
 use std::io::{BufRead, Read, Write};
 use std::time::Duration;
-use x32_lib::scene_parse::SceneParser;
 use x32_lib::MixerClient;
 use x32_lib::MixerModel;
+use x32_lib::scene_parse::SceneParser;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about = "Intelligent Scene Pre-flight Checker", long_about = None)]
@@ -705,9 +705,11 @@ mod tests {
         let issue =
             classify_risk_with_model(MixerModel::XR18, "/ch/17/mix/fader", &dummy, &scene).unwrap();
         assert_eq!(issue.level, RiskLevel::Critical);
-        assert!(issue
-            .description
-            .contains("Channel index 17 is out of bounds"));
+        assert!(
+            issue
+                .description
+                .contains("Channel index 17 is out of bounds")
+        );
 
         // XR12: 12 channels
         assert!(
@@ -894,9 +896,11 @@ mod tests {
         // Mode::Safe excludes Critical and High issues
         let safe_filtered = filter_issues(&issues, LoadMode::Safe, &locked);
         assert_eq!(safe_filtered.len(), 3);
-        assert!(safe_filtered
-            .iter()
-            .all(|i| i.level != RiskLevel::Critical && i.level != RiskLevel::High));
+        assert!(
+            safe_filtered
+                .iter()
+                .all(|i| i.level != RiskLevel::Critical && i.level != RiskLevel::High)
+        );
     }
 
     #[test]
@@ -932,12 +936,14 @@ mod tests {
 
         // Identical values return None
         assert!(classify_risk("/ch/01/mix/fader", &cur_f, &scn_f).is_none());
-        assert!(classify_risk(
-            "/ch/01/config/name",
-            &OscArg::String("Vox".into()),
-            &OscArg::String("Vox".into())
-        )
-        .is_none());
+        assert!(
+            classify_risk(
+                "/ch/01/config/name",
+                &OscArg::String("Vox".into()),
+                &OscArg::String("Vox".into())
+            )
+            .is_none()
+        );
 
         // classify_risk wrapper uses X32 default
         let issue = classify_risk(

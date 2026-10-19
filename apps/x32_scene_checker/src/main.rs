@@ -1,5 +1,5 @@
 use clap::Parser;
-use x32_scene_checker::{run, Args};
+use x32_scene_checker::{Args, run};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

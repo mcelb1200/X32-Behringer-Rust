@@ -3,7 +3,7 @@ use crate::transport::MixerTransport;
 use async_trait::async_trait;
 use osc_lib::OscMessage;
 use std::sync::Arc;
-use tokio::sync::{mpsc, Mutex};
+use tokio::sync::{Mutex, mpsc};
 use tokio::time::Duration;
 
 pub struct MockTransport {

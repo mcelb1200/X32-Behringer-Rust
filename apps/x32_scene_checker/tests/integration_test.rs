@@ -9,7 +9,7 @@ use x32_core::Mixer;
 use x32_lib::transport::udp::UdpTransport;
 use x32_lib::{MixerClient, MixerModel};
 
-use x32_scene_checker::{classify_risk, classify_risk_with_model, run, Args, RiskLevel};
+use x32_scene_checker::{Args, RiskLevel, classify_risk, classify_risk_with_model, run};
 
 #[test]
 fn test_classify_risk() {

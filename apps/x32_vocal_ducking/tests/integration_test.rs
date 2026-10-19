@@ -6,7 +6,7 @@ use tokio::net::UdpSocket;
 use x32_core::Mixer;
 
 use x32_lib::MixerModel;
-use x32_vocal_ducking::{run, Cli};
+use x32_vocal_ducking::{Cli, run};
 
 // We will test the pure OSC fallback mode, as testing cpal requires an active audio driver.
 // The `run` function holds a `cpal::Stream` which is `!Send` on ALSA, so we can't easily run it inside a `tokio::spawn` task.
