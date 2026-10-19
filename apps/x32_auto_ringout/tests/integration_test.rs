@@ -100,3 +100,33 @@ async fn test_auto_ringout_detects_feedback() -> Result<()> {
     server_handle.abort();
     Ok(())
 }
+
+#[test]
+fn test_cli_model_arg_parsing() {
+    use x32_lib::MixerModel;
+
+    let args_default = Args::parse_from(&["x32_auto_ringout", "--ip", "127.0.0.1", "--buses", "1"]);
+    assert_eq!(args_default.model, MixerModel::X32);
+
+    let args_wing = Args::parse_from(&[
+        "x32_auto_ringout",
+        "--ip",
+        "127.0.0.1",
+        "--model",
+        "Wing",
+        "--buses",
+        "1,20",
+    ]);
+    assert_eq!(args_wing.model, MixerModel::Wing);
+
+    let args_xr18 = Args::parse_from(&[
+        "x32_auto_ringout",
+        "--ip",
+        "127.0.0.1",
+        "-m",
+        "XR18",
+        "-b",
+        "1,5",
+    ]);
+    assert_eq!(args_xr18.model, MixerModel::XR18);
+}
