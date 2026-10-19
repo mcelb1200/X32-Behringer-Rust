@@ -1,14 +1,14 @@
 //! `x32_vocal_ducking` is a tool that implements dynamic EQ sidechaining
 //! and surgical frequency carving on an instrument bus to make space for vocals.
 
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
 use clap::Parser;
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use osc_lib::{OscArg, OscMessage};
-use rustfft::FftPlanner;
 use rustfft::num_complex::Complex;
-use std::sync::Arc;
+use rustfft::FftPlanner;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::mpsc;
 use tokio::time::sleep;

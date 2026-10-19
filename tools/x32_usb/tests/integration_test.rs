@@ -1,8 +1,8 @@
-use std::sync::mpsc::{Sender, channel};
+use std::sync::mpsc::{channel, Sender};
 use std::thread::{self, JoinHandle};
 use std::time::Duration;
-use x32_emulator::Mixer;
 use x32_emulator::server;
+use x32_emulator::Mixer;
 
 fn run_server_with_seeder<F>(port: u16, seeder: F) -> (JoinHandle<()>, Sender<()>)
 where
