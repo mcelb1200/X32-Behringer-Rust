@@ -76,9 +76,7 @@ pub fn get_bus_fader_path(model: MixerModel, bus: u8) -> String {
 pub fn get_bus_eq_path(model: MixerModel, bus: u8, notch: usize, param: &str) -> String {
     match model {
         MixerModel::X32 | MixerModel::Wing => format!("/bus/{:02}/eq/{}/{}", bus, notch, param),
-        MixerModel::XR18 | MixerModel::XR16 | MixerModel::XR12 => {
-            format!("/bus/{}/eq/{}/{}", bus, notch, param)
-        }
+        MixerModel::XR18 | MixerModel::XR16 | MixerModel::XR12 => format!("/bus/{}/eq/{}/{}", bus, notch, param),
     }
 }
 
@@ -575,10 +573,7 @@ mod tests {
     #[test]
     fn test_get_bus_fader_path() {
         assert_eq!(get_bus_fader_path(MixerModel::X32, 1), "/bus/01/mix/fader");
-        assert_eq!(
-            get_bus_fader_path(MixerModel::Wing, 28),
-            "/bus/28/mix/fader"
-        );
+        assert_eq!(get_bus_fader_path(MixerModel::Wing, 28), "/bus/28/mix/fader");
         assert_eq!(get_bus_fader_path(MixerModel::XR18, 5), "/bus/5/mix/fader");
         assert_eq!(get_bus_fader_path(MixerModel::XR12, 2), "/bus/2/mix/fader");
     }
