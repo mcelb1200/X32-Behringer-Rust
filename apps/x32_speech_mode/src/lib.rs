@@ -87,12 +87,34 @@ fn get_state_file_path() -> PathBuf {
         .join(".x32_speech_mode_state.json")
 }
 
-fn max_channels_for_model(model: MixerModel) -> u8 {
+pub fn max_channels_for_model(model: MixerModel) -> u8 {
     match model {
         MixerModel::X32 => 32,
         MixerModel::Wing => 40,
         MixerModel::XR18 | MixerModel::XR16 => 16,
         MixerModel::XR12 => 12,
+    }
+}
+
+pub fn get_channel_prefix(_model: MixerModel, ch: u8) -> String {
+    format!("/ch/{:02}", ch)
+}
+
+pub fn get_low_pass_band_for_model(model: MixerModel) -> u8 {
+    match model {
+        MixerModel::Wing => 8,
+        MixerModel::X32 => 6,
+        MixerModel::XR18 | MixerModel::XR16 | MixerModel::XR12 => 4,
+    }
+}
+
+pub fn get_automix_path_for_model(model: MixerModel, ch: u8) -> Option<String> {
+    match model {
+        MixerModel::X32 => Some(format!("/ch/{:02}/automix/group", ch)),
+        MixerModel::XR18 | MixerModel::XR16 | MixerModel::XR12 => {
+            Some(format!("/automix/ch/{:02}", ch))
+        }
+        MixerModel::Wing => None,
     }
 }
 
@@ -166,12 +188,16 @@ pub async fn run(args: Args) -> Result<()> {
     println!("Engaging speech mode on channels: {:?}", channels);
     let mut saved_state = SavedState::default();
 
-    // List of paths we will modify and need to save
-    let mut paths_to_save = vec![
+    let lp_band = get_low_pass_band_for_model(args.model);
+    let lp_type_subpath = format!("eq/{}/type", lp_band);
+    let lp_f_subpath = format!("eq/{}/f", lp_band);
+
+    // List of subpaths relative to channel prefix we will modify and save
+    let subpaths_to_save = [
         "eq/1/type",
         "eq/1/f",
-        "eq/6/type",
-        "eq/6/f",
+        &lp_type_subpath,
+        &lp_f_subpath,
         "eq/3/type",
         "eq/3/f",
         "eq/3/g",
@@ -194,19 +220,11 @@ pub async fn run(args: Args) -> Result<()> {
         "gate/release",
     ];
 
-    // Automix is supported on X32 and XAir models
-    let supports_automix = matches!(
-        args.model,
-        MixerModel::X32 | MixerModel::XR18 | MixerModel::XR16 | MixerModel::XR12
-    );
-    if supports_automix {
-        paths_to_save.push("automix/group");
-    }
-
     for ch in &channels {
+        let prefix = get_channel_prefix(args.model, *ch);
         let mut original_msgs = Vec::new();
-        for sub_path in &paths_to_save {
-            let path = format!("/ch/{:02}/{}", ch, sub_path);
+        for sub_path in &subpaths_to_save {
+            let path = format!("{}/{}", prefix, sub_path);
             if let Ok(val) = client.query_value(&path).await {
                 original_msgs.push(OscMessage {
                     path,
@@ -215,120 +233,132 @@ pub async fn run(args: Args) -> Result<()> {
             }
             tokio::time::sleep(delay).await;
         }
+
+        if let Some(am_path) = get_automix_path_for_model(args.model, *ch) {
+            if let Ok(val) = client.query_value(&am_path).await {
+                original_msgs.push(OscMessage {
+                    path: am_path,
+                    args: vec![val],
+                });
+            }
+            tokio::time::sleep(delay).await;
+        }
+
         saved_state.channels.insert(*ch, original_msgs);
     }
 
     for ch in channels {
-        println!("Processing channel {:02}", ch);
+        let prefix = get_channel_prefix(args.model, ch);
+        println!("Processing channel {:02} with prefix {}", ch, prefix);
 
         let mut msgs = vec![
             // 1. High-pass filter: 80 Hz, 18 dB/oct slope (type = 5 is Low Cut on eq/1/type, freq = 80Hz)
             OscMessage {
-                path: format!("/ch/{:02}/eq/1/type", ch),
+                path: format!("{}/eq/1/type", prefix),
                 args: vec![OscArg::Int(5)],
             },
             OscMessage {
-                path: format!("/ch/{:02}/eq/1/f", ch),
+                path: format!("{}/eq/1/f", prefix),
                 args: vec![OscArg::Float(freq_to_osc(80.0))],
             },
-            // 2. Low-pass filter: 12 kHz, 12 dB/oct slope (type = 6 is High Cut)
+            // 2. Low-pass filter: 12 kHz, 12 dB/oct slope (type = 6 on X32, 8 on Wing, 4 on XAir)
             OscMessage {
-                path: format!("/ch/{:02}/eq/6/type", ch),
+                path: format!("{}/eq/{}/type", prefix, lp_band),
                 args: vec![OscArg::Int(6)],
             },
             OscMessage {
-                path: format!("/ch/{:02}/eq/6/f", ch),
+                path: format!("{}/eq/{}/f", prefix, lp_band),
                 args: vec![OscArg::Float(freq_to_osc(12000.0))],
             },
             // 3. Presence boost: +3 dB shelf at 3.5 kHz (type = 3 is PEQ)
             OscMessage {
-                path: format!("/ch/{:02}/eq/3/type", ch),
+                path: format!("{}/eq/3/type", prefix),
                 args: vec![OscArg::Int(3)],
             },
             OscMessage {
-                path: format!("/ch/{:02}/eq/3/f", ch),
+                path: format!("{}/eq/3/f", prefix),
                 args: vec![OscArg::Float(freq_to_osc(3500.0))],
             },
             OscMessage {
-                path: format!("/ch/{:02}/eq/3/g", ch),
+                path: format!("{}/eq/3/g", prefix),
                 args: vec![OscArg::Float(gain_to_osc(3.0))],
             },
             // 4. Low-mid scoop: -2 dB at 300 Hz, Q=1.5 (type = 3 PEQ)
             OscMessage {
-                path: format!("/ch/{:02}/eq/2/type", ch),
+                path: format!("{}/eq/2/type", prefix),
                 args: vec![OscArg::Int(3)],
             },
             OscMessage {
-                path: format!("/ch/{:02}/eq/2/f", ch),
+                path: format!("{}/eq/2/f", prefix),
                 args: vec![OscArg::Float(freq_to_osc(300.0))],
             },
             OscMessage {
-                path: format!("/ch/{:02}/eq/2/g", ch),
+                path: format!("{}/eq/2/g", prefix),
                 args: vec![OscArg::Float(gain_to_osc(-2.0))],
             },
             OscMessage {
-                path: format!("/ch/{:02}/eq/2/q", ch),
+                path: format!("{}/eq/2/q", prefix),
                 args: vec![OscArg::Float(q_to_osc(1.5))],
             },
             // 5. Compressor: Ratio 3:1, threshold -20 dBFS, attack 10 ms, release 100 ms, knee soft
             OscMessage {
-                path: format!("/ch/{:02}/dyn/on", ch),
+                path: format!("{}/dyn/on", prefix),
                 args: vec![OscArg::Int(1)],
             },
             OscMessage {
-                path: format!("/ch/{:02}/dyn/mode", ch),
+                path: format!("{}/dyn/mode", prefix),
                 args: vec![OscArg::Int(0)],
             }, // COMP
             OscMessage {
-                path: format!("/ch/{:02}/dyn/ratio", ch),
+                path: format!("{}/dyn/ratio", prefix),
                 args: vec![OscArg::Int(5)],
             }, // Ratio 3:1 is typically index 5 in X_DY_RAT (" 1.1", " 1.3", " 1.5", " 2.0", " 2.5", " 3.0", " 4.0", " 5.0", " 7.0", " 10", " 20", " 100")
             OscMessage {
-                path: format!("/ch/{:02}/dyn/thr", ch),
+                path: format!("{}/dyn/thr", prefix),
                 args: vec![OscArg::Float(dyn_thr_to_osc(-20.0))],
             },
             OscMessage {
-                path: format!("/ch/{:02}/dyn/attack", ch),
+                path: format!("{}/dyn/attack", prefix),
                 args: vec![OscArg::Float(dyn_attack_to_osc(10.0))],
             },
             OscMessage {
-                path: format!("/ch/{:02}/dyn/release", ch),
+                path: format!("{}/dyn/release", prefix),
                 args: vec![OscArg::Float(dyn_release_to_osc(100.0))],
             },
             OscMessage {
-                path: format!("/ch/{:02}/dyn/knee", ch),
+                path: format!("{}/dyn/knee", prefix),
                 args: vec![OscArg::Float(0.6)],
             }, // Soft knee (roughly 3-4dB, 0-5dB scale -> 0.6)
             // 6. Gate/Expander: Threshold -50 dBFS, range -20 dB, attack 0.5 ms, release 200 ms
             OscMessage {
-                path: format!("/ch/{:02}/gate/on", ch),
+                path: format!("{}/gate/on", prefix),
                 args: vec![OscArg::Int(1)],
             },
             OscMessage {
-                path: format!("/ch/{:02}/gate/mode", ch),
+                path: format!("{}/gate/mode", prefix),
                 args: vec![OscArg::Int(2)],
             }, // EXP 2
             OscMessage {
-                path: format!("/ch/{:02}/gate/thr", ch),
+                path: format!("{}/gate/thr", prefix),
                 args: vec![OscArg::Float(gate_thr_to_osc(-50.0))],
             },
             OscMessage {
-                path: format!("/ch/{:02}/gate/range", ch),
+                path: format!("{}/gate/range", prefix),
                 args: vec![OscArg::Float(gate_range_to_osc(-20.0))],
             },
             OscMessage {
-                path: format!("/ch/{:02}/gate/attack", ch),
+                path: format!("{}/gate/attack", prefix),
                 args: vec![OscArg::Float(dyn_attack_to_osc(0.5))],
             },
             OscMessage {
-                path: format!("/ch/{:02}/gate/release", ch),
+                path: format!("{}/gate/release", prefix),
                 args: vec![OscArg::Float(dyn_release_to_osc(200.0))],
             },
         ];
 
-        if supports_automix {
+        if let Some(am_path) = get_automix_path_for_model(args.model, ch) {
             msgs.push(OscMessage {
-                path: format!("/ch/{:02}/automix/group", ch),
+                path: am_path,
                 args: vec![OscArg::Int(1)], // Group X / Group 1
             });
         }
@@ -407,5 +437,79 @@ mod tests {
             parse_channels("1,12,13,16,32,40", MixerModel::Wing),
             vec![1, 12, 13, 16, 32, 40]
         );
+    }
+
+    #[test]
+    fn test_channel_prefix_generation() {
+        assert_eq!(get_channel_prefix(MixerModel::X32, 1), "/ch/01");
+        assert_eq!(get_channel_prefix(MixerModel::Wing, 40), "/ch/40");
+        assert_eq!(get_channel_prefix(MixerModel::XR18, 16), "/ch/16");
+        assert_eq!(get_channel_prefix(MixerModel::XR12, 12), "/ch/12");
+    }
+
+    #[test]
+    fn test_low_pass_band_for_model() {
+        assert_eq!(get_low_pass_band_for_model(MixerModel::Wing), 8);
+        assert_eq!(get_low_pass_band_for_model(MixerModel::X32), 6);
+        assert_eq!(get_low_pass_band_for_model(MixerModel::XR18), 4);
+        assert_eq!(get_low_pass_band_for_model(MixerModel::XR16), 4);
+        assert_eq!(get_low_pass_band_for_model(MixerModel::XR12), 4);
+    }
+
+    #[test]
+    fn test_automix_path_for_model() {
+        assert_eq!(
+            get_automix_path_for_model(MixerModel::X32, 1),
+            Some("/ch/01/automix/group".to_string())
+        );
+        assert_eq!(
+            get_automix_path_for_model(MixerModel::XR18, 5),
+            Some("/automix/ch/05".to_string())
+        );
+        assert_eq!(
+            get_automix_path_for_model(MixerModel::XR16, 12),
+            Some("/automix/ch/12".to_string())
+        );
+        assert_eq!(get_automix_path_for_model(MixerModel::Wing, 1), None);
+    }
+
+    #[test]
+    fn test_additional_parameter_mappings() {
+        // Q mapping
+        assert!((q_to_osc(1.5) - 0.4587).abs() < 0.05);
+        assert_eq!(q_to_osc(0.3), 0.0);
+        assert_eq!(q_to_osc(10.0), 1.0);
+
+        // Dynamics Threshold mapping (-60 to 0)
+        assert_eq!(dyn_thr_to_osc(-20.0), 40.0 / 60.0);
+        assert_eq!(dyn_thr_to_osc(-60.0), 0.0);
+        assert_eq!(dyn_thr_to_osc(0.0), 1.0);
+
+        // Gate Threshold mapping (-80 to 0)
+        assert_eq!(gate_thr_to_osc(-50.0), 30.0 / 80.0);
+        assert_eq!(gate_thr_to_osc(-80.0), 0.0);
+        assert_eq!(gate_thr_to_osc(0.0), 1.0);
+
+        // Dynamics Attack & Release mappings
+        assert_eq!(dyn_attack_to_osc(10.0), 10.0 / 120.0);
+        assert_eq!(dyn_release_to_osc(100.0), 100.0 / 4000.0);
+    }
+
+    #[test]
+    fn test_saved_state_serialization() {
+        let mut state = SavedState::default();
+        let msg = OscMessage {
+            path: "/ch/01/eq/1/type".to_string(),
+            args: vec![OscArg::Int(5)],
+        };
+        state.channels.insert(1, vec![msg]);
+
+        let json = serde_json::to_string(&state).unwrap();
+        let deserialized: SavedState = serde_json::from_str(&json).unwrap();
+
+        assert_eq!(deserialized.channels.len(), 1);
+        let ch_1_msgs = deserialized.channels.get(&1).unwrap();
+        assert_eq!(ch_1_msgs.len(), 1);
+        assert_eq!(ch_1_msgs[0].path, "/ch/01/eq/1/type");
     }
 }
