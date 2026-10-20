@@ -164,7 +164,8 @@ pub async fn run(cli: Cli) -> Result<()> {
     let mut sources = Vec::new();
     let mut local_audio_indices = Vec::new();
     for ch_str in &cli.channels {
-        let src = Source::parse_with_model(ch_str, cli.model).map_err(|e: String| anyhow::anyhow!(e))?;
+        let src =
+            Source::parse_with_model(ch_str, cli.model).map_err(|e: String| anyhow::anyhow!(e))?;
         let local_audio_idx = match src {
             Source::Channel(ch) => ch,
             Source::Bus(b) => b,
