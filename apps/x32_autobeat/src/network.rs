@@ -8,7 +8,34 @@ use std::sync::{
 use tokio::sync::broadcast::error::RecvError;
 use tokio::task;
 use tokio::time::{self, Duration};
-use x32_lib::client::MixerClient;
+use x32_lib::{client::MixerClient, MixerModel};
+
+pub fn max_channels_for_model(model: MixerModel) -> usize {
+    match model {
+        MixerModel::X32 => 32,
+        MixerModel::Wing => 40,
+        MixerModel::XR18 | MixerModel::XR16 => 16,
+        MixerModel::XR12 => 12,
+    }
+}
+
+pub fn max_buses_for_model(model: MixerModel) -> usize {
+    match model {
+        MixerModel::X32 => 16,
+        MixerModel::Wing => 28,
+        MixerModel::XR18 => 6,
+        MixerModel::XR16 => 4,
+        MixerModel::XR12 => 2,
+    }
+}
+
+pub fn max_auxes_for_model(model: MixerModel) -> usize {
+    match model {
+        MixerModel::X32 | MixerModel::XR18 => 6,
+        MixerModel::Wing => 16,
+        MixerModel::XR16 | MixerModel::XR12 => 0,
+    }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Source {
@@ -31,10 +58,8 @@ impl std::fmt::Display for Source {
     }
 }
 
-impl std::str::FromStr for Source {
-    type Err = String;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+impl Source {
+    pub fn parse_with_model(s: &str, model: MixerModel) -> Result<Self, String> {
         let s = s.trim().to_lowercase();
         if s == "main" || s == "mainl" || s == "main/l" {
             return Ok(Source::MainL);
@@ -42,39 +67,52 @@ impl std::str::FromStr for Source {
         if s == "mainr" || s == "main/r" {
             return Ok(Source::MainR);
         }
+
+        let max_ch = max_channels_for_model(model);
+        let max_bus = max_buses_for_model(model);
+        let max_aux = max_auxes_for_model(model);
+
         if let Some(num_str) = s.strip_prefix("ch") {
             if let Ok(val) = num_str.parse::<usize>() {
-                if (1..=32).contains(&val) {
+                if (1..=max_ch).contains(&val) {
                     return Ok(Source::Channel(val));
                 }
             }
-            return Err(format!("Invalid channel number: {}", s));
+            return Err(format!("Invalid channel number '{}' for model {}", s, model));
         }
         if let Some(num_str) = s.strip_prefix("bus") {
             if let Ok(val) = num_str.parse::<usize>() {
-                if (1..=16).contains(&val) {
+                if (1..=max_bus).contains(&val) {
                     return Ok(Source::Bus(val));
                 }
             }
-            return Err(format!("Invalid bus number: {}", s));
+            return Err(format!("Invalid bus number '{}' for model {}", s, model));
         }
         if let Some(num_str) = s.strip_prefix("aux") {
             if let Ok(val) = num_str.parse::<usize>() {
-                if (1..=6).contains(&val) {
+                if max_aux > 0 && (1..=max_aux).contains(&val) {
                     return Ok(Source::Aux(val));
                 }
             }
-            return Err(format!("Invalid aux number: {}", s));
+            return Err(format!("Invalid aux number '{}' for model {}", s, model));
         }
         if let Ok(val) = s.parse::<usize>() {
-            if (1..=32).contains(&val) {
+            if (1..=max_ch).contains(&val) {
                 return Ok(Source::Channel(val));
             }
         }
         Err(format!(
-            "Invalid source: '{}'. Use ch1-32, bus1-16, aux1-6, or main",
-            s
+            "Invalid source: '{}' for model {}. Maximum bounds: ch1-{}, bus1-{}, aux1-{}",
+            s, model, max_ch, max_bus, max_aux
         ))
+    }
+}
+
+impl std::str::FromStr for Source {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Self::parse_with_model(s, MixerModel::X32)
     }
 }
 
@@ -303,5 +341,84 @@ impl NetworkManager {
             args: vec![osc_lib::OscArg::Float(value)],
         };
         self.send(&msg).await
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_model_bounds() {
+        assert_eq!(max_channels_for_model(MixerModel::X32), 32);
+        assert_eq!(max_channels_for_model(MixerModel::Wing), 40);
+        assert_eq!(max_channels_for_model(MixerModel::XR18), 16);
+        assert_eq!(max_channels_for_model(MixerModel::XR16), 16);
+        assert_eq!(max_channels_for_model(MixerModel::XR12), 12);
+
+        assert_eq!(max_buses_for_model(MixerModel::X32), 16);
+        assert_eq!(max_buses_for_model(MixerModel::Wing), 28);
+        assert_eq!(max_buses_for_model(MixerModel::XR18), 6);
+        assert_eq!(max_buses_for_model(MixerModel::XR16), 4);
+        assert_eq!(max_buses_for_model(MixerModel::XR12), 2);
+
+        assert_eq!(max_auxes_for_model(MixerModel::X32), 6);
+        assert_eq!(max_auxes_for_model(MixerModel::Wing), 16);
+        assert_eq!(max_auxes_for_model(MixerModel::XR18), 6);
+        assert_eq!(max_auxes_for_model(MixerModel::XR16), 0);
+        assert_eq!(max_auxes_for_model(MixerModel::XR12), 0);
+    }
+
+    #[test]
+    fn test_source_parse_with_model_x32() {
+        assert_eq!(Source::parse_with_model("ch1", MixerModel::X32), Ok(Source::Channel(1)));
+        assert_eq!(Source::parse_with_model("ch32", MixerModel::X32), Ok(Source::Channel(32)));
+        assert!(Source::parse_with_model("ch33", MixerModel::X32).is_err());
+
+        assert_eq!(Source::parse_with_model("bus1", MixerModel::X32), Ok(Source::Bus(1)));
+        assert_eq!(Source::parse_with_model("bus16", MixerModel::X32), Ok(Source::Bus(16)));
+        assert!(Source::parse_with_model("bus17", MixerModel::X32).is_err());
+
+        assert_eq!(Source::parse_with_model("aux1", MixerModel::X32), Ok(Source::Aux(1)));
+        assert_eq!(Source::parse_with_model("aux6", MixerModel::X32), Ok(Source::Aux(6)));
+        assert!(Source::parse_with_model("aux7", MixerModel::X32).is_err());
+
+        assert_eq!(Source::parse_with_model("main", MixerModel::X32), Ok(Source::MainL));
+        assert_eq!(Source::parse_with_model("main/r", MixerModel::X32), Ok(Source::MainR));
+    }
+
+    #[test]
+    fn test_source_parse_with_model_wing() {
+        assert_eq!(Source::parse_with_model("ch40", MixerModel::Wing), Ok(Source::Channel(40)));
+        assert!(Source::parse_with_model("ch41", MixerModel::Wing).is_err());
+
+        assert_eq!(Source::parse_with_model("bus28", MixerModel::Wing), Ok(Source::Bus(28)));
+        assert!(Source::parse_with_model("bus29", MixerModel::Wing).is_err());
+
+        assert_eq!(Source::parse_with_model("aux16", MixerModel::Wing), Ok(Source::Aux(16)));
+        assert!(Source::parse_with_model("aux17", MixerModel::Wing).is_err());
+    }
+
+    #[test]
+    fn test_source_parse_with_model_xr_series() {
+        // XR18
+        assert_eq!(Source::parse_with_model("ch16", MixerModel::XR18), Ok(Source::Channel(16)));
+        assert!(Source::parse_with_model("ch17", MixerModel::XR18).is_err());
+        assert_eq!(Source::parse_with_model("bus6", MixerModel::XR18), Ok(Source::Bus(6)));
+        assert!(Source::parse_with_model("bus7", MixerModel::XR18).is_err());
+        assert_eq!(Source::parse_with_model("aux6", MixerModel::XR18), Ok(Source::Aux(6)));
+
+        // XR16
+        assert_eq!(Source::parse_with_model("ch16", MixerModel::XR16), Ok(Source::Channel(16)));
+        assert_eq!(Source::parse_with_model("bus4", MixerModel::XR16), Ok(Source::Bus(4)));
+        assert!(Source::parse_with_model("bus5", MixerModel::XR16).is_err());
+        assert!(Source::parse_with_model("aux1", MixerModel::XR16).is_err());
+
+        // XR12
+        assert_eq!(Source::parse_with_model("ch12", MixerModel::XR12), Ok(Source::Channel(12)));
+        assert!(Source::parse_with_model("ch13", MixerModel::XR12).is_err());
+        assert_eq!(Source::parse_with_model("bus2", MixerModel::XR12), Ok(Source::Bus(2)));
+        assert!(Source::parse_with_model("bus3", MixerModel::XR12).is_err());
+        assert!(Source::parse_with_model("aux1", MixerModel::XR12).is_err());
     }
 }
