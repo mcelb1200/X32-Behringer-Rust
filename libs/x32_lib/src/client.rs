@@ -228,6 +228,9 @@ impl MixerClient {
                         });
                     }
                 }
+                Ok(Err(tokio::sync::broadcast::error::RecvError::Lagged(_))) => {
+                    continue;
+                }
                 _ => break,
             }
         }
