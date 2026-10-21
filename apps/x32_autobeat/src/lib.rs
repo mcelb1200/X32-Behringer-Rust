@@ -22,6 +22,7 @@ use clap::{Parser, Subcommand};
 use crossbeam_channel::unbounded;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
+use x32_lib::MixerModel;
 
 mod audio;
 mod compressor;
@@ -47,6 +48,10 @@ pub struct Cli {
     /// Audio Device Name (Substring match).
     #[arg(long)]
     pub device: Option<String>,
+
+    /// Mixer model: X32, Wing, XR18, XR16, XR12
+    #[arg(short = 'M', long, default_value = "X32")]
+    pub model: MixerModel,
 
     /// Audio source for beat detection (e.g. "ch1", "bus8", "aux2", "main", or "1")
     #[arg(long, default_value = "ch1", value_delimiter = ',')]
@@ -159,7 +164,8 @@ pub async fn run(cli: Cli) -> Result<()> {
     let mut sources = Vec::new();
     let mut local_audio_indices = Vec::new();
     for ch_str in &cli.channels {
-        let src: Source = ch_str.parse().map_err(|e: String| anyhow::anyhow!(e))?;
+        let src =
+            Source::parse_with_model(ch_str, cli.model).map_err(|e: String| anyhow::anyhow!(e))?;
         let local_audio_idx = match src {
             Source::Channel(ch) => ch,
             Source::Bus(b) => b,
