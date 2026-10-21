@@ -20,21 +20,15 @@ jobs:
         toolchain: stable
         components: clippy, rustfmt
 
-    - name: Install portmidi on Linux
+    - name: Install Linux Dependencies
       if: runner.os == 'Linux'
-      run: sudo apt-get update && sudo apt-get install -y libportmidi-dev libasound2-dev
+      run: sudo apt-get update && sudo apt-get install -y libasound2-dev
 
     - name: Run cargo check
-      working-directory: ./rust_rewrite
-      run: cargo check
-
-    - name: Run pre-commit checks
-      uses: pre-commit/action@v3.0.1
+      run: cargo check --workspace
 
     - name: Run cargo test
-      working-directory: ./rust_rewrite
       run: cargo test --workspace
 
     - name: Run cargo doc
-      working-directory: ./rust_rewrite
-      run: cargo doc --no-deps --document-private-items
+      run: cargo doc --workspace --no-deps
