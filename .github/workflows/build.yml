@@ -24,10 +24,10 @@ jobs:
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             test: true
-          - os: macos-latest
+          - os: macos-13
             target: x86_64-apple-darwin
             test: true
-          - os: macos-latest
+          - os: macos-14
             target: aarch64-apple-darwin
             test: true
 
