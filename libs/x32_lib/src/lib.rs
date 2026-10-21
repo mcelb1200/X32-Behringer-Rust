@@ -69,7 +69,7 @@ pub use crate::client::MixerClient;
 pub use crate::transport::MixerTransport;
 use std::net::{SocketAddr, UdpSocket};
 use std::time::Duration;
-pub use x32_fxparse::{MixerModel, parse_parameter};
+pub use x32_fxparse::{parse_parameter, MixerModel};
 
 pub use crate::error::{Result, X32Error};
 pub use osc_lib::{OscArg, OscError, OscMessage};
