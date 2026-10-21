@@ -253,18 +253,36 @@ mod tests {
         // Channel 32
         assert_eq!(state_x32.should_sync("/ch/32/mix/fader", &dummy_arg), true);
         assert_eq!(state_wing.should_sync("/ch/32/mix/fader", &dummy_arg), true);
-        assert_eq!(state_xr18.should_sync("/ch/32/mix/fader", &dummy_arg), false);
-        assert_eq!(state_xr16.should_sync("/ch/32/mix/fader", &dummy_arg), false);
-        assert_eq!(state_xr12.should_sync("/ch/32/mix/fader", &dummy_arg), false);
+        assert_eq!(
+            state_xr18.should_sync("/ch/32/mix/fader", &dummy_arg),
+            false
+        );
+        assert_eq!(
+            state_xr16.should_sync("/ch/32/mix/fader", &dummy_arg),
+            false
+        );
+        assert_eq!(
+            state_xr12.should_sync("/ch/32/mix/fader", &dummy_arg),
+            false
+        );
 
         // Channel 40
         assert_eq!(state_x32.should_sync("/ch/40/mix/fader", &dummy_arg), false);
         assert_eq!(state_wing.should_sync("/ch/40/mix/fader", &dummy_arg), true);
 
         // Buses
-        assert_eq!(state_xr18.should_sync("/bus/06/mix/fader", &dummy_arg), true);
-        assert_eq!(state_xr16.should_sync("/bus/06/mix/fader", &dummy_arg), false);
-        assert_eq!(state_xr12.should_sync("/bus/03/mix/fader", &dummy_arg), false);
+        assert_eq!(
+            state_xr18.should_sync("/bus/06/mix/fader", &dummy_arg),
+            true
+        );
+        assert_eq!(
+            state_xr16.should_sync("/bus/06/mix/fader", &dummy_arg),
+            false
+        );
+        assert_eq!(
+            state_xr12.should_sync("/bus/03/mix/fader", &dummy_arg),
+            false
+        );
     }
 
     #[test]
