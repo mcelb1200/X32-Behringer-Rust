@@ -55,7 +55,9 @@ pub mod server {
                 Ok((len, remote_addr)) => match mixer.dispatch(&buf[..len], remote_addr) {
                     Ok(responses) => {
                         for (addr, response) in responses {
-                            socket.send_to(&response, addr)?;
+                            if let Err(e) = socket.send_to(&response, addr) {
+                                eprintln!("Error sending response to {}: {}", addr, e);
+                            }
                         }
                     }
                     Err(e) => {
@@ -64,9 +66,11 @@ pub mod server {
                 },
                 Err(ref e)
                     if e.kind() == std::io::ErrorKind::WouldBlock
-                        || e.kind() == std::io::ErrorKind::TimedOut =>
+                        || e.kind() == std::io::ErrorKind::TimedOut
+                        || e.kind() == std::io::ErrorKind::ConnectionReset
+                        || e.raw_os_error() == Some(10054) =>
                 {
-                    // No data received, continue
+                    // No data received or client socket closed (e.g. WSAECONNRESET on Windows UDP), continue
                 }
                 Err(e) => {
                     eprintln!("Error receiving data: {}", e);

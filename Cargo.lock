@@ -2854,6 +2854,7 @@ dependencies = [
  "clap",
  "osc_lib",
  "tokio",
+ "x32_fxparse",
  "x32_lib",
 ]
 
