@@ -93,17 +93,18 @@ fn test_file_operations() {
     assert_eq!(stdout, "Changed directory to [MyScenes]\n");
 
     let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("x32_usb");
+    // Connect to the local server instead of an unreachable IP.
     cmd.arg("--ip")
-        .arg("1.2.3.4")
+        .arg("127.0.0.1:10049")
         .arg("load")
         .arg("myscene.scn");
 
     let output = cmd.output().unwrap();
-    assert!(!output.status.success());
+    assert!(output.status.success());
     let stdout = String::from_utf8(output.stdout)
         .unwrap()
         .replace("\r\n", "\n");
-    assert!(stdout.contains("Not connected to X32."));
+    assert_eq!(stdout, "Loaded file: myscene.scn\n");
 
     let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("x32_usb");
     cmd.arg("--ip").arg("127.0.0.1:10049").arg("play").arg("4");
