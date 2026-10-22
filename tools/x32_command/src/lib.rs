@@ -34,6 +34,19 @@ pub fn parse_line_for_model(line: &str, model: MixerModel) -> Option<OscMessage>
             if let Some(msg) = x32_fxparse::parse_parameter(model, path, args_trimmed) {
                 return Some(msg);
             }
+            let is_param_path = path.starts_with("/ch/")
+                || path.starts_with("/bus/")
+                || path.starts_with("/auxin/")
+                || path.starts_with("/fxrtn/")
+                || path.starts_with("/fx/")
+                || path.starts_with("/dca/")
+                || path.starts_with("/mtx/")
+                || path.starts_with("/main/")
+                || path.starts_with("/config/");
+
+            if is_param_path {
+                return None;
+            }
         }
     }
 
