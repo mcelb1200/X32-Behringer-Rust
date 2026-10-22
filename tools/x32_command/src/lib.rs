@@ -5,7 +5,40 @@ use std::str::FromStr;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tokio::time::Duration;
-use x32_lib::MixerClient;
+use x32_lib::{MixerClient, MixerModel};
+
+/// Resolves target address with model-specific default ports if no port is specified in the IP string.
+pub fn resolve_target_addr(ip: &str, model: MixerModel) -> String {
+    if ip.contains(':') {
+        ip.to_string()
+    } else {
+        let port = match model {
+            MixerModel::X32 => 10023,
+            MixerModel::Wing => 2222,
+            MixerModel::XR18 | MixerModel::XR16 | MixerModel::XR12 => 10024,
+        };
+        format!("{}:{}", ip, port)
+    }
+}
+
+/// Parses a command line for a given mixer model, validating parameters against model limits where applicable.
+pub fn parse_line_for_model(line: &str, model: MixerModel) -> Option<OscMessage> {
+    let line = line.trim();
+    if line.is_empty() {
+        return None;
+    }
+
+    if let Some((path, args_str)) = line.split_once(' ') {
+        let args_trimmed = args_str.trim();
+        if !args_trimmed.is_empty() {
+            if let Some(msg) = x32_fxparse::parse_parameter(model, path, args_trimmed) {
+                return Some(msg);
+            }
+        }
+    }
+
+    OscMessage::from_str(line).ok()
+}
 
 /// X32_Command - a simple udp client for X32 sending commands and getting answers
 #[derive(Parser, Debug, Clone)]
@@ -14,6 +47,10 @@ pub struct Args {
     /// X32 console ipv4 address
     #[arg(short, long)]
     pub ip: String,
+
+    /// Mixer model (X32, Wing, XR18, XR16, XR12)
+    #[arg(short = 'M', long, default_value = "X32")]
+    pub model: MixerModel,
 
     /// debug option (0/1)
     #[arg(short, long, default_value_t = 0)]
@@ -42,11 +79,12 @@ pub struct Args {
 
 pub async fn run(args: Args) -> Result<()> {
     println!(" X32_Command - Rust Rewrite - (c)2014-20 Patrick-Gilles Maillot");
-    print!("Connecting to X32.");
+    let target_addr = resolve_target_addr(&args.ip, args.model);
+    print!("Connecting to {} ({:?})...", target_addr, args.model);
 
-    let client = MixerClient::connect(&args.ip, false)
+    let client = MixerClient::connect(&target_addr, false)
         .await
-        .context("Failed to connect to X32")?;
+        .context("Failed to connect to mixer")?;
     println!(" Done!");
 
     let mut do_keyboard = args.keyboard != 0;
@@ -123,7 +161,7 @@ pub async fn run(args: Args) -> Result<()> {
             } else if line == "xremote on" {
                 client.start_heartbeat();
             } else if !line.is_empty() {
-                if let Ok(msg) = OscMessage::from_str(line) {
+                if let Some(msg) = parse_line_for_model(line, args.model) {
                     let delay = *s_delay.lock().await;
                     if delay > 0 {
                         tokio::time::sleep(Duration::from_millis(delay as u64)).await;
@@ -132,7 +170,7 @@ pub async fn run(args: Args) -> Result<()> {
                     }
                     client.send_message(&msg.path, msg.args).await?;
                 } else {
-                    eprintln!("Failed to parse line: {}", line);
+                    eprintln!("Failed to parse line for model {:?}: {}", args.model, line);
                 }
             }
         }
@@ -201,18 +239,99 @@ pub async fn run(args: Args) -> Result<()> {
             } else if line == "xremote on" {
                 client.start_heartbeat();
             } else if !line.is_empty() {
-                if let Ok(msg) = OscMessage::from_str(line) {
+                if let Some(msg) = parse_line_for_model(line, args.model) {
                     let delay = *s_delay.lock().await;
                     if delay > 0 {
                         tokio::time::sleep(Duration::from_millis(delay as u64)).await;
                     }
                     client.send_message(&msg.path, msg.args).await?;
                 } else {
-                    eprintln!("Failed to parse line: {}", line);
+                    eprintln!("Failed to parse line for model {:?}: {}", args.model, line);
                 }
             }
         }
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_resolve_target_addr() {
+        assert_eq!(
+            resolve_target_addr("192.168.1.64", MixerModel::X32),
+            "192.168.1.64:10023"
+        );
+        assert_eq!(
+            resolve_target_addr("192.168.1.64", MixerModel::Wing),
+            "192.168.1.64:2222"
+        );
+        assert_eq!(
+            resolve_target_addr("192.168.1.64", MixerModel::XR18),
+            "192.168.1.64:10024"
+        );
+        assert_eq!(
+            resolve_target_addr("192.168.1.64", MixerModel::XR16),
+            "192.168.1.64:10024"
+        );
+        assert_eq!(
+            resolve_target_addr("192.168.1.64", MixerModel::XR12),
+            "192.168.1.64:10024"
+        );
+        assert_eq!(
+            resolve_target_addr("192.168.1.64:1234", MixerModel::X32),
+            "192.168.1.64:1234"
+        );
+    }
+
+    #[test]
+    fn test_parse_line_for_model_valid() {
+        let msg_x32 = parse_line_for_model("/ch/01/mix/fader -10.0", MixerModel::X32);
+        assert!(msg_x32.is_some());
+        let msg = msg_x32.unwrap();
+        assert_eq!(msg.path, "/ch/01/mix/fader");
+
+        let msg_wing = parse_line_for_model("/ch/40/mix/fader 0.0", MixerModel::Wing);
+        assert!(msg_wing.is_some());
+
+        let msg_xr18 = parse_line_for_model("/ch/16/mix/fader 0.0", MixerModel::XR18);
+        assert!(msg_xr18.is_some());
+    }
+
+    #[test]
+    fn test_parse_line_for_model_out_of_bounds() {
+        // XR12 has 12 channels max, channel 16 parameter should fail parameter validation
+        let msg_xr12 = parse_line_for_model("/ch/16/mix/fader 0.0", MixerModel::XR12);
+        assert!(msg_xr12.is_none());
+
+        // XR18 has 16 channels max, channel 32 should fail
+        let msg_xr18 = parse_line_for_model("/ch/32/mix/fader 0.0", MixerModel::XR18);
+        assert!(msg_xr18.is_none());
+    }
+
+    #[test]
+    fn test_parse_line_for_model_queries_and_system() {
+        // Queries (no arguments)
+        let query = parse_line_for_model("/ch/01/mix/fader", MixerModel::X32);
+        assert!(query.is_some());
+        assert_eq!(query.unwrap().path, "/ch/01/mix/fader");
+
+        // System command
+        let sys = parse_line_for_model("/xremote", MixerModel::XR18);
+        assert!(sys.is_some());
+        assert_eq!(sys.unwrap().path, "/xremote");
+    }
+
+    #[test]
+    fn test_cli_args_model_parsing() {
+        let args = Args::parse_from(&["x32_command", "--ip", "10.0.0.1", "-M", "Wing"]);
+        assert_eq!(args.ip, "10.0.0.1");
+        assert_eq!(args.model, MixerModel::Wing);
+
+        let args_xr18 = Args::parse_from(&["x32_command", "--ip", "10.0.0.2", "--model", "XR18"]);
+        assert_eq!(args_xr18.model, MixerModel::XR18);
+    }
 }
