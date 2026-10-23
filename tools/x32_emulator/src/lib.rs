@@ -64,9 +64,13 @@ pub mod server {
                 },
                 Err(ref e)
                     if e.kind() == std::io::ErrorKind::WouldBlock
-                        || e.kind() == std::io::ErrorKind::TimedOut =>
+                        || e.kind() == std::io::ErrorKind::TimedOut
+                        || e.kind() == std::io::ErrorKind::ConnectionReset
+                        || e.kind() == std::io::ErrorKind::ConnectionRefused
+                        || e.raw_os_error() == Some(10054)
+                        || e.raw_os_error() == Some(10061) =>
                 {
-                    // No data received, continue
+                    // No data received or transient UDP reset from client disconnect, continue
                 }
                 Err(e) => {
                     eprintln!("Error receiving data: {}", e);
