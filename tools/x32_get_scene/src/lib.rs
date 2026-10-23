@@ -304,7 +304,9 @@ mod tests {
 
     #[test]
     fn test_format_scene_header() {
-        assert!(format_scene_header(MixerModel::X32, "Sunday", "Service").contains("X32GetScene"));
+        assert!(
+            format_scene_header(MixerModel::X32, "Sunday", "Service").contains("X32GetScene")
+        );
         assert!(
             format_scene_header(MixerModel::Wing, "Sunday", "Service").contains("WingGetScene")
         );
@@ -322,8 +324,14 @@ mod tests {
     #[test]
     fn test_is_path_valid_for_model_channels() {
         // X32: max 32
-        assert!(is_path_valid_for_model(MixerModel::X32, "/ch/01/mix/fader"));
-        assert!(is_path_valid_for_model(MixerModel::X32, "/ch/32/mix/fader"));
+        assert!(is_path_valid_for_model(
+            MixerModel::X32,
+            "/ch/01/mix/fader"
+        ));
+        assert!(is_path_valid_for_model(
+            MixerModel::X32,
+            "/ch/32/mix/fader"
+        ));
         assert!(!is_path_valid_for_model(
             MixerModel::X32,
             "/ch/33/mix/fader"
