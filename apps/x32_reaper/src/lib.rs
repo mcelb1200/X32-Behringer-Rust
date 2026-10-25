@@ -933,7 +933,7 @@ async fn process_reaper_message(
             if size > data.len().saturating_sub(idx) {
                 break;
             }
-            let msg_data = match data.get(idx..idx + size) {
+            let msg_data = match data.get(idx..idx.saturating_add(size)) {
                 Some(b) => b,
                 None => break,
             };

@@ -32,7 +32,7 @@ pub async fn handle_reaper_message(
             if size > len.saturating_sub(idx) {
                 break;
             }
-            let element_buf = match buf.get(idx..idx + size) {
+            let element_buf = match buf.get(idx..idx.saturating_add(size)) {
                 Some(b) => b,
                 None => break,
             };
