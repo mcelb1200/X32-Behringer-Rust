@@ -354,7 +354,10 @@ async fn test_x32_scene_checker_safe_load_and_backup() {
 
     // Critical output mute change should NOT be applied in safe_load
     if let Ok(OscArg::Int(val)) = client.query_value("/bus/01/mix/on").await {
-        assert_eq!(val, 1, "Critical output mute change should be skipped in safe load");
+        assert_eq!(
+            val, 1,
+            "Critical output mute change should be skipped in safe load"
+        );
     } else {
         panic!("Failed to query /bus/01/mix/on");
     }

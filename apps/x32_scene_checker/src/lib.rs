@@ -33,10 +33,7 @@ pub struct Args {
     )]
     pub safe_load: bool,
 
-    #[arg(
-        long,
-        help = "Path to save pre-load mixer state backup snapshot file"
-    )]
+    #[arg(long, help = "Path to save pre-load mixer state backup snapshot file")]
     pub backup: Option<String>,
 
     #[arg(
@@ -648,7 +645,10 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
             tokio::time::sleep(Duration::from_millis(2)).await;
             applied += 1;
         }
-        println!("Safe load complete. Applied {}, skipped {}.", applied, skipped);
+        println!(
+            "Safe load complete. Applied {}, skipped {}.",
+            applied, skipped
+        );
         return Ok(());
     }
 
