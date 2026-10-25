@@ -7,6 +7,7 @@ pub mod udp;
 
 /// A trait for abstracting the physical transport layer of the X32/M32 mixer.
 #[async_trait]
+#[allow(clippy::double_must_use)]
 pub trait MixerTransport: Send + Sync {
     /// Sends an OSC message to the mixer.
     async fn send(&self, msg: OscMessage) -> Result<()>;

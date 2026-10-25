@@ -105,6 +105,7 @@ impl<'a> Xscene2xParser<'a> {
             fval = (fval - xmin) / lmaxmin;
             xstep = lmaxmin / xstep;
             fval = (fval * xstep).round() / xstep;
+            #[allow(clippy::manual_clamp)]
             if fval <= 0.0 {
                 fval = 0.0;
             }
@@ -120,6 +121,7 @@ impl<'a> Xscene2xParser<'a> {
         if let Some(mut fval) = self.xr_float() {
             fval = (fval / xmin).ln() / lmaxmin;
             fval = (fval * (nsteps as f32)).round() / (nsteps as f32);
+            #[allow(clippy::manual_clamp)]
             if fval <= 0.0 {
                 fval = 0.0;
             }
@@ -186,8 +188,9 @@ impl<'a> Xscene2xParser<'a> {
 
     pub fn xp_frequency(&mut self, buf: &mut Vec<u8>, nsteps: i32) {
         if let Some(mut fval) = self.xr_float() {
-            fval = (fval / 20.0).ln() / 6.907755279;
+            fval = (fval / 20.0).ln() / 6.907_755_4;
             fval = (fval * (nsteps as f32)).round() / (nsteps as f32);
+            #[allow(clippy::manual_clamp)]
             if fval <= 0.0 {
                 fval = 0.0;
             }
@@ -206,7 +209,7 @@ impl<'a> Xscene2xParser<'a> {
             } else if let Ok(mut v) = token.parse::<f32>() {
                 let n = nsteps as f32;
                 if v < -60.0 {
-                    v = v * 0.00208333333 + 0.1875;
+                    v = v * 0.002_083_333_4 + 0.1875;
                     v = (v * n).round() / n;
                     if v < 0.0 {
                         v = 0.0;
