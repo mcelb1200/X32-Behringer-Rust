@@ -8,7 +8,7 @@ use std::fs::File;
 use std::io::{BufRead, BufWriter, Write};
 use std::path::PathBuf;
 use tokio::time::{Duration, timeout};
-use x32_lib::{MixerClient, error::X32Error};
+use x32_lib::{MixerClient, MixerModel, error::X32Error};
 
 pub mod nodes;
 
@@ -17,6 +17,14 @@ pub mod nodes;
 pub struct Args {
     #[arg(short, long, default_value = "192.168.1.64")]
     pub ip: String,
+
+    #[arg(
+        short = 'M',
+        long,
+        default_value = "X32",
+        help = "Mixer model: X32, Wing, XR18, XR16, XR12"
+    )]
+    pub model: MixerModel,
 
     #[arg(long, default_value = "auto")]
     pub transport: String,
@@ -85,8 +93,19 @@ pub async fn run(args: Args) -> Result<(), X32Error> {
         return Err(X32Error::Custom("No mode selected".to_string()));
     };
 
+    let target_ip = if args.ip.contains(':') {
+        args.ip.clone()
+    } else {
+        let port = match args.model {
+            MixerModel::X32 => 10023,
+            MixerModel::Wing => 2222,
+            MixerModel::XR18 | MixerModel::XR16 | MixerModel::XR12 => 10024,
+        };
+        format!("{}:{}", args.ip, port)
+    };
+
     let (client, _) = MixerClient::connect_with_transport(
-        &args.ip,
+        &target_ip,
         &args.aes50_ip,
         &args.usb_port,
         &args.transport,
@@ -94,7 +113,7 @@ pub async fn run(args: Args) -> Result<(), X32Error> {
     )
     .await?;
     let client = std::sync::Arc::new(client);
-    println!("Successfully connected to X32 at {}", args.ip);
+    println!("Successfully connected to {} at {}", args.model, target_ip);
 
     let data = get_desk_data(&client, &commands).await?;
 
@@ -112,4 +131,21 @@ pub async fn run(args: Args) -> Result<(), X32Error> {
     );
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_args_model_parsing() {
+        let args_default = Args::parse_from(["x32_desk_save", "-d", "out.node"]);
+        assert_eq!(args_default.model, MixerModel::X32);
+
+        let args_wing = Args::parse_from(["x32_desk_save", "-M", "Wing", "-d", "out.node"]);
+        assert_eq!(args_wing.model, MixerModel::Wing);
+
+        let args_xr12 = Args::parse_from(["x32_desk_save", "--model", "xr12", "-s", "out.node"]);
+        assert_eq!(args_xr12.model, MixerModel::XR12);
+    }
 }

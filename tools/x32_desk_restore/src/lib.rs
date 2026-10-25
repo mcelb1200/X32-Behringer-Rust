@@ -11,7 +11,7 @@ use std::str::FromStr;
 use std::time::Duration;
 use tokio::time::timeout;
 use x32_lib::{
-    MixerClient,
+    MixerClient, MixerModel,
     error::{Result, X32Error},
 };
 
@@ -22,6 +22,14 @@ pub mod parse;
 pub struct Args {
     #[arg(short, long, default_value = "192.168.1.64")]
     pub ip: String,
+
+    #[arg(
+        short = 'M',
+        long,
+        default_value = "X32",
+        help = "Mixer model: X32, Wing, XR18, XR16, XR12"
+    )]
+    pub model: MixerModel,
 
     #[arg(long, default_value = "auto")]
     pub transport: String,
@@ -98,8 +106,19 @@ pub async fn run(args: Args) -> Result<()> {
         return Ok(());
     }
 
+    let target_ip = if args.ip.contains(':') {
+        args.ip.clone()
+    } else {
+        let port = match args.model {
+            MixerModel::X32 => 10023,
+            MixerModel::Wing => 2222,
+            MixerModel::XR18 | MixerModel::XR16 | MixerModel::XR12 => 10024,
+        };
+        format!("{}:{}", args.ip, port)
+    };
+
     let (client, _transport) = MixerClient::connect_with_transport(
-        &args.ip,
+        &target_ip,
         &args.aes50_ip,
         &args.usb_port,
         &args.transport,
@@ -107,11 +126,28 @@ pub async fn run(args: Args) -> Result<()> {
     )
     .await?;
 
-    println!("Successfully connected to X32 at {}", args.ip);
+    println!("Successfully connected to {} at {}", args.model, target_ip);
 
     send_commands(&client, &commands).await?;
 
     println!("Successfully restored data from {}", args.file.display());
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_args_model_parsing() {
+        let args_default = Args::parse_from(["x32_desk_restore", "restore.scn"]);
+        assert_eq!(args_default.model, MixerModel::X32);
+
+        let args_wing = Args::parse_from(["x32_desk_restore", "-M", "Wing", "restore.scn"]);
+        assert_eq!(args_wing.model, MixerModel::Wing);
+
+        let args_xr18 = Args::parse_from(["x32_desk_restore", "--model", "xr18", "restore.scn"]);
+        assert_eq!(args_xr18.model, MixerModel::XR18);
+    }
 }
