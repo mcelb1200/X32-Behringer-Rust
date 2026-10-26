@@ -275,10 +275,7 @@ mod tests {
 
         let defaults = load_user_defaults(path.clone()).unwrap();
         let _ = std::fs::remove_file(path);
-        assert_eq!(
-            defaults.get("HALL").map(|s| s.as_str()),
-            Some("0.1 0.2 0.3")
-        );
+        assert_eq!(defaults.get("HALL").map(|s| s.as_str()), Some("0.1 0.2 0.3"));
         assert_eq!(defaults.get("DLY").map(|s| s.as_str()), Some("1.0 2.0"));
     }
 }
