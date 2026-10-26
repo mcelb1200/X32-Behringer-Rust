@@ -105,12 +105,7 @@ impl<'a> Xscene2xParser<'a> {
             fval = (fval - xmin) / lmaxmin;
             xstep = lmaxmin / xstep;
             fval = (fval * xstep).round() / xstep;
-            if fval <= 0.0 {
-                fval = 0.0;
-            }
-            if fval > 1.0 {
-                fval = 1.0;
-            }
+            fval = fval.clamp(0.0, 1.0);
             xsprint(buf, 's', XsprintValue::String(",f"));
             xsprint(buf, 'f', XsprintValue::Float(fval));
         }
@@ -120,12 +115,7 @@ impl<'a> Xscene2xParser<'a> {
         if let Some(mut fval) = self.xr_float() {
             fval = (fval / xmin).ln() / lmaxmin;
             fval = (fval * (nsteps as f32)).round() / (nsteps as f32);
-            if fval <= 0.0 {
-                fval = 0.0;
-            }
-            if fval > 1.0 {
-                fval = 1.0;
-            }
+            fval = fval.clamp(0.0, 1.0);
             xsprint(buf, 's', XsprintValue::String(",f"));
             xsprint(buf, 'f', XsprintValue::Float(fval));
         }
@@ -184,21 +174,18 @@ impl<'a> Xscene2xParser<'a> {
         }
     }
 
+    #[allow(clippy::excessive_precision)]
     pub fn xp_frequency(&mut self, buf: &mut Vec<u8>, nsteps: i32) {
         if let Some(mut fval) = self.xr_float() {
             fval = (fval / 20.0).ln() / 6.907755279;
             fval = (fval * (nsteps as f32)).round() / (nsteps as f32);
-            if fval <= 0.0 {
-                fval = 0.0;
-            }
-            if fval > 1.0 {
-                fval = 1.0;
-            }
+            fval = fval.clamp(0.0, 1.0);
             xsprint(buf, 's', XsprintValue::String(",f"));
             xsprint(buf, 'f', XsprintValue::Float(fval));
         }
     }
 
+    #[allow(clippy::excessive_precision)]
     pub fn xp_level(&mut self, buf: &mut Vec<u8>, nsteps: i32) {
         if let Some(token) = self.read_token() {
             let fval = if token.starts_with("-oo") {
@@ -208,9 +195,7 @@ impl<'a> Xscene2xParser<'a> {
                 if v < -60.0 {
                     v = v * 0.00208333333 + 0.1875;
                     v = (v * n).round() / n;
-                    if v < 0.0 {
-                        v = 0.0;
-                    }
+                    v = v.clamp(0.0, 1.0);
                     v
                 } else if v < -30.0 {
                     v = v * 0.00625 + 0.4375;
@@ -222,9 +207,7 @@ impl<'a> Xscene2xParser<'a> {
                     v
                 } else if v <= 10.0 {
                     v = v * 0.025 + 0.75;
-                    if v > 1.0 {
-                        v = 1.0;
-                    }
+                    v = v.clamp(0.0, 1.0);
                     v
                 } else {
                     v

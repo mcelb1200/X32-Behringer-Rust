@@ -4,6 +4,7 @@ use x32_xsprint::{XsprintValue, xsprint};
 /// Mimics the behavior of Xcparse.c.
 /// It splits at the first comma to handle OSC paths and formats,
 /// then parses subsequent text, ints, or floats according to the formatters.
+#[allow(clippy::needless_range_loop)]
 pub fn xcparse(buf: &mut Vec<u8>, input: &str) -> usize {
     let mut input_line: Vec<char> = input.chars().collect();
     let input_len = input_line.len();
