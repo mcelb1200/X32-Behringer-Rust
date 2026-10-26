@@ -18,7 +18,16 @@ use osc_lib::{OscArg, OscMessage};
 use std::fs::File;
 use std::io::{BufRead, Read};
 use std::path::PathBuf;
-use x32_lib::MixerClient;
+use x32_lib::{MixerClient, MixerModel};
+
+/// Returns the maximum FX slot count for the specified digital mixer model.
+pub fn max_fx_slots_for_model(model: MixerModel) -> u8 {
+    match model {
+        MixerModel::X32 => 8,
+        MixerModel::Wing => 16,
+        MixerModel::XR18 | MixerModel::XR16 | MixerModel::XR12 => 4,
+    }
+}
 
 /// Command-line arguments for `x32_set_preset`.
 #[derive(Parser, Debug)]
@@ -26,6 +35,14 @@ use x32_lib::MixerClient;
 pub struct Args {
     #[arg(short, long, default_value = "192.168.0.64")]
     pub ip: String,
+
+    #[arg(
+        short,
+        long,
+        default_value = "X32",
+        help = "Mixer model: X32, Wing, XR18, XR16, XR12"
+    )]
+    pub model: MixerModel,
 
     #[arg(long, default_value = "auto")]
     pub transport: String,
@@ -104,7 +121,7 @@ pub async fn run(args: Args) -> Result<()> {
 
     // Validate target for Channel/Effect presets
     let target_prefix = if let Some(t) = &args.target {
-        parse_target(t, &preset_type)?
+        parse_target(t, &preset_type, args.model)?
     } else if preset_type == PresetType::Routing {
         String::new() // Routing presets don't need a target prefix usually
     } else {
@@ -209,8 +226,9 @@ pub async fn run(args: Args) -> Result<()> {
 }
 
 /// Parses the target string into an OSC address prefix.
-fn parse_target(target: &str, ptype: &PresetType) -> Result<String> {
+fn parse_target(target: &str, ptype: &PresetType, model: MixerModel) -> Result<String> {
     let t = target.to_lowercase();
+    let max_fx_slots = max_fx_slots_for_model(model);
 
     match ptype {
         PresetType::Channel => {
@@ -249,13 +267,19 @@ fn parse_target(target: &str, ptype: &PresetType) -> Result<String> {
         PresetType::Effect => {
             if let Some(suffix) = t.strip_prefix("fx") {
                 // fx1 -> /fx/1
-                let id: u32 = suffix.parse()?;
-                if !(1..=8).contains(&id) {
-                    return Err(anyhow!("FX slot must be 1-8"));
+                let id: u8 = suffix.parse()?;
+                if id < 1 || id > max_fx_slots {
+                    return Err(anyhow!(
+                        "FX slot must be 1-{} for model {}",
+                        max_fx_slots, model
+                    ));
                 }
                 return Ok(format!("/fx/{}", id));
             }
-            Err(anyhow!("Invalid target for Effect preset. Use fx1..fx8."))
+            Err(anyhow!(
+                "Invalid target for Effect preset. Use fx1..fx{}.",
+                max_fx_slots
+            ))
         }
         _ => Ok(String::new()),
     }
@@ -346,5 +370,59 @@ fn parse_single_arg(s: &str) -> OscArg {
         OscArg::Float(f)
     } else {
         OscArg::String(s.to_string())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_max_fx_slots_for_model() {
+        assert_eq!(max_fx_slots_for_model(MixerModel::X32), 8);
+        assert_eq!(max_fx_slots_for_model(MixerModel::Wing), 16);
+        assert_eq!(max_fx_slots_for_model(MixerModel::XR18), 4);
+        assert_eq!(max_fx_slots_for_model(MixerModel::XR16), 4);
+        assert_eq!(max_fx_slots_for_model(MixerModel::XR12), 4);
+    }
+
+    #[test]
+    fn test_parse_target_effect_bounds() {
+        // Wing allows fx1..fx16
+        assert_eq!(
+            parse_target("fx16", &PresetType::Effect, MixerModel::Wing).unwrap(),
+            "/fx/16"
+        );
+        assert!(parse_target("fx17", &PresetType::Effect, MixerModel::Wing).is_err());
+
+        // X32 allows fx1..fx8
+        assert_eq!(
+            parse_target("fx8", &PresetType::Effect, MixerModel::X32).unwrap(),
+            "/fx/8"
+        );
+        assert!(parse_target("fx9", &PresetType::Effect, MixerModel::X32).is_err());
+
+        // XR18 allows fx1..fx4
+        assert_eq!(
+            parse_target("fx4", &PresetType::Effect, MixerModel::XR18).unwrap(),
+            "/fx/4"
+        );
+        assert!(parse_target("fx5", &PresetType::Effect, MixerModel::XR18).is_err());
+    }
+
+    #[test]
+    fn test_parse_target_channel() {
+        assert_eq!(
+            parse_target("ch01", &PresetType::Channel, MixerModel::X32).unwrap(),
+            "/ch/01"
+        );
+        assert_eq!(
+            parse_target("aux02", &PresetType::Channel, MixerModel::X32).unwrap(),
+            "/auxin/02"
+        );
+        assert_eq!(
+            parse_target("bus03", &PresetType::Channel, MixerModel::X32).unwrap(),
+            "/bus/03"
+        );
     }
 }

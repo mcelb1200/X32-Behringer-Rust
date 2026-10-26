@@ -15,13 +15,21 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, Read};
 use std::path::PathBuf;
-use x32_lib::{MixerClient, error::X32Error};
+use x32_lib::{MixerClient, MixerModel, error::X32Error};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 pub struct Args {
-    #[arg(short, long)]
+    #[arg(short, long, default_value = "192.168.0.64")]
     pub ip: String,
+
+    #[arg(
+        short,
+        long,
+        default_value = "X32",
+        help = "Mixer model: X32, Wing, XR18, XR16, XR12"
+    )]
+    pub model: MixerModel,
 
     #[arg(long, default_value = "auto")]
     pub transport: String,
@@ -35,7 +43,7 @@ pub struct Args {
     #[arg(long)]
     pub defaults_file: Option<PathBuf>,
 
-    #[arg(long)]
+    #[arg(long, default_value_t = 1)]
     pub from: u8,
 
     #[arg(long, default_value_t = 0)]
@@ -43,6 +51,15 @@ pub struct Args {
 
     #[command(subcommand)]
     pub action: Action,
+}
+
+/// Returns the maximum FX slot count for the specified digital mixer model.
+pub fn max_fx_slots_for_model(model: MixerModel) -> u8 {
+    match model {
+        MixerModel::X32 => 8,
+        MixerModel::Wing => 16,
+        MixerModel::XR18 | MixerModel::XR16 | MixerModel::XR12 => 4,
+    }
 }
 
 #[derive(clap::Subcommand, Debug)]
@@ -63,15 +80,18 @@ pub enum Action {
 }
 
 pub async fn run(args: Args) -> Result<(), X32Error> {
-    if args.from < 1 || args.from > 8 {
-        return Err(X32Error::from(
-            "Source FX slot must be between 1 and 8.".to_string(),
-        ));
+    let max_slots = max_fx_slots_for_model(args.model);
+    if args.from < 1 || args.from > max_slots {
+        return Err(X32Error::from(format!(
+            "Source FX slot must be between 1 and {} for model {}.",
+            max_slots, args.model
+        )));
     }
-    if args.to > 8 {
-        return Err(X32Error::from(
-            "Destination FX slot must be between 1 and 8.".to_string(),
-        ));
+    if matches!(args.action, Action::Copy { .. }) && (args.to < 1 || args.to > max_slots) {
+        return Err(X32Error::from(format!(
+            "Destination FX slot must be between 1 and {} for model {}.",
+            max_slots, args.model
+        )));
     }
 
     let (client, _transport) = MixerClient::connect_with_transport(
@@ -219,6 +239,45 @@ async fn copy_fx(client: &MixerClient, from: u8, to: u8, master: bool) -> Result
         copy_param(client, from, 64, to, 64).await?;
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_max_fx_slots_for_model() {
+        assert_eq!(max_fx_slots_for_model(MixerModel::X32), 8);
+        assert_eq!(max_fx_slots_for_model(MixerModel::Wing), 16);
+        assert_eq!(max_fx_slots_for_model(MixerModel::XR18), 4);
+        assert_eq!(max_fx_slots_for_model(MixerModel::XR16), 4);
+        assert_eq!(max_fx_slots_for_model(MixerModel::XR12), 4);
+    }
+
+    #[test]
+    fn test_get_fx_name_from_id() {
+        assert_eq!(get_fx_name_from_id(0).unwrap(), "HALL");
+        assert_eq!(get_fx_name_from_id(10).unwrap(), "DLY");
+        assert_eq!(get_fx_name_from_id(60).unwrap(), "PIT");
+        assert!(get_fx_name_from_id(-1).is_err());
+        assert!(get_fx_name_from_id(61).is_err());
+    }
+
+    #[test]
+    fn test_load_user_defaults_parsing() {
+        use std::io::Write;
+        let path = std::env::temp_dir().join("test_copy_fx_defaults.txt");
+        {
+            let mut file = std::fs::File::create(&path).unwrap();
+            writeln!(file, "HALL\n0.1 0.2 0.3").unwrap();
+            writeln!(file, "DLY\n1.0 2.0").unwrap();
+        }
+
+        let defaults = load_user_defaults(path.clone()).unwrap();
+        let _ = std::fs::remove_file(path);
+        assert_eq!(defaults.get("HALL").map(|s| s.as_str()), Some("0.1 0.2 0.3"));
+        assert_eq!(defaults.get("DLY").map(|s| s.as_str()), Some("1.0 2.0"));
+    }
 }
 
 async fn copy_a_to_b(client: &MixerClient, from: u8, master: bool) -> Result<(), X32Error> {

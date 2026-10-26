@@ -16,7 +16,16 @@
 use anyhow::Result;
 use clap::{Parser, ValueEnum};
 use tokio::time::{Duration, sleep};
-use x32_lib::{MixerClient, get_parameter_async, set_parameter_async, verify_fx_type_async};
+use x32_lib::{MixerClient, MixerModel, get_parameter_async, set_parameter_async, verify_fx_type_async};
+
+/// Returns the maximum FX slot count for the specified digital mixer model.
+pub fn max_fx_slots_for_model(model: MixerModel) -> u8 {
+    match model {
+        MixerModel::X32 => 8,
+        MixerModel::Wing => 16,
+        MixerModel::XR18 | MixerModel::XR16 | MixerModel::XR12 => 4,
+    }
+}
 
 /// Command-line arguments for the `x32_geq2_cpy` tool.
 #[derive(Parser, Debug)]
@@ -24,6 +33,14 @@ use x32_lib::{MixerClient, get_parameter_async, set_parameter_async, verify_fx_t
 pub struct Args {
     #[arg(short, long, default_value = "192.168.0.64")]
     pub ip: String,
+
+    #[arg(
+        short,
+        long,
+        default_value = "X32",
+        help = "Mixer model: X32, Wing, XR18, XR16, XR12"
+    )]
+    pub model: MixerModel,
 
     #[arg(long, default_value = "auto")]
     pub transport: String,
@@ -34,11 +51,11 @@ pub struct Args {
     #[arg(long, default_value = "")]
     pub aes50_ip: String,
 
-    /// Source FX slot number (1-8).
+    /// Source FX slot number.
     #[arg(short, long, default_value_t = 1)]
     pub from: u8,
 
-    /// Destination FX slot number (1-8).
+    /// Destination FX slot number.
     #[arg(short, long, default_value_t = 1)]
     pub to: u8,
 
@@ -77,6 +94,20 @@ pub async fn run(args: Args) -> Result<()> {
     if args.debug {
         println!("Debug mode is on.");
         println!("Arguments: {:?}", args);
+    }
+
+    let max_slots = max_fx_slots_for_model(args.model);
+    if args.from < 1 || args.from > max_slots {
+        anyhow::bail!(
+            "Source FX slot must be between 1 and {} for model {}.",
+            max_slots, args.model
+        );
+    }
+    if args.direction == Direction::CopyTo && (args.to < 1 || args.to > max_slots) {
+        anyhow::bail!(
+            "Destination FX slot must be between 1 and {} for model {}.",
+            max_slots, args.model
+        );
     }
 
     let (client, _) = MixerClient::connect_with_transport(
@@ -197,4 +228,18 @@ pub async fn run(args: Args) -> Result<()> {
     println!("Operation completed successfully.");
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_max_fx_slots_for_model() {
+        assert_eq!(max_fx_slots_for_model(MixerModel::X32), 8);
+        assert_eq!(max_fx_slots_for_model(MixerModel::Wing), 16);
+        assert_eq!(max_fx_slots_for_model(MixerModel::XR18), 4);
+        assert_eq!(max_fx_slots_for_model(MixerModel::XR16), 4);
+        assert_eq!(max_fx_slots_for_model(MixerModel::XR12), 4);
+    }
 }
