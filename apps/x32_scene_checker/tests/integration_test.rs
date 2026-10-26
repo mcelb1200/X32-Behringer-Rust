@@ -68,7 +68,6 @@ async fn test_x32_scene_checker_integration() {
     let addr = format!("127.0.0.1:{}", port);
 
     let mut mixer = Mixer::new();
-    mixer.seed_from_lines(vec!["/ch/01/mix/fader,f\t0.0", "/ch/01/mix/on,i\t1"]);
     let socket_arc = Arc::new(socket);
     let socket_rx = socket_arc.clone();
 
@@ -93,8 +92,6 @@ async fn test_x32_scene_checker_integration() {
         scene: file_path,
         model: MixerModel::X32,
         auto_load: true,
-        safe_load: false,
-        backup: None,
         locked_paths: None,
     };
 
@@ -121,7 +118,6 @@ async fn test_x32_scene_checker_locked_paths() {
     let addr = format!("127.0.0.1:{}", port);
 
     let mut mixer = Mixer::new();
-    mixer.seed_from_lines(vec!["/ch/01/mix/fader,f\t0.0", "/ch/01/mix/on,i\t1"]);
     let socket_arc = Arc::new(socket);
     let socket_rx = socket_arc.clone();
 
@@ -148,8 +144,6 @@ async fn test_x32_scene_checker_locked_paths() {
         scene: file_path,
         model: MixerModel::X32,
         auto_load: true,
-        safe_load: false,
-        backup: None,
         locked_paths: Some("/routing,/ch/02".to_string()),
     };
 
@@ -189,7 +183,6 @@ async fn test_x32_scene_checker_xr18_model_integration() {
     let addr = format!("127.0.0.1:{}", port);
 
     let mut mixer = Mixer::new();
-    mixer.seed_from_lines(vec!["/ch/01/mix/fader,f\t0.0", "/ch/01/mix/on,i\t1"]);
     let socket_arc = Arc::new(socket);
     let socket_rx = socket_arc.clone();
 
@@ -216,8 +209,6 @@ async fn test_x32_scene_checker_xr18_model_integration() {
         scene: file_path,
         model: MixerModel::XR18,
         auto_load: true,
-        safe_load: false,
-        backup: None,
         locked_paths: None,
     };
 
@@ -250,7 +241,6 @@ async fn test_x32_scene_checker_wing_model_integration() {
     let addr = format!("127.0.0.1:{}", port);
 
     let mut mixer = Mixer::new();
-    mixer.seed_from_lines(vec!["/ch/01/mix/fader,f\t0.0", "/ch/01/mix/on,i\t1"]);
     let socket_arc = Arc::new(socket);
     let socket_rx = socket_arc.clone();
 
@@ -275,8 +265,6 @@ async fn test_x32_scene_checker_wing_model_integration() {
         scene: file_path,
         model: MixerModel::Wing,
         auto_load: true,
-        safe_load: false,
-        backup: None,
         locked_paths: None,
     };
 
@@ -293,76 +281,4 @@ async fn test_x32_scene_checker_wing_model_integration() {
     } else {
         panic!("Failed to query /ch/40/mix/on");
     }
-}
-
-#[tokio::test]
-async fn test_x32_scene_checker_safe_load_and_backup() {
-    let socket = UdpSocket::bind("127.0.0.1:0").await.unwrap();
-    let port = socket.local_addr().unwrap().port();
-    let addr = format!("127.0.0.1:{}", port);
-
-    let mut mixer = Mixer::new();
-    mixer.seed_from_lines(vec!["/ch/01/config/name,s\tVocals", "/bus/01/mix/on,i\t1"]);
-    let socket_arc = Arc::new(socket);
-    let socket_rx = socket_arc.clone();
-
-    let _ = tokio::spawn(async move {
-        let mut buf = [0u8; 1024];
-        while let Ok((len, src)) = socket_rx.recv_from(&mut buf).await {
-            let responses_opt = mixer.dispatch(&buf[..len], src).ok();
-            if let Some(responses) = responses_opt {
-                for (addr, response_bytes) in responses {
-                    let _ = socket_rx.send_to(&response_bytes, addr).await;
-                }
-            }
-        }
-    });
-
-    let mut scene_file = NamedTempFile::new().unwrap();
-    // Info change: naming
-    writeln!(scene_file, "/ch/01/config/name \"Guitar\"").unwrap();
-    // Critical change: bus output mute state
-    writeln!(scene_file, "/bus/01/mix/on 0").unwrap();
-    let scene_path = scene_file.path().to_str().unwrap().to_string();
-
-    let backup_file = NamedTempFile::new().unwrap();
-    let backup_path = backup_file.path().to_str().unwrap().to_string();
-
-    let args = Args {
-        ip: addr.clone(),
-        scene: scene_path,
-        model: MixerModel::X32,
-        auto_load: false,
-        safe_load: true,
-        backup: Some(backup_path.clone()),
-        locked_paths: None,
-    };
-
-    let _ = run(args).await;
-
-    tokio::time::sleep(Duration::from_millis(50)).await;
-
-    let transport = UdpTransport::connect(&addr).await.unwrap();
-    let client = MixerClient::new(Arc::new(transport), true);
-
-    // Info change should be applied in safe_load
-    if let Ok(OscArg::String(val)) = client.query_value("/ch/01/config/name").await {
-        assert_eq!(val, "Guitar");
-    } else {
-        panic!("Failed to query /ch/01/config/name");
-    }
-
-    // Critical output mute change should NOT be applied in safe_load
-    if let Ok(OscArg::Int(val)) = client.query_value("/bus/01/mix/on").await {
-        assert_eq!(
-            val, 1,
-            "Critical output mute change should be skipped in safe load"
-        );
-    } else {
-        panic!("Failed to query /bus/01/mix/on");
-    }
-
-    // Backup file should exist and contain pre-load snapshot
-    let backup_content = std::fs::read_to_string(&backup_path).unwrap();
-    assert!(!backup_content.is_empty());
 }
