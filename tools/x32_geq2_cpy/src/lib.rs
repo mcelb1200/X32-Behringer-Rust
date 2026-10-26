@@ -16,7 +16,9 @@
 use anyhow::Result;
 use clap::{Parser, ValueEnum};
 use tokio::time::{Duration, sleep};
-use x32_lib::{MixerClient, MixerModel, get_parameter_async, set_parameter_async, verify_fx_type_async};
+use x32_lib::{
+    MixerClient, MixerModel, get_parameter_async, set_parameter_async, verify_fx_type_async,
+};
 
 /// Returns the maximum FX slot count for the specified digital mixer model.
 pub fn max_fx_slots_for_model(model: MixerModel) -> u8 {
@@ -100,13 +102,15 @@ pub async fn run(args: Args) -> Result<()> {
     if args.from < 1 || args.from > max_slots {
         anyhow::bail!(
             "Source FX slot must be between 1 and {} for model {}.",
-            max_slots, args.model
+            max_slots,
+            args.model
         );
     }
     if args.direction == Direction::CopyTo && (args.to < 1 || args.to > max_slots) {
         anyhow::bail!(
             "Destination FX slot must be between 1 and {} for model {}.",
-            max_slots, args.model
+            max_slots,
+            args.model
         );
     }
 

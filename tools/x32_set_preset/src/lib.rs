@@ -271,7 +271,8 @@ fn parse_target(target: &str, ptype: &PresetType, model: MixerModel) -> Result<S
                 if id < 1 || id > max_fx_slots {
                     return Err(anyhow!(
                         "FX slot must be 1-{} for model {}",
-                        max_fx_slots, model
+                        max_fx_slots,
+                        model
                     ));
                 }
                 return Ok(format!("/fx/{}", id));
