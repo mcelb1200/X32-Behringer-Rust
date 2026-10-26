@@ -180,3 +180,8 @@
 **Vulnerability:** Unbounded file reads in `libs/x32_fxparse/build.rs` using `serde_json::from_reader(file)` could theoretically lead to an Out-Of-Memory (OOM) Denial-of-Service (DoS) if parsing maliciously crafted or infinite files.
 **Learning:** Even though `build.rs` runs at compile-time and processes trusted internal files, unbounded reads are flagged by security scanners. Applying bounds like `.take(10 * 1024 * 1024)` is good practice for defense-in-depth and keeps scanners clean.
 **Prevention:** Always use bounds when calling `serde_json::from_reader` even in build scripts, such as `serde_json::from_reader(std::io::Read::take(file, 10 * 1024 * 1024))`.
+
+## 2026-10-25 - [CRITICAL] Prevent integer overflow and panic vulnerability in Reaper parser
+**Vulnerability:** Integer overflow vulnerability when parsing OSC bundles in `apps/x32_reaper`. The parser added an unchecked size (`size`) to the current index (`idx`), risking an integer overflow (`idx + size > data.len()`) that could bypass boundary checks and cause panics when executing direct slice access (`data.get(idx..idx + size)`). This presented a Denial-of-Service (DoS) vector from maliciously crafted inputs.
+**Learning:** Bounds checking logic must be mathematically safe against integer overflows (`idx + size` is inherently unsafe). In networked and protocol parsing functions, unprotected addition of untrusted offsets to current array positions can overflow architectures with smaller integer bounds.
+**Prevention:** Always use `idx.saturating_add(size)` instead of unprotected addition like `idx + size`.

@@ -10,11 +10,11 @@ pub fn xcparse(buf: &mut Vec<u8>, input: &str) -> usize {
     let mut start_comma = None;
 
     // Jump to next comma, replace spaces by 0 (null) prior to comma
-    for i in 0..input_len {
-        if input_line[i] == ' ' {
-            input_line[i] = '\0';
+    for (i, c) in input_line.iter_mut().enumerate().take(input_len) {
+        if *c == ' ' {
+            *c = '\0';
         }
-        if input_line[i] == ',' {
+        if *c == ',' {
             start_comma = Some(i);
             break;
         }

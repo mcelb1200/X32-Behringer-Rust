@@ -1,4 +1,3 @@
-#![allow(clippy::manual_range_contains)]
 //! `x32_safe_mute` is a Panic Button feature that instantly silences the entire system safely
 //! by using a rapid exponential fade instead of an instantaneous hard mute to avoid pops and thumps.
 

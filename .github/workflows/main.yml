@@ -24,6 +24,9 @@ jobs:
       if: runner.os == 'Linux'
       run: sudo apt-get update && sudo apt-get install -y libasound2-dev
 
+    - name: Run cargo clippy
+      run: cargo clippy --workspace -- -D warnings
+
     - name: Run cargo check
       run: cargo check --workspace
 
