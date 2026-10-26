@@ -29,6 +29,15 @@ pub struct Args {
 
     #[arg(
         long,
+        help = "Safe-load scene automatically (skipping CRITICAL and HIGH issues) without interactive prompt"
+    )]
+    pub safe_load: bool,
+
+    #[arg(long, help = "Path to save pre-load mixer state backup snapshot file")]
+    pub backup: Option<String>,
+
+    #[arg(
+        long,
         help = "Comma-separated list of OSC paths or prefixes to lock (e.g. /routing,/main/st/mix/on)"
     )]
     pub locked_paths: Option<String>,
@@ -554,6 +563,7 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
     println!();
 
     let mut issues = Vec::new();
+    let dummy_diff = OscArg::Int(-99999);
     for (path, scene_arg) in &scene_map {
         if let Some(current_arg) = current_map.get(path.as_str()) {
             if let Some(issue) = classify_risk_with_model(args.model, path, current_arg, scene_arg)
@@ -561,16 +571,27 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
                 issues.push(issue);
             }
         } else {
-            issues.push(RiskIssue {
-                level: RiskLevel::Info,
-                path: path.to_string(),
-                description: format!(
+            let mut issue = classify_risk_with_model(args.model, path, &dummy_diff, scene_arg)
+                .unwrap_or_else(|| RiskIssue {
+                    level: RiskLevel::Info,
+                    path: path.to_string(),
+                    description: format!(
+                        "Could not verify current state, setting to {}",
+                        format_arg(scene_arg)
+                    ),
+                    from: OscArg::Int(0),
+                    to: scene_arg.clone(),
+                });
+            if issue.level < RiskLevel::High {
+                issue.level = RiskLevel::Info;
+                issue.description = format!(
                     "Could not verify current state, setting to {}",
                     format_arg(scene_arg)
-                ),
-                from: OscArg::Int(0), // Dummy
-                to: scene_arg.clone(),
-            });
+                );
+            } else {
+                issue.description = format!("Unverified current state! {}", issue.description);
+            }
+            issues.push(issue);
         }
     }
 
@@ -586,6 +607,15 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
         .map(|s| s.trim().to_string())
         .filter(|s| !s.is_empty())
         .collect();
+
+    if let Some(ref backup_path) = args.backup {
+        let mut backup_content = String::new();
+        for (path, val) in &current_map {
+            backup_content.push_str(&format!("{} {}\n", path, format_arg(val)));
+        }
+        std::fs::write(backup_path, backup_content)?;
+        println!("Pre-load mixer state saved to backup file: {}", backup_path);
+    }
 
     if args.auto_load {
         println!("Auto-loading entire scene...");
@@ -603,13 +633,32 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
         return Ok(());
     }
 
+    if args.safe_load {
+        println!("Safe-loading scene (skipping CRITICAL and HIGH)...");
+        let to_apply = filter_issues(&issues, LoadMode::Safe, &locked_prefixes);
+        let skipped = issues.len() - to_apply.len();
+        let mut applied = 0;
+        for issue in to_apply {
+            client
+                .send_message(&issue.path, vec![issue.to.clone()])
+                .await?;
+            tokio::time::sleep(Duration::from_millis(2)).await;
+            applied += 1;
+        }
+        println!(
+            "Safe load complete. Applied {}, skipped {}.",
+            applied, skipped
+        );
+        return Ok(());
+    }
+
     loop {
         print_report_summary(&issues);
         if !locked_prefixes.is_empty() {
             println!("Active locks: {:?}", locked_prefixes);
         }
         println!(
-            "Options: [L]oad anyway | [S]afe-load (skip critical/high) | [R]eview details | [C]ancel"
+            "Options: [L]oad anyway | [S]afe-load (default, skip critical/high) | [R]eview details | [C]ancel"
         );
         print!("> ");
         let _ = std::io::stdout().flush();
@@ -652,7 +701,7 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
                 println!("Scene loaded. Applied {}, skipped {}.", applied, skipped);
                 break;
             }
-            "s" | "safe-load" | "safe" => {
+            "" | "s" | "safe-load" | "safe" => {
                 println!("Loading scene safely (skipping CRITICAL and HIGH)...");
                 let to_apply = filter_issues(&issues, LoadMode::Safe, &locked_prefixes);
                 let skipped = issues.len() - to_apply.len();
