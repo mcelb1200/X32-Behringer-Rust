@@ -1,7 +1,7 @@
 #[cfg(test)]
 #[allow(clippy::module_inception)]
 mod tests {
-    use crate::{Mixer, MixerState};
+    use crate::{Mixer, MixerModel, MixerState};
     use osc_lib::{OscArg, OscMessage};
     use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
@@ -1152,6 +1152,60 @@ mod tests {
             assert_eq!(blob.len(), 384);
         } else {
             panic!("Expected blob argument");
+        }
+    }
+
+    #[test]
+    fn test_mixer_with_model_info_status() {
+        let models = [
+            (MixerModel::X32, "X32"),
+            (MixerModel::Wing, "Wing"),
+            (MixerModel::XR18, "XR18"),
+            (MixerModel::XR16, "XR16"),
+            (MixerModel::XR12, "XR12"),
+        ];
+
+        for (model, name) in models {
+            let mut mixer = Mixer::with_model(model);
+            assert_eq!(mixer.model(), model);
+
+            let info_bytes = OscMessage::new("/info".to_string(), vec![]).to_bytes().unwrap();
+            let responses = mixer.dispatch(&info_bytes, test_addr(1234)).unwrap();
+            let msg = OscMessage::from_bytes(&responses[0].1).unwrap();
+            assert_eq!(msg.path, "/info");
+            assert_eq!(msg.args[2], OscArg::String(name.to_string()));
+            assert_eq!(msg.args[1], OscArg::String(format!("{} Emulator", name)));
+
+            let status_bytes = OscMessage::new("/status".to_string(), vec![]).to_bytes().unwrap();
+            let responses = mixer.dispatch(&status_bytes, test_addr(1234)).unwrap();
+            let msg = OscMessage::from_bytes(&responses[0].1).unwrap();
+            assert_eq!(msg.path, "/status");
+            assert_eq!(msg.args[2], OscArg::String(format!("{} Emulator", name)));
+        }
+    }
+
+    #[test]
+    fn test_mixer_model_meter_blob_sizes() {
+        let test_cases = [
+            (MixerModel::X32, 96 * 4),
+            (MixerModel::Wing, 108 * 4),
+            (MixerModel::XR18, 28 * 4),
+            (MixerModel::XR16, 26 * 4),
+            (MixerModel::XR12, 20 * 4),
+        ];
+
+        for (model, expected_bytes) in test_cases {
+            let mut mixer = Mixer::with_model(model);
+            let msg_bytes = OscMessage::new("/meters/1".to_string(), vec![]).to_bytes().unwrap();
+            mixer.dispatch(&msg_bytes, test_addr(1234)).unwrap();
+
+            let responses = mixer.tick();
+            let msg = OscMessage::from_bytes(&responses[0].1).unwrap();
+            if let OscArg::Blob(blob) = &msg.args[0] {
+                assert_eq!(blob.len(), expected_bytes, "Meter blob size mismatch for model {}", model);
+            } else {
+                panic!("Expected blob arg for meter");
+            }
         }
     }
 }
