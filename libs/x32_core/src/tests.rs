@@ -1169,14 +1169,18 @@ mod tests {
             let mut mixer = Mixer::with_model(model);
             assert_eq!(mixer.model(), model);
 
-            let info_bytes = OscMessage::new("/info".to_string(), vec![]).to_bytes().unwrap();
+            let info_bytes = OscMessage::new("/info".to_string(), vec![])
+                .to_bytes()
+                .unwrap();
             let responses = mixer.dispatch(&info_bytes, test_addr(1234)).unwrap();
             let msg = OscMessage::from_bytes(&responses[0].1).unwrap();
             assert_eq!(msg.path, "/info");
             assert_eq!(msg.args[2], OscArg::String(name.to_string()));
             assert_eq!(msg.args[1], OscArg::String(format!("{} Emulator", name)));
 
-            let status_bytes = OscMessage::new("/status".to_string(), vec![]).to_bytes().unwrap();
+            let status_bytes = OscMessage::new("/status".to_string(), vec![])
+                .to_bytes()
+                .unwrap();
             let responses = mixer.dispatch(&status_bytes, test_addr(1234)).unwrap();
             let msg = OscMessage::from_bytes(&responses[0].1).unwrap();
             assert_eq!(msg.path, "/status");
@@ -1196,13 +1200,20 @@ mod tests {
 
         for (model, expected_bytes) in test_cases {
             let mut mixer = Mixer::with_model(model);
-            let msg_bytes = OscMessage::new("/meters/1".to_string(), vec![]).to_bytes().unwrap();
+            let msg_bytes = OscMessage::new("/meters/1".to_string(), vec![])
+                .to_bytes()
+                .unwrap();
             mixer.dispatch(&msg_bytes, test_addr(1234)).unwrap();
 
             let responses = mixer.tick();
             let msg = OscMessage::from_bytes(&responses[0].1).unwrap();
             if let OscArg::Blob(blob) = &msg.args[0] {
-                assert_eq!(blob.len(), expected_bytes, "Meter blob size mismatch for model {}", model);
+                assert_eq!(
+                    blob.len(),
+                    expected_bytes,
+                    "Meter blob size mismatch for model {}",
+                    model
+                );
             } else {
                 panic!("Expected blob arg for meter");
             }
