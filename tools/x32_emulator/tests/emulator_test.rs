@@ -19,10 +19,16 @@ fn test_emulator_with_model_wing() {
     thread::sleep(Duration::from_millis(200));
 
     let socket = UdpSocket::bind("127.0.0.1:0").unwrap();
-    socket.set_read_timeout(Some(Duration::from_secs(1))).unwrap();
+    socket
+        .set_read_timeout(Some(Duration::from_secs(1)))
+        .unwrap();
 
-    let info_msg = OscMessage::new("/info".to_string(), vec![]).to_bytes().unwrap();
-    socket.send_to(&info_msg, format!("127.0.0.1:{}", port)).unwrap();
+    let info_msg = OscMessage::new("/info".to_string(), vec![])
+        .to_bytes()
+        .unwrap();
+    socket
+        .send_to(&info_msg, format!("127.0.0.1:{}", port))
+        .unwrap();
 
     let mut buf = [0u8; 1024];
     let (len, _) = socket.recv_from(&mut buf).unwrap();
@@ -30,7 +36,10 @@ fn test_emulator_with_model_wing() {
 
     assert_eq!(response.path, "/info");
     assert_eq!(response.args[2], OscArg::String("Wing".to_string()));
-    assert_eq!(response.args[1], OscArg::String("Wing Emulator".to_string()));
+    assert_eq!(
+        response.args[1],
+        OscArg::String("Wing Emulator".to_string())
+    );
 
     let _ = tx.send(());
     handle.join().unwrap();
@@ -49,10 +58,16 @@ fn test_emulator_with_model_xr18() {
     thread::sleep(Duration::from_millis(200));
 
     let socket = UdpSocket::bind("127.0.0.1:0").unwrap();
-    socket.set_read_timeout(Some(Duration::from_secs(1))).unwrap();
+    socket
+        .set_read_timeout(Some(Duration::from_secs(1)))
+        .unwrap();
 
-    let info_msg = OscMessage::new("/info".to_string(), vec![]).to_bytes().unwrap();
-    socket.send_to(&info_msg, format!("127.0.0.1:{}", port)).unwrap();
+    let info_msg = OscMessage::new("/info".to_string(), vec![])
+        .to_bytes()
+        .unwrap();
+    socket
+        .send_to(&info_msg, format!("127.0.0.1:{}", port))
+        .unwrap();
 
     let mut buf = [0u8; 1024];
     let (len, _) = socket.recv_from(&mut buf).unwrap();
@@ -60,7 +75,10 @@ fn test_emulator_with_model_xr18() {
 
     assert_eq!(response.path, "/info");
     assert_eq!(response.args[2], OscArg::String("XR18".to_string()));
-    assert_eq!(response.args[1], OscArg::String("XR18 Emulator".to_string()));
+    assert_eq!(
+        response.args[1],
+        OscArg::String("XR18 Emulator".to_string())
+    );
 
     let _ = tx.send(());
     handle.join().unwrap();
