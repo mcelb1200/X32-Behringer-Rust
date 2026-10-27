@@ -10,6 +10,9 @@ x32_core = { workspace = true }
 osc_lib = { workspace = true }
 x32_lib = { workspace = true }
 
+[dev-dependencies]
+assert_cmd = "2.0"
+
 [lib]
 name = "x32_emulator"
 path = "src/lib.rs"

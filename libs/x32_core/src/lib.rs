@@ -61,6 +61,7 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use osc_lib::{OscArg, OscMessage};
+pub use x32_fxparse::MixerModel;
 
 #[cfg(test)]
 mod tests;
@@ -143,12 +144,13 @@ impl MixerState {
     }
 }
 
-/// A struct that emulates the behavior of an X32 mixer.
+/// A struct that emulates the behavior of a digital mixer console (X32, Wing, XR18, XR16, XR12).
 pub struct Mixer {
     state: MixerState,
     clients: Vec<(SocketAddr, Instant)>,
     // Track active meters per client. Map of (client_addr, meter_idx) -> expiry time
     active_meters: HashMap<(SocketAddr, u8), Instant>,
+    model: MixerModel,
 }
 
 impl Default for Mixer {
@@ -158,13 +160,29 @@ impl Default for Mixer {
 }
 
 impl Mixer {
-    /// Creates a new `Mixer` with a default, empty state.
+    /// Creates a new `Mixer` with default `MixerModel::X32` and empty state.
     pub fn new() -> Self {
+        Self::with_model(MixerModel::X32)
+    }
+
+    /// Creates a new `Mixer` emulating the specified `MixerModel`.
+    pub fn with_model(model: MixerModel) -> Self {
         Self {
             state: MixerState::new(),
             clients: Vec::new(),
             active_meters: HashMap::new(),
+            model,
         }
+    }
+
+    /// Returns the currently emulated `MixerModel`.
+    pub fn model(&self) -> MixerModel {
+        self.model
+    }
+
+    /// Sets the emulated `MixerModel`.
+    pub fn set_model(&mut self, model: MixerModel) {
+        self.model = model;
     }
 
     /// Seeds the mixer's state from a vector of OSC command strings.
@@ -177,26 +195,32 @@ impl Mixer {
 
         // Generate meter blobs for each active subscription
         for &(addr, meter_idx) in self.active_meters.keys() {
-            // Number of floats expected per meter index (based on C code)
-            let num_floats = match meter_idx {
-                0 => 70,
-                1 => 96,
-                2 => 49,
-                3 => 22,
-                4 => 82,
-                5 => 27,
-                6 => 4,
-                7 => 16,
-                8 => 6,
-                9 => 32,
-                10 => 32,
-                11 => 5,
-                12 => 4,
-                13 => 48,
-                14 => 80,
-                15 => 50,
-                16 => 48,
-                _ => 0,
+            // Number of floats expected per meter index based on mixer model
+            let num_floats = match (self.model, meter_idx) {
+                (MixerModel::X32, 0) => 70,
+                (MixerModel::X32, 1) => 96,
+                (MixerModel::Wing, 0 | 1) => 108,
+                (MixerModel::XR18, 0 | 1) => 28,
+                (MixerModel::XR16, 0 | 1) => 26,
+                (MixerModel::XR12, 0 | 1) => 20,
+                (_, idx) => match idx {
+                    2 => 49,
+                    3 => 22,
+                    4 => 82,
+                    5 => 27,
+                    6 => 4,
+                    7 => 16,
+                    8 => 6,
+                    9 => 32,
+                    10 => 32,
+                    11 => 5,
+                    12 => 4,
+                    13 => 48,
+                    14 => 80,
+                    15 => 50,
+                    16 => 48,
+                    _ => 0,
+                },
             };
 
             if num_floats > 0 {
@@ -273,9 +297,10 @@ impl Mixer {
 
         // Handle the /info command
         if osc_msg.path == "/info" {
+            let model_str = self.model.to_string();
             let arg1 = OscArg::String("V2.07".to_string());
-            let arg2 = OscArg::String("X32 Emulator".to_string());
-            let arg3 = OscArg::String("X32".to_string());
+            let arg2 = OscArg::String(format!("{} Emulator", model_str));
+            let arg3 = OscArg::String(model_str);
             let arg4 = OscArg::String("4.06".to_string());
             let bytes = OscMessage::serialize_to_bytes("/info", [&arg1, &arg2, &arg3, &arg4])?;
             responses.push((remote_addr, bytes.into()));
@@ -284,9 +309,10 @@ impl Mixer {
 
         // Handle the /status command
         if osc_msg.path == "/status" {
+            let model_str = self.model.to_string();
             let arg1 = OscArg::String("active".to_string());
             let arg2 = OscArg::String("0.0.0.0".to_string());
-            let arg3 = OscArg::String("X32 Emulator".to_string());
+            let arg3 = OscArg::String(format!("{} Emulator", model_str));
             let bytes = OscMessage::serialize_to_bytes("/status", [&arg1, &arg2, &arg3])?;
             responses.push((remote_addr, bytes.into()));
             return Ok(responses);

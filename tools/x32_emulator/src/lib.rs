@@ -11,37 +11,44 @@ pub mod server {
     use anyhow::Result;
     use std::net::{SocketAddr, UdpSocket};
     use std::sync::mpsc::Receiver;
-    use x32_core::Mixer;
+    use x32_core::{Mixer, MixerModel};
 
     /// A type alias for a closure that can be used to initialize the mixer's state.
     type Seeder = Option<Box<dyn FnOnce(&mut Mixer) + Send>>;
 
-    /// Runs the X32 emulator server.
-    ///
-    /// This function binds to the specified UDP address and enters a loop where it
-    /// receives OSC messages, dispatches them to the `Mixer` instance, and sends
-    /// back any responses.
+    /// Runs the X32 emulator server with default X32 model.
+    pub fn run(bind_addr: &str, seeder: Seeder, shutdown: Option<Receiver<()>>) -> Result<()> {
+        run_with_model(bind_addr, MixerModel::X32, seeder, shutdown)
+    }
+
+    /// Runs the digital mixer emulator server for the specified `MixerModel`.
     ///
     /// # Arguments
     ///
     /// * `bind_addr` - The address to bind the UDP socket to (e.g., "0.0.0.0:10023").
+    /// * `model` - The `MixerModel` to emulate (X32, Wing, XR18, XR16, XR12).
     /// * `seeder` - An optional closure to initialize the mixer's state before starting.
     /// * `shutdown` - An optional channel receiver to signal the server to stop.
     ///
     /// # Returns
     ///
     /// A `Result` indicating success or failure.
-    pub fn run(bind_addr: &str, seeder: Seeder, shutdown: Option<Receiver<()>>) -> Result<()> {
+    pub fn run_with_model(
+        bind_addr: &str,
+        model: MixerModel,
+        seeder: Seeder,
+        shutdown: Option<Receiver<()>>,
+    ) -> Result<()> {
         let addr: SocketAddr = bind_addr.parse()?;
         let socket = UdpSocket::bind(addr)?;
         socket.set_read_timeout(Some(std::time::Duration::from_millis(10)))?;
-        let mut mixer = Mixer::new();
+        let mut mixer = Mixer::with_model(model);
 
         if let Some(seeder) = seeder {
             seeder(&mut mixer);
         }
 
-        println!("X32 Emulator listening on {}", addr);
+        println!("{} Emulator listening on {}", model, addr);
 
         let mut buf = [0; 8192];
         loop {
@@ -79,7 +86,7 @@ pub mod server {
         Ok(())
     }
 }
-pub use x32_core::Mixer;
+pub use x32_core::{Mixer, MixerModel};
 
 use anyhow::Result;
 use clap::Parser;
@@ -95,9 +102,13 @@ pub struct Cli {
     /// Port number to bind to.
     #[arg(short, long, default_value_t = 10023)]
     pub port: u16,
+
+    /// Mixer model: X32, Wing, XR18, XR16, XR12
+    #[arg(short = 'M', long, default_value = "X32")]
+    pub model: MixerModel,
 }
 
 pub fn run(cli: Cli) -> Result<()> {
     let bind_addr = format!("{}:{}", cli.ip, cli.port);
-    server::run(&bind_addr, None, None)
+    server::run_with_model(&bind_addr, cli.model, None, None)
 }
