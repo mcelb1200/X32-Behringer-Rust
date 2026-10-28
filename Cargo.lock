@@ -2971,6 +2971,8 @@ dependencies = [
  "crossterm",
  "osc_lib",
  "ratatui",
+ "serde",
+ "serde_json",
  "tokio",
  "x32_core",
  "x32_lib",

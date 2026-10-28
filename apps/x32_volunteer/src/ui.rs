@@ -100,10 +100,23 @@ impl Tui {
 
         for (i, &ch_idx) in state.alerts.iter().enumerate() {
             self.alert_bufs[i].clear();
+            let ch = &state.channels[ch_idx];
+            let fader_db = crate::fader_position_to_db(ch.fader);
+            if let Some(limit) = state.max_fader_limit_db {
+                if fader_db > limit {
+                    write!(
+                        self.alert_bufs[i],
+                        "• 🔴 {} fader ({:.1} dB) exceeds limit ({:.1} dB)!",
+                        ch.name, fader_db, limit
+                    )
+                    .expect("Write alert buffer failed");
+                    continue;
+                }
+            }
             write!(
                 self.alert_bufs[i],
                 "• 🟡 {} level is high — consider lowering fader.",
-                state.channels[ch_idx].name
+                ch.name
             )
             .expect("Write alert buffer failed");
         }
