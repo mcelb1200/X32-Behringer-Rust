@@ -197,3 +197,7 @@ When initializing terminal UI state that might fail and return a `Result` (e.g.,
 ## 2026-10-19 - [Handle async broadcast channel lag in background loops]
 **Learning:** When using Tokio's `broadcast::channel` to distribute fast-moving events (like network streams) to multiple receivers, receivers that fall behind will receive a `RecvError::Lagged`. If a polling loop strictly matches on `Ok(Ok(msg))` and fails/breaks on any other pattern, a temporary lag spike will permanently terminate the receiver loop, breaking downstream logic (e.g. an awaited network query timing out).
 **Action:** Always explicitly handle `Ok(Err(tokio::sync::broadcast::error::RecvError::Lagged(_)))` in bounded `time::timeout` broadcast receiver loops by explicitly calling `continue` to resync and read the next available messages, preventing transient lag from causing hard failures.
+
+## 2026-10-27 - [Avoid unconditional state cloning in hot loops]
+**Learning:** In high-frequency hot loops (such as networking loops polling every 50ms), unconditionally cloning `String` fields from application state on every iteration causes continuous heap allocations, creating performance bottlenecks.
+**Action:** Extract only boolean checks or lightweight properties under the lock, and only clone dynamically sized properties when a state change is definitively detected to eliminate redundant heap allocations.
