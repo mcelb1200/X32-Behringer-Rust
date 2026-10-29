@@ -1,5 +1,5 @@
 use predicates::prelude::*;
-use std::process::{Child, Command as StdCommand};
+use std::process::Child;
 use std::time::Duration;
 
 struct EmulatorGuard {
@@ -8,25 +8,12 @@ struct EmulatorGuard {
 
 impl EmulatorGuard {
     fn start() -> Self {
-        // Pre-build synchronously to prevent cargo build times from eating into our sleep duration
-        let _ = StdCommand::new("cargo")
-            .args([
-                "build",
-                "--manifest-path",
-                "../x32_emulator/Cargo.toml",
-                "--bin",
-                "x32_emulator",
-            ])
-            .status();
-
-        let child = StdCommand::new("cargo")
-            .args([
-                "run",
-                "--manifest-path",
-                "../x32_emulator/Cargo.toml",
-                "--bin",
-                "x32_emulator",
-            ])
+        let child = escargot::CargoBuild::new()
+            .package("x32_emulator")
+            .bin("x32_emulator")
+            .run()
+            .expect("Failed to build x32_emulator")
+            .command()
             .spawn()
             .expect("Failed to start x32_emulator");
 
@@ -50,7 +37,6 @@ fn test_ssavergw_connection_timeout() {
     cmd.arg("--ip").arg("192.0.2.1").arg("--delay").arg("1"); // Invalid IP to force timeout
 
     cmd.assert()
-        .failure()
         .failure()
         .stderr(predicate::str::contains("Check IP"));
 }
