@@ -22,19 +22,28 @@ use midir::MidiOutput;
 use osc_lib::{OscArg, OscMessage};
 pub mod rpn;
 use rpn::RpnCalculator;
-use x32_lib::MixerClient;
+use x32_lib::{MixerClient, MixerModel};
 
 /// A Rust implementation of the X32Commander utility.
-#[derive(Parser, Debug)]
+#[derive(Parser, Debug, Clone)]
 #[command(author, version, about, long_about = None)]
 pub struct Args {
     /// Path to the command file.
     #[arg(short, long, default_value = "X32Commander.txt")]
     pub file: String,
 
-    /// IP address of the X32 mixer.
+    /// IP address of the mixer.
     #[arg(short, long)]
     pub ip: String,
+
+    /// Mixer model: X32, Wing, XR18, XR16, XR12
+    #[arg(
+        short = 'M',
+        long,
+        default_value = "X32",
+        help = "Mixer model: X32, Wing, XR18, XR16, XR12"
+    )]
+    pub model: MixerModel,
 
     /// OSC output address and port (e.g., 127.0.0.1:9000).
     #[arg(short, long)]
@@ -43,6 +52,75 @@ pub struct Args {
     /// MIDI output port name.
     #[arg(short = 'm', long)]
     pub midi_out: Option<String>,
+}
+
+/// Resolves the target IP and port based on the mixer model if port is omitted.
+pub fn resolve_target_address(ip: &str, model: MixerModel) -> String {
+    if ip.contains(':') {
+        ip.to_string()
+    } else {
+        let port = match model {
+            MixerModel::X32 => 10023,
+            MixerModel::Wing => 2222,
+            MixerModel::XR18 | MixerModel::XR16 | MixerModel::XR12 => 10024,
+        };
+        format!("{}:{}", ip, port)
+    }
+}
+
+/// Validates whether an OSC parameter path is within bounds for the given mixer model.
+pub fn validate_path_for_model(model: MixerModel, path: &str) -> bool {
+    let (max_ch, max_bus, max_aux, max_mtx, max_dca, max_fx) = match model {
+        MixerModel::X32 => (32, 16, 8, 6, 8, 8),
+        MixerModel::Wing => (40, 28, 16, 8, 16, 16),
+        MixerModel::XR18 => (16, 6, 2, 0, 4, 4),
+        MixerModel::XR16 => (16, 4, 2, 0, 4, 4),
+        MixerModel::XR12 => (12, 2, 2, 0, 4, 4),
+    };
+
+    let parts: Vec<&str> = path.trim_start_matches('/').split('/').collect();
+    if parts.is_empty() {
+        return true;
+    }
+
+    match parts[0] {
+        "ch" if parts.len() >= 2 => {
+            if let Ok(idx) = parts[1].parse::<usize>() {
+                return idx >= 1 && idx <= max_ch;
+            }
+        }
+        "bus" if parts.len() >= 2 => {
+            if let Ok(idx) = parts[1].parse::<usize>() {
+                return idx >= 1 && idx <= max_bus;
+            }
+        }
+        "auxin" if parts.len() >= 2 => {
+            if let Ok(idx) = parts[1].parse::<usize>() {
+                return idx >= 1 && idx <= max_aux;
+            }
+        }
+        "mtx" if parts.len() >= 2 => {
+            if max_mtx == 0 {
+                return false;
+            }
+            if let Ok(idx) = parts[1].parse::<usize>() {
+                return idx >= 1 && idx <= max_mtx;
+            }
+        }
+        "dca" if parts.len() >= 2 => {
+            if let Ok(idx) = parts[1].parse::<usize>() {
+                return idx >= 1 && idx <= max_dca;
+            }
+        }
+        "fx" if parts.len() >= 2 => {
+            if let Ok(idx) = parts[1].parse::<usize>() {
+                return idx >= 1 && idx <= max_fx;
+            }
+        }
+        _ => {}
+    }
+
+    true
 }
 
 /// Represents the type of command to trigger.
@@ -298,8 +376,9 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
         .map_err(|e| anyhow::anyhow!("Failed to parse command file: {}", e))?;
     println!("Successfully parsed {} commands.", commands.len());
 
-    println!("Connecting to X32 at {}...", args.ip);
-    let client = MixerClient::connect(&args.ip, true).await?;
+    let target_addr = resolve_target_address(&args.ip, args.model);
+    println!("Connecting to {} at {}...", args.model, target_addr);
+    let client = MixerClient::connect(&target_addr, true).await?;
 
     let out_socket = if let Some(ref output_addr) = args.output {
         let socket = UdpSocket::bind("0.0.0.0:0").await?;
@@ -339,6 +418,13 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
     let mut rx = client.subscribe();
     println!("Listening for OSC messages...");
     while let Ok(incoming_msg) = rx.recv().await {
+        if !validate_path_for_model(args.model, &incoming_msg.path) {
+            eprintln!(
+                "Warning: incoming path '{}' out of bounds for model {}",
+                incoming_msg.path, args.model
+            );
+            continue;
+        }
         for command in &commands {
             if command.incoming_address == incoming_msg.path {
                 let mut mparam = Vec::with_capacity(incoming_msg.args.len());
@@ -595,5 +681,132 @@ M~~~/ch/02/mix/fader|/ch/03/mix/fader ,f 0.75
         let result = expand_template(template, &mparam, &mut calc)?;
         assert_eq!(result, "/ch/02/mix/fader ,f 0.5");
         Ok(())
+    }
+
+    #[test]
+    fn test_resolve_target_address_per_model() {
+        assert_eq!(
+            resolve_target_address("192.168.1.50", MixerModel::X32),
+            "192.168.1.50:10023"
+        );
+        assert_eq!(
+            resolve_target_address("192.168.1.50", MixerModel::Wing),
+            "192.168.1.50:2222"
+        );
+        assert_eq!(
+            resolve_target_address("192.168.1.50", MixerModel::XR18),
+            "192.168.1.50:10024"
+        );
+        assert_eq!(
+            resolve_target_address("192.168.1.50", MixerModel::XR16),
+            "192.168.1.50:10024"
+        );
+        assert_eq!(
+            resolve_target_address("192.168.1.50", MixerModel::XR12),
+            "192.168.1.50:10024"
+        );
+        assert_eq!(
+            resolve_target_address("10.0.0.1:9999", MixerModel::X32),
+            "10.0.0.1:9999"
+        );
+    }
+
+    #[test]
+    fn test_validate_path_for_model() {
+        // Channel limits: X32 (32), Wing (40), XR18 (16), XR16 (16), XR12 (12)
+        assert!(validate_path_for_model(MixerModel::X32, "/ch/32/mix/fader"));
+        assert!(!validate_path_for_model(
+            MixerModel::X32,
+            "/ch/33/mix/fader"
+        ));
+
+        assert!(validate_path_for_model(
+            MixerModel::Wing,
+            "/ch/40/mix/fader"
+        ));
+        assert!(!validate_path_for_model(
+            MixerModel::Wing,
+            "/ch/41/mix/fader"
+        ));
+
+        assert!(validate_path_for_model(
+            MixerModel::XR18,
+            "/ch/16/mix/fader"
+        ));
+        assert!(!validate_path_for_model(
+            MixerModel::XR18,
+            "/ch/17/mix/fader"
+        ));
+
+        assert!(validate_path_for_model(
+            MixerModel::XR12,
+            "/ch/12/mix/fader"
+        ));
+        assert!(!validate_path_for_model(
+            MixerModel::XR12,
+            "/ch/13/mix/fader"
+        ));
+
+        // Matrix limits: X32 (6), Wing (8), XR series (0)
+        assert!(validate_path_for_model(
+            MixerModel::X32,
+            "/mtx/06/mix/fader"
+        ));
+        assert!(!validate_path_for_model(
+            MixerModel::X32,
+            "/mtx/07/mix/fader"
+        ));
+
+        assert!(validate_path_for_model(
+            MixerModel::Wing,
+            "/mtx/08/mix/fader"
+        ));
+        assert!(!validate_path_for_model(
+            MixerModel::Wing,
+            "/mtx/09/mix/fader"
+        ));
+
+        assert!(!validate_path_for_model(
+            MixerModel::XR18,
+            "/mtx/01/mix/fader"
+        ));
+        assert!(!validate_path_for_model(
+            MixerModel::XR12,
+            "/mtx/01/mix/fader"
+        ));
+
+        // DCA limits: X32 (8), Wing (16), XR series (4)
+        assert!(validate_path_for_model(MixerModel::X32, "/dca/8/fader"));
+        assert!(!validate_path_for_model(MixerModel::X32, "/dca/9/fader"));
+
+        assert!(validate_path_for_model(MixerModel::Wing, "/dca/16/fader"));
+        assert!(!validate_path_for_model(MixerModel::Wing, "/dca/17/fader"));
+
+        assert!(validate_path_for_model(MixerModel::XR18, "/dca/4/fader"));
+        assert!(!validate_path_for_model(MixerModel::XR18, "/dca/5/fader"));
+
+        // FX slot limits: X32 (8), Wing (16), XR series (4)
+        assert!(validate_path_for_model(MixerModel::X32, "/fx/8/type"));
+        assert!(!validate_path_for_model(MixerModel::X32, "/fx/9/type"));
+
+        assert!(validate_path_for_model(MixerModel::Wing, "/fx/16/type"));
+        assert!(!validate_path_for_model(MixerModel::Wing, "/fx/17/type"));
+
+        assert!(validate_path_for_model(MixerModel::XR18, "/fx/4/type"));
+        assert!(!validate_path_for_model(MixerModel::XR18, "/fx/5/type"));
+    }
+
+    #[test]
+    fn test_args_model_parsing() {
+        use clap::Parser;
+        let args = Args::parse_from(&["x32_commander", "--ip", "192.168.1.10", "-M", "Wing"]);
+        assert_eq!(args.model, MixerModel::Wing);
+
+        let args_default = Args::parse_from(&["x32_commander", "--ip", "192.168.1.10"]);
+        assert_eq!(args_default.model, MixerModel::X32);
+
+        let args_xr =
+            Args::parse_from(&["x32_commander", "--ip", "192.168.1.10", "--model", "XR18"]);
+        assert_eq!(args_xr.model, MixerModel::XR18);
     }
 }
