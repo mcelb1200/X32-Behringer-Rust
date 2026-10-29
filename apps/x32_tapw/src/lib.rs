@@ -78,13 +78,20 @@ async fn run_network(app: Arc<Mutex<AppState>>, mut rx: mpsc::Receiver<OscMessag
     let mut last_keepalive = Instant::now() - Duration::from_secs(10);
 
     loop {
-        let (ip, is_auto, channel) = {
+        // ⚡ Bolt: Avoid unconditionally cloning `state.ip_input` (a String) on every 50ms iteration.
+        // We only clone it if it has definitively changed compared to `current_ip`.
+        let (new_ip, is_auto, channel) = {
             let state = app.lock().unwrap_or_else(|e| e.into_inner());
-            (state.ip_input.clone(), state.is_auto, state.channel)
+            let new_ip = if state.ip_input != current_ip {
+                Some(state.ip_input.clone())
+            } else {
+                None
+            };
+            (new_ip, state.is_auto, state.channel)
         };
 
-        if ip != current_ip {
-            current_ip = ip.clone();
+        if let Some(ip) = new_ip {
+            current_ip = ip;
             if let Ok(parsed_addr) = format!("{}:10023", current_ip).parse::<std::net::SocketAddr>()
             {
                 addr = Some(parsed_addr);
