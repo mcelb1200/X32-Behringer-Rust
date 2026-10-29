@@ -14,8 +14,8 @@ use std::path::Path;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use ui::{Tui, UIEvent};
-use x32_lib::{MixerClient, MixerModel};
 use x32_lib::transport::{MixerTransport, udp::UdpTransport};
+use x32_lib::{MixerClient, MixerModel};
 
 /// Configuration structure for volunteer mode settings
 #[derive(Debug, Deserialize, Clone, Default)]
@@ -119,7 +119,8 @@ pub fn load_config(config_path: Option<&str>) -> Result<AppConfig> {
     };
 
     if let Some(path) = path_to_open {
-        let file = File::open(&path).with_context(|| format!("Failed to open config file: {}", path))?;
+        let file =
+            File::open(&path).with_context(|| format!("Failed to open config file: {}", path))?;
         let mut buf = String::new();
         file.take(64 * 1024).read_to_string(&mut buf)?;
         let cfg: AppConfig = serde_json::from_str(&buf)
@@ -177,11 +178,7 @@ pub fn build_channels(args: &Args, config: &AppConfig) -> Result<Vec<ChannelStat
         if let Some(ref dcas) = v_cfg.visible_dcas {
             for &num in dcas {
                 if num >= 1 && num <= max_dca {
-                    configured_channels.push(ChannelState::new(
-                        format!("/dca/{}", num),
-                        true,
-                        num,
-                    ));
+                    configured_channels.push(ChannelState::new(format!("/dca/{}", num), true, num));
                 }
             }
         }
@@ -411,10 +408,22 @@ mod tests {
 
     #[test]
     fn test_resolve_target_address() {
-        assert_eq!(resolve_target_address("192.168.1.50", MixerModel::X32), "192.168.1.50:10023");
-        assert_eq!(resolve_target_address("192.168.1.50", MixerModel::Wing), "192.168.1.50:2222");
-        assert_eq!(resolve_target_address("192.168.1.50", MixerModel::XR18), "192.168.1.50:10024");
-        assert_eq!(resolve_target_address("192.168.1.50:9000", MixerModel::X32), "192.168.1.50:9000");
+        assert_eq!(
+            resolve_target_address("192.168.1.50", MixerModel::X32),
+            "192.168.1.50:10023"
+        );
+        assert_eq!(
+            resolve_target_address("192.168.1.50", MixerModel::Wing),
+            "192.168.1.50:2222"
+        );
+        assert_eq!(
+            resolve_target_address("192.168.1.50", MixerModel::XR18),
+            "192.168.1.50:10024"
+        );
+        assert_eq!(
+            resolve_target_address("192.168.1.50:9000", MixerModel::X32),
+            "192.168.1.50:9000"
+        );
     }
 
     #[test]
