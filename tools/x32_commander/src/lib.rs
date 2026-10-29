@@ -715,26 +715,65 @@ M~~~/ch/02/mix/fader|/ch/03/mix/fader ,f 0.75
     fn test_validate_path_for_model() {
         // Channel limits: X32 (32), Wing (40), XR18 (16), XR16 (16), XR12 (12)
         assert!(validate_path_for_model(MixerModel::X32, "/ch/32/mix/fader"));
-        assert!(!validate_path_for_model(MixerModel::X32, "/ch/33/mix/fader"));
+        assert!(!validate_path_for_model(
+            MixerModel::X32,
+            "/ch/33/mix/fader"
+        ));
 
-        assert!(validate_path_for_model(MixerModel::Wing, "/ch/40/mix/fader"));
-        assert!(!validate_path_for_model(MixerModel::Wing, "/ch/41/mix/fader"));
+        assert!(validate_path_for_model(
+            MixerModel::Wing,
+            "/ch/40/mix/fader"
+        ));
+        assert!(!validate_path_for_model(
+            MixerModel::Wing,
+            "/ch/41/mix/fader"
+        ));
 
-        assert!(validate_path_for_model(MixerModel::XR18, "/ch/16/mix/fader"));
-        assert!(!validate_path_for_model(MixerModel::XR18, "/ch/17/mix/fader"));
+        assert!(validate_path_for_model(
+            MixerModel::XR18,
+            "/ch/16/mix/fader"
+        ));
+        assert!(!validate_path_for_model(
+            MixerModel::XR18,
+            "/ch/17/mix/fader"
+        ));
 
-        assert!(validate_path_for_model(MixerModel::XR12, "/ch/12/mix/fader"));
-        assert!(!validate_path_for_model(MixerModel::XR12, "/ch/13/mix/fader"));
+        assert!(validate_path_for_model(
+            MixerModel::XR12,
+            "/ch/12/mix/fader"
+        ));
+        assert!(!validate_path_for_model(
+            MixerModel::XR12,
+            "/ch/13/mix/fader"
+        ));
 
         // Matrix limits: X32 (6), Wing (8), XR series (0)
-        assert!(validate_path_for_model(MixerModel::X32, "/mtx/06/mix/fader"));
-        assert!(!validate_path_for_model(MixerModel::X32, "/mtx/07/mix/fader"));
+        assert!(validate_path_for_model(
+            MixerModel::X32,
+            "/mtx/06/mix/fader"
+        ));
+        assert!(!validate_path_for_model(
+            MixerModel::X32,
+            "/mtx/07/mix/fader"
+        ));
 
-        assert!(validate_path_for_model(MixerModel::Wing, "/mtx/08/mix/fader"));
-        assert!(!validate_path_for_model(MixerModel::Wing, "/mtx/09/mix/fader"));
+        assert!(validate_path_for_model(
+            MixerModel::Wing,
+            "/mtx/08/mix/fader"
+        ));
+        assert!(!validate_path_for_model(
+            MixerModel::Wing,
+            "/mtx/09/mix/fader"
+        ));
 
-        assert!(!validate_path_for_model(MixerModel::XR18, "/mtx/01/mix/fader"));
-        assert!(!validate_path_for_model(MixerModel::XR12, "/mtx/01/mix/fader"));
+        assert!(!validate_path_for_model(
+            MixerModel::XR18,
+            "/mtx/01/mix/fader"
+        ));
+        assert!(!validate_path_for_model(
+            MixerModel::XR12,
+            "/mtx/01/mix/fader"
+        ));
 
         // DCA limits: X32 (8), Wing (16), XR series (4)
         assert!(validate_path_for_model(MixerModel::X32, "/dca/8/fader"));
@@ -766,7 +805,8 @@ M~~~/ch/02/mix/fader|/ch/03/mix/fader ,f 0.75
         let args_default = Args::parse_from(&["x32_commander", "--ip", "192.168.1.10"]);
         assert_eq!(args_default.model, MixerModel::X32);
 
-        let args_xr = Args::parse_from(&["x32_commander", "--ip", "192.168.1.10", "--model", "XR18"]);
+        let args_xr =
+            Args::parse_from(&["x32_commander", "--ip", "192.168.1.10", "--model", "XR18"]);
         assert_eq!(args_xr.model, MixerModel::XR18);
     }
 }
