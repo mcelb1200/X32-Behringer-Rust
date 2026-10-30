@@ -201,3 +201,7 @@ When initializing terminal UI state that might fail and return a `Result` (e.g.,
 ## 2026-10-27 - [Avoid unconditional state cloning in hot loops]
 **Learning:** In high-frequency hot loops (such as networking loops polling every 50ms), unconditionally cloning `String` fields from application state on every iteration causes continuous heap allocations, creating performance bottlenecks.
 **Action:** Extract only boolean checks or lightweight properties under the lock, and only clone dynamically sized properties when a state change is definitively detected to eliminate redundant heap allocations.
+
+## 2026-10-27 - [Avoid String Split Vec Allocation in Path Validation]
+**Learning:** Using `path.split('/').collect::<Vec<&str>>()` to validate or parse OSC paths triggers unnecessary heap allocations. In high-frequency parsing paths (like processing OSC messages or parsing scene files), this is a significant performance anti-pattern.
+**Action:** Always prefer using the `.split('/')` iterator directly and consuming only the necessary elements (e.g., using `parts.next()`) instead of collecting them into a dynamically sized `Vec`.
