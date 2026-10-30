@@ -5,8 +5,10 @@ pub struct AppState {
     pub main_fader: f32,
     pub main_muted: bool,
     pub alerts: Vec<usize>,
+    pub alert_messages: Vec<String>,
     pub status: Status,
     pub message: String,
+    pub max_fader_limit_db: Option<f32>,
 }
 
 #[derive(PartialEq)]
@@ -23,8 +25,10 @@ impl AppState {
             main_fader: 0.0,
             main_muted: false,
             alerts: vec![],
+            alert_messages: vec![],
             status: Status::Ok,
             message: "Starting up...".to_string(),
+            max_fader_limit_db: None,
         }
     }
 }
