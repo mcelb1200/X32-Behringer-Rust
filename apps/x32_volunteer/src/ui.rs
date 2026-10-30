@@ -100,7 +100,8 @@ impl Tui {
 
         for (i, msg) in state.alert_messages.iter().enumerate() {
             self.alert_bufs[i].clear();
-            write!(self.alert_bufs[i], "{}", msg).expect("Write alert buffer failed");
+            write!(self.alert_bufs[i], "{}", msg)
+                .expect("Write alert buffer failed");
         }
 
         self.terminal.draw(|f| {
