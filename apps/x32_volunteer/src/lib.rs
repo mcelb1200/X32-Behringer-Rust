@@ -11,8 +11,8 @@ use state::AppState;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use ui::{Tui, UIEvent};
-use x32_lib::{MixerClient, MixerModel};
 use x32_lib::transport::{MixerTransport, udp::UdpTransport};
+use x32_lib::{MixerClient, MixerModel};
 
 #[derive(Parser, Debug, Clone)]
 #[command(author, version, about = "Simplified TUI Dashboard (Volunteer Mode)")]
@@ -149,7 +149,11 @@ pub async fn run(args: Args) -> Result<()> {
             } else if let Some(stripped) = part.strip_prefix("dca") {
                 if let Ok(num) = stripped.parse::<u32>() {
                     if num >= 1 && num <= max_dcas {
-                        configured_channels.push(ChannelState::new(format!("/dca/{}", num), true, num));
+                        configured_channels.push(ChannelState::new(
+                            format!("/dca/{}", num),
+                            true,
+                            num,
+                        ));
                     }
                 }
             }
@@ -378,10 +382,22 @@ mod tests {
 
     #[test]
     fn test_resolve_target_address() {
-        assert_eq!(resolve_target_address("192.168.1.100", MixerModel::X32), "192.168.1.100:10023");
-        assert_eq!(resolve_target_address("192.168.1.100", MixerModel::Wing), "192.168.1.100:2222");
-        assert_eq!(resolve_target_address("192.168.1.100", MixerModel::XR18), "192.168.1.100:10024");
-        assert_eq!(resolve_target_address("192.168.1.100:10000", MixerModel::X32), "192.168.1.100:10000");
+        assert_eq!(
+            resolve_target_address("192.168.1.100", MixerModel::X32),
+            "192.168.1.100:10023"
+        );
+        assert_eq!(
+            resolve_target_address("192.168.1.100", MixerModel::Wing),
+            "192.168.1.100:2222"
+        );
+        assert_eq!(
+            resolve_target_address("192.168.1.100", MixerModel::XR18),
+            "192.168.1.100:10024"
+        );
+        assert_eq!(
+            resolve_target_address("192.168.1.100:10000", MixerModel::X32),
+            "192.168.1.100:10000"
+        );
     }
 
     #[test]
@@ -410,7 +426,9 @@ mod tests {
         }"#;
 
         let config: ConfigFile = serde_json::from_str(json_data)?;
-        let sec = config.volunteer_mode.expect("Expected volunteer_mode section");
+        let sec = config
+            .volunteer_mode
+            .expect("Expected volunteer_mode section");
         assert_eq!(sec.max_fader_limit_db, Some(-3.0));
         assert_eq!(sec.visible_channels, Some(vec![1, 2, 3]));
         assert_eq!(sec.visible_dcas, Some(vec![1]));
