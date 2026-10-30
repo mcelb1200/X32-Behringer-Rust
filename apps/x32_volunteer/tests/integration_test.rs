@@ -67,7 +67,10 @@ async fn test_x32_volunteer_integration() {
 
     let args = Args {
         ip: addr.clone(),
+        model: x32_lib::MixerModel::X32,
         channels: "ch1".to_string(),
+        config: None,
+        max_fader_limit_db: Some(-3.0),
     };
 
     // run will block because of the crossterm event loop, but we can verify initialization finishes

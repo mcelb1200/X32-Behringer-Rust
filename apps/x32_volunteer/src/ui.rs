@@ -64,9 +64,9 @@ impl Tui {
             self.level_bufs
                 .resize_with(state.channels.len(), || String::with_capacity(32));
         }
-        if self.alert_bufs.len() != state.alerts.len() {
+        if self.alert_bufs.len() != state.alert_messages.len() {
             self.alert_bufs
-                .resize_with(state.alerts.len(), || String::with_capacity(128));
+                .resize_with(state.alert_messages.len(), || String::with_capacity(128));
         }
 
         // ⚡ Bolt: Clear and populate stateful string buffers using `write!` instead
@@ -98,14 +98,10 @@ impl Tui {
                 .expect("Write level buffer failed");
         }
 
-        for (i, &ch_idx) in state.alerts.iter().enumerate() {
+        for (i, msg) in state.alert_messages.iter().enumerate() {
             self.alert_bufs[i].clear();
-            write!(
-                self.alert_bufs[i],
-                "• 🟡 {} level is high — consider lowering fader.",
-                state.channels[ch_idx].name
-            )
-            .expect("Write alert buffer failed");
+            write!(self.alert_bufs[i], "{}", msg)
+                .expect("Write alert buffer failed");
         }
 
         self.terminal.draw(|f| {
