@@ -8,6 +8,7 @@ anyhow = { workspace = true }
 clap = { workspace = true }
 osc_lib = { workspace = true }
 tokio = { workspace = true }
+x32_fxparse = { workspace = true }
 x32_lib = { workspace = true }
 
 [dev-dependencies]
