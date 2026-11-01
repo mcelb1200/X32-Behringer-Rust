@@ -549,9 +549,18 @@ mod tests {
         assert_eq!(MixerModel::XR16.default_port(), 10024);
         assert_eq!(MixerModel::XR12.default_port(), 10024);
 
-        assert_eq!(MixerModel::X32.resolve_target_address("192.168.1.50"), "192.168.1.50:10023");
-        assert_eq!(MixerModel::Wing.resolve_target_address("192.168.1.50"), "192.168.1.50:2222");
-        assert_eq!(MixerModel::X32.resolve_target_address("192.168.1.50:9000"), "192.168.1.50:9000");
+        assert_eq!(
+            MixerModel::X32.resolve_target_address("192.168.1.50"),
+            "192.168.1.50:10023"
+        );
+        assert_eq!(
+            MixerModel::Wing.resolve_target_address("192.168.1.50"),
+            "192.168.1.50:2222"
+        );
+        assert_eq!(
+            MixerModel::X32.resolve_target_address("192.168.1.50:9000"),
+            "192.168.1.50:9000"
+        );
     }
 
     #[test]
