@@ -919,7 +919,7 @@ async fn process_reaper_message(
     if data.starts_with(b"#bundle") {
         let mut idx = 16;
         while idx < data.len() {
-            if idx + 4 > data.len() {
+            if 4 > data.len().saturating_sub(idx) {
                 break;
             }
             let size_val =
@@ -1297,7 +1297,7 @@ fn parse_osc_packet(data: &[u8]) -> Result<OscMessage> {
         for &c in type_tags.iter().skip(1) {
             match c {
                 b'f' => {
-                    if arg_idx + 4 <= data.len() {
+                    if 4 <= data.len().saturating_sub(arg_idx) {
                         let bytes = [
                             data[arg_idx],
                             data[arg_idx + 1],
@@ -1310,7 +1310,7 @@ fn parse_osc_packet(data: &[u8]) -> Result<OscMessage> {
                     }
                 }
                 b'i' => {
-                    if arg_idx + 4 <= data.len() {
+                    if 4 <= data.len().saturating_sub(arg_idx) {
                         let bytes = [
                             data[arg_idx],
                             data[arg_idx + 1],
