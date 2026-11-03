@@ -201,3 +201,7 @@ When initializing terminal UI state that might fail and return a `Result` (e.g.,
 ## 2026-10-27 - [Avoid unconditional state cloning in hot loops]
 **Learning:** In high-frequency hot loops (such as networking loops polling every 50ms), unconditionally cloning `String` fields from application state on every iteration causes continuous heap allocations, creating performance bottlenecks.
 **Action:** Extract only boolean checks or lightweight properties under the lock, and only clone dynamically sized properties when a state change is definitively detected to eliminate redundant heap allocations.
+
+## 2026-10-31 - [Avoid args clone when sending OSC messages]
+**Learning:** Sending OSC messages by passing a borrowed path string and cloned arguments array (`client.send_message(&msg.path, msg.args.clone())`) when the `msg` object is immediately dropped leads to redundant heap allocations. This is especially problematic in hot loops where many messages are sent per frame (like in `x32_reaper` and `x32_autobeat`).
+**Action:** When sending OSC messages via `MixerClient`, always prefer using `client.send(msg)` to transfer ownership of an `OscMessage` rather than `client.send_message(&msg.path, msg.args.clone())`. This prevents redundant heap allocations for both the path string and the arguments vector.
