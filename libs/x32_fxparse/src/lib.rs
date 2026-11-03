@@ -32,6 +32,83 @@ impl MixerModel {
             format!("{}:{}", ip, self.default_port())
         }
     }
+
+    /// Validates whether an OSC parameter path is supported and within index bounds for this mixer model.
+    pub fn is_path_valid(&self, path: &str) -> bool {
+        let clean_path = path.trim();
+        if !clean_path.starts_with('/') {
+            return false;
+        }
+
+        let mut parts = clean_path.trim_start_matches('/').split('/');
+        let section = match parts.next() {
+            Some(s) if !s.is_empty() => s,
+            _ => return false,
+        };
+
+        let (max_ch, max_bus, max_aux, max_mtx, max_dca, max_fx) = match self {
+            MixerModel::X32 => (32, 16, 8, 6, 8, 8),
+            MixerModel::Wing => (40, 28, 16, 8, 16, 16),
+            MixerModel::XR18 => (16, 6, 2, 0, 4, 4),
+            MixerModel::XR16 => (16, 4, 2, 0, 4, 4),
+            MixerModel::XR12 => (12, 2, 2, 0, 4, 4),
+        };
+
+        match section {
+            "ch" => {
+                if let Some(idx_str) = parts.next() {
+                    if let Ok(idx) = idx_str.parse::<usize>() {
+                        return idx >= 1 && idx <= max_ch;
+                    }
+                }
+                true
+            }
+            "bus" => {
+                if let Some(idx_str) = parts.next() {
+                    if let Ok(idx) = idx_str.parse::<usize>() {
+                        return idx >= 1 && idx <= max_bus;
+                    }
+                }
+                true
+            }
+            "auxin" | "aux" => {
+                if let Some(idx_str) = parts.next() {
+                    if let Ok(idx) = idx_str.parse::<usize>() {
+                        return idx >= 1 && idx <= max_aux;
+                    }
+                }
+                true
+            }
+            "mtx" => {
+                if max_mtx == 0 {
+                    return false;
+                }
+                if let Some(idx_str) = parts.next() {
+                    if let Ok(idx) = idx_str.parse::<usize>() {
+                        return idx >= 1 && idx <= max_mtx;
+                    }
+                }
+                true
+            }
+            "dca" => {
+                if let Some(idx_str) = parts.next() {
+                    if let Ok(idx) = idx_str.parse::<usize>() {
+                        return idx >= 1 && idx <= max_dca;
+                    }
+                }
+                true
+            }
+            "fx" => {
+                if let Some(idx_str) = parts.next() {
+                    if let Ok(idx) = idx_str.parse::<usize>() {
+                        return idx >= 1 && idx <= max_fx;
+                    }
+                }
+                true
+            }
+            _ => true,
+        }
+    }
 }
 
 impl FromStr for MixerModel {
@@ -580,5 +657,83 @@ mod tests {
         // EQ band limits: Wing channel supports up to 8 EQ bands
         assert!(parse_parameter(MixerModel::Wing, "/ch/01/eq/8/f", "1000.0").is_some());
         assert!(parse_parameter(MixerModel::Wing, "/ch/01/eq/9/f", "1000.0").is_none());
+    }
+
+    #[test]
+    fn test_mixer_model_is_path_valid() {
+        // Channel validation
+        assert!(MixerModel::X32.is_path_valid("/ch/01/mix/fader"));
+        assert!(MixerModel::X32.is_path_valid("/ch/32/mix/fader"));
+        assert!(!MixerModel::X32.is_path_valid("/ch/33/mix/fader"));
+
+        assert!(MixerModel::Wing.is_path_valid("/ch/40/mix/fader"));
+        assert!(!MixerModel::Wing.is_path_valid("/ch/41/mix/fader"));
+
+        assert!(MixerModel::XR18.is_path_valid("/ch/16/mix/fader"));
+        assert!(!MixerModel::XR18.is_path_valid("/ch/17/mix/fader"));
+
+        assert!(MixerModel::XR16.is_path_valid("/ch/16/mix/fader"));
+        assert!(!MixerModel::XR16.is_path_valid("/ch/17/mix/fader"));
+
+        assert!(MixerModel::XR12.is_path_valid("/ch/12/mix/fader"));
+        assert!(!MixerModel::XR12.is_path_valid("/ch/13/mix/fader"));
+
+        // Bus validation
+        assert!(MixerModel::X32.is_path_valid("/bus/16/mix/fader"));
+        assert!(!MixerModel::X32.is_path_valid("/bus/17/mix/fader"));
+
+        assert!(MixerModel::Wing.is_path_valid("/bus/28/mix/fader"));
+        assert!(!MixerModel::Wing.is_path_valid("/bus/29/mix/fader"));
+
+        assert!(MixerModel::XR18.is_path_valid("/bus/06/mix/fader"));
+        assert!(!MixerModel::XR18.is_path_valid("/bus/07/mix/fader"));
+
+        assert!(MixerModel::XR16.is_path_valid("/bus/04/mix/fader"));
+        assert!(!MixerModel::XR16.is_path_valid("/bus/05/mix/fader"));
+
+        assert!(MixerModel::XR12.is_path_valid("/bus/02/mix/fader"));
+        assert!(!MixerModel::XR12.is_path_valid("/bus/03/mix/fader"));
+
+        // Matrix validation
+        assert!(MixerModel::X32.is_path_valid("/mtx/06/mix/fader"));
+        assert!(!MixerModel::X32.is_path_valid("/mtx/07/mix/fader"));
+
+        assert!(MixerModel::Wing.is_path_valid("/mtx/08/mix/fader"));
+        assert!(!MixerModel::Wing.is_path_valid("/mtx/09/mix/fader"));
+
+        assert!(!MixerModel::XR18.is_path_valid("/mtx/01/mix/fader"));
+        assert!(!MixerModel::XR16.is_path_valid("/mtx/01/mix/fader"));
+        assert!(!MixerModel::XR12.is_path_valid("/mtx/01/mix/fader"));
+
+        // Auxin / Aux validation
+        assert!(MixerModel::X32.is_path_valid("/auxin/08/mix/fader"));
+        assert!(!MixerModel::X32.is_path_valid("/auxin/09/mix/fader"));
+        assert!(MixerModel::Wing.is_path_valid("/aux/16/mix/fader"));
+        assert!(!MixerModel::Wing.is_path_valid("/aux/17/mix/fader"));
+        assert!(MixerModel::XR18.is_path_valid("/aux/02/mix/fader"));
+        assert!(!MixerModel::XR18.is_path_valid("/aux/03/mix/fader"));
+
+        // DCA validation
+        assert!(MixerModel::X32.is_path_valid("/dca/8/fader"));
+        assert!(!MixerModel::X32.is_path_valid("/dca/9/fader"));
+        assert!(MixerModel::Wing.is_path_valid("/dca/16/fader"));
+        assert!(!MixerModel::Wing.is_path_valid("/dca/17/fader"));
+        assert!(MixerModel::XR18.is_path_valid("/dca/4/fader"));
+        assert!(!MixerModel::XR18.is_path_valid("/dca/5/fader"));
+
+        // FX validation
+        assert!(MixerModel::X32.is_path_valid("/fx/8/type"));
+        assert!(!MixerModel::X32.is_path_valid("/fx/9/type"));
+        assert!(MixerModel::Wing.is_path_valid("/fx/16/type"));
+        assert!(!MixerModel::Wing.is_path_valid("/fx/17/type"));
+        assert!(MixerModel::XR18.is_path_valid("/fx/4/type"));
+        assert!(!MixerModel::XR18.is_path_valid("/fx/5/type"));
+
+        // General / edge cases
+        assert!(MixerModel::X32.is_path_valid("/main/st/mix/fader"));
+        assert!(MixerModel::Wing.is_path_valid("/main/st/mix/fader"));
+        assert!(!MixerModel::X32.is_path_valid("invalid/no/leading/slash"));
+        assert!(!MixerModel::X32.is_path_valid(""));
+        assert!(!MixerModel::X32.is_path_valid("/"));
     }
 }

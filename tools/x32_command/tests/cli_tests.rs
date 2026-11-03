@@ -43,3 +43,198 @@ fn test_file_too_large() {
         .assert()
         .failure();
 }
+
+#[test]
+fn test_x32_command_wing_batch_execution() {
+    use osc_lib::OscMessage;
+    use std::net::UdpSocket;
+    use std::thread;
+    use std::time::Duration;
+
+    let mock_console = UdpSocket::bind("127.0.0.1:0").expect("Failed to bind mock console");
+    let console_addr = mock_console.local_addr().unwrap();
+
+    let mut temp_file = NamedTempFile::new().unwrap();
+    writeln!(temp_file, "/ch/40/mix/fader ,f 0.85").unwrap();
+    writeln!(temp_file, "/bus/28/mix/fader ,f 0.90").unwrap();
+    writeln!(temp_file, "quit").unwrap();
+
+    let mock_thread = thread::spawn(move || {
+        let mut buf = [0; 512];
+        mock_console
+            .set_read_timeout(Some(Duration::from_millis(5000)))
+            .unwrap();
+
+        let mut received = Vec::new();
+        while let Ok((len, _)) = mock_console.recv_from(&mut buf) {
+            if let Ok(msg) = OscMessage::from_bytes(&buf[..len]) {
+                received.push(msg.path);
+            }
+            mock_console
+                .set_read_timeout(Some(Duration::from_millis(200)))
+                .unwrap();
+        }
+
+        assert_eq!(received.len(), 2);
+        assert_eq!(received[0], "/ch/40/mix/fader");
+        assert_eq!(received[1], "/bus/28/mix/fader");
+    });
+
+    let mut cmd = Command::cargo_bin("x32_command").unwrap();
+    cmd.arg("-i")
+        .arg(console_addr.to_string())
+        .arg("-M")
+        .arg("Wing")
+        .arg("-k")
+        .arg("0")
+        .arg("-t")
+        .arg("1")
+        .arg("-f")
+        .arg(temp_file.path())
+        .timeout(Duration::from_secs(10));
+
+    cmd.assert().success();
+    mock_thread.join().unwrap();
+}
+
+#[test]
+fn test_x32_command_query_osc_path() {
+    use osc_lib::OscMessage;
+    use std::net::UdpSocket;
+    use std::thread;
+    use std::time::Duration;
+
+    let mock_console = UdpSocket::bind("127.0.0.1:0").expect("Failed to bind mock console");
+    let console_addr = mock_console.local_addr().unwrap();
+
+    let mock_thread = thread::spawn(move || {
+        let mut buf = [0; 512];
+        mock_console
+            .set_read_timeout(Some(Duration::from_millis(5000)))
+            .unwrap();
+
+        if let Ok((len, _)) = mock_console.recv_from(&mut buf) {
+            let msg = OscMessage::from_bytes(&buf[..len]).unwrap();
+            assert_eq!(msg.path, "/ch/05/mix/fader");
+            assert!(msg.args.is_empty());
+        }
+    });
+
+    let mut cmd = Command::cargo_bin("x32_command").unwrap();
+    cmd.arg("-i")
+        .arg(console_addr.to_string())
+        .arg("-M")
+        .arg("X32")
+        .arg("-k")
+        .arg("1")
+        .arg("-t")
+        .arg("1")
+        .write_stdin("/ch/05/mix/fader\nquit\n")
+        .timeout(Duration::from_secs(10));
+
+    cmd.assert().success();
+    mock_thread.join().unwrap();
+}
+
+#[test]
+fn test_x32_command_xr18_filters_out_of_bounds_paths() {
+    use osc_lib::OscMessage;
+    use std::net::UdpSocket;
+    use std::thread;
+    use std::time::Duration;
+
+    let mock_console = UdpSocket::bind("127.0.0.1:0").expect("Failed to bind mock console");
+    let console_addr = mock_console.local_addr().unwrap();
+
+    let mut temp_file = NamedTempFile::new().unwrap();
+    writeln!(temp_file, "/ch/01/mix/fader ,f 0.5").unwrap();
+    writeln!(temp_file, "/ch/32/mix/fader ,f 0.5").unwrap(); // invalid for XR18
+    writeln!(temp_file, "/mtx/01/mix/fader ,f 0.5").unwrap(); // invalid for XR18
+    writeln!(temp_file, "/bus/02/mix/fader ,f 0.7").unwrap(); // valid for XR18
+    writeln!(temp_file, "quit").unwrap();
+
+    let mock_thread = thread::spawn(move || {
+        let mut buf = [0; 512];
+        mock_console
+            .set_read_timeout(Some(Duration::from_millis(5000)))
+            .unwrap();
+
+        let mut received = Vec::new();
+        while let Ok((len, _)) = mock_console.recv_from(&mut buf) {
+            if let Ok(msg) = OscMessage::from_bytes(&buf[..len]) {
+                received.push(msg.path);
+            }
+            mock_console
+                .set_read_timeout(Some(Duration::from_millis(200)))
+                .unwrap();
+        }
+
+        // Only ch 01 and bus 02 should have passed validation
+        assert_eq!(received.len(), 2, "Expected 2 valid messages, received: {:?}", received);
+        assert_eq!(received[0], "/ch/01/mix/fader");
+        assert_eq!(received[1], "/bus/02/mix/fader");
+    });
+
+    let mut cmd = Command::cargo_bin("x32_command").unwrap();
+    cmd.arg("-i")
+        .arg(console_addr.to_string())
+        .arg("-M")
+        .arg("XR18")
+        .arg("-k")
+        .arg("0")
+        .arg("-t")
+        .arg("1")
+        .arg("-f")
+        .arg(temp_file.path())
+        .timeout(Duration::from_secs(10));
+
+    cmd.assert().success();
+    mock_thread.join().unwrap();
+}
+
+#[test]
+fn test_x32_command_interactive_stdin_filtering() {
+    use osc_lib::OscMessage;
+    use std::net::UdpSocket;
+    use std::thread;
+    use std::time::Duration;
+
+    let mock_console = UdpSocket::bind("127.0.0.1:0").expect("Failed to bind mock console");
+    let console_addr = mock_console.local_addr().unwrap();
+
+    let mock_thread = thread::spawn(move || {
+        let mut buf = [0; 512];
+        mock_console
+            .set_read_timeout(Some(Duration::from_millis(5000)))
+            .unwrap();
+
+        let mut received = Vec::new();
+        while let Ok((len, _)) = mock_console.recv_from(&mut buf) {
+            if let Ok(msg) = OscMessage::from_bytes(&buf[..len]) {
+                received.push(msg.path);
+            }
+            mock_console
+                .set_read_timeout(Some(Duration::from_millis(200)))
+                .unwrap();
+        }
+
+        // For XR12: max channels is 12. So ch 12 is valid, ch 15 is dropped.
+        assert_eq!(received.len(), 1, "Expected 1 valid message, received: {:?}", received);
+        assert_eq!(received[0], "/ch/12/mix/fader");
+    });
+
+    let mut cmd = Command::cargo_bin("x32_command").unwrap();
+    cmd.arg("-i")
+        .arg(console_addr.to_string())
+        .arg("-M")
+        .arg("XR12")
+        .arg("-k")
+        .arg("1")
+        .arg("-t")
+        .arg("1")
+        .write_stdin("/ch/12/mix/fader ,f 0.5\n/ch/15/mix/fader ,f 0.5\nquit\n")
+        .timeout(Duration::from_secs(10));
+
+    cmd.assert().success();
+    mock_thread.join().unwrap();
+}
