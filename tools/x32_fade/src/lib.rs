@@ -16,7 +16,107 @@ use std::io::Read;
 use std::path::PathBuf;
 use std::time::Duration;
 use tokio::time::sleep;
-use x32_lib::{MixerClient, get_parameter_async};
+use x32_lib::{MixerClient, MixerModel, get_parameter_async};
+
+/// Resolves default target OSC port based on digital mixer model when port is omitted.
+pub fn resolve_target_address(ip: &str, model: MixerModel) -> String {
+    model.resolve_target_address(ip)
+}
+
+/// Checks whether a fader OSC address path is within the hardware bounds of the specified digital mixer model.
+///
+/// Returns `Ok(())` if valid or non-standard/auxiliary, or an informative warning message if out-of-bounds.
+pub fn check_fader_path_for_model(path: &str, model: MixerModel) -> Result<(), String> {
+    let (max_ch, max_bus, max_dca, max_mtx, max_aux, max_fxrtn) = match model {
+        MixerModel::Wing => (40, 28, 16, 16, 16, 16),
+        MixerModel::X32 => (32, 16, 8, 6, 8, 8),
+        MixerModel::XR18 => (16, 6, 4, 0, 2, 4),
+        MixerModel::XR16 => (16, 4, 4, 0, 2, 4),
+        MixerModel::XR12 => (12, 2, 4, 0, 2, 4),
+    };
+
+    if let Some(stripped) = path.strip_prefix("/ch/") {
+        if let Some((idx_str, rest)) = stripped.split_once('/') {
+            if rest == "mix/fader" || rest == "fdr" {
+                if let Ok(idx) = idx_str.parse::<u32>() {
+                    if idx < 1 || idx > max_ch {
+                        return Err(format!(
+                            "Channel {} out of bounds for {:?} (max: {})",
+                            idx, model, max_ch
+                        ));
+                    }
+                }
+            }
+        }
+    } else if let Some(stripped) = path.strip_prefix("/bus/") {
+        if let Some((idx_str, rest)) = stripped.split_once('/') {
+            if rest == "mix/fader" || rest == "fdr" {
+                if let Ok(idx) = idx_str.parse::<u32>() {
+                    if idx < 1 || idx > max_bus {
+                        return Err(format!(
+                            "Bus {} out of bounds for {:?} (max: {})",
+                            idx, model, max_bus
+                        ));
+                    }
+                }
+            }
+        }
+    } else if let Some(stripped) = path.strip_prefix("/dca/") {
+        if let Some((idx_str, rest)) = stripped.split_once('/') {
+            if rest == "fader" || rest == "fdr" {
+                if let Ok(idx) = idx_str.parse::<u32>() {
+                    if idx < 1 || idx > max_dca {
+                        return Err(format!(
+                            "DCA {} out of bounds for {:?} (max: {})",
+                            idx, model, max_dca
+                        ));
+                    }
+                }
+            }
+        }
+    } else if let Some(stripped) = path.strip_prefix("/mtx/") {
+        if let Some((idx_str, rest)) = stripped.split_once('/') {
+            if rest == "mix/fader" || rest == "fdr" {
+                if let Ok(idx) = idx_str.parse::<u32>() {
+                    if max_mtx == 0 || idx < 1 || idx > max_mtx {
+                        return Err(format!(
+                            "Matrix {} out of bounds for {:?} (max: {})",
+                            idx, model, max_mtx
+                        ));
+                    }
+                }
+            }
+        }
+    } else if let Some(stripped) = path.strip_prefix("/auxin/") {
+        if let Some((idx_str, rest)) = stripped.split_once('/') {
+            if rest == "mix/fader" || rest == "fdr" {
+                if let Ok(idx) = idx_str.parse::<u32>() {
+                    if idx < 1 || idx > max_aux {
+                        return Err(format!(
+                            "Auxin {} out of bounds for {:?} (max: {})",
+                            idx, model, max_aux
+                        ));
+                    }
+                }
+            }
+        }
+    } else if let Some(stripped) = path.strip_prefix("/fxrtn/") {
+        if let Some((idx_str, rest)) = stripped.split_once('/') {
+            if rest == "mix/fader" || rest == "fdr" {
+                if let Ok(idx) = idx_str.parse::<u32>() {
+                    if idx < 1 || idx > max_fxrtn {
+                        return Err(format!(
+                            "FX Return {} out of bounds for {:?} (max: {})",
+                            idx, model, max_fxrtn
+                        ));
+                    }
+                }
+            }
+        }
+    }
+
+    Ok(())
+}
 
 /// A command-line tool to control and fade X32 faders.
 #[derive(Parser, Debug)]
@@ -24,6 +124,10 @@ use x32_lib::{MixerClient, get_parameter_async};
 pub struct Args {
     #[arg(short, long)]
     pub ip: Option<String>,
+
+    /// Digital mixer model family (X32, Wing, XR18, XR16, XR12)
+    #[arg(short = 'M', long, value_enum, default_value = "X32")]
+    pub model: MixerModel,
 
     #[arg(long, default_value = "auto")]
     pub transport: String,
@@ -138,10 +242,20 @@ pub async fn run(args: Args) -> Result<()> {
         return Ok(());
     }
 
+    // Validate fader paths against mixer model
+    for fader in &config.faders {
+        if let Err(warning) = check_fader_path_for_model(fader, args.model) {
+            if args.verbose {
+                eprintln!("Warning: {}", warning);
+            }
+        }
+    }
+
     // Ensure we have an IP address before proceeding.
     if let Some(ip) = &config.ip {
+        let target_ip = resolve_target_address(ip, args.model);
         let (client, _) = MixerClient::connect_with_transport(
-            ip,
+            &target_ip,
             &args.aes50_ip,
             &args.usb_port,
             &args.transport,
@@ -150,7 +264,7 @@ pub async fn run(args: Args) -> Result<()> {
         .await?;
         let client = std::sync::Arc::new(client);
         if args.verbose {
-            println!("Connected to X32 at {}", ip);
+            println!("Connected to {:?} at {}", args.model, target_ip);
         }
 
         let steps = config.steps.unwrap_or(32);
@@ -340,6 +454,100 @@ mod tests {
 
         // Ensure it cancelled early
         assert!(duration < Duration::from_secs(4));
+    }
+
+    #[test]
+    fn test_resolve_target_address() {
+        assert_eq!(
+            resolve_target_address("192.168.1.10", MixerModel::X32),
+            "192.168.1.10:10023"
+        );
+        assert_eq!(
+            resolve_target_address("192.168.1.10", MixerModel::Wing),
+            "192.168.1.10:2222"
+        );
+        assert_eq!(
+            resolve_target_address("192.168.1.10", MixerModel::XR18),
+            "192.168.1.10:10024"
+        );
+        assert_eq!(
+            resolve_target_address("192.168.1.10", MixerModel::XR16),
+            "192.168.1.10:10024"
+        );
+        assert_eq!(
+            resolve_target_address("192.168.1.10", MixerModel::XR12),
+            "192.168.1.10:10024"
+        );
+        // Custom port override preserved
+        assert_eq!(
+            resolve_target_address("192.168.1.10:9999", MixerModel::X32),
+            "192.168.1.10:9999"
+        );
+    }
+
+    #[test]
+    fn test_check_fader_path_for_model() {
+        // Main and generic paths
+        assert!(check_fader_path_for_model("/main/st/mix/fader", MixerModel::X32).is_ok());
+        assert!(check_fader_path_for_model("/main/m/mix/fader", MixerModel::Wing).is_ok());
+        assert!(check_fader_path_for_model("/lr/mix/fader", MixerModel::XR18).is_ok());
+
+        // Channels (X32 & Wing syntax)
+        assert!(check_fader_path_for_model("/ch/32/mix/fader", MixerModel::X32).is_ok());
+        assert!(check_fader_path_for_model("/ch/33/mix/fader", MixerModel::X32).is_err());
+        assert!(check_fader_path_for_model("/ch/40/mix/fader", MixerModel::Wing).is_ok());
+        assert!(check_fader_path_for_model("/ch/40/fdr", MixerModel::Wing).is_ok());
+        assert!(check_fader_path_for_model("/ch/41/mix/fader", MixerModel::Wing).is_err());
+        assert!(check_fader_path_for_model("/ch/16/mix/fader", MixerModel::XR18).is_ok());
+        assert!(check_fader_path_for_model("/ch/17/mix/fader", MixerModel::XR18).is_err());
+        assert!(check_fader_path_for_model("/ch/12/mix/fader", MixerModel::XR12).is_ok());
+        assert!(check_fader_path_for_model("/ch/13/mix/fader", MixerModel::XR12).is_err());
+        assert!(check_fader_path_for_model("/ch/0/mix/fader", MixerModel::X32).is_err());
+
+        // Buses
+        assert!(check_fader_path_for_model("/bus/16/mix/fader", MixerModel::X32).is_ok());
+        assert!(check_fader_path_for_model("/bus/17/mix/fader", MixerModel::X32).is_err());
+        assert!(check_fader_path_for_model("/bus/28/mix/fader", MixerModel::Wing).is_ok());
+        assert!(check_fader_path_for_model("/bus/29/mix/fader", MixerModel::Wing).is_err());
+        assert!(check_fader_path_for_model("/bus/6/mix/fader", MixerModel::XR18).is_ok());
+        assert!(check_fader_path_for_model("/bus/7/mix/fader", MixerModel::XR18).is_err());
+        assert!(check_fader_path_for_model("/bus/4/mix/fader", MixerModel::XR16).is_ok());
+        assert!(check_fader_path_for_model("/bus/5/mix/fader", MixerModel::XR16).is_err());
+        assert!(check_fader_path_for_model("/bus/2/mix/fader", MixerModel::XR12).is_ok());
+        assert!(check_fader_path_for_model("/bus/3/mix/fader", MixerModel::XR12).is_err());
+
+        // DCAs
+        assert!(check_fader_path_for_model("/dca/8/fader", MixerModel::X32).is_ok());
+        assert!(check_fader_path_for_model("/dca/9/fader", MixerModel::X32).is_err());
+        assert!(check_fader_path_for_model("/dca/16/fader", MixerModel::Wing).is_ok());
+        assert!(check_fader_path_for_model("/dca/17/fader", MixerModel::Wing).is_err());
+        assert!(check_fader_path_for_model("/dca/4/fader", MixerModel::XR18).is_ok());
+        assert!(check_fader_path_for_model("/dca/5/fader", MixerModel::XR18).is_err());
+
+        // Matrices
+        assert!(check_fader_path_for_model("/mtx/6/mix/fader", MixerModel::X32).is_ok());
+        assert!(check_fader_path_for_model("/mtx/7/mix/fader", MixerModel::X32).is_err());
+        assert!(check_fader_path_for_model("/mtx/16/mix/fader", MixerModel::Wing).is_ok());
+        assert!(check_fader_path_for_model("/mtx/17/mix/fader", MixerModel::Wing).is_err());
+        assert!(check_fader_path_for_model("/mtx/1/mix/fader", MixerModel::XR18).is_err());
+
+        // Auxin & FX Return
+        assert!(check_fader_path_for_model("/auxin/08/mix/fader", MixerModel::X32).is_ok());
+        assert!(check_fader_path_for_model("/auxin/09/mix/fader", MixerModel::X32).is_err());
+        assert!(check_fader_path_for_model("/fxrtn/08/mix/fader", MixerModel::X32).is_ok());
+        assert!(check_fader_path_for_model("/fxrtn/09/mix/fader", MixerModel::X32).is_err());
+    }
+
+    #[test]
+    fn test_args_parsing_with_model() {
+        let args_default = Args::parse_from(["x32_fade", "--ip", "127.0.0.1"]);
+        assert_eq!(args_default.model, MixerModel::X32);
+
+        let args_wing = Args::parse_from(["x32_fade", "--ip", "127.0.0.1", "-M", "Wing"]);
+        assert_eq!(args_wing.model, MixerModel::Wing);
+
+        let args_xr18 = Args::parse_from(["x32_fade", "--ip", "127.0.0.1", "--model", "xr18"]);
+        assert_eq!(args_xr18.model, MixerModel::XR18);
     }
 }
 
