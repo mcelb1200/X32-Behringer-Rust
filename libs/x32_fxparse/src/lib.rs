@@ -14,6 +14,26 @@ pub enum MixerModel {
     XR12,
 }
 
+impl MixerModel {
+    /// Resolves the default OSC port for this mixer model (10023 for X32, 2222 for Wing, 10024 for XR series).
+    pub fn default_port(&self) -> u16 {
+        match self {
+            MixerModel::X32 => 10023,
+            MixerModel::Wing => 2222,
+            MixerModel::XR18 | MixerModel::XR16 | MixerModel::XR12 => 10024,
+        }
+    }
+
+    /// Resolves target address by appending default model port if port is omitted.
+    pub fn resolve_target_address(&self, ip: &str) -> String {
+        if ip.contains(':') {
+            ip.to_string()
+        } else {
+            format!("{}:{}", ip, self.default_port())
+        }
+    }
+}
+
 impl FromStr for MixerModel {
     type Err = String;
 
@@ -522,6 +542,25 @@ mod tests {
         assert_eq!(MixerModel::XR18.to_string(), "XR18");
         assert_eq!(MixerModel::XR16.to_string(), "XR16");
         assert_eq!(MixerModel::XR12.to_string(), "XR12");
+
+        assert_eq!(MixerModel::X32.default_port(), 10023);
+        assert_eq!(MixerModel::Wing.default_port(), 2222);
+        assert_eq!(MixerModel::XR18.default_port(), 10024);
+        assert_eq!(MixerModel::XR16.default_port(), 10024);
+        assert_eq!(MixerModel::XR12.default_port(), 10024);
+
+        assert_eq!(
+            MixerModel::X32.resolve_target_address("192.168.1.50"),
+            "192.168.1.50:10023"
+        );
+        assert_eq!(
+            MixerModel::Wing.resolve_target_address("192.168.1.50"),
+            "192.168.1.50:2222"
+        );
+        assert_eq!(
+            MixerModel::X32.resolve_target_address("192.168.1.50:9000"),
+            "192.168.1.50:9000"
+        );
     }
 
     #[test]
