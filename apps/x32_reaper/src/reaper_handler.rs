@@ -18,7 +18,7 @@ pub async fn handle_reaper_message(
         let mut idx = 16; // Skip #bundle\0 and 64-bit timetag
         while idx < len {
             // Read element size (4 bytes big endian)
-            if idx + 4 > len {
+            if 4 > len.saturating_sub(idx) {
                 break;
             }
             let size_val = i32::from_be_bytes([buf[idx], buf[idx + 1], buf[idx + 2], buf[idx + 3]]);
