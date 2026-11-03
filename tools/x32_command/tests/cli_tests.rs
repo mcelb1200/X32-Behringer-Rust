@@ -170,7 +170,12 @@ fn test_x32_command_xr18_filters_out_of_bounds_paths() {
         }
 
         // Only ch 01 and bus 02 should have passed validation
-        assert_eq!(received.len(), 2, "Expected 2 valid messages, received: {:?}", received);
+        assert_eq!(
+            received.len(),
+            2,
+            "Expected 2 valid messages, received: {:?}",
+            received
+        );
         assert_eq!(received[0], "/ch/01/mix/fader");
         assert_eq!(received[1], "/bus/02/mix/fader");
     });
@@ -219,7 +224,12 @@ fn test_x32_command_interactive_stdin_filtering() {
         }
 
         // For XR12: max channels is 12. So ch 12 is valid, ch 15 is dropped.
-        assert_eq!(received.len(), 1, "Expected 1 valid message, received: {:?}", received);
+        assert_eq!(
+            received.len(),
+            1,
+            "Expected 1 valid message, received: {:?}",
+            received
+        );
         assert_eq!(received[0], "/ch/12/mix/fader");
     });
 

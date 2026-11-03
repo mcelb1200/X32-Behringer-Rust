@@ -249,25 +249,40 @@ mod tests {
     fn test_args_default_model() {
         let args = Args::try_parse_from(["x32_command", "-i", "192.168.1.10"]).unwrap();
         assert_eq!(args.model, MixerModel::X32);
-        assert_eq!(args.model.resolve_target_address(&args.ip), "192.168.1.10:10023");
+        assert_eq!(
+            args.model.resolve_target_address(&args.ip),
+            "192.168.1.10:10023"
+        );
     }
 
     #[test]
     fn test_args_wing_model() {
-        let args = Args::try_parse_from(["x32_command", "-i", "192.168.1.10", "-M", "Wing"]).unwrap();
+        let args =
+            Args::try_parse_from(["x32_command", "-i", "192.168.1.10", "-M", "Wing"]).unwrap();
         assert_eq!(args.model, MixerModel::Wing);
-        assert_eq!(args.model.resolve_target_address(&args.ip), "192.168.1.10:2222");
+        assert_eq!(
+            args.model.resolve_target_address(&args.ip),
+            "192.168.1.10:2222"
+        );
     }
 
     #[test]
     fn test_args_xr_models() {
-        let args_xr18 = Args::try_parse_from(["x32_command", "-i", "10.0.0.5", "--model", "XR18"]).unwrap();
+        let args_xr18 =
+            Args::try_parse_from(["x32_command", "-i", "10.0.0.5", "--model", "XR18"]).unwrap();
         assert_eq!(args_xr18.model, MixerModel::XR18);
-        assert_eq!(args_xr18.model.resolve_target_address(&args_xr18.ip), "10.0.0.5:10024");
+        assert_eq!(
+            args_xr18.model.resolve_target_address(&args_xr18.ip),
+            "10.0.0.5:10024"
+        );
 
-        let args_xr12 = Args::try_parse_from(["x32_command", "-i", "10.0.0.5:9999", "-M", "XR12"]).unwrap();
+        let args_xr12 =
+            Args::try_parse_from(["x32_command", "-i", "10.0.0.5:9999", "-M", "XR12"]).unwrap();
         assert_eq!(args_xr12.model, MixerModel::XR12);
         // Explicit port is preserved
-        assert_eq!(args_xr12.model.resolve_target_address(&args_xr12.ip), "10.0.0.5:9999");
+        assert_eq!(
+            args_xr12.model.resolve_target_address(&args_xr12.ip),
+            "10.0.0.5:9999"
+        );
     }
 }
