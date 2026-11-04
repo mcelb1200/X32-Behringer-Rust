@@ -2852,8 +2852,10 @@ name = "x32_sync"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "assert_cmd",
  "clap",
  "osc_lib",
+ "predicates",
  "tokio",
  "x32_lib",
 ]
