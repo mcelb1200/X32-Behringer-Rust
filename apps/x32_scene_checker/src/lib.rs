@@ -211,101 +211,122 @@ fn get_model_limits(model: MixerModel) -> ModelLimits {
 
 fn check_model_bounds(model: MixerModel, path: &str) -> Option<String> {
     let limits = get_model_limits(model);
-    let parts: Vec<&str> = path.trim_start_matches('/').split('/').collect();
-    if parts.is_empty() {
-        return None;
-    }
+    let mut parts_iter = path.trim_start_matches('/').split('/');
+    let part0 = match parts_iter.next() {
+        Some(p) if !p.is_empty() => p,
+        _ => return None,
+    };
+    let part1 = parts_iter.next();
 
-    match parts[0] {
-        "ch" if parts.len() >= 2 => {
-            if let Ok(idx) = parts[1].parse::<usize>() {
-                if idx == 0 || idx > limits.channels {
-                    return Some(format!(
-                        "Channel index {} is out of bounds for model {} (max {})",
-                        idx, model, limits.channels
-                    ));
+    match part0 {
+        "ch" => {
+            if let Some(p1) = part1 {
+                if let Ok(idx) = p1.parse::<usize>() {
+                    if idx == 0 || idx > limits.channels {
+                        return Some(format!(
+                            "Channel index {} is out of bounds for model {} (max {})",
+                            idx, model, limits.channels
+                        ));
+                    }
                 }
             }
         }
-        "bus" if parts.len() >= 2 => {
-            if let Ok(idx) = parts[1].parse::<usize>() {
-                if idx == 0 || idx > limits.buses {
-                    return Some(format!(
-                        "Bus index {} is out of bounds for model {} (max {})",
-                        idx, model, limits.buses
-                    ));
+        "bus" => {
+            if let Some(p1) = part1 {
+                if let Ok(idx) = p1.parse::<usize>() {
+                    if idx == 0 || idx > limits.buses {
+                        return Some(format!(
+                            "Bus index {} is out of bounds for model {} (max {})",
+                            idx, model, limits.buses
+                        ));
+                    }
                 }
             }
         }
-        "auxin" if parts.len() >= 2 => {
-            if let Ok(idx) = parts[1].parse::<usize>() {
-                if idx == 0 || idx > limits.auxins {
-                    return Some(format!(
-                        "Auxin index {} is out of bounds for model {} (max {})",
-                        idx, model, limits.auxins
-                    ));
+        "auxin" => {
+            if let Some(p1) = part1 {
+                if let Ok(idx) = p1.parse::<usize>() {
+                    if idx == 0 || idx > limits.auxins {
+                        return Some(format!(
+                            "Auxin index {} is out of bounds for model {} (max {})",
+                            idx, model, limits.auxins
+                        ));
+                    }
                 }
             }
         }
-        "fxrtn" if parts.len() >= 2 => {
-            if let Ok(idx) = parts[1].parse::<usize>() {
-                if idx == 0 || idx > limits.fxrtns {
-                    return Some(format!(
-                        "FX return index {} is out of bounds for model {} (max {})",
-                        idx, model, limits.fxrtns
-                    ));
+        "fxrtn" => {
+            if let Some(p1) = part1 {
+                if let Ok(idx) = p1.parse::<usize>() {
+                    if idx == 0 || idx > limits.fxrtns {
+                        return Some(format!(
+                            "FX return index {} is out of bounds for model {} (max {})",
+                            idx, model, limits.fxrtns
+                        ));
+                    }
                 }
             }
         }
-        "mtx" if parts.len() >= 2 => {
-            if limits.matrices == 0 {
-                return Some(format!("Matrix outputs are unsupported on model {}", model));
-            }
-            if let Ok(idx) = parts[1].parse::<usize>() {
-                if idx == 0 || idx > limits.matrices {
-                    return Some(format!(
-                        "Matrix index {} is out of bounds for model {} (max {})",
-                        idx, model, limits.matrices
-                    ));
+        "mtx" => {
+            if let Some(p1) = part1 {
+                if limits.matrices == 0 {
+                    return Some(format!("Matrix outputs are unsupported on model {}", model));
+                }
+                if let Ok(idx) = p1.parse::<usize>() {
+                    if idx == 0 || idx > limits.matrices {
+                        return Some(format!(
+                            "Matrix index {} is out of bounds for model {} (max {})",
+                            idx, model, limits.matrices
+                        ));
+                    }
                 }
             }
         }
-        "dca" if parts.len() >= 2 => {
-            if let Ok(idx) = parts[1].parse::<usize>() {
-                if idx == 0 || idx > limits.dcas {
-                    return Some(format!(
-                        "DCA index {} is out of bounds for model {} (max {})",
-                        idx, model, limits.dcas
-                    ));
+        "dca" => {
+            if let Some(p1) = part1 {
+                if let Ok(idx) = p1.parse::<usize>() {
+                    if idx == 0 || idx > limits.dcas {
+                        return Some(format!(
+                            "DCA index {} is out of bounds for model {} (max {})",
+                            idx, model, limits.dcas
+                        ));
+                    }
                 }
             }
         }
-        "fx" if parts.len() >= 2 => {
-            if let Ok(idx) = parts[1].parse::<usize>() {
-                if idx == 0 || idx > limits.fx_slots {
-                    return Some(format!(
-                        "FX slot index {} is out of bounds for model {} (max {})",
-                        idx, model, limits.fx_slots
-                    ));
+        "fx" => {
+            if let Some(p1) = part1 {
+                if let Ok(idx) = p1.parse::<usize>() {
+                    if idx == 0 || idx > limits.fx_slots {
+                        return Some(format!(
+                            "FX slot index {} is out of bounds for model {} (max {})",
+                            idx, model, limits.fx_slots
+                        ));
+                    }
                 }
             }
         }
-        "main" if parts.len() >= 2 && parts[1] == "m" => {
-            if matches!(
-                model,
-                MixerModel::XR18 | MixerModel::XR16 | MixerModel::XR12
-            ) {
-                return Some(format!("Mono main bus is unsupported on model {}", model));
+        "main" => {
+            if let Some(p1) = part1 {
+                if p1 == "m"
+                    && matches!(
+                        model,
+                        MixerModel::XR18 | MixerModel::XR16 | MixerModel::XR12
+                    )
+                {
+                    return Some(format!("Mono main bus is unsupported on model {}", model));
+                }
             }
         }
         _ => {}
     }
 
-    // Check EQ band limits if /eq/ is present in path
-    if let Some(eq_idx) = parts.iter().position(|&p| p == "eq") {
-        if eq_idx + 1 < parts.len() {
-            if let Ok(band) = parts[eq_idx + 1].parse::<usize>() {
-                let max_bands = match parts[0] {
+    let mut parts_iter = path.trim_start_matches('/').split('/');
+    if let Some(eq_idx) = parts_iter.clone().position(|p| p == "eq") {
+        let eq_band_str = parts_iter.nth(eq_idx + 1);
+        if let Some(band_str) = eq_band_str {
+            if let Ok(band) = band_str.parse::<usize>() {
+                let max_bands = match part0 {
                     "ch" => limits.channel_eq_bands,
                     "auxin" => limits.auxin_eq_bands,
                     "fxrtn" => limits.fxrtn_eq_bands,
@@ -317,7 +338,7 @@ fn check_model_bounds(model: MixerModel, path: &str) -> Option<String> {
                 if band == 0 || band > max_bands {
                     return Some(format!(
                         "EQ band {} exceeds max bands ({}) for {} on model {}",
-                        band, max_bands, parts[0], model
+                        band, max_bands, part0, model
                     ));
                 }
             }

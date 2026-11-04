@@ -78,43 +78,56 @@ pub fn validate_path_for_model(model: MixerModel, path: &str) -> bool {
         MixerModel::XR12 => (12, 2, 2, 0, 4, 4),
     };
 
-    let parts: Vec<&str> = path.trim_start_matches('/').split('/').collect();
-    if parts.is_empty() {
-        return true;
-    }
+    let mut parts = path.trim_start_matches('/').split('/');
+    let part0 = match parts.next() {
+        Some(p) if !p.is_empty() => p,
+        _ => return true,
+    };
 
-    match parts[0] {
-        "ch" if parts.len() >= 2 => {
-            if let Ok(idx) = parts[1].parse::<usize>() {
-                return idx >= 1 && idx <= max_ch;
+    match part0 {
+        "ch" => {
+            if let Some(part1) = parts.next() {
+                if let Ok(idx) = part1.parse::<usize>() {
+                    return idx >= 1 && idx <= max_ch;
+                }
             }
         }
-        "bus" if parts.len() >= 2 => {
-            if let Ok(idx) = parts[1].parse::<usize>() {
-                return idx >= 1 && idx <= max_bus;
+        "bus" => {
+            if let Some(part1) = parts.next() {
+                if let Ok(idx) = part1.parse::<usize>() {
+                    return idx >= 1 && idx <= max_bus;
+                }
             }
         }
-        "auxin" if parts.len() >= 2 => {
-            if let Ok(idx) = parts[1].parse::<usize>() {
-                return idx >= 1 && idx <= max_aux;
+        "auxin" => {
+            if let Some(part1) = parts.next() {
+                if let Ok(idx) = part1.parse::<usize>() {
+                    return idx >= 1 && idx <= max_aux;
+                }
             }
         }
-        "mtx" if parts.len() >= 2 => {
+        "mtx" => {
             if max_mtx == 0 {
                 return false;
             }
-            if let Ok(idx) = parts[1].parse::<usize>() {
-                return idx >= 1 && idx <= max_mtx;
+            if let Some(part1) = parts.next() {
+                if let Ok(idx) = part1.parse::<usize>() {
+                    return idx >= 1 && idx <= max_mtx;
+                }
             }
         }
-        "dca" if parts.len() >= 2 => {
-            if let Ok(idx) = parts[1].parse::<usize>() {
-                return idx >= 1 && idx <= max_dca;
+        "dca" => {
+            if let Some(part1) = parts.next() {
+                if let Ok(idx) = part1.parse::<usize>() {
+                    return idx >= 1 && idx <= max_dca;
+                }
             }
         }
-        "fx" if parts.len() >= 2 => {
-            if let Ok(idx) = parts[1].parse::<usize>() {
-                return idx >= 1 && idx <= max_fx;
+        "fx" => {
+            if let Some(part1) = parts.next() {
+                if let Ok(idx) = part1.parse::<usize>() {
+                    return idx >= 1 && idx <= max_fx;
+                }
             }
         }
         _ => {}
