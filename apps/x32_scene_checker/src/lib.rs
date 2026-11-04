@@ -308,10 +308,12 @@ fn check_model_bounds(model: MixerModel, path: &str) -> Option<String> {
         }
         "main" => {
             if let Some(p1) = part1 {
-                if p1 == "m" && matches!(
+                if p1 == "m"
+                    && matches!(
                         model,
                         MixerModel::XR18 | MixerModel::XR16 | MixerModel::XR12
-                    ) {
+                    )
+                {
                     return Some(format!("Mono main bus is unsupported on model {}", model));
                 }
             }
