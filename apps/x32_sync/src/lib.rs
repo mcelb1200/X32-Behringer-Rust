@@ -127,7 +127,10 @@ pub async fn run(args: Args) -> Result<()> {
 
     let state = SharedState::new(args.prefix.clone());
 
-    println!("Starting sync between {} ({}) and {} ({})", ip_a, model_a, ip_b, model_b);
+    println!(
+        "Starting sync between {} ({}) and {} ({})",
+        ip_a, model_a, ip_b, model_b
+    );
 
     loop {
         let client_a = match MixerClient::connect(&ip_a, true).await {
@@ -222,14 +225,8 @@ mod tests {
 
     #[test]
     fn test_args_default_models() {
-        let args = Args::try_parse_from([
-            "x32_sync",
-            "-a",
-            "192.168.1.10",
-            "-b",
-            "192.168.1.20",
-        ])
-        .unwrap();
+        let args =
+            Args::try_parse_from(["x32_sync", "-a", "192.168.1.10", "-b", "192.168.1.20"]).unwrap();
 
         assert_eq!(args.model_a, MixerModel::X32);
         assert_eq!(args.model_b, None);

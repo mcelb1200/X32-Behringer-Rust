@@ -1,9 +1,9 @@
 use assert_cmd::Command;
+use osc_lib::{OscArg, OscMessage};
 use predicates::prelude::*;
 use std::net::UdpSocket;
 use std::thread;
 use std::time::Duration;
-use osc_lib::{OscArg, OscMessage};
 
 #[test]
 fn test_sync_cli_help() {
