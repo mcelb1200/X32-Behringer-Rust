@@ -199,11 +199,15 @@ impl MixerClient {
         let _ = self.heartbeat_tx.send(false);
     }
 
-    /// Sends an OSC message to the mixer.
-    pub async fn send_message(&self, path: &str, args: Vec<OscArg>) -> Result<()> {
-        let msg = OscMessage::new(path.to_string(), args);
+    /// Sends an OSC message to the mixer, taking ownership of the message.
+    pub async fn send(&self, msg: OscMessage) -> Result<()> {
         self.transport.send(msg).await?;
         Ok(())
+    }
+
+    /// Sends an OSC message to the mixer.
+    pub async fn send_message(&self, path: &str, args: Vec<OscArg>) -> Result<()> {
+        self.send(OscMessage::new(path.to_string(), args)).await
     }
 
     /// Queries a value from the mixer.
