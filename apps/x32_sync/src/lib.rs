@@ -4,9 +4,9 @@ use osc_lib::OscArg;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use x32_lib::MixerClient;
+use x32_lib::{MixerClient, MixerModel};
 
-#[derive(Parser, Debug)]
+#[derive(Parser, Debug, Clone)]
 #[command(author, version, about = "Bidirectional synchronization tool for two X32/M32 consoles", long_about = None)]
 pub struct Args {
     /// IP address of Console A
@@ -17,9 +17,32 @@ pub struct Args {
     #[arg(short = 'b', long)]
     pub ip_b: String,
 
+    /// Mixer model of Console A: X32, Wing, XR18, XR16, XR12
+    #[arg(
+        short = 'M',
+        long = "model",
+        default_value = "X32",
+        help = "Mixer model of Console A: X32, Wing, XR18, XR16, XR12"
+    )]
+    pub model_a: MixerModel,
+
+    /// Mixer model of Console B: X32, Wing, XR18, XR16, XR12 (defaults to Console A's model)
+    #[arg(
+        long = "model-b",
+        help = "Mixer model of Console B: X32, Wing, XR18, XR16, XR12 (defaults to Console A's model)"
+    )]
+    pub model_b: Option<MixerModel>,
+
     /// Optional prefix filters to synchronize. If empty, syncs all messages.
     #[arg(short, long)]
     pub prefix: Vec<String>,
+}
+
+impl Args {
+    /// Returns the effective mixer model for Console B.
+    pub fn console_b_model(&self) -> MixerModel {
+        self.model_b.unwrap_or(self.model_a)
+    }
 }
 
 #[derive(Clone)]
@@ -65,6 +88,7 @@ use tokio::sync::broadcast::error::RecvError;
 async fn run_proxy(
     local_client: Arc<MixerClient>,
     target_client: Arc<MixerClient>,
+    target_model: MixerModel,
     state: SharedState,
 ) {
     let mut rx = local_client.subscribe();
@@ -75,9 +99,13 @@ async fn run_proxy(
                     continue;
                 }
 
+                if !target_model.is_path_valid(&msg.path) {
+                    continue;
+                }
+
                 if state.update_and_check(&msg.path, &msg.args).await {
-                    // Forward the exact message with all arguments
-                    let _ = target_client.send_message(&msg.path, msg.args).await;
+                    // Forward the exact message with all arguments without extra allocations
+                    let _ = target_client.send(msg).await;
                 }
             }
             Err(RecvError::Lagged(_)) => {
@@ -91,21 +119,18 @@ async fn run_proxy(
 }
 
 pub async fn run(args: Args) -> Result<()> {
-    // Add default port 10023 if not specified
-    let ip_a = if args.ip_a.contains(':') {
-        args.ip_a.clone()
-    } else {
-        format!("{}:10023", args.ip_a)
-    };
-    let ip_b = if args.ip_b.contains(':') {
-        args.ip_b.clone()
-    } else {
-        format!("{}:10023", args.ip_b)
-    };
+    let model_a = args.model_a;
+    let model_b = args.console_b_model();
+
+    let ip_a = model_a.resolve_target_address(&args.ip_a);
+    let ip_b = model_b.resolve_target_address(&args.ip_b);
 
     let state = SharedState::new(args.prefix.clone());
 
-    println!("Starting sync between {} and {}", ip_a, ip_b);
+    println!(
+        "Starting sync between {} ({}) and {} ({})",
+        ip_a, model_a, ip_b, model_b
+    );
 
     loop {
         let client_a = match MixerClient::connect(&ip_a, true).await {
@@ -133,7 +158,7 @@ pub async fn run(args: Args) -> Result<()> {
         let client_a_clone = client_a.clone();
         let client_b_clone = client_b.clone();
         let handle_a = tokio::spawn(async move {
-            run_proxy(client_a_clone, client_b_clone, state_a).await;
+            run_proxy(client_a_clone, client_b_clone, model_b, state_a).await;
         });
 
         // Spawn proxy B -> A
@@ -141,7 +166,7 @@ pub async fn run(args: Args) -> Result<()> {
         let client_a_clone = client_a.clone();
         let client_b_clone = client_b.clone();
         let handle_b = tokio::spawn(async move {
-            run_proxy(client_b_clone, client_a_clone, state_b).await;
+            run_proxy(client_b_clone, client_a_clone, model_a, state_b).await;
         });
 
         // Wait for both proxies (they loop indefinitely).
@@ -196,5 +221,78 @@ mod tests {
         let state_all = SharedState::new(vec![]);
         assert_eq!(state_all.should_sync("/ch/01/mix/fader"), true);
         assert_eq!(state_all.should_sync("/bus/01/mix/fader"), true);
+    }
+
+    #[test]
+    fn test_args_default_models() {
+        let args =
+            Args::try_parse_from(["x32_sync", "-a", "192.168.1.10", "-b", "192.168.1.20"]).unwrap();
+
+        assert_eq!(args.model_a, MixerModel::X32);
+        assert_eq!(args.model_b, None);
+        assert_eq!(args.console_b_model(), MixerModel::X32);
+
+        assert_eq!(
+            args.model_a.resolve_target_address(&args.ip_a),
+            "192.168.1.10:10023"
+        );
+        assert_eq!(
+            args.console_b_model().resolve_target_address(&args.ip_b),
+            "192.168.1.20:10023"
+        );
+    }
+
+    #[test]
+    fn test_args_custom_and_heterogeneous_models() {
+        let args = Args::try_parse_from([
+            "x32_sync",
+            "-a",
+            "192.168.1.10",
+            "-b",
+            "192.168.1.20",
+            "-M",
+            "Wing",
+            "--model-b",
+            "XR18",
+        ])
+        .unwrap();
+
+        assert_eq!(args.model_a, MixerModel::Wing);
+        assert_eq!(args.model_b, Some(MixerModel::XR18));
+        assert_eq!(args.console_b_model(), MixerModel::XR18);
+
+        assert_eq!(
+            args.model_a.resolve_target_address(&args.ip_a),
+            "192.168.1.10:2222"
+        );
+        assert_eq!(
+            args.console_b_model().resolve_target_address(&args.ip_b),
+            "192.168.1.20:10024"
+        );
+    }
+
+    #[test]
+    fn test_args_explicit_ports_preserved() {
+        let args = Args::try_parse_from([
+            "x32_sync",
+            "-a",
+            "192.168.1.10:9000",
+            "-b",
+            "192.168.1.20:9001",
+            "-M",
+            "XR12",
+        ])
+        .unwrap();
+
+        assert_eq!(args.model_a, MixerModel::XR12);
+        assert_eq!(args.console_b_model(), MixerModel::XR12);
+        assert_eq!(
+            args.model_a.resolve_target_address(&args.ip_a),
+            "192.168.1.10:9000"
+        );
+        assert_eq!(
+            args.console_b_model().resolve_target_address(&args.ip_b),
+            "192.168.1.20:9001"
+        );
     }
 }
