@@ -2454,6 +2454,7 @@ name = "x32_core"
 version = "0.1.0"
 dependencies = [
  "osc_lib",
+ "x32_fxparse",
 ]
 
 [[package]]
@@ -2549,6 +2550,7 @@ name = "x32_emulator"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "assert_cmd",
  "clap",
  "osc_lib",
  "x32_core",
