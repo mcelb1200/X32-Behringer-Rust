@@ -13,13 +13,17 @@ use clap::Parser;
 use osc_lib::OscArg;
 use std::time::Duration;
 use tokio::time::{self, Instant};
-use x32_lib::{MixerClient, error::X32Error};
+use x32_lib::{MixerClient, MixerModel, error::X32Error};
 
 /// A command line utility to get scene names when a scene change takes place.
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 pub struct Args {
-    /// X32 console IP address
+    /// Digital mixer model: X32, Wing, XR18, XR16, XR12
+    #[arg(short = 'M', long, default_value = "X32")]
+    pub model: MixerModel,
+
+    /// Console IP address
     #[arg(short, long, default_value = "192.168.1.62")]
     pub ip: String,
 
@@ -42,13 +46,15 @@ pub struct Args {
 }
 
 pub async fn run(args: Args) -> Result<(), X32Error> {
+    let target_ip = args.model.resolve_target_address(&args.ip);
+
     if args.verbose != 0 {
         println!("GetSceneName - v0.2 - (c)2018 Patrick-Gilles Maillot");
-        println!("Connecting to X32 at {}...", &args.ip);
+        println!("Connecting to {} at {}...", args.model, &target_ip);
     }
 
     let (client, _transport_used) = MixerClient::connect_with_transport(
-        &args.ip,
+        &target_ip,
         &args.aes50_ip,
         &args.usb_port,
         &args.transport,
@@ -86,7 +92,7 @@ pub async fn run(args: Args) -> Result<(), X32Error> {
     }
 
     if !connected && args.verbose != 0 {
-        println!("Timeout connecting to X32");
+        println!("Timeout connecting to {}", args.model);
     }
 
     // Subscribe to all incoming OSC messages
@@ -131,4 +137,65 @@ pub async fn run(args: Args) -> Result<(), X32Error> {
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_args_default_model() {
+        let args = Args::parse_from(&["x32_get_scene_name", "--ip", "192.168.1.10"]);
+        assert_eq!(args.model, MixerModel::X32);
+        assert_eq!(
+            args.model.resolve_target_address(&args.ip),
+            "192.168.1.10:10023"
+        );
+    }
+
+    #[test]
+    fn test_args_model_parsing() {
+        let models = [
+            ("X32", MixerModel::X32, "10023"),
+            ("Wing", MixerModel::Wing, "2222"),
+            ("XR18", MixerModel::XR18, "10024"),
+            ("XR16", MixerModel::XR16, "10024"),
+            ("XR12", MixerModel::XR12, "10024"),
+        ];
+
+        for (model_str, expected_model, expected_port) in models {
+            let args_short =
+                Args::parse_from(&["x32_get_scene_name", "-M", model_str, "--ip", "10.0.0.1"]);
+            assert_eq!(args_short.model, expected_model);
+            assert_eq!(
+                args_short.model.resolve_target_address(&args_short.ip),
+                format!("10.0.0.1:{}", expected_port)
+            );
+
+            let args_long = Args::parse_from(&[
+                "x32_get_scene_name",
+                "--model",
+                model_str,
+                "--ip",
+                "10.0.0.1",
+            ]);
+            assert_eq!(args_long.model, expected_model);
+        }
+    }
+
+    #[test]
+    fn test_target_address_with_explicit_port() {
+        let args = Args::parse_from(&[
+            "x32_get_scene_name",
+            "-M",
+            "Wing",
+            "--ip",
+            "192.168.1.55:9999",
+        ]);
+        assert_eq!(args.model, MixerModel::Wing);
+        assert_eq!(
+            args.model.resolve_target_address(&args.ip),
+            "192.168.1.55:9999"
+        );
+    }
 }
