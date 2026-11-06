@@ -61,3 +61,53 @@ fn test_get_scene_name_command() {
     let stdout = String::from_utf8(output.stdout).unwrap();
     assert!(stdout.contains("05 - My Scene"));
 }
+
+#[test]
+fn test_get_scene_name_with_model_args() {
+    let addr = setup_mock_x32_server();
+
+    let bin = escargot::CargoBuild::new()
+        .bin("x32_get_scene_name")
+        .run()
+        .unwrap();
+
+    // Test with Wing model flag and explicit mock port
+    let mut cmd_wing = bin.command();
+    cmd_wing.args(&[
+        "-M",
+        "Wing",
+        "--ip",
+        &addr.to_string(),
+        "-o",
+        "1",
+        "--transport",
+        "osc",
+        "-v",
+        "1",
+    ]);
+    let output_wing = cmd_wing.output().unwrap();
+    assert!(output_wing.status.success());
+    let stdout_wing = String::from_utf8(output_wing.stdout).unwrap();
+    assert!(stdout_wing.contains("Connecting to Wing"));
+    assert!(stdout_wing.contains("05 - My Scene"));
+
+    // Test with XR18 model flag
+    let mut cmd_xr18 = bin.command();
+    cmd_xr18.args(&[
+        "--model",
+        "XR18",
+        "--ip",
+        &addr.to_string(),
+        "-o",
+        "1",
+        "--transport",
+        "osc",
+        "-v",
+        "1",
+    ]);
+    let output_xr18 = cmd_xr18.output().unwrap();
+    assert!(output_xr18.status.success());
+    let stdout_xr18 = String::from_utf8(output_xr18.stdout).unwrap();
+    assert!(stdout_xr18.contains("Connecting to XR18"));
+    assert!(stdout_xr18.contains("05 - My Scene"));
+}
