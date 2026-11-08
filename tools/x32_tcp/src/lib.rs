@@ -10,10 +10,10 @@
 use anyhow::Result;
 use clap::Parser;
 use osc_lib::OscMessage;
-use std::io::{BufRead, BufReader, Read, Write};
-use std::net::{TcpListener, TcpStream};
 use std::str::FromStr;
 use std::sync::Arc;
+use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
+use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::Semaphore;
 use x32_lib::MixerClient;
 
@@ -63,26 +63,20 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
         println!("Arguments: {:?}", args);
     }
 
-    let listener = TcpListener::bind(format!("{}:{}", args.bind_ip, args.port))?;
+    let listener = TcpListener::bind(format!("{}:{}", args.bind_ip, args.port)).await?;
     let connection_limit = Arc::new(Semaphore::new(args.backlog as usize));
 
-    for stream in listener.incoming() {
-        match stream {
-            Ok(stream) => {
+    loop {
+        match listener.accept().await {
+            Ok((stream, addr)) => {
                 // Sentinel: Always log new incoming connections for security auditing
-                let peer_addr = stream
-                    .peer_addr()
-                    .map(|addr| addr.to_string())
-                    .unwrap_or_else(|_| "unknown".to_string());
+                let peer_addr = addr.to_string();
                 println!("[AUDIT] New client connected: {}", peer_addr);
 
                 let permit = match connection_limit.clone().try_acquire_owned() {
                     Ok(p) => p,
                     Err(_) => {
-                        eprintln!(
-                            "[AUDIT WARNING] Connection limit reached. Dropping connection from {}",
-                            peer_addr
-                        );
+                        eprintln!("[AUDIT WARNING] Connection limit reached. Dropping connection from {}", peer_addr);
                         continue;
                     }
                 };
@@ -103,8 +97,6 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
             }
         }
     }
-
-    Ok(())
 }
 
 /// Handles a single TCP client connection.
@@ -119,11 +111,18 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
 async fn handle_client(mut stream: TcpStream, args: Args) -> Result<()> {
     let x32_socket = MixerClient::connect(&args.ip, true).await?;
 
-    let mut reader = BufReader::new(stream.try_clone()?);
+    let peer_addr = stream
+        .peer_addr()
+        .map(|addr| addr.to_string())
+        .unwrap_or_else(|_| "unknown".to_string());
+
+    let (read_half, mut write_half) = stream.split();
+    let mut reader = BufReader::new(read_half);
 
     loop {
         let mut byte_buf = Vec::new();
-        match reader.by_ref().take(4096).read_until(b'\n', &mut byte_buf) {
+        let mut limit_reader = (&mut reader).take(4096);
+        match limit_reader.read_until(b'\n', &mut byte_buf).await {
             Ok(0) => break,  // Connection closed
             Err(_) => break, // Connection error
             Ok(len) => {
@@ -131,7 +130,7 @@ async fn handle_client(mut stream: TcpStream, args: Args) -> Result<()> {
                     let error_msg =
                         "Error: Input line too long (exceeds 4096 bytes). Connection closed.\n";
                     eprintln!("{}", error_msg.trim());
-                    stream.write_all(error_msg.as_bytes())?;
+                    write_half.write_all(error_msg.as_bytes()).await?;
                     break;
                 }
             }
@@ -141,7 +140,7 @@ async fn handle_client(mut stream: TcpStream, args: Args) -> Result<()> {
             Ok(s) => s,
             Err(_) => {
                 let error_msg = "Error: Invalid UTF-8 sequence.\n";
-                stream.write_all(error_msg.as_bytes())?;
+                write_half.write_all(error_msg.as_bytes()).await?;
                 continue;
             }
         };
@@ -185,37 +184,27 @@ async fn handle_client(mut stream: TcpStream, args: Args) -> Result<()> {
                         if args.verbose {
                             println!("Sending to client: {}", response_str);
                         }
-                        stream.write_all(response_str.as_bytes())?;
-                        stream.write_all(
-                            b"
-",
-                        )?;
+                        write_half.write_all(response_str.as_bytes()).await?;
+                        write_half.write_all(b"\n").await?;
                     }
                     Err(e) => {
                         if args.verbose {
                             println!("No response or error from X32: {}", e);
                         }
-                        stream.write_all(
-                            b"no data
-",
-                        )?;
+                        write_half.write_all(b"no data\n").await?;
                     }
                 }
             }
             Err(e) => {
                 let error_msg = format!("Error parsing OSC message: {}", e);
                 eprintln!("{}", error_msg);
-                stream.write_all(error_msg.as_bytes())?;
-                stream.write_all(b"\n")?;
+                write_half.write_all(error_msg.as_bytes()).await?;
+                write_half.write_all(b"\n").await?;
             }
         }
     }
 
     // Sentinel: Always log client disconnects for security auditing
-    let peer_addr = stream
-        .peer_addr()
-        .map(|addr| addr.to_string())
-        .unwrap_or_else(|_| "unknown".to_string());
     println!("[AUDIT] Client disconnected: {}", peer_addr);
 
     if args.verbose {
