@@ -354,20 +354,15 @@ mod tests {
                 format!("10.0.0.1:{}", expected_port)
             );
 
-            let args_long = Args::parse_from(&["x32_tap", "--model", model_str, "--ip", "10.0.0.1"]);
+            let args_long =
+                Args::parse_from(&["x32_tap", "--model", model_str, "--ip", "10.0.0.1"]);
             assert_eq!(args_long.model, expected_model);
         }
     }
 
     #[test]
     fn test_target_address_with_explicit_port() {
-        let args = Args::parse_from(&[
-            "x32_tap",
-            "-M",
-            "Wing",
-            "--ip",
-            "192.168.1.55:9999",
-        ]);
+        let args = Args::parse_from(&["x32_tap", "-M", "Wing", "--ip", "192.168.1.55:9999"]);
         assert_eq!(args.model, MixerModel::Wing);
         assert_eq!(
             args.model.resolve_target_address(&args.ip),

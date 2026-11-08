@@ -17,7 +17,9 @@ fn test_invalid_slot() {
         .arg("9")
         .assert()
         .failure()
-        .stderr(predicate::str::contains("FX slot must be between 1 and 8 for model X32"));
+        .stderr(predicate::str::contains(
+            "FX slot must be between 1 and 8 for model X32",
+        ));
 }
 
 #[test]
@@ -29,7 +31,9 @@ fn test_invalid_slot_for_xr18() {
         .arg("5")
         .assert()
         .failure()
-        .stderr(predicate::str::contains("FX slot must be between 1 and 4 for model XR18"));
+        .stderr(predicate::str::contains(
+            "FX slot must be between 1 and 4 for model XR18",
+        ));
 }
 
 #[test]
@@ -41,5 +45,7 @@ fn test_invalid_channel_for_xr12() {
         .arg("13")
         .assert()
         .failure()
-        .stderr(predicate::str::contains("Channel must be between 1 and 12 for model XR12"));
+        .stderr(predicate::str::contains(
+            "Channel must be between 1 and 12 for model XR12",
+        ));
 }
