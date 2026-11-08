@@ -13,6 +13,8 @@ use osc_lib::OscMessage;
 use std::io::{BufRead, BufReader, Read, Write};
 use std::net::{TcpListener, TcpStream};
 use std::str::FromStr;
+use std::sync::Arc;
+use tokio::sync::Semaphore;
 use x32_lib::MixerClient;
 
 /// A TCP to UDP bridge for the Behringer X32 digital mixer.
@@ -62,6 +64,7 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
     }
 
     let listener = TcpListener::bind(format!("{}:{}", args.bind_ip, args.port))?;
+    let connection_limit = Arc::new(Semaphore::new(args.backlog as usize));
 
     for stream in listener.incoming() {
         match stream {
@@ -73,11 +76,20 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
                     .unwrap_or_else(|_| "unknown".to_string());
                 println!("[AUDIT] New client connected: {}", peer_addr);
 
+                let permit = match connection_limit.clone().try_acquire_owned() {
+                    Ok(p) => p,
+                    Err(_) => {
+                        eprintln!("[AUDIT WARNING] Connection limit reached. Dropping connection from {}", peer_addr);
+                        continue;
+                    }
+                };
+
                 if args.verbose {
                     println!("Verbose: handling connection from {}", peer_addr);
                 }
                 let args_clone = args.clone();
                 tokio::spawn(async move {
+                    let _permit = permit; // Hold permit until connection closes
                     if let Err(e) = handle_client(stream, args_clone).await {
                         eprintln!("[AUDIT ERROR] Error handling client: {}", e);
                     }
