@@ -544,9 +544,12 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
     let mut parser = SceneParser::with_model(args.model);
     let mut scene_map: HashMap<String, OscArg> = HashMap::new();
     for line in scn_content.lines() {
-        for msg in parser.parse_scene_line(line) {
-            if let Some(arg) = msg.args.first() {
-                scene_map.insert(msg.path.clone(), arg.clone());
+        // ⚡ Bolt: Consume `msg` properties directly instead of `.clone()` on path and args
+        // to avoid per-line dynamic string and object heap allocations during scene map build.
+        for mut msg in parser.parse_scene_line(line) {
+            if !msg.args.is_empty() {
+                let arg = msg.args.swap_remove(0);
+                scene_map.insert(msg.path, arg);
             }
         }
     }
