@@ -79,7 +79,10 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
                 let permit = match connection_limit.clone().try_acquire_owned() {
                     Ok(p) => p,
                     Err(_) => {
-                        eprintln!("[AUDIT WARNING] Connection limit reached. Dropping connection from {}", peer_addr);
+                        eprintln!(
+                            "[AUDIT WARNING] Connection limit reached. Dropping connection from {}",
+                            peer_addr
+                        );
                         continue;
                     }
                 };
