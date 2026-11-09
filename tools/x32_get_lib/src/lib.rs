@@ -126,7 +126,15 @@ pub async fn run(args: Args) -> Result<()> {
 
             if let Ok(Ok(resp)) = timeout(Duration::from_millis(50), rx.recv()).await {
                 if let Some(OscArg::Int(1)) = resp.args.first() {
-                    process_lib_slot(&client, t.clone(), i, &args.output_dir, args.verbose, args.model).await?;
+                    process_lib_slot(
+                        &client,
+                        t.clone(),
+                        i,
+                        &args.output_dir,
+                        args.verbose,
+                        args.model,
+                    )
+                    .await?;
                 }
             }
         }
