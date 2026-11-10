@@ -10,13 +10,17 @@ use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
 use tokio::time::{Duration, timeout};
-use x32_lib::{MixerClient, error::X32Error};
+use x32_lib::{MixerClient, MixerModel, error::X32Error};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 pub struct Args {
     #[arg(short, long, default_value = "192.168.0.64")]
     pub ip: String,
+
+    /// Mixer model: X32, Wing, XR18, XR16, XR12
+    #[arg(short = 'm', long, default_value = "X32")]
+    pub model: MixerModel,
 
     #[arg(long, default_value = "auto")]
     pub transport: String,
@@ -64,9 +68,38 @@ impl LibType {
     }
 }
 
+pub fn get_channel_preset_params(model: MixerModel) -> Vec<String> {
+    let mut p = vec![
+        "ch/01/config".to_string(),
+        "ch/01/delay".to_string(),
+        "ch/01/preamp".to_string(),
+        "ch/01/gate".to_string(),
+        "ch/01/gate/filter".to_string(),
+        "ch/01/dyn".to_string(),
+        "ch/01/dyn/filter".to_string(),
+        "ch/01/eq".to_string(),
+    ];
+    let eq_bands = match model {
+        MixerModel::Wing => 8,
+        _ => 4,
+    };
+    p.extend((1..=eq_bands).map(|i| format!("ch/01/eq/{}", i)));
+    p.push("ch/01/mix".to_string());
+    let buses = match model {
+        MixerModel::Wing => 28,
+        MixerModel::X32 => 16,
+        MixerModel::XR18 => 6,
+        MixerModel::XR16 => 4,
+        MixerModel::XR12 => 2,
+    };
+    p.extend((1..=buses).map(|i| format!("ch/01/mix/{:02}", i)));
+    p
+}
+
 pub async fn run(args: Args) -> Result<()> {
+    let target_ip = args.model.resolve_target_address(&args.ip);
     let (client, _) = MixerClient::connect_with_transport(
-        &args.ip,
+        &target_ip,
         &args.aes50_ip,
         &args.usb_port,
         &args.transport,
@@ -75,7 +108,7 @@ pub async fn run(args: Args) -> Result<()> {
     .await?;
     let client = std::sync::Arc::new(client);
 
-    println!("Connected to X32 at {}", args.ip);
+    println!("Connected to {} at {}", args.model, target_ip);
 
     let types = match args.type_ {
         LibType::All => vec![LibType::Channel, LibType::Effects, LibType::Routing],
@@ -93,7 +126,15 @@ pub async fn run(args: Args) -> Result<()> {
 
             if let Ok(Ok(resp)) = timeout(Duration::from_millis(50), rx.recv()).await {
                 if let Some(OscArg::Int(1)) = resp.args.first() {
-                    process_lib_slot(&client, t.clone(), i, &args.output_dir, args.verbose).await?;
+                    process_lib_slot(
+                        &client,
+                        t.clone(),
+                        i,
+                        &args.output_dir,
+                        args.verbose,
+                        args.model,
+                    )
+                    .await?;
                 }
             }
         }
@@ -108,6 +149,7 @@ async fn process_lib_slot(
     id: i32,
     out_dir: &Path,
     _verbose: bool,
+    model: MixerModel,
 ) -> Result<()> {
     let type_str = t.as_str();
 
@@ -171,22 +213,7 @@ async fn process_lib_slot(
     writeln!(file, "#2.1# \"{}\" {}", name, flags)?;
 
     let params: Vec<String> = match t {
-        LibType::Channel => {
-            let mut p = vec![
-                "ch/01/config".to_string(),
-                "ch/01/delay".to_string(),
-                "ch/01/preamp".to_string(),
-                "ch/01/gate".to_string(),
-                "ch/01/gate/filter".to_string(),
-                "ch/01/dyn".to_string(),
-                "ch/01/dyn/filter".to_string(),
-                "ch/01/eq".to_string(),
-            ];
-            p.extend((1..=4).map(|i| format!("ch/01/eq/{}", i)));
-            p.push("ch/01/mix".to_string());
-            p.extend((1..=16).map(|i| format!("ch/01/mix/{:02}", i)));
-            p
-        }
+        LibType::Channel => get_channel_preset_params(model),
         LibType::Effects => vec![
             "fx/1/type".to_string(),
             "fx/1/source".to_string(),
@@ -283,4 +310,71 @@ async fn process_lib_slot(
 
     file.flush()?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_args_parsing_with_model() {
+        let args = Args::try_parse_from(&[
+            "x32_get_lib",
+            "-i",
+            "192.168.1.50",
+            "-m",
+            "Wing",
+            "-t",
+            "channel",
+        ])
+        .unwrap();
+
+        assert_eq!(args.ip, "192.168.1.50");
+        assert_eq!(args.model, MixerModel::Wing);
+        assert_eq!(args.type_, LibType::Channel);
+    }
+
+    #[test]
+    fn test_channel_preset_params_for_models() {
+        let x32_params = get_channel_preset_params(MixerModel::X32);
+        assert!(x32_params.contains(&"ch/01/eq/4".to_string()));
+        assert!(!x32_params.contains(&"ch/01/eq/5".to_string()));
+        assert!(x32_params.contains(&"ch/01/mix/16".to_string()));
+        assert!(!x32_params.contains(&"ch/01/mix/17".to_string()));
+
+        let wing_params = get_channel_preset_params(MixerModel::Wing);
+        assert!(wing_params.contains(&"ch/01/eq/8".to_string()));
+        assert!(!wing_params.contains(&"ch/01/eq/9".to_string()));
+        assert!(wing_params.contains(&"ch/01/mix/28".to_string()));
+        assert!(!wing_params.contains(&"ch/01/mix/29".to_string()));
+
+        let xr18_params = get_channel_preset_params(MixerModel::XR18);
+        assert!(xr18_params.contains(&"ch/01/eq/4".to_string()));
+        assert!(xr18_params.contains(&"ch/01/mix/06".to_string()));
+        assert!(!xr18_params.contains(&"ch/01/mix/07".to_string()));
+
+        let xr12_params = get_channel_preset_params(MixerModel::XR12);
+        assert!(xr12_params.contains(&"ch/01/mix/02".to_string()));
+        assert!(!xr12_params.contains(&"ch/01/mix/03".to_string()));
+    }
+
+    #[test]
+    fn test_target_address_resolution() {
+        assert_eq!(
+            MixerModel::X32.resolve_target_address("192.168.1.10"),
+            "192.168.1.10:10023"
+        );
+        assert_eq!(
+            MixerModel::Wing.resolve_target_address("192.168.1.10"),
+            "192.168.1.10:2222"
+        );
+        assert_eq!(
+            MixerModel::XR18.resolve_target_address("192.168.1.10"),
+            "192.168.1.10:10024"
+        );
+        assert_eq!(
+            MixerModel::X32.resolve_target_address("192.168.1.10:9999"),
+            "192.168.1.10:9999"
+        );
+    }
 }
