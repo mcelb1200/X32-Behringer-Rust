@@ -632,7 +632,8 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
     if let Some(ref backup_path) = args.backup {
         let mut backup_content = String::new();
         for (path, val) in &current_map {
-            backup_content.push_str(&format!("{} {}\n", path, format_arg(val)));
+            use std::fmt::Write as FmtWrite;
+            let _ = writeln!(backup_content, "{} {}", path, format_arg(val));
         }
         std::fs::write(backup_path, backup_content)?;
         println!("Pre-load mixer state saved to backup file: {}", backup_path);

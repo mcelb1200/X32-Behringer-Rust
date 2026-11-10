@@ -205,3 +205,7 @@ When initializing terminal UI state that might fail and return a `Result` (e.g.,
 ## 2023-10-31 - [Avoid Vector Allocation from split().collect() in Parsing Paths]
 **Learning:** Calling `s.split('/').collect::<Vec<&str>>()` forces a dynamic heap allocation for the `Vec` containing string slices, even when only one or two segments of the string are needed for parsing logic. Inside processing boundaries (e.g. `is_path_valid_for_model` functions which evaluate thousands of OSC paths), this introduces unnecessary overhead and memory fragmentation.
 **Action:** Replace `split('/').collect::<Vec<&str>>()` with direct use of the `split('/')` iterator (e.g., `let mut parts = path.split('/'); let part0 = parts.next();`) to eliminate dynamic memory allocation when parsing paths in validation functions.
+
+## 2024-05-18 - [Replace String::push_str with std::fmt::Write in loops]
+**Learning:** Using `push_str(&format!(...))` inside loops allocates intermediate strings and can cause significant overhead due to memory fragmentation and frequent allocations.
+**Action:** Replace `push_str(&format!(...))` with the `write!` or `writeln!` macros from `std::fmt::Write`. This writes formatted data directly to the existing buffer, saving multiple heap allocations per iteration.
