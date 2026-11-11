@@ -284,15 +284,15 @@ async fn run_tui_loop(
         if last_ui_update.elapsed() > Duration::from_millis(30) {
             // Update alerts based on actual metered level and fader limit thresholds
             state.alerts.clear();
-            state.alert_messages.clear();
+            state.active_alerts.clear();
 
             for (i, ch) in state.channels.iter().enumerate() {
                 if !ch.muted && ch.level_db > -5.0 && !ch.is_dca {
                     state.alerts.push(i);
-                    state.alert_messages.push(format!(
-                        "• 🔴 {} signal near clipping ({:.1} dBFS)",
-                        ch.name, ch.level_db
-                    ));
+                    state.active_alerts.push(crate::state::Alert::Clipping {
+                        channel_idx: i,
+                        level_db: ch.level_db,
+                    });
                 }
 
                 if let Some(limit) = state.max_fader_limit_db {
@@ -301,10 +301,11 @@ async fn run_tui_loop(
                         if !state.alerts.contains(&i) {
                             state.alerts.push(i);
                         }
-                        state.alert_messages.push(format!(
-                            "• 🟡 {} fader {:.1} dB exceeds limit ({:.1} dB)",
-                            ch.name, fader_db, limit
-                        ));
+                        state.active_alerts.push(crate::state::Alert::FaderLimit {
+                            channel_idx: i,
+                            fader_db,
+                            limit,
+                        });
                     }
                 }
             }

@@ -1,0 +1,24 @@
+--- ui.rs
++++ ui.rs
+@@ -101,17 +101,17 @@
+         for (i, alert) in state.active_alerts.iter().enumerate() {
+             self.alert_bufs[i].clear();
+             match alert {
+-                crate::state::Alert::Clipping { name, level_db } => {
+-                    write!(self.alert_bufs[i], "• 🔴 {} signal near clipping ({:.1} dBFS)", name, level_db).expect("Write alert buffer failed");
++                crate::state::Alert::Clipping { channel_idx, level_db } => {
++                    write!(self.alert_bufs[i], "• 🔴 {} signal near clipping ({:.1} dBFS)", state.channels[*channel_idx].name, level_db).expect("Write alert buffer failed");
+                 }
+                 crate::state::Alert::FaderLimit {
+-                    name,
++                    channel_idx,
+                     fader_db,
+                     limit,
+                 } => {
+                     write!(
+                         self.alert_bufs[i],
+                         "• 🟡 {} fader {:.1} dB exceeds limit ({:.1} dB)",
+-                        name, fader_db, limit
++                        state.channels[*channel_idx].name, fader_db, limit
+                     )
+                     .expect("Write alert buffer failed");
