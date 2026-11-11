@@ -1,6 +1,6 @@
 pub mod app;
 
-use anyhow::Result;
+use anyhow::{Result, anyhow};
 use app::{AppState, InputMode};
 use clap::Parser;
 use crossterm::{
@@ -24,14 +24,75 @@ use std::{
 };
 use tokio::net::UdpSocket;
 use tokio::sync::mpsc;
+use x32_lib::MixerModel;
+
+/// Returns the maximum number of FX slots supported by the mixer model.
+pub fn max_fx_slots_for_model(model: MixerModel) -> u8 {
+    match model {
+        MixerModel::X32 => 8,
+        MixerModel::Wing => 16,
+        MixerModel::XR18 | MixerModel::XR16 | MixerModel::XR12 => 4,
+    }
+}
+
+/// Returns the maximum number of input channels supported by the mixer model.
+pub fn max_channels_for_model(model: MixerModel) -> u8 {
+    match model {
+        MixerModel::Wing => 40,
+        MixerModel::X32 => 32,
+        MixerModel::XR18 | MixerModel::XR16 => 16,
+        MixerModel::XR12 => 12,
+    }
+}
 
 /// A Rust implementation of the X32Tap utility with a Text User Interface.
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
-pub struct Args {}
+pub struct Args {
+    /// Digital mixer model (X32, Wing, XR18, XR16, XR12)
+    #[arg(short = 'M', long, default_value = "X32")]
+    pub model: MixerModel,
 
-pub async fn run(_args: Args) -> Result<()> {
-    let _args = Args::parse();
+    /// The IP address of the mixer.
+    #[arg(short, long, default_value = "192.168.0.64")]
+    pub ip: String,
+
+    /// The FX slot number containing the delay effect.
+    #[arg(short, long, default_value_t = 1)]
+    pub slot: u8,
+
+    /// Enable auto-tap mode by monitoring a channel's meter level.
+    #[arg(short, long)]
+    pub auto: bool,
+
+    /// In auto mode, the channel number to monitor.
+    #[arg(short, long, default_value_t = 1)]
+    pub channel: u8,
+
+    /// In auto mode, the gate meter threshold level (e.g. 0.5) to trigger a tap.
+    #[arg(short = 't', long, default_value_t = 0.5)]
+    pub threshold: f32,
+}
+
+pub async fn run(args: Args) -> Result<()> {
+    let max_slots = max_fx_slots_for_model(args.model);
+    if args.slot < 1 || args.slot > max_slots {
+        return Err(anyhow!(
+            "FX slot must be between 1 and {} for model {}.",
+            max_slots,
+            args.model
+        ));
+    }
+
+    let max_ch = max_channels_for_model(args.model);
+    if args.channel < 1 || args.channel > max_ch {
+        return Err(anyhow!(
+            "Channel must be between 1 and {} for model {}.",
+            max_ch,
+            args.model
+        ));
+    }
+
     // Setup terminal
     enable_raw_mode()?;
     let mut stdout = io::stdout();
@@ -40,7 +101,14 @@ pub async fn run(_args: Args) -> Result<()> {
     let mut terminal = Terminal::new(backend)?;
 
     // Create app state
-    let app = Arc::new(Mutex::new(AppState::new()));
+    let app = Arc::new(Mutex::new(AppState::with_options(
+        args.model,
+        &args.ip,
+        args.slot,
+        args.channel,
+        args.threshold,
+        args.auto,
+    )));
 
     // Channel for sending OSC messages to the network task
     let (tx, rx) = mpsc::channel::<OscMessage>(100);
@@ -80,20 +148,20 @@ async fn run_network(app: Arc<Mutex<AppState>>, mut rx: mpsc::Receiver<OscMessag
     loop {
         // ⚡ Bolt: Avoid unconditionally cloning `state.ip_input` (a String) on every 50ms iteration.
         // We only clone it if it has definitively changed compared to `current_ip`.
-        let (new_ip, is_auto, channel) = {
+        let (new_ip, model, is_auto, channel) = {
             let state = app.lock().unwrap_or_else(|e| e.into_inner());
             let new_ip = if state.ip_input != current_ip {
                 Some(state.ip_input.clone())
             } else {
                 None
             };
-            (new_ip, state.is_auto, state.channel)
+            (new_ip, state.model, state.is_auto, state.channel)
         };
 
         if let Some(ip) = new_ip {
             current_ip = ip;
-            if let Ok(parsed_addr) = format!("{}:10023", current_ip).parse::<std::net::SocketAddr>()
-            {
+            let target_addr_str = model.resolve_target_address(&current_ip);
+            if let Ok(parsed_addr) = target_addr_str.parse::<std::net::SocketAddr>() {
                 addr = Some(parsed_addr);
                 // Connect check
                 if let Some(a) = addr {
@@ -451,4 +519,71 @@ fn ui(f: &mut Frame, app: &AppState, cache: &mut LayoutCache) {
     let log_p = Paragraph::new(app.display_logs_text.as_str())
         .block(Block::default().borders(Borders::ALL).title("Logs"));
     f.render_widget(log_p, chunks[2]);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_max_fx_slots_for_model() {
+        assert_eq!(max_fx_slots_for_model(MixerModel::X32), 8);
+        assert_eq!(max_fx_slots_for_model(MixerModel::Wing), 16);
+        assert_eq!(max_fx_slots_for_model(MixerModel::XR18), 4);
+        assert_eq!(max_fx_slots_for_model(MixerModel::XR16), 4);
+        assert_eq!(max_fx_slots_for_model(MixerModel::XR12), 4);
+    }
+
+    #[test]
+    fn test_max_channels_for_model() {
+        assert_eq!(max_channels_for_model(MixerModel::Wing), 40);
+        assert_eq!(max_channels_for_model(MixerModel::X32), 32);
+        assert_eq!(max_channels_for_model(MixerModel::XR18), 16);
+        assert_eq!(max_channels_for_model(MixerModel::XR16), 16);
+        assert_eq!(max_channels_for_model(MixerModel::XR12), 12);
+    }
+
+    #[test]
+    fn test_args_default_model() {
+        let args = Args::parse_from(&["x32_tapw", "--ip", "192.168.1.10"]);
+        assert_eq!(args.model, MixerModel::X32);
+        assert_eq!(
+            args.model.resolve_target_address(&args.ip),
+            "192.168.1.10:10023"
+        );
+    }
+
+    #[test]
+    fn test_args_model_parsing() {
+        let models = [
+            ("X32", MixerModel::X32, "10023"),
+            ("Wing", MixerModel::Wing, "2222"),
+            ("XR18", MixerModel::XR18, "10024"),
+            ("XR16", MixerModel::XR16, "10024"),
+            ("XR12", MixerModel::XR12, "10024"),
+        ];
+
+        for (model_str, expected_model, expected_port) in models {
+            let args_short = Args::parse_from(&["x32_tapw", "-M", model_str, "--ip", "10.0.0.1"]);
+            assert_eq!(args_short.model, expected_model);
+            assert_eq!(
+                args_short.model.resolve_target_address(&args_short.ip),
+                format!("10.0.0.1:{}", expected_port)
+            );
+
+            let args_long =
+                Args::parse_from(&["x32_tapw", "--model", model_str, "--ip", "10.0.0.1"]);
+            assert_eq!(args_long.model, expected_model);
+        }
+    }
+
+    #[test]
+    fn test_target_address_with_explicit_port() {
+        let args = Args::parse_from(&["x32_tapw", "-M", "Wing", "--ip", "192.168.1.55:9999"]);
+        assert_eq!(args.model, MixerModel::Wing);
+        assert_eq!(
+            args.model.resolve_target_address(&args.ip),
+            "192.168.1.55:9999"
+        );
+    }
 }
