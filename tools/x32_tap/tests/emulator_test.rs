@@ -10,6 +10,8 @@ async fn test_auto_mode_mock_server() {
 
     let mut cmd = Command::new(env!("CARGO_BIN_EXE_x32_tap"));
     cmd.args(&[
+        "-M",
+        "Wing",
         "--ip",
         &format!("127.0.0.1:{}", port),
         "--slot",
