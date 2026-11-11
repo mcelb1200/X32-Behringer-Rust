@@ -11,7 +11,7 @@ use state::AppState;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use ui::{Tui, UIEvent};
-use x32_lib::transport::{udp::UdpTransport, MixerTransport};
+use x32_lib::transport::{MixerTransport, udp::UdpTransport};
 use x32_lib::{MixerClient, MixerModel};
 
 #[derive(Parser, Debug, Clone)]
