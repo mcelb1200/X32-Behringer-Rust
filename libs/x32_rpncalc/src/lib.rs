@@ -177,6 +177,9 @@ impl RpnCalc {
                 '/' => {
                     let b = self.pop()?;
                     let a = self.pop()?;
+                    if b == 0.0 {
+                        return Err("Division by zero".to_string());
+                    }
                     self.push(a / b)?;
                 }
                 'e' => {
@@ -416,4 +419,13 @@ fn test_modulo_by_zero_does_not_panic() {
     let mut calc = RpnCalc::new();
     // 5 0 % -> shouldn't panic
     assert_eq!(calc.evaluate("5 0 %", None).unwrap().0, 0.0);
+}
+
+#[test]
+fn test_divide_by_zero_returns_error() {
+    let mut calc = RpnCalc::new();
+    // 1 0 / -> should return error
+    let result = calc.evaluate("1 0 /", None);
+    assert!(result.is_err());
+    assert_eq!(result.unwrap_err(), "Division by zero");
 }
