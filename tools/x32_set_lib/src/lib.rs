@@ -15,13 +15,17 @@ use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use tokio::time::{Duration, timeout};
-use x32_lib::MixerClient;
+use x32_lib::{MixerClient, MixerModel};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 pub struct Args {
     #[arg(short, long, default_value = "192.168.1.62")]
     pub ip: String,
+
+    /// Mixer model: X32, Wing, XR18, XR16, XR12
+    #[arg(short = 'm', long, default_value = "X32")]
+    pub model: MixerModel,
 
     #[arg(long, default_value = "auto")]
     pub transport: String,
@@ -43,8 +47,9 @@ pub struct Args {
 }
 
 pub async fn run(args: Args) -> Result<()> {
+    let target_ip = args.model.resolve_target_address(&args.ip);
     let (client, _) = MixerClient::connect_with_transport(
-        &args.ip,
+        &target_ip,
         &args.aes50_ip,
         &args.usb_port,
         &args.transport,
@@ -53,7 +58,7 @@ pub async fn run(args: Args) -> Result<()> {
     .await?;
     let client = std::sync::Arc::new(client);
 
-    println!("Connected to X32 at {}", args.ip);
+    println!("Connected to {} at {}", args.model, target_ip);
 
     let mut current_index = args.start_index;
 
@@ -269,4 +274,42 @@ async fn process_file(
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_args_parsing_with_model() {
+        let args = Args::try_parse_from(&[
+            "x32_set_lib",
+            "-i",
+            "192.168.1.50",
+            "-m",
+            "Wing",
+            "preset.chn",
+        ])
+        .unwrap();
+
+        assert_eq!(args.ip, "192.168.1.50");
+        assert_eq!(args.model, MixerModel::Wing);
+        assert_eq!(args.files, vec![PathBuf::from("preset.chn")]);
+    }
+
+    #[test]
+    fn test_target_address_resolution() {
+        assert_eq!(
+            MixerModel::X32.resolve_target_address("192.168.1.10"),
+            "192.168.1.10:10023"
+        );
+        assert_eq!(
+            MixerModel::Wing.resolve_target_address("192.168.1.10"),
+            "192.168.1.10:2222"
+        );
+        assert_eq!(
+            MixerModel::XR18.resolve_target_address("192.168.1.10"),
+            "192.168.1.10:10024"
+        );
+    }
 }
