@@ -1,11 +1,13 @@
 use ratatui::layout::Rect;
 use std::borrow::Cow;
 use std::time::Instant;
+use x32_lib::MixerModel;
 
 /// AppState holds the internal state of the x32_tapw TUI application.
 pub struct AppState {
     #[allow(dead_code)]
     pub ip: String,
+    pub model: MixerModel,
     pub slot: u8,
     pub channel: u8,
     pub threshold: f32,
@@ -19,7 +21,7 @@ pub struct AppState {
     pub should_quit: bool,
     pub delay_type: String,
 
-    // IP input editing state
+    // Input editing state
     pub ip_input: String,
     pub slot_input: String,
     pub ch_input: String,
@@ -52,12 +54,24 @@ impl Default for AppState {
 
 impl AppState {
     pub fn new() -> Self {
-        Self {
-            ip: "192.168.0.64".to_string(),
-            slot: 1,
-            channel: 1,
-            threshold: 0.5,
-            is_auto: false,
+        Self::with_options(MixerModel::X32, "192.168.0.64", 1, 1, 0.5, false)
+    }
+
+    pub fn with_options(
+        model: MixerModel,
+        ip: &str,
+        slot: u8,
+        channel: u8,
+        threshold: f32,
+        is_auto: bool,
+    ) -> Self {
+        let mut state = Self {
+            ip: ip.to_string(),
+            model,
+            slot,
+            channel,
+            threshold,
+            is_auto,
             last_tap: None,
             was_above_threshold: false,
             current_delay_ms: None,
@@ -67,25 +81,31 @@ impl AppState {
             should_quit: false,
             delay_type: "Check".to_string(),
 
-            ip_input: "192.168.0.64".to_string(),
-            slot_input: "1".to_string(),
-            ch_input: "1".to_string(),
-            sens_input: "0.5".to_string(),
+            ip_input: ip.to_string(),
+            slot_input: slot.to_string(),
+            ch_input: channel.to_string(),
+            sens_input: format!("{:.1}", threshold),
 
-            display_ip_text: "IP: 192.168.0.64".to_string(),
-            display_mode_text: "Mode: Manual\nCheck: Check".to_string(),
-            display_slot_text: "Delay Slot: 1".to_string(),
+            display_ip_text: String::with_capacity(64),
+            display_mode_text: String::with_capacity(64),
+            display_slot_text: String::with_capacity(64),
             display_logs_text: String::with_capacity(1024),
 
             cached_area: Rect::default(),
             cached_chunks: Vec::new(),
-        }
+        };
+        state.update_display_strings();
+        state
     }
 
     pub fn update_display_strings(&mut self) {
         self.display_ip_text.clear();
         use std::fmt::Write;
-        let _ = write!(self.display_ip_text, "IP: {}", self.ip_input);
+        let _ = write!(
+            self.display_ip_text,
+            "IP: {} ({})",
+            self.ip_input, self.model
+        );
 
         self.display_mode_text.clear();
         let _ = write!(
@@ -263,5 +283,17 @@ mod tests {
             app.process_meter_data(0.8, start + Duration::from_millis(1020)),
             None
         );
+    }
+
+    #[test]
+    fn test_with_options() {
+        let app = AppState::with_options(MixerModel::Wing, "10.0.0.1", 3, 5, 0.7, true);
+        assert_eq!(app.model, MixerModel::Wing);
+        assert_eq!(app.ip_input, "10.0.0.1");
+        assert_eq!(app.slot, 3);
+        assert_eq!(app.channel, 5);
+        assert_eq!(app.threshold, 0.7);
+        assert!(app.is_auto);
+        assert_eq!(app.display_ip_text, "IP: 10.0.0.1 (Wing)");
     }
 }
