@@ -17,6 +17,7 @@ use std::{io, time::Duration};
 pub struct AppState<'a> {
     pub current_phase: &'a str,
     pub current_step: &'a str,
+    pub mic_summary: &'a str,
     pub level: f32,
     pub status_message: &'a str,
 }
@@ -68,9 +69,10 @@ impl Tui {
                     .constraints(
                         [
                             Constraint::Length(3), // Title
-                            Constraint::Length(5), // Current Phase
+                            Constraint::Length(6), // Current Phase & Mic
                             Constraint::Length(3), // Level Gauge
-                            Constraint::Min(3),    // Status Message
+                            Constraint::Min(4),    // Status Message
+                            Constraint::Length(3), // Footer Hints
                         ]
                         .as_ref(),
                     )
@@ -80,7 +82,7 @@ impl Tui {
 
             let chunks = &self.cached_chunks;
 
-            let header = Paragraph::new("X32 System Tune - Oscillator-Assisted Tuning")
+            let header = Paragraph::new("X32 System Tune - Guided Room & Mic Calibration")
                 .style(
                     Style::default()
                         .fg(Color::Yellow)
@@ -88,7 +90,7 @@ impl Tui {
                 )
                 .block(Block::default().borders(Borders::ALL));
 
-            if chunks.len() >= 4 {
+            if chunks.len() >= 5 {
                 f.render_widget(header, chunks[0]);
 
                 let phase_text = vec![
@@ -101,10 +103,13 @@ impl Tui {
                                 .add_modifier(Modifier::BOLD),
                         ),
                     ]),
-                    Line::from(""),
                     Line::from(vec![
-                        Span::raw("Step: "),
+                        Span::raw("Step:  "),
                         Span::styled(state.current_step, Style::default().fg(Color::White)),
+                    ]),
+                    Line::from(vec![
+                        Span::raw("Mic:   "),
+                        Span::styled(state.mic_summary, Style::default().fg(Color::Green)),
                     ]),
                 ];
                 let phase_para =
@@ -115,7 +120,7 @@ impl Tui {
                     .block(
                         Block::default()
                             .borders(Borders::ALL)
-                            .title("Oscillator Level"),
+                            .title("Oscillator Level (EBU R128 Capped)"),
                     )
                     .gauge_style(Style::default().fg(Color::Green))
                     .ratio(state.level.clamp(0.0, 1.0) as f64);
@@ -127,6 +132,12 @@ impl Tui {
                         .title("Status / Action"),
                 );
                 f.render_widget(status, chunks[3]);
+
+                let footer = Paragraph::new(
+                    "  [↑/↓] Mic  [ [ / ] ] MaxCut  [Space] Sample  [y/n] Apply  [b/t] A/B  [u] Undo  [Enter] Next  [q] Quit",
+                )
+                .block(Block::default().borders(Borders::ALL));
+                f.render_widget(footer, chunks[4]);
             }
         })?;
         Ok(())
@@ -140,6 +151,14 @@ impl Tui {
                     KeyCode::Char('y') => return Ok(Some(UIEvent::Yes)),
                     KeyCode::Char('n') => return Ok(Some(UIEvent::No)),
                     KeyCode::Enter => return Ok(Some(UIEvent::Next)),
+                    KeyCode::Up | KeyCode::Char('k') => return Ok(Some(UIEvent::Up)),
+                    KeyCode::Down | KeyCode::Char('j') => return Ok(Some(UIEvent::Down)),
+                    KeyCode::Char(' ') => return Ok(Some(UIEvent::Sample)),
+                    KeyCode::Char('b') => return Ok(Some(UIEvent::Bypass)),
+                    KeyCode::Char('t') => return Ok(Some(UIEvent::Tuned)),
+                    KeyCode::Char('u') => return Ok(Some(UIEvent::Undo)),
+                    KeyCode::Char('[') => return Ok(Some(UIEvent::TightenGuardrail)),
+                    KeyCode::Char(']') => return Ok(Some(UIEvent::RelaxGuardrail)),
                     _ => {}
                 }
             }
@@ -153,4 +172,12 @@ pub enum UIEvent {
     Yes,
     No,
     Next,
+    Up,
+    Down,
+    Sample,
+    Bypass,
+    Tuned,
+    Undo,
+    TightenGuardrail,
+    RelaxGuardrail,
 }

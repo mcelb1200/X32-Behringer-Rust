@@ -66,6 +66,7 @@ pub mod error;
 pub mod main_bus;
 pub mod meters;
 pub mod model;
+pub mod room_tune;
 pub mod safety;
 pub mod scene_parse;
 pub mod streaming;

@@ -24,7 +24,7 @@ Model-aware one-shot macro that configures spoken-word channels (HPF, compressio
 Automated gain staging, monitor ringout notch filtering, live feedback detection, and music-under-speech ducking.
 
 ### `x32_dca_spill` / `x32_sync` / `x32_system_tune`
-DCA spill controller, bidirectional multi-console state sync, and system tuning TUI.
+DCA spill controller, bidirectional multi-console state sync, and guided system tuning TUI (`x32_system_tune --list-mics` / `--mic-profile m5` supports 16 common venue microphones including SM58, e835, AKG C747, Rode M5, Behringer C-2/C5, and uncalibrated ECM8000 with cut-only RTA calibration and `[b]`/`[t]`/`[u]` A/B undo). See [Guided Room Tuning Spec](specs/guided_room_tuning_any_mic.md).
 
 ---
 
