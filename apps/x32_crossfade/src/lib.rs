@@ -137,9 +137,10 @@ fn parse_scene_to_map(contents: &str, model: MixerModel) -> HashMap<String, OscA
     let mut parser = SceneParser::with_model(model);
     let mut map = HashMap::new();
     for line in contents.lines() {
-        for msg in parser.parse_scene_line(line) {
+        for mut msg in parser.parse_scene_line(line) {
+            // ⚡ Bolt: Consume msg.args and msg.path instead of cloning to prevent string allocations
             if !msg.args.is_empty() {
-                map.insert(msg.path.clone(), msg.args[0].clone());
+                map.insert(msg.path, msg.args.swap_remove(0));
             }
         }
     }
