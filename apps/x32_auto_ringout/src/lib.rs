@@ -72,14 +72,31 @@ pub fn get_bus_fader_path(model: MixerModel, bus: u8) -> String {
     }
 }
 
-/// Formats the bus EQ parameter path according to mixer model requirements.
-pub fn get_bus_eq_path(model: MixerModel, bus: u8, notch: usize, param: &str) -> String {
+/// Writes the bus EQ parameter path into `buf` according to mixer model requirements.
+pub fn write_bus_eq_path(
+    buf: &mut String,
+    model: MixerModel,
+    bus: u8,
+    notch: usize,
+    param: &str,
+) {
+    use std::fmt::Write;
+    buf.clear();
     match model {
-        MixerModel::X32 | MixerModel::Wing => format!("/bus/{:02}/eq/{}/{}", bus, notch, param),
+        MixerModel::X32 | MixerModel::Wing => {
+            let _ = write!(buf, "/bus/{:02}/eq/{}/{}", bus, notch, param);
+        }
         MixerModel::XR18 | MixerModel::XR16 | MixerModel::XR12 => {
-            format!("/bus/{}/eq/{}/{}", bus, notch, param)
+            let _ = write!(buf, "/bus/{}/eq/{}/{}", bus, notch, param);
         }
     }
+}
+
+/// Formats the bus EQ parameter path according to mixer model requirements.
+pub fn get_bus_eq_path(model: MixerModel, bus: u8, notch: usize, param: &str) -> String {
+    let mut buf = String::with_capacity(32);
+    write_bus_eq_path(&mut buf, model, bus, notch, param);
+    buf
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -149,7 +166,7 @@ impl AppState {
 
 struct LayoutCache {
     area: Rect,
-    chunks: Vec<Rect>,
+    chunks: std::rc::Rc<[Rect]>,
     bus_names: Vec<String>,
     bus_statuses: Vec<String>,
     notch_strs: Vec<String>,
@@ -186,12 +203,13 @@ pub async fn run(args: Args) -> Result<()> {
     let mut ticker = interval(Duration::from_millis(500)); // Render & ramp ticker
     let mut layout_cache = LayoutCache {
         area: Rect::default(),
-        chunks: Vec::new(),
+        chunks: std::rc::Rc::from([]),
         bus_names: Vec::new(),
         bus_statuses: Vec::new(),
         notch_strs: Vec::new(),
         waiting_notch_strs: Vec::new(),
     };
+    let mut eq_path_buf = String::with_capacity(32);
 
     loop {
         // Render
@@ -364,23 +382,57 @@ pub async fn run(args: Args) -> Result<()> {
                                 // Apply notch via OSC
 
                                 // type = 3 (PEQ)
-                                let path = get_bus_eq_path(args.model, update.bus_idx, update.notch_idx, "type");
-                                let _ = client.send_message(&path, vec![OscArg::Int(3)]).await;
+                                write_bus_eq_path(
+                                    &mut eq_path_buf,
+                                    args.model,
+                                    update.bus_idx,
+                                    update.notch_idx,
+                                    "type",
+                                );
+                                let _ = client
+                                    .send_message(&eq_path_buf, vec![OscArg::Int(3)])
+                                    .await;
 
                                 // Map freq: log scale 20Hz - 20kHz to 0.0 - 1.0 (approx)
-                                let path = get_bus_eq_path(args.model, update.bus_idx, update.notch_idx, "freq");
-                                let freq_float = ((update.freq.log10() - 20f32.log10()) / (20000f32.log10() - 20f32.log10())).clamp(0.0, 1.0);
-                                let _ = client.send_message(&path, vec![OscArg::Float(freq_float)]).await;
+                                write_bus_eq_path(
+                                    &mut eq_path_buf,
+                                    args.model,
+                                    update.bus_idx,
+                                    update.notch_idx,
+                                    "freq",
+                                );
+                                let freq_float = ((update.freq.log10() - 20f32.log10())
+                                    / (20000f32.log10() - 20f32.log10()))
+                                .clamp(0.0, 1.0);
+                                let _ = client
+                                    .send_message(&eq_path_buf, vec![OscArg::Float(freq_float)])
+                                    .await;
 
                                 // Map gain: -15 to +15 is 0.0 to 1.0.  (-15 is 0.0, 0 is 0.5, +15 is 1.0)
-                                let path = get_bus_eq_path(args.model, update.bus_idx, update.notch_idx, "gain");
+                                write_bus_eq_path(
+                                    &mut eq_path_buf,
+                                    args.model,
+                                    update.bus_idx,
+                                    update.notch_idx,
+                                    "gain",
+                                );
                                 let gain_float = ((update.gain + 15.0) / 30.0).clamp(0.0, 1.0);
-                                let _ = client.send_message(&path, vec![OscArg::Float(gain_float)]).await;
+                                let _ = client
+                                    .send_message(&eq_path_buf, vec![OscArg::Float(gain_float)])
+                                    .await;
 
                                 // Map q: 10.0-0.3 mapped 0.0-1.0
-                                let path = get_bus_eq_path(args.model, update.bus_idx, update.notch_idx, "q");
+                                write_bus_eq_path(
+                                    &mut eq_path_buf,
+                                    args.model,
+                                    update.bus_idx,
+                                    update.notch_idx,
+                                    "q",
+                                );
                                 let q_float = 0.8; // Approx narrow Q
-                                let _ = client.send_message(&path, vec![OscArg::Float(q_float)]).await;
+                                let _ = client
+                                    .send_message(&eq_path_buf, vec![OscArg::Float(q_float)])
+                                    .await;
                             }
                         }
                     }
@@ -407,9 +459,9 @@ fn ui(f: &mut Frame, state: &AppState, cache: &mut LayoutCache) {
             .direction(Direction::Vertical)
             .constraints([Constraint::Min(5), Constraint::Length(3)].as_ref())
             .split(size);
-        cache.chunks = chunks.to_vec();
+        cache.chunks = chunks;
     }
-    let chunks = &cache.chunks;
+    let chunks = &*cache.chunks;
 
     if chunks.len() < 2 {
         return;
