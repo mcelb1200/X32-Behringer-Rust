@@ -57,12 +57,18 @@
 #[cfg(test)]
 mod tests;
 
+pub mod automix;
 pub mod client;
 pub mod command;
 pub mod common;
+pub mod discovery;
 pub mod error;
 pub mod main_bus;
+pub mod meters;
+pub mod model;
+pub mod safety;
 pub mod scene_parse;
+pub mod streaming;
 pub mod transport;
 
 pub use crate::client::MixerClient;

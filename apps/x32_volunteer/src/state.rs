@@ -1,5 +1,9 @@
 use crate::network::ChannelState;
 use std::time::Instant;
+use x32_lib::automix::SpectrumAutomixer;
+use x32_lib::safety::ConsoleSnapshot;
+use x32_lib::streaming::{StreamMonitor, StreamTelemetry};
+use x32_lib::MixerModel;
 
 pub enum Alert {
     Clipping {
@@ -14,6 +18,7 @@ pub enum Alert {
 }
 
 pub struct AppState {
+    pub model: MixerModel,
     pub channels: Vec<ChannelState>,
     pub selected_idx: usize,
     pub main_fader: f32,
@@ -26,6 +31,13 @@ pub struct AppState {
     pub confirm_panic_at: Option<Instant>,
     pub last_rx_at: Option<Instant>,
     pub started_at: Instant,
+    pub last_snapshot: Option<ConsoleSnapshot>,
+    pub automix_enabled: bool,
+    pub automixer: Option<SpectrumAutomixer>,
+    pub stream_monitor: Option<StreamMonitor>,
+    pub stream_telemetry: Option<StreamTelemetry>,
+    pub stream_fader: f32,
+    pub check_status_msg: Option<String>,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
@@ -38,6 +50,7 @@ pub enum Status {
 impl AppState {
     pub fn new(channels: Vec<ChannelState>) -> Self {
         Self {
+            model: MixerModel::X32,
             channels,
             selected_idx: 0,
             main_fader: 0.0,
@@ -50,6 +63,13 @@ impl AppState {
             confirm_panic_at: None,
             last_rx_at: None,
             started_at: Instant::now(),
+            last_snapshot: None,
+            automix_enabled: false,
+            automixer: None,
+            stream_monitor: None,
+            stream_telemetry: None,
+            stream_fader: 0.75,
+            check_status_msg: None,
         }
     }
 

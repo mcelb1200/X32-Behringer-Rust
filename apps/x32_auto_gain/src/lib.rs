@@ -43,13 +43,9 @@ pub struct Args {
     pub rate_ms: u64,
 }
 
+/// Returns the maximum input channel count for the given mixer model.
 pub fn max_channels_for_model(model: MixerModel) -> u8 {
-    match model {
-        MixerModel::X32 => 32,
-        MixerModel::Wing => 40,
-        MixerModel::XR18 | MixerModel::XR16 => 16,
-        MixerModel::XR12 => 12,
-    }
+    x32_lib::model::limits_for_model(model).channels as u8
 }
 
 pub fn parse_channels_for_model(channels_str: &str, model: MixerModel) -> Vec<u8> {
@@ -65,17 +61,14 @@ pub fn parse_channels_for_model(channels_str: &str, model: MixerModel) -> Vec<u8
     channels
 }
 
+/// Returns the headamp gain OSC path for the given model and channel.
 pub fn get_headamp_gain_path(model: MixerModel, channel: u8) -> String {
-    match model {
-        MixerModel::X32 | MixerModel::Wing => format!("/headamp/{:02}/gain", channel),
-        MixerModel::XR18 | MixerModel::XR16 | MixerModel::XR12 => {
-            format!("/headamp/{:02}/gain", channel)
-        }
-    }
+    x32_lib::model::headamp_gain_path(model, channel)
 }
 
-pub fn get_headamp_phantom_path(_model: MixerModel, channel: u8) -> String {
-    format!("/headamp/{:02}/+48V", channel)
+/// Returns the headamp +48V phantom OSC path for the given model and channel.
+pub fn get_headamp_phantom_path(model: MixerModel, channel: u8) -> String {
+    x32_lib::model::headamp_phantom_path(model, channel)
 }
 
 pub fn get_stereo_link_pairs(model: MixerModel) -> Vec<(u8, u8, String)> {

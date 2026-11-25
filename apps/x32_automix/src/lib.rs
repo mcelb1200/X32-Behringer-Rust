@@ -72,12 +72,7 @@ pub async fn run(args: Args) -> Result<()> {
 
 /// Returns the maximum channel count for the specified digital mixer model.
 pub fn max_channels_for_model(model: MixerModel) -> u8 {
-    match model {
-        MixerModel::X32 => 32,
-        MixerModel::Wing => 40,
-        MixerModel::XR18 | MixerModel::XR16 => 16,
-        MixerModel::XR12 => 12,
-    }
+    x32_lib::model::limits_for_model(model).channels as u8
 }
 
 /// Generates the OSC path for controlling fader level or bus send level on a channel.
@@ -145,16 +140,15 @@ async fn run_automix(args: Args, client: MixerClient) -> Result<()> {
                         // 1. Parse levels and apply fast attack / slow release envelope
                         let mut current_levels = [0.0; 40];
                         for ch in start_ch..stop_ch {
-                            let start = ch * 4;
-                            let end = start + 4;
-                            if let Some(bytes) =
-                                data.get(start..end).and_then(|s| s.try_into().ok())
-                            {
-                                let level = f32::from_be_bytes(bytes);
+                            if let Some(level) = x32_lib::meters::meter_value_at(data, ch) {
                                 if level > smoothed_levels[ch] {
-                                    smoothed_levels[ch] = smoothed_levels[ch] * (1.0 - attack_coef) + level * attack_coef;
+                                    smoothed_levels[ch] = smoothed_levels[ch]
+                                        * (1.0 - attack_coef)
+                                        + level * attack_coef;
                                 } else {
-                                    smoothed_levels[ch] = smoothed_levels[ch] * (1.0 - release_coef) + level * release_coef;
+                                    smoothed_levels[ch] = smoothed_levels[ch]
+                                        * (1.0 - release_coef)
+                                        + level * release_coef;
                                 }
                                 current_levels[ch] = smoothed_levels[ch];
                             }
@@ -200,73 +194,17 @@ async fn run_automix(args: Args, client: MixerClient) -> Result<()> {
 
 /// Converts a linear fader level (0.0 to 1.0) to decibels.
 fn level_to_db(level: f32) -> f32 {
-    if level >= 0.5 {
-        40.0 * level - 30.0
-    } else if level >= 0.25 {
-        80.0 * level - 50.0
-    } else if level >= 0.0625 {
-        160.0 * level - 70.0
-    } else {
-        480.0 * level - 90.0
-    }
+    x32_lib::model::fader_to_db(level)
 }
 
 /// Converts a decibel value to a linear fader level (0.0 to 1.0).
 fn db_to_level(db: f32) -> f32 {
-    let level = if db > -10.0 {
-        (db + 30.0) / 40.0
-    } else if db > -30.0 {
-        (db + 50.0) / 80.0
-    } else if db > -60.0 {
-        (db + 70.0) / 160.0
-    } else {
-        (db + 90.0) / 480.0
-    };
-    level.clamp(0.0, 1.0)
+    x32_lib::model::db_to_fader(db)
 }
 
-/// Calculates the gain for each channel based on the Dugan algorithm.
-///
-/// The Dugan algorithm works by calculating the sum of the linear weights
-/// of all channels. The gain for each channel is its weight divided by the total sum.
-/// This ensures that the overall system gain remains constant (NOM attenuation),
-/// preventing feedback and noise buildup.
-///
-/// We also apply priority ducking by only including channels above the noise_floor.
+/// Calculates the gain for each channel based on the shared Dugan algorithm.
 fn calculate_dugan_gains(levels: &[f32], noise_floor: f32, gains_out: &mut [f32]) {
-    // ⚡ Bolt: Use a stack-allocated array to prevent Vec heap allocations on every audio frame
-    let mut weights = [0.0; 40];
-    let mut sum_weights = 0.0;
-
-    for (i, &level) in levels.iter().enumerate() {
-        if level > noise_floor {
-            let db = level_to_db(level);
-            // Convert dB to linear weight. 10^(dB/20) gives voltage gain,
-            // which works well for Dugan sum.
-            let weight = 10.0_f32.powf(db / 20.0);
-            weights[i] = weight;
-            sum_weights += weight;
-        } else {
-            weights[i] = 0.0;
-        }
-    }
-
-    for (i, &weight) in weights.iter().enumerate().take(levels.len()) {
-        if sum_weights > 0.0 && weight > 0.0 {
-            // G_i = W_i / W_sum
-            let gain_linear = weight / sum_weights;
-            // The gain to apply (in linear fader space) should reflect this attenuation.
-            // A channel alone gets gain 1.0. Two equal channels get gain 0.5 (-6dB).
-            let gain_db = 20.0 * gain_linear.log10();
-
-            // Map the Dugan target gain to the X32 fader curve where 0dB = 0.75 float.
-            // We assume a base unity mix (0dB). If we want to be safe, Dugan max is 0dB -> 0.75 fader.
-            let fader_level = db_to_level(gain_db);
-            gains_out[i] = fader_level;
-        } else {
-            gains_out[i] = 0.0; // Full attenuation if below noise floor or no signal
-        }
-    }
+    x32_lib::automix::calculate_dugan_gains(levels, noise_floor, gains_out);
 }
 
 #[cfg(test)]

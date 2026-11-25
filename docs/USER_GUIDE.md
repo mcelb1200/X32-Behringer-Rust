@@ -9,7 +9,7 @@ Welcome to the X32 Tools User Guide. This document categorizes the workspace uti
 High-level applications in `apps/` designed for non-expert operators, live safety guardrails, and automated setup:
 
 ### `x32_volunteer` (Interactive)
-Simplified Terminal UI dashboard for volunteer sound operators across X32, Wing, and X-Air (`XR18`/`XR16`/`XR12`). Supports `x32_config.json`, per-channel mute/fader nudging clamped to `--max-fader-limit-db`, Main LR status, connection health monitoring, clipping alerts, and a 2-step confirmed `[P]anic` button. See [apps/x32_volunteer/README.md](../apps/x32_volunteer/README.md).
+Simplified Terminal UI dashboard for volunteer sound operators across X32, Wing, and X-Air (`XR18`/`XR16`/`XR12`). Supports `--ip auto` LAN discovery, `x32_config.json` ([sample config](examples/x32_config.volunteer.json)), per-channel mute/fader nudging clamped to `--max-fader-limit-db`, Main LR & connection health monitoring, `[A]` spectrum-aware mixbus Dugan automixing with dynamic vocal-pocket EQ, broadcast `stream_monitor`, `[C]` pre-service check & backup, `[U]` undo rollback, and a 2-step smooth-fade `[P]anic` button. See [apps/x32_volunteer/README.md](../apps/x32_volunteer/README.md) and the [RTA Automix Spec](specs/rta_spectrum_automix.md).
 
 ### `x32_safe_mute`
 "Panic Button" utility that silences the system using a rapid exponential fade instead of a hard mute to prevent speaker pops and thumps.

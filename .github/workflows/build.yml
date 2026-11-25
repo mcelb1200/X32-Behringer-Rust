@@ -3,6 +3,7 @@ name: Build and Test
 on:
   push:
     branches: [ "main" ]
+    tags: [ "v*" ]
   pull_request:
     branches: [ "main" ]
 
@@ -66,3 +67,19 @@ jobs:
     - name: Run tests (non-Linux)
       if: matrix.test == true && runner.os != 'Linux'
       run: cargo test --workspace --release --target ${{ matrix.target }}
+
+    - name: Package Volunteer Release Bundle (on tag)
+      if: startsWith(github.ref, 'refs/tags/v')
+      shell: bash
+      run: |
+        mkdir -p dist
+        cp target/${{ matrix.target }}/release/x32_volunteer* dist/ 2>/dev/null || true
+        cp target/${{ matrix.target }}/release/x32_cli* dist/ 2>/dev/null || true
+        cp docs/examples/x32_config.volunteer.json dist/x32_config.json
+
+    - name: Upload Volunteer Release Bundle
+      if: startsWith(github.ref, 'refs/tags/v')
+      uses: actions/upload-artifact@v4
+      with:
+        name: x32-volunteer-${{ matrix.target }}
+        path: dist/

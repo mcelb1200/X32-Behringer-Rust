@@ -42,6 +42,10 @@ pub struct Args {
     /// Maximum number of notches to apply per bus
     #[arg(short = 'n', long, default_value_t = 5)]
     pub max_notches: u8,
+
+    /// Explicitly acknowledge simulated notch frequencies (required; live FFT is in x32_feedback_detect)
+    #[arg(long, default_value_t = false)]
+    pub simulate: bool,
 }
 
 /// Returns the maximum number of mix buses supported by the given mixer model.
@@ -168,6 +172,12 @@ struct LayoutCache {
 }
 
 pub async fn run(args: Args) -> Result<()> {
+    if !args.simulate {
+        anyhow::bail!(
+            "x32_auto_ringout currently uses simulated notch frequencies; pass --simulate for offline/emulator testing, or use x32_feedback_detect for live audio."
+        );
+    }
+
     if args.buses.is_empty() {
         println!("No valid buses provided. Expected format: --buses 1,2,5");
         return Ok(());
@@ -653,6 +663,7 @@ mod tests {
             buses: "1,2,3,5,12".to_string(),
             target_dbfs: -6.0,
             max_notches: 3,
+            simulate: true,
         };
         let state_xr12 = AppState::new(&args_xr12);
         assert_eq!(state_xr12.buses.len(), 2);
@@ -666,6 +677,7 @@ mod tests {
             buses: "1,2,3,5,20".to_string(),
             target_dbfs: -6.0,
             max_notches: 3,
+            simulate: true,
         };
         let state_x32 = AppState::new(&args_x32);
         assert_eq!(state_x32.buses.len(), 4);
@@ -678,6 +690,7 @@ mod tests {
             buses: "1,16,20,28,30".to_string(),
             target_dbfs: -6.0,
             max_notches: 5,
+            simulate: true,
         };
         let state_wing = AppState::new(&args_wing);
         assert_eq!(state_wing.buses.len(), 4);

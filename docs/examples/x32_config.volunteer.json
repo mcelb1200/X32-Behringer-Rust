@@ -1,0 +1,58 @@
+{
+  "volunteer_mode": {
+    "max_fader_limit_db": -2.0,
+    "visible_channels": [1, 2, 3, 4],
+    "visible_dcas": [1, 2],
+    "mixbus_automix": {
+      "enabled_on_start": false,
+      "max_cut_db": 4.0,
+      "max_boost_db": 1.5,
+      "noise_floor": 0.005,
+      "buses": [
+        {
+          "bus": 1,
+          "label": "Vox",
+          "role": "vocals",
+          "priority": 1.5,
+          "base_db": 0.0
+        },
+        {
+          "bus": 2,
+          "label": "Band",
+          "role": "band",
+          "priority": 1.0,
+          "base_db": -2.0,
+          "pocket_eq": {
+            "band": 3,
+            "max_dip_db": 3.0
+          }
+        },
+        {
+          "bus": 3,
+          "label": "Drums",
+          "role": "drums",
+          "priority": 0.9,
+          "base_db": -3.0,
+          "pocket_eq": {
+            "band": 3,
+            "max_dip_db": 2.0
+          }
+        },
+        {
+          "bus": 4,
+          "label": "Bass",
+          "role": "bass",
+          "priority": 0.9,
+          "base_db": -3.0
+        }
+      ]
+    },
+    "stream_monitor": {
+      "source": "bus15",
+      "target_rms_db": -16.0,
+      "min_rms_db": -24.0,
+      "max_peak_db": -2.0,
+      "auto_trim": false
+    }
+  }
+}

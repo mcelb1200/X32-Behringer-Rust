@@ -54,17 +54,15 @@ pub struct Args {
 /// Returns a vector of strings representing the base path (e.g. `/main/st/mix` or `/dca/1`).
 pub fn resolve_target_paths(mode: &Mode, dcas: &str, model: MixerModel) -> Vec<String> {
     let mut paths = Vec::new();
-    let (max_buses, max_matrices, max_dcas) = match model {
-        MixerModel::X32 => (16, 6, 8),
-        MixerModel::Wing => (28, 8, 16),
-        MixerModel::XR18 => (6, 0, 4),
-        MixerModel::XR16 => (4, 0, 4),
-        MixerModel::XR12 => (2, 0, 4),
-    };
+    let limits = x32_lib::model::limits_for_model(model);
+    let max_buses = limits.buses as u8;
+    let max_matrices = limits.matrices as u8;
+    let max_dcas = limits.dcas as u8;
+    let main_base = x32_lib::model::main_mix_base_path(model);
 
     match mode {
         Mode::All => {
-            paths.push("/main/st/mix".to_string());
+            paths.push(main_base.to_string());
             for i in 1..=max_buses {
                 paths.push(format!("/bus/{:02}/mix", i));
             }
@@ -78,7 +76,7 @@ pub fn resolve_target_paths(mode: &Mode, dcas: &str, model: MixerModel) -> Vec<S
             }
         }
         Mode::Main => {
-            paths.push("/main/st/mix".to_string());
+            paths.push(main_base.to_string());
             for i in 1..=max_matrices {
                 paths.push(format!("/mtx/{:02}/mix", i));
             }
@@ -140,13 +138,11 @@ pub async fn execute_panic(
 
     for step in 1..=steps {
         interval.tick().await;
-        // exponential curve: t^2 towards 0
-        let factor = 1.0 - (step as f32 / steps as f32);
-        let factor = factor * factor;
 
         for path in paths {
             if let Some(initial_state) = state.get(path) {
-                let current_val = initial_state.fader * factor;
+                let current_val =
+                    x32_lib::safety::exponential_fade_level(initial_state.fader, step, steps);
                 let _ = client
                     .send_message(&format!("{}/fader", path), vec![OscArg::Float(current_val)])
                     .await;
@@ -339,6 +335,7 @@ mod tests {
     fn test_wing_target_paths() {
         let all_paths = resolve_target_paths(&Mode::All, "", MixerModel::Wing);
         assert_eq!(all_paths.len(), 1 + 28 + 8);
+        assert!(all_paths.contains(&"/main/1".to_string()));
         assert!(all_paths.contains(&"/bus/28/mix".to_string()));
         assert!(all_paths.contains(&"/mtx/08/mix".to_string()));
 
@@ -358,6 +355,7 @@ mod tests {
     fn test_xr18_target_paths() {
         let all_paths = resolve_target_paths(&Mode::All, "", MixerModel::XR18);
         assert_eq!(all_paths.len(), 1 + 6 + 0);
+        assert!(all_paths.contains(&"/lr/mix".to_string()));
         assert!(all_paths.contains(&"/bus/06/mix".to_string()));
         assert!(!all_paths.contains(&"/bus/07/mix".to_string()));
 

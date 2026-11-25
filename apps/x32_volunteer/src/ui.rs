@@ -14,6 +14,7 @@ use ratatui::{
     Terminal,
 };
 use std::{fmt::Write, io, time::Duration};
+use x32_lib::streaming::StreamStatus;
 
 pub struct Tui {
     terminal: Terminal<CrosstermBackend<io::Stdout>>,
@@ -92,10 +93,26 @@ impl Tui {
         let main_mute_text = if state.main_muted { "MUTED" } else { "LIVE" };
         write!(
             self.header_buf,
-            "  🎛️  VOLUNTEER MODE  |  {}  |  Main LR: {} ({:.2})  |  {}",
-            conn_text, main_mute_text, state.main_fader, status_text
+            "  🎛️  VOLUNTEER ({:?}) | {} | Main: {} ({:.2})",
+            state.model, conn_text, main_mute_text, state.main_fader
         )
         .expect("Write to header buffer failed");
+        if state.automixer.is_some() {
+            let am = if state.automix_enabled { "ON" } else { "OFF" };
+            write!(self.header_buf, " | Automix: {}", am).expect("Write automix header failed");
+        }
+        if let Some(st) = state.stream_telemetry {
+            let label = match st.status {
+                StreamStatus::Silent => "SILENT",
+                StreamStatus::TooQuiet => "QUIET",
+                StreamStatus::Optimal => "GOOD",
+                StreamStatus::Hot => "HOT",
+                StreamStatus::Clipping => "CLIP",
+            };
+            write!(self.header_buf, " | Stream: {} ({:.1}dB)", label, st.rms_db)
+                .expect("Write stream header failed");
+        }
+        write!(self.header_buf, " | {}", status_text).expect("Write status header failed");
 
         for i in 0..state.channels.len() {
             self.fader_bufs[i].clear();
@@ -250,10 +267,37 @@ impl Tui {
                     Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
                 )));
             }
+            if let Some(ref msg) = state.check_status_msg {
+                alert_lines.push(Line::from(Span::styled(
+                    msg.as_str(),
+                    Style::default().fg(Color::Cyan),
+                )));
+            }
+            if let Some(st) = state.stream_telemetry {
+                match st.status {
+                    StreamStatus::Silent => alert_lines.push(Line::from(Span::styled(
+                        "🔴 Stream output is SILENT (< -60 dBFS)",
+                        Style::default().fg(Color::Red),
+                    ))),
+                    StreamStatus::Clipping => alert_lines.push(Line::from(Span::styled(
+                        "🔴 Stream output CLIPPING — lower stream send/trim",
+                        Style::default().fg(Color::Red),
+                    ))),
+                    StreamStatus::TooQuiet => alert_lines.push(Line::from(Span::styled(
+                        "🟡 Stream output too quiet — consider nudging stream feed up",
+                        Style::default().fg(Color::Yellow),
+                    ))),
+                    _ => {}
+                }
+            }
             for alert_buf in &self.alert_bufs {
                 alert_lines.push(Line::from(alert_buf.as_str()));
             }
-            if state.alerts.is_empty() && !state.is_panic_armed() && state.is_online() {
+            if state.alerts.is_empty()
+                && !state.is_panic_armed()
+                && state.is_online()
+                && state.check_status_msg.is_none()
+            {
                 alert_lines.push(Line::from(Span::styled(
                     "No active alerts",
                     Style::default().fg(Color::DarkGray),
@@ -264,7 +308,7 @@ impl Tui {
 
             // 4. Footer
             let footer = Paragraph::new(
-                "  [←/→] Select  [Space] Mute  [↑/↓] Fader  [M]ute all  [P]anic (2x)  [Q]uit",
+                "  [←/→] Sel  [Space] Mute  [↑/↓] Fader  [A]utomix  [C]heck  [U]ndo  [M]uteAll  [P]anic(2x)  [Q]uit",
             )
             .block(Block::default().borders(Borders::ALL));
             f.render_widget(footer, chunks[3]);
@@ -279,6 +323,9 @@ impl Tui {
                     KeyCode::Esc | KeyCode::Char('q') => return Ok(Some(UIEvent::Quit)),
                     KeyCode::Char('m') => return Ok(Some(UIEvent::MuteAll)),
                     KeyCode::Char('p') => return Ok(Some(UIEvent::Panic)),
+                    KeyCode::Char('a') => return Ok(Some(UIEvent::ToggleAutomix)),
+                    KeyCode::Char('c') => return Ok(Some(UIEvent::PreServiceCheck)),
+                    KeyCode::Char('u') => return Ok(Some(UIEvent::Undo)),
                     KeyCode::Left | KeyCode::Char('h') => return Ok(Some(UIEvent::SelectPrev)),
                     KeyCode::Right | KeyCode::Char('l') => return Ok(Some(UIEvent::SelectNext)),
                     KeyCode::Char(' ') | KeyCode::Enter => {
@@ -309,6 +356,9 @@ pub enum UIEvent {
     Quit,
     MuteAll,
     Panic,
+    ToggleAutomix,
+    PreServiceCheck,
+    Undo,
     SelectPrev,
     SelectNext,
     ToggleSelectedMute,

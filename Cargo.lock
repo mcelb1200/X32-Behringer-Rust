@@ -2671,6 +2671,8 @@ dependencies = [
  "midir",
  "osc_lib",
  "regex",
+ "serde",
+ "serde_json",
  "tokio",
  "x32_emulator",
  "x32_fxparse",
