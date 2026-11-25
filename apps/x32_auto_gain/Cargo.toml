@@ -13,3 +13,6 @@ clap = { version = "4.3", features = ["derive"] }
 
 [dev-dependencies]
 x32_core = { path = "../../libs/x32_core" }
+
+[lints]
+workspace = true

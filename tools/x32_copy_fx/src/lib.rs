@@ -15,7 +15,7 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, Read};
 use std::path::PathBuf;
-use x32_lib::{MixerClient, MixerModel, error::X32Error};
+use x32_lib::{error::X32Error, MixerClient, MixerModel};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]

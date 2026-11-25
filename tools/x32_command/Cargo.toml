@@ -15,3 +15,6 @@ x32_lib = { workspace = true }
 assert_cmd = "2.2.0"
 predicates = "3.1.4"
 tempfile = "3.27.0"
+
+[lints]
+workspace = true

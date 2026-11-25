@@ -8,7 +8,7 @@ use osc_lib::OscMessage;
 use std::io::{self, BufRead, Read};
 use std::str::FromStr;
 use std::time::Duration;
-use x32_lib::{MixerClient, MixerModel, error::Result};
+use x32_lib::{error::Result, MixerClient, MixerModel};
 
 /// Command-line arguments for `x32_set_scene`.
 #[derive(Parser, Debug)]

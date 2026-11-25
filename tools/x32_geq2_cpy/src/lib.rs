@@ -15,9 +15,9 @@
 
 use anyhow::Result;
 use clap::{Parser, ValueEnum};
-use tokio::time::{Duration, sleep};
+use tokio::time::{sleep, Duration};
 use x32_lib::{
-    MixerClient, MixerModel, get_parameter_async, set_parameter_async, verify_fx_type_async,
+    get_parameter_async, set_parameter_async, verify_fx_type_async, MixerClient, MixerModel,
 };
 
 /// Returns the maximum FX slot count for the specified digital mixer model.

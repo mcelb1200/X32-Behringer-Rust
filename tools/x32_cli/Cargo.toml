@@ -55,3 +55,6 @@ x32_system_tune = { path = "../../apps/x32_system_tune" }
 x32_volunteer = { path = "../../apps/x32_volunteer" }
 x32_safe_mute = { path = "../../apps/x32_safe_mute" }
 x32_speech_mode = { path = "../../apps/x32_speech_mode" }
+
+[lints]
+workspace = true

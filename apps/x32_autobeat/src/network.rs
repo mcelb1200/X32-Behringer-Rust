@@ -2,13 +2,13 @@ use anyhow::Result;
 use crossbeam_channel::Sender;
 use osc_lib::OscMessage;
 use std::sync::{
-    Arc,
     atomic::{AtomicBool, Ordering},
+    Arc,
 };
 use tokio::sync::broadcast::error::RecvError;
 use tokio::task;
 use tokio::time::{self, Duration};
-use x32_lib::{MixerModel, client::MixerClient};
+use x32_lib::{client::MixerClient, MixerModel};
 
 pub fn max_channels_for_model(model: MixerModel) -> usize {
     match model {

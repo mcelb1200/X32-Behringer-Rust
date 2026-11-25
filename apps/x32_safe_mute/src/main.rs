@@ -1,6 +1,6 @@
 //! Main entry point for the standalone `x32_safe_mute` binary wrapper.
 use clap::Parser;
-use x32_safe_mute::{Args, run};
+use x32_safe_mute::{run, Args};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

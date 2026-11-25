@@ -16,3 +16,6 @@ assert_cmd = "2.0"
 [lib]
 name = "x32_emulator"
 path = "src/lib.rs"
+
+[lints]
+workspace = true

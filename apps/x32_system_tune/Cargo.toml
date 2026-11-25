@@ -14,3 +14,6 @@ clap = { workspace = true }
 
 [dev-dependencies]
 x32_core = { path = "../../libs/x32_core" }
+
+[lints]
+workspace = true

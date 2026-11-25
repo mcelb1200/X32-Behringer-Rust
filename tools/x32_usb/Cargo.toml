@@ -22,3 +22,6 @@ path = "src/lib.rs"
 [[bin]]
 name = "x32_usb"
 path = "src/main.rs"
+
+[lints]
+workspace = true

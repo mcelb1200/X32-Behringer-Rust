@@ -33,3 +33,6 @@ libs = []
 
 [dev-dependencies]
 x32_emulator = { path = "../../tools/x32_emulator" }
+
+[lints]
+workspace = true

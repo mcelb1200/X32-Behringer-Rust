@@ -1,4 +1,4 @@
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
 use byteorder::{LittleEndian, ReadBytesExt};
 use clap::{Parser, ValueEnum};
 use std::fs::File;
@@ -152,7 +152,7 @@ mod tests {
         assert_eq!(res, "C1, 01:01:01:00, 00:00:00:00, 25fps, Cue, -");
 
         let frames = 48000 / 2; // 0.5 seconds = 12.5 frames? No, the math is (pos - pos.floor()) * 100 / 4
-        // pos = 0.5. 0.5 * 100 = 50. 50 / 4 = 12.
+                                // pos = 0.5. 0.5 * 100 = 50. 50 / 4 = 12.
         let res2 = format_marker(Format::Audition, 2, frames, 48000, "C").unwrap();
         assert_eq!(res2, "C2, 00:00:00:12, 00:00:00:00, 25fps, Cue, -");
     }

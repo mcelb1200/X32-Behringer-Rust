@@ -6,7 +6,7 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tokio::net::UdpSocket;
 use tokio::time::sleep;
-use x32_auto_gain::{Args, run};
+use x32_auto_gain::{run, Args};
 
 async fn run_mock_server() -> Result<(String, tokio::task::JoinHandle<()>)> {
     let socket = UdpSocket::bind("127.0.0.1:0").await?;

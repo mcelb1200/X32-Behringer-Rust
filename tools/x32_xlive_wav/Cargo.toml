@@ -13,3 +13,6 @@ hound = "3.5.1"
 [dev-dependencies]
 assert_cmd = "2.2.0"
 tempfile = "3.27.0"
+
+[lints]
+workspace = true

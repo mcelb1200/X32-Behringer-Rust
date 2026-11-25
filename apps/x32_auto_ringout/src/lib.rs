@@ -3,16 +3,16 @@ use clap::Parser;
 use crossterm::{
     event::{self, Event, KeyCode, KeyEventKind},
     execute,
-    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
+    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use osc_lib::OscArg;
 use ratatui::{
-    Frame, Terminal,
     backend::CrosstermBackend,
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Paragraph},
+    Frame, Terminal,
 };
 use std::io;
 use std::sync::{Arc, Mutex};
@@ -73,13 +73,7 @@ pub fn get_bus_fader_path(model: MixerModel, bus: u8) -> String {
 }
 
 /// Writes the bus EQ parameter path into `buf` according to mixer model requirements.
-pub fn write_bus_eq_path(
-    buf: &mut String,
-    model: MixerModel,
-    bus: u8,
-    notch: usize,
-    param: &str,
-) {
+pub fn write_bus_eq_path(buf: &mut String, model: MixerModel, bus: u8, notch: usize, param: &str) {
     use std::fmt::Write;
     buf.clear();
     match model {

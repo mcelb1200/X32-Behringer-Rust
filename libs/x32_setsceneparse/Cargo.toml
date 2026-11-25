@@ -6,3 +6,6 @@ edition = "2021"
 [dependencies]
 osc_lib = { workspace = true }
 x32_fxparse = { path = "../x32_fxparse" }
+
+[lints]
+workspace = true

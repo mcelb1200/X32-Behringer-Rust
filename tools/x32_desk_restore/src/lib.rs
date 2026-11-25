@@ -11,8 +11,8 @@ use std::str::FromStr;
 use std::time::Duration;
 use tokio::time::timeout;
 use x32_lib::{
-    MixerClient, MixerModel,
     error::{Result, X32Error},
+    MixerClient, MixerModel,
 };
 
 pub mod parse;

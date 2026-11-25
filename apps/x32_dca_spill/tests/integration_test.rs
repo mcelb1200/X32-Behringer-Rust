@@ -4,7 +4,7 @@ use std::time::Duration;
 use tokio::net::UdpSocket;
 
 use osc_lib::OscArg;
-use x32_dca_spill::{Args, run, spill_dca};
+use x32_dca_spill::{run, spill_dca, Args};
 use x32_lib::MixerModel;
 
 #[tokio::test]
@@ -139,11 +139,10 @@ async fn test_invalid_dca_bounds_error() {
 
     let res = run(args).await;
     assert!(res.is_err());
-    assert!(
-        res.unwrap_err()
-            .to_string()
-            .contains("Invalid DCA number 9")
-    );
+    assert!(res
+        .unwrap_err()
+        .to_string()
+        .contains("Invalid DCA number 9"));
 
     let xair_args = Args {
         ip: "127.0.0.1:0".to_string(),

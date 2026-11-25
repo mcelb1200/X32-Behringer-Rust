@@ -11,3 +11,6 @@ osc_lib = { path = "../../libs/osc_lib" }
 anyhow = "1.0"
 clap = { version = "4.0", features = ["derive"] }
 tokio = { version = "1.0", features = ["full"] }
+
+[lints]
+workspace = true

@@ -15,3 +15,6 @@ crossterm = "0.27"
 
 [dev-dependencies]
 x32_core = { path = "../../libs/x32_core" }
+
+[lints]
+workspace = true

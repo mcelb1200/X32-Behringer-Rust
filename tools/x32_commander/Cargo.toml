@@ -13,3 +13,6 @@ x32_lib = { workspace = true }
 
 [dev-dependencies]
 tempfile = "3.10.1"
+
+[lints]
+workspace = true

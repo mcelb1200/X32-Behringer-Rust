@@ -15,3 +15,6 @@ lazy_static = { workspace = true }
 
 [dev-dependencies]
 tempfile = "3.10.0"
+
+[lints]
+workspace = true

@@ -9,3 +9,6 @@ anyhow = { workspace = true }
 x32_lib = { workspace = true }
 osc_lib = { workspace = true }
 tokio = { workspace = true }
+
+[lints]
+workspace = true

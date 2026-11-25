@@ -5,10 +5,10 @@ use std::sync::Arc;
 use std::time::Duration;
 use tokio::net::UdpSocket;
 use x32_core::Mixer;
-use x32_lib::MixerClient;
 use x32_lib::transport::udp::UdpTransport;
+use x32_lib::MixerClient;
 
-use x32_volunteer::{Args, run};
+use x32_volunteer::{run, Args};
 
 #[tokio::test]
 async fn test_x32_volunteer_integration() {

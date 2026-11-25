@@ -3,8 +3,8 @@ use std::net::UdpSocket;
 use std::sync::mpsc::channel;
 use std::thread;
 use std::time::Duration;
-use x32_emulator::MixerModel;
 use x32_emulator::server;
+use x32_emulator::MixerModel;
 
 #[test]
 fn test_emulator_with_model_wing() {

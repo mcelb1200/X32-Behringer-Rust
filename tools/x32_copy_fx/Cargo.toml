@@ -15,3 +15,6 @@ lazy_static = "1.4"
 assert_cmd = "2.0"
 predicates = "3.1"
 escargot = "0.5"
+
+[lints]
+workspace = true

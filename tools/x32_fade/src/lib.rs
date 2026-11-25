@@ -16,7 +16,7 @@ use std::io::Read;
 use std::path::PathBuf;
 use std::time::Duration;
 use tokio::time::sleep;
-use x32_lib::{MixerClient, MixerModel, get_parameter_async};
+use x32_lib::{get_parameter_async, MixerClient, MixerModel};
 
 /// Resolves default target OSC port based on digital mixer model when port is omitted.
 pub fn resolve_target_address(ip: &str, model: MixerModel) -> String {
@@ -406,8 +406,8 @@ pub async fn run(args: Args) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::Arc;
     use std::sync::atomic::{AtomicBool, Ordering};
+    use std::sync::Arc;
     use std::time::Instant;
 
     #[tokio::test]

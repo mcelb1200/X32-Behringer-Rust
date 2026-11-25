@@ -15,7 +15,7 @@ use clap::Parser;
 use osc_lib::OscArg;
 use std::io::{self, BufRead, Read};
 use tokio::time::Duration;
-use x32_lib::{MixerClient, MixerModel, error::Result};
+use x32_lib::{error::Result, MixerClient, MixerModel};
 
 /// Command-line arguments for `x32_get_scene`.
 #[derive(Parser, Debug)]
@@ -308,18 +308,10 @@ mod tests {
     #[test]
     fn test_format_scene_header() {
         assert!(format_scene_header(MixerModel::X32, "Sunday", "Service").contains("X32GetScene"));
-        assert!(
-            format_scene_header(MixerModel::Wing, "Sunday", "Service").contains("WingGetScene")
-        );
-        assert!(
-            format_scene_header(MixerModel::XR18, "Sunday", "Service").contains("XAirGetScene")
-        );
-        assert!(
-            format_scene_header(MixerModel::XR16, "Sunday", "Service").contains("XAirGetScene")
-        );
-        assert!(
-            format_scene_header(MixerModel::XR12, "Sunday", "Service").contains("XAirGetScene")
-        );
+        assert!(format_scene_header(MixerModel::Wing, "Sunday", "Service").contains("WingGetScene"));
+        assert!(format_scene_header(MixerModel::XR18, "Sunday", "Service").contains("XAirGetScene"));
+        assert!(format_scene_header(MixerModel::XR16, "Sunday", "Service").contains("XAirGetScene"));
+        assert!(format_scene_header(MixerModel::XR12, "Sunday", "Service").contains("XAirGetScene"));
     }
 
     #[test]
