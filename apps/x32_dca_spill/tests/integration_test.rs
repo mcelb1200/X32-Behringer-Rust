@@ -202,8 +202,8 @@ async fn test_dca_spill_wing_member_source_offset() {
 
     client_task.await.unwrap().unwrap();
 
-    assert_eq!(received[0], ("/-prefs/custom_bank/1/1".to_string(), 40));
-    assert_eq!(received[1], ("/-prefs/custom_bank/1/2".to_string(), 48));
-    assert_eq!(received[2], ("/-prefs/custom_bank/1/3".to_string(), 56));
-    assert_eq!(received[3], ("/-prefs/custom_bank/1/4".to_string(), 0));
+    assert_eq!(received[0], ("/cfg/layer/1/1".to_string(), 40));
+    assert_eq!(received[1], ("/cfg/layer/1/2".to_string(), 48));
+    assert_eq!(received[2], ("/cfg/layer/1/3".to_string(), 56));
+    assert_eq!(received[3], ("/cfg/layer/1/4".to_string(), 0));
 }
