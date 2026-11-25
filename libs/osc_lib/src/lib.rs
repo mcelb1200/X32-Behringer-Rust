@@ -53,6 +53,7 @@ pub enum OscError {
     Io(io::Error),
     /// A string was not valid UTF-8.
     Utf8(FromUtf8Error),
+    /// A byte slice was not valid UTF-8.
     StrUtf8(std::str::Utf8Error),
     /// The OSC type tag string was invalid (e.g., did not start with ',').
     InvalidTypeTag,
