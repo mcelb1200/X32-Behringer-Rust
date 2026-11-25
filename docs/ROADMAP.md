@@ -66,3 +66,16 @@ The following advanced features are planned for future development. Detailed spe
 
 ### 5. Rust-Native Testing (Est: Ongoing/Incremental)
 *   **Status**: BACKLOG.
+
+---
+
+## 📦 Upstream C Library Parity Backlog (`upstream/master`)
+
+Tracked items identified from comparing `pmaillot/X32-Behringer` (`upstream/master`) against this Rust workspace:
+
+| Task | Upstream Source | Priority | Status | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| **1. Consolidate `Xcparse` into `osc_lib`** | `X32lib/Xcparse.c` | Medium | ✅ COMPLETED | Consolidated single/double-quote tokenization and `OscMessage::parse_to_bytes` into `libs/osc_lib`; removed empty `libs/x32_xcparse` crate. |
+| **2. X-Air FX & Scene Parsers** | `XAir_fxparse.c`, `XAir_fxparse1.c`, `XAirSetSceneParse.c` | High | BACKLOG | Port X-Air (XR12/XR16/XR18) FX and scene line parsers for full X-Air scene/FX restoration parity. |
+| **3. Emulator `/meters` Parity Fixes** | `X32.c` (`84fb370`, `0178461`) | High | BACKLOG | Port 4-byte float padding and `time_factor` handling for `/meters/5` and `/meters/6` into `tools/x32_emulator` to improve offline RTA/meter testing. |
+| **4. `X32ReaperW.c` New OSC/Reaper Mappings** | `X32ReaperW.c` (`783fe42`) | Medium | BACKLOG | `apps/x32_reaper/src/lib.rs` already covers core X32↔Reaper sync; remaining new `X32ReaperW.c` mappings to port: ReaEQ/ReaComp FX sync (`eq/on`↔`fx/1/bypass`, `dyn/on`↔`fx/2/bypass`, `fxparam` bands, `/-stat/screen/CHAN/page`↔`openui`), User-Bank C buttons `33..36`, and extended Reaper transport/marker actions (`40073`, `40172`/`40173`, `40294`, `40318`/`40319`, `40839`–`40842`, `41743`, `53808`). |

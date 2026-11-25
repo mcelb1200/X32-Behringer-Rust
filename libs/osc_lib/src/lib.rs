@@ -519,8 +519,10 @@ impl std::fmt::Display for OscMessage {
 
 /// Tokenizes a string for OSC message parsing, handling quoted strings.
 ///
-/// This function splits a string into tokens by whitespace, but treats text
-/// enclosed in double quotes as a single token.
+/// This function splits a string into tokens by whitespace, treating text
+/// enclosed in either double quotes (`"..."`) or single quotes (`'...'`) as a
+/// single token (matching `Xcparse.c` semantics so `""` can appear inside
+/// single-quoted strings and vice versa).
 ///
 /// # Arguments
 ///
@@ -532,7 +534,7 @@ impl std::fmt::Display for OscMessage {
 pub fn tokenize(s: &str) -> Result<Vec<String>> {
     let mut tokens = Vec::new();
     let mut current_token = String::with_capacity(32);
-    let mut in_quote = false;
+    let mut quote_char: Option<char> = None;
     let mut escaped = false;
     for c in s.chars() {
         if escaped {
@@ -545,8 +547,8 @@ pub fn tokenize(s: &str) -> Result<Vec<String>> {
             '\\' => {
                 escaped = true;
             }
-            '"' => {
-                if !in_quote {
+            '"' | '\'' => match quote_char {
+                None => {
                     // Opening quote
                     if !current_token.is_empty() {
                         // std::mem::take leaves the current_token with 0 capacity,
@@ -557,16 +559,22 @@ pub fn tokenize(s: &str) -> Result<Vec<String>> {
                             String::with_capacity(32),
                         ));
                     }
-                } else {
-                    // Closing quote
+                    quote_char = Some(c);
+                }
+                Some(q) if q == c => {
+                    // Closing matching quote
                     tokens.push(std::mem::replace(
                         &mut current_token,
                         String::with_capacity(32),
                     ));
+                    quote_char = None;
                 }
-                in_quote = !in_quote;
-            }
-            ' ' if !in_quote => {
+                Some(_) => {
+                    // Different quote char inside an active quoted string is literal
+                    current_token.push(c);
+                }
+            },
+            ' ' if quote_char.is_none() => {
                 if !current_token.is_empty() {
                     tokens.push(std::mem::replace(
                         &mut current_token,
@@ -579,7 +587,7 @@ pub fn tokenize(s: &str) -> Result<Vec<String>> {
             }
         }
     }
-    if in_quote {
+    if quote_char.is_some() {
         return Err(OscError::ParseError(
             "Unmatched quote in command string".to_string(),
         ));
@@ -588,6 +596,22 @@ pub fn tokenize(s: &str) -> Result<Vec<String>> {
         tokens.push(current_token);
     }
     Ok(tokens)
+}
+
+/// Parses a human-readable OSC command string directly into wire-format OSC bytes.
+///
+/// This is the idiomatic Rust equivalent of `X32lib/Xcparse.c`, combining
+/// [`OscMessage::from_str`] and [`OscMessage::to_bytes`].
+///
+/// # Examples
+///
+/// ```
+/// let bytes = osc_lib::parse_osc_command(r#"/ch/01/config/name ,s 'Kick Drum'"#).unwrap();
+/// assert!(!bytes.is_empty());
+/// ```
+pub fn parse_osc_command(input: &str) -> Result<Vec<u8>> {
+    let msg = OscMessage::from_str(input)?;
+    msg.to_bytes()
 }
 
 /// Reads a null-terminated and 4-byte padded OSC string from a cursor, returning raw bytes.

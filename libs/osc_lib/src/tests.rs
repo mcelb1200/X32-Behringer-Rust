@@ -194,3 +194,22 @@ fn test_negative_blob_size() {
         _ => panic!("Expected ParseError, got {:?}", result),
     }
 }
+
+#[test]
+fn test_xcparse_parity_single_quotes_and_parse_osc_command() {
+    // Single-quoted string containing double quotes (Xcparse.c parity)
+    let cmd = r#"/ch/01/config/name ,s 'Kick "" Drum'"#;
+    let bytes = parse_osc_command(cmd).unwrap();
+    let decoded = OscMessage::from_bytes(&bytes).unwrap();
+    assert_eq!(decoded.path, "/ch/01/config/name");
+    assert_eq!(
+        decoded.args,
+        vec![OscArg::String(r#"Kick "" Drum"#.to_string())]
+    );
+
+    // Command with no arguments
+    let info_bytes = parse_osc_command("/info").unwrap();
+    let info_decoded = OscMessage::from_bytes(&info_bytes).unwrap();
+    assert_eq!(info_decoded.path, "/info");
+    assert!(info_decoded.args.is_empty());
+}
