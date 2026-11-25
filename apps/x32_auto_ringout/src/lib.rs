@@ -43,7 +43,7 @@ pub struct Args {
     #[arg(short = 'n', long, default_value_t = 5)]
     pub max_notches: u8,
 
-    /// Explicitly acknowledge simulated notch frequencies (required; live FFT is in x32_feedback_detect)
+    /// Optional offline/emulator mode using synthetic notch frequencies instead of live /meters/4 RTA
     #[arg(long, default_value_t = false)]
     pub simulate: bool,
 }
@@ -112,6 +112,18 @@ pub struct Notch {
     pub q: f32,
 }
 
+/// Returns the 0-based float index of a 1-based mix bus within the `/meters/1` blob
+/// (channels followed by aux inputs, then mix buses).
+pub fn bus_meter_index(model: MixerModel, bus_idx: u8) -> usize {
+    let base = match model {
+        MixerModel::X32 => 32 + 8,
+        MixerModel::Wing => 40 + 8,
+        MixerModel::XR18 | MixerModel::XR16 => 16 + 2,
+        MixerModel::XR12 => 12 + 2,
+    };
+    base + bus_idx.saturating_sub(1) as usize
+}
+
 #[derive(Debug, Clone)]
 pub struct BusState {
     pub bus_idx: u8,
@@ -119,12 +131,14 @@ pub struct BusState {
     pub current_level_db: f32,
     pub original_level_db: f32,
     pub target_level_db: f32,
+    /// Live measured bus level in dBFS from `/meters/1` (`-90.0` floor).
+    pub measured_dbfs: f32,
     pub notches: Vec<Notch>,
     pub fader_path: String,
 }
 
 pub struct AppState {
-    // ⚡ Bolt: Store buses as a sorted Vec instead of HashMap to eliminate per-frame Vec allocation and sorting in the TUI render loop.
+    // Store buses as a sorted Vec instead of HashMap to eliminate per-frame Vec allocation and sorting in the TUI render loop.
     pub buses: Vec<BusState>,
     pub should_quit: bool,
     pub pause_ramp: bool,
@@ -145,6 +159,7 @@ impl AppState {
                         current_level_db: -90.0,
                         original_level_db: -90.0,
                         target_level_db: args.target_dbfs,
+                        measured_dbfs: -90.0,
                         notches: Vec::new(),
                         fader_path,
                     });
@@ -323,7 +338,7 @@ pub async fn run(args: Args) -> Result<()> {
                 }
 
                 for (path, float_val) in fader_updates {
-                    // ⚡ Bolt: Using the pre-calculated string from fader_path to prevent per-tick string allocations.
+                    // Using the pre-calculated string from fader_path to prevent per-tick string allocations.
                     let _ = client.send_message(&path, vec![OscArg::Float(float_val)]).await;
                 }
             }
@@ -369,24 +384,21 @@ pub async fn run(args: Args) -> Result<()> {
                         {
                             let mut state = app_state.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
                             for bus in state.buses.iter_mut() {
+                                // Read the model-accurate bus meter offset from `/meters/1`
+                                // (X32: 32 ch + 8 aux = offset 40 + bus_idx - 1).
+                                let meter_idx = bus_meter_index(args.model, bus.bus_idx);
+                                let Some(val) = x32_lib::meters::meter_value_at(data, meter_idx) else {
+                                    continue;
+                                };
+
+                                bus.measured_dbfs = x32_lib::meters::linear_to_dbfs(val).clamp(-90.0, 0.0);
+
                                 if bus.status != BusStatus::Active || bus.notches.len() >= max_notches {
                                     continue;
                                 }
 
-                                // Read meter for this bus. We assume bus meter mapping here,
-                                // X32 meters/1 usually has channels 1-32, then aux 1-8, then buses.
-                                // Since it's a simulation, we'll just read from offset 4 + (bus_idx-1)*4
-                                // matching the integration test.
-                                let idx = bus.bus_idx as usize - 1;
-                                let start = 4 + idx * 4;
-                                let bytes: [u8; 4] = match data.get(start..start + 4) {
-                                    Some(slice) => slice.try_into().unwrap_or([0; 4]),
-                                    None => continue,
-                                };
-                                let val = f32::from_le_bytes(bytes);
-
                                 if val > 0.00001 {
-                                    let current_db = 20.0 * val.log10();
+                                    let current_db = bus.measured_dbfs;
                                     // Threshold for "feedback"
                                     if current_db > -6.0 {
                                         let detected_freq = if args.simulate {
@@ -532,7 +544,7 @@ fn ui(f: &mut Frame, state: &AppState, cache: &mut LayoutCache) {
         Style::default().fg(Color::Yellow),
     )])];
 
-    // ⚡ Bolt: Resize buffers to match dynamic state length using resize_with to ensure
+    // Resize buffers to match dynamic state length using resize_with to ensure
     // each new String actually starts with the requested capacity, preventing per-frame allocations.
     let num_buses = state.buses.len();
     if cache.bus_names.len() < num_buses {
@@ -556,7 +568,7 @@ fn ui(f: &mut Frame, state: &AppState, cache: &mut LayoutCache) {
 
     let mut notch_idx_global = 0;
 
-    // ⚡ Bolt: Clear and populate stateful string buffers using `write!` instead
+    // Clear and populate stateful string buffers using `write!` instead
     // of `format!` to completely eliminate per-frame allocations in the hot render loop.
     for (bus_idx, bus) in state.buses.iter().enumerate() {
         let status_str = match bus.status {
@@ -611,8 +623,8 @@ fn ui(f: &mut Frame, state: &AppState, cache: &mut LayoutCache) {
             BusStatus::Done => Color::Blue,
         };
 
-        // Fake meter
-        let meter_len = ((bus.current_level_db + 90.0) / 100.0 * 10.0).clamp(0.0, 10.0) as usize;
+        // Live bus meter bar (-90 dBFS to 0 dBFS from /meters/1)
+        let meter_len = ((bus.measured_dbfs + 90.0) / 90.0 * 10.0).clamp(0.0, 10.0) as usize;
         const METER_BARS: [&str; 11] = [
             "░░░░░░░░░░",
             "█░░░░░░░░░",
