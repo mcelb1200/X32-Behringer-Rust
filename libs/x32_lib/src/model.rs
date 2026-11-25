@@ -90,24 +90,6 @@ pub fn resolve_target_address(ip: &str, model: MixerModel) -> String {
     }
 }
 
-/// Returns the model-accurate OSC address for the Main LR fader.
-pub fn main_fader_path(model: MixerModel) -> &'static str {
-    match model {
-        MixerModel::XR18 | MixerModel::XR16 | MixerModel::XR12 => "/lr/mix/fader",
-        MixerModel::Wing => "/main/1/fdr",
-        MixerModel::X32 => "/main/st/mix/fader",
-    }
-}
-
-/// Returns the model-accurate OSC address for the Main LR mute/on toggle.
-pub fn main_on_path(model: MixerModel) -> &'static str {
-    match model {
-        MixerModel::XR18 | MixerModel::XR16 | MixerModel::XR12 => "/lr/mix/on",
-        MixerModel::Wing => "/main/1/mute",
-        MixerModel::X32 => "/main/st/mix/on",
-    }
-}
-
 /// Returns the model-accurate OSC address for a 1-based channel's main fader.
 pub fn ch_fader_path(model: MixerModel, ch: u8) -> String {
     match model {
