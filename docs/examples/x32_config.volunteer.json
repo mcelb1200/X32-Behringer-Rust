@@ -5,6 +5,7 @@
     "visible_dcas": [1, 2],
     "mixbus_automix": {
       "enabled_on_start": false,
+      "rta_assisted": true,
       "max_cut_db": 4.0,
       "max_boost_db": 1.5,
       "noise_floor": 0.005,
@@ -24,7 +25,8 @@
           "base_db": -2.0,
           "pocket_eq": {
             "band": 3,
-            "max_dip_db": 3.0
+            "max_dip_db": 3.0,
+            "adaptive_freq": true
           }
         },
         {
@@ -35,7 +37,8 @@
           "base_db": -3.0,
           "pocket_eq": {
             "band": 3,
-            "max_dip_db": 2.0
+            "max_dip_db": 2.0,
+            "adaptive_freq": false
           }
         },
         {

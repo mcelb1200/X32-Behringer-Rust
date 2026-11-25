@@ -97,8 +97,16 @@ impl Tui {
             state.model, conn_text, main_mute_text, state.main_fader
         )
         .expect("Write to header buffer failed");
-        if state.automixer.is_some() {
-            let am = if state.automix_enabled { "ON" } else { "OFF" };
+        if let Some(ref am_state) = state.automixer {
+            let am = if state.automix_enabled {
+                if am_state.is_rta_active() {
+                    "ON[RTA]"
+                } else {
+                    "ON"
+                }
+            } else {
+                "OFF"
+            };
             write!(self.header_buf, " | Automix: {}", am).expect("Write automix header failed");
         }
         if let Some(st) = state.stream_telemetry {

@@ -53,6 +53,52 @@ pub fn linear_to_dbfs(val: f32) -> f32 {
     }
 }
 
+/// Full RTA telemetry snapshot parsed from a 100-band `/meters/4` blob.
+#[derive(Debug, Clone, Copy, Default, PartialEq)]
+pub struct RtaSnapshot {
+    /// Aggregated 4-band energy averages.
+    pub bands: RtaBands,
+    /// Peak frequency (in Hz) detected in the `800..=3500 Hz` vocal presence range, if above floor.
+    pub vocal_peak_hz: Option<f32>,
+    /// Linear energy at `vocal_peak_hz`.
+    pub vocal_peak_energy: f32,
+}
+
+/// Maps a 0-based RTA bin index (`0..total_bins`) to approximate center frequency in Hz (`20..=20000 Hz`).
+pub fn rta_bin_to_hz(bin: usize, total_bins: usize) -> f32 {
+    if total_bins <= 1 {
+        return 20.0;
+    }
+    let ratio = (bin.min(total_bins - 1) as f32) / ((total_bins - 1) as f32);
+    let min_l = 20.0f32.log10();
+    let max_l = 20000.0f32.log10();
+    10.0f32.powf(min_l + ratio * (max_l - min_l))
+}
+
+/// Parses a `/meters/4` RTA blob into 4-band averages plus the peak vocal-range frequency (`800..=3500 Hz`).
+pub fn parse_rta_snapshot(data: &[u8]) -> Option<RtaSnapshot> {
+    let bins = parse_meter_blob(data);
+    let bands = parse_rta_bands(data)?;
+    let n = bins.len();
+
+    let mut best_hz = None;
+    let mut best_val = 0.0f32;
+    for (i, &val) in bins.iter().enumerate() {
+        let hz = rta_bin_to_hz(i, n);
+        if (800.0..=3500.0).contains(&hz) && val > best_val {
+            best_val = val;
+            best_hz = Some(hz);
+        }
+    }
+
+    let vocal_peak_hz = if best_val > 0.02 { best_hz } else { None };
+    Some(RtaSnapshot {
+        bands,
+        vocal_peak_hz,
+        vocal_peak_energy: best_val,
+    })
+}
+
 /// Aggregates a 100-band `/meters/4` RTA blob into 4 perceptual bands (`sub_bass`, `low_mid`, `vocal_mid`, `air`).
 pub fn parse_rta_bands(data: &[u8]) -> Option<RtaBands> {
     let bins = parse_meter_blob(data);
@@ -121,5 +167,20 @@ mod tests {
         let rta = parse_rta_bands(&blob).unwrap();
         assert!((rta.sub_bass - 0.8).abs() < 1e-5);
         assert!((rta.vocal_mid - 0.1).abs() < 1e-5);
+    }
+
+    #[test]
+    fn test_rta_bin_to_hz_and_snapshot() {
+        assert!((rta_bin_to_hz(0, 100) - 20.0).abs() < 0.01);
+        assert!((rta_bin_to_hz(99, 100) - 20000.0).abs() < 0.1);
+
+        let mut vals = vec![0.01; 100];
+        // Bin 66 on 0..99 log scale: 20 * 10^(3 * 66/99) = 20 * 10^2 = 2000 Hz
+        vals[66] = 0.72;
+        let blob = make_blob(&vals);
+        let snap = parse_rta_snapshot(&blob).unwrap();
+        let peak = snap.vocal_peak_hz.expect("Expected vocal peak");
+        assert!((peak - 2000.0).abs() < 1.0);
+        assert!((snap.vocal_peak_energy - 0.72).abs() < 1e-5);
     }
 }

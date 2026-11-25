@@ -11,7 +11,7 @@ cargo run -p x32_volunteer -- --ip auto --channels ch1,ch2,ch3,ch4,dca1 --max-fa
 
 Or copy [`docs/examples/x32_config.volunteer.json`](../../docs/examples/x32_config.volunteer.json) to `x32_config.json` in your working directory (or pass `--config path/to/x32_config.json`) to configure:
 - **`max_fader_limit_db`**, **`visible_channels`**, **`visible_dcas`**
-- **`mixbus_automix`**: Spectrum-aware Dugan mixbus balancing (`vocals`, `speech`, `band`, `drums`, `bass`, `keys`) with optional per-bus **Dynamic EQ Vocal Pocket** carving (`pocket_eq`) so bass-heavy drums do not pump vocals.
+- **`mixbus_automix`**: Spectrum-aware Dugan mixbus balancing (`vocals`, `speech`, `band`, `drums`, `bass`, `keys`) with optional per-bus **Dynamic EQ Vocal Pocket** carving (`pocket_eq`) and optional X32 `/meters/4` **`rta_assisted`** adaptive vocal-frequency tracking (`adaptive_freq: true`).
 - **`stream_monitor`**: Broadcast/livestream RMS & peak loudness monitoring (`SILENT`, `QUIET`, `GOOD`, `HOT`, `CLIP`), defaulting to monitor-only (`"auto_trim": false`).
 
 ## Keyboard Controls

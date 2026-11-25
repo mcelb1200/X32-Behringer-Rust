@@ -13,9 +13,10 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use ui::{Tui, UIEvent};
 use x32_lib::automix::{eq_gain_db_to_osc, BusAutomixSpec, SpectrumAutomixer};
 use x32_lib::discovery::discover_mixers;
-use x32_lib::meters::{linear_to_dbfs, meter_value_at};
+use x32_lib::meters::{linear_to_dbfs, meter_value_at, parse_rta_snapshot};
 use x32_lib::model::{
-    bus_eq_gain_path, bus_fader_path, limits_for_model, main_fader_path, main_mute_path,
+    bus_eq_freq_path, bus_eq_gain_path, bus_fader_path, limits_for_model, main_fader_path,
+    main_mute_path,
 };
 use x32_lib::safety::{smooth_fade, ConsoleSnapshot};
 use x32_lib::streaming::{StreamConfig, StreamMonitor, StreamStatus};
@@ -51,6 +52,8 @@ pub struct Args {
 pub struct MixbusAutomixConfig {
     #[serde(default)]
     pub enabled_on_start: bool,
+    #[serde(default)]
+    pub rta_assisted: bool,
     #[serde(default = "default_max_cut")]
     pub max_cut_db: f32,
     #[serde(default = "default_max_boost")]
@@ -288,6 +291,7 @@ pub async fn run(args: Args) -> Result<()> {
     if let Some(sec) = volunteer_sec {
         if let Some(ref am_cfg) = sec.mixbus_automix {
             state.automix_enabled = am_cfg.enabled_on_start;
+            state.rta_assisted = am_cfg.rta_assisted;
             state.automixer = Some(SpectrumAutomixer::new(
                 am_cfg.buses.clone(),
                 am_cfg.max_cut_db,
@@ -453,8 +457,20 @@ async fn run_tui_loop(
                                     .send_message(&p, vec![OscArg::Float(gain_osc)])
                                     .await;
                             }
+                            for (bus, band, freq_osc) in step.eq_freq_updates {
+                                let p = bus_eq_freq_path(state.model, bus, band);
+                                let _ = network
+                                    .send_message(&p, vec![OscArg::Float(freq_osc)])
+                                    .await;
+                            }
                             last_automix_step = Instant::now();
                         }
+                    }
+                }
+            } else if path == "/meters/4" {
+                if let Some(OscArg::Blob(data)) = msg.args.first() {
+                    if let Some(am) = state.automixer.as_mut() {
+                        am.set_rta_snapshot(parse_rta_snapshot(data));
                     }
                 }
             }
@@ -469,6 +485,11 @@ async fn run_tui_loop(
             network
                 .send_message("/meters", vec![OscArg::String("/meters/1".to_string())])
                 .await?;
+            if state.model == MixerModel::X32 && state.automix_enabled && state.rta_assisted {
+                network
+                    .send_message("/meters", vec![OscArg::String("/meters/4".to_string())])
+                    .await?;
+            }
             last_meter_req = Instant::now();
         }
 

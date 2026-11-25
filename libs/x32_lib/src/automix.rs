@@ -1,8 +1,9 @@
 //! Dugan-style channel automixing and spectrum-aware mixbus balancing with dynamic vocal pocket EQ.
 
-use crate::meters::RtaBands;
-use crate::model::{clamp_fader_with_limit, db_to_fader, fader_to_db};
+use crate::meters::{RtaBands, RtaSnapshot};
+use crate::model::{clamp_fader_with_limit, db_to_fader, eq_freq_hz_to_osc, fader_to_db};
 use serde::{Deserialize, Serialize};
+use std::time::{Duration, Instant};
 
 /// Calculates Dugan gain-sharing fader targets (`0.0..=1.0`) for input channels using a stack-allocated buffer.
 pub fn calculate_dugan_gains(levels: &[f32], noise_floor: f32, gains_out: &mut [f32]) {
@@ -107,6 +108,9 @@ pub struct PocketEqConfig {
     pub band: u8,
     /// Maximum midrange dip in dB (positive magnitude, e.g., `3.0` dips up to `-3.0 dB`).
     pub max_dip_db: f32,
+    /// Whether to slew the band's center frequency toward `/meters/4` RTA vocal peak (`800..=3500 Hz`).
+    #[serde(default)]
+    pub adaptive_freq: bool,
 }
 
 /// Converts an EQ gain in dB (`-15.0` to `+15.0`) to a normalized `[0.0, 1.0]` OSC float (`0.5` = `0 dB`).
@@ -139,6 +143,8 @@ pub struct AutomixStep {
     pub fader_updates: Vec<(u8, f32)>,
     /// `(bus_num, eq_band, target_osc_gain_float)` updates.
     pub eq_updates: Vec<(u8, u8, f32)>,
+    /// `(bus_num, eq_band, target_osc_freq_float)` updates when RTA `adaptive_freq` slews center frequency.
+    pub eq_freq_updates: Vec<(u8, u8, f32)>,
 }
 
 /// Spectrum-aware mixbus automixer combining role-weighted Dugan gain sharing and vocal pocket EQ carving.
@@ -148,10 +154,13 @@ pub struct SpectrumAutomixer {
     smoothed_levels: Vec<f32>,
     last_faders: Vec<f32>,
     last_eq_db: Vec<f32>,
+    last_eq_freq_hz: Vec<f32>,
     max_cut_db: f32,
     max_boost_db: f32,
     noise_floor: f32,
     rta_hint: Option<RtaBands>,
+    rta_snapshot: Option<RtaSnapshot>,
+    rta_updated_at: Option<Instant>,
 }
 
 impl SpectrumAutomixer {
@@ -169,10 +178,13 @@ impl SpectrumAutomixer {
             smoothed_levels: vec![0.0; n],
             last_faders,
             last_eq_db: vec![0.0; n],
+            last_eq_freq_hz: vec![2000.0; n],
             max_cut_db: max_cut_db.abs(),
             max_boost_db: max_boost_db.abs(),
             noise_floor: noise_floor.max(1e-5),
             rta_hint: None,
+            rta_snapshot: None,
+            rta_updated_at: None,
         }
     }
 
@@ -181,9 +193,24 @@ impl SpectrumAutomixer {
         &self.buses
     }
 
-    /// Supplies optional 4-band `/meters/4` RTA telemetry for future adaptive overlap scaling.
+    /// Supplies optional 4-band `/meters/4` RTA telemetry for adaptive overlap scaling.
     pub fn set_rta_hint(&mut self, rta: Option<RtaBands>) {
         self.rta_hint = rta;
+        self.rta_updated_at = rta.map(|_| Instant::now());
+    }
+
+    /// Supplies a full `/meters/4` [`RtaSnapshot`] (4-band averages + vocal peak frequency).
+    pub fn set_rta_snapshot(&mut self, snap: Option<RtaSnapshot>) {
+        self.rta_hint = snap.map(|s| s.bands);
+        self.rta_snapshot = snap;
+        self.rta_updated_at = snap.map(|_| Instant::now());
+    }
+
+    /// Returns `true` if fresh `/meters/4` RTA telemetry was received within the last 500 ms.
+    pub fn is_rta_active(&self) -> bool {
+        self.rta_updated_at
+            .map(|t| t.elapsed() < Duration::from_millis(500))
+            .unwrap_or(false)
     }
 
     /// Advances the automixer by one meter frame (`raw_levels` aligned to `buses`) and emits throttled updates.
@@ -221,11 +248,27 @@ impl SpectrumAutomixer {
             }
         }
 
-        // Optional RTA sub-bass vs vocal-mid ratio adjustment hook.
-        let rta_vocal_boost = self
-            .rta_hint
+        // Active RTA adjustments (automatically fall back to static profiles if stale >500ms).
+        let rta_active = self.is_rta_active();
+        let active_bands = if rta_active { self.rta_hint } else { None };
+        let active_peak_hz = if rta_active {
+            self.rta_snapshot.and_then(|s| s.vocal_peak_hz)
+        } else {
+            None
+        };
+
+        let rta_vocal_boost = active_bands
             .map(|r| {
                 if r.vocal_mid > 0.01 && r.sub_bass > r.vocal_mid * 2.0 {
+                    1.15
+                } else {
+                    1.0
+                }
+            })
+            .unwrap_or(1.0);
+        let rta_low_mid_mask = active_bands
+            .map(|r| {
+                if r.vocal_mid > 0.01 && r.low_mid > r.vocal_mid * 1.5 {
                     1.15
                 } else {
                     1.0
@@ -252,7 +295,6 @@ impl SpectrumAutomixer {
                     }
                 }
                 let share = (eff_energy[i] / competing_sum.max(1e-6)).clamp(0.01, 1.0);
-                // Center neutral share around ~0.55 so solo/low-overlap buses stay near base_db.
                 let delta_db =
                     (20.0 * (share / 0.55).log10()).clamp(-self.max_cut_db, self.max_boost_db);
                 bus.base_db + delta_db
@@ -266,13 +308,19 @@ impl SpectrumAutomixer {
 
             // 3. Dynamic EQ vocal pocket carving on competing buses.
             if let Some(ref eq) = bus.pocket_eq {
+                let max_dip = eq.max_dip_db.abs();
                 let target_eq_db = if !bus.role.is_vocal_lead() && vocal_activity > 0.0 {
                     let ov = SpectralRole::overlap(SpectralRole::Vocals, bus.role);
-                    -(eq.max_dip_db.abs() * vocal_activity * ov)
+                    let mask_scale = if matches!(bus.role, SpectralRole::Band | SpectralRole::Keys)
+                    {
+                        rta_low_mid_mask
+                    } else {
+                        1.0
+                    };
+                    -(max_dip * vocal_activity * ov * mask_scale).min(max_dip)
                 } else {
                     0.0
                 };
-                // Smooth EQ dip/release to avoid zipper noise.
                 let eq_coef = if target_eq_db < self.last_eq_db[i] {
                     0.45
                 } else {
@@ -290,6 +338,28 @@ impl SpectrumAutomixer {
                     self.last_eq_db[i] = snapped;
                     out.eq_updates
                         .push((bus.bus, eq.band, eq_gain_db_to_osc(snapped)));
+                }
+
+                // 4. Optional RTA adaptive pocket center-frequency slewing (+/-5% per step, 150 Hz deadband).
+                if eq.adaptive_freq && !bus.role.is_vocal_lead() && vocal_activity > 0.1 {
+                    if let Some(peak_hz) = active_peak_hz {
+                        let target_hz = peak_hz.clamp(800.0, 3500.0);
+                        let cur_hz = self.last_eq_freq_hz[i];
+                        if (target_hz - cur_hz).abs() > 150.0 {
+                            let max_step = cur_hz * 0.05;
+                            let next_hz = if target_hz > cur_hz {
+                                (cur_hz + max_step).min(target_hz)
+                            } else {
+                                (cur_hz - max_step).max(target_hz)
+                            };
+                            self.last_eq_freq_hz[i] = next_hz;
+                            out.eq_freq_updates.push((
+                                bus.bus,
+                                eq.band,
+                                eq_freq_hz_to_osc(next_hz),
+                            ));
+                        }
+                    }
                 }
             }
         }
@@ -321,6 +391,7 @@ mod tests {
                 pocket_eq: Some(PocketEqConfig {
                     band: 3,
                     max_dip_db: 3.0,
+                    adaptive_freq: false,
                 }),
             },
             BusAutomixSpec {
@@ -332,6 +403,7 @@ mod tests {
                 pocket_eq: Some(PocketEqConfig {
                     band: 3,
                     max_dip_db: 2.0,
+                    adaptive_freq: false,
                 }),
             },
         ]
@@ -388,5 +460,43 @@ mod tests {
             }
         }
         assert!((band_eq_osc - 0.5).abs() < 0.03);
+    }
+
+    #[test]
+    fn test_rta_adaptive_pocket_freq_slew_and_deadband() {
+        let mut buses = sample_buses();
+        buses[1].pocket_eq.as_mut().unwrap().adaptive_freq = true;
+        let mut am = SpectrumAutomixer::new(buses, 4.0, 1.5, 0.005);
+
+        // Inactive RTA produces zero eq_freq_updates
+        let step_no_rta = am.step(&[0.30, 0.25, 0.20], None);
+        assert!(step_no_rta.eq_freq_updates.is_empty());
+
+        // Active RTA peaking at 2800 Hz -> starts at 2000 Hz, slews <= 5% (+100 Hz -> 2100 Hz)
+        am.set_rta_snapshot(Some(RtaSnapshot {
+            bands: RtaBands {
+                sub_bass: 0.1,
+                low_mid: 0.2,
+                vocal_mid: 0.5,
+                air: 0.1,
+            },
+            vocal_peak_hz: Some(2800.0),
+            vocal_peak_energy: 0.6,
+        }));
+        let step_rta = am.step(&[0.30, 0.25, 0.20], None);
+        assert_eq!(step_rta.eq_freq_updates.len(), 1);
+        let (bus, band, osc_f) = step_rta.eq_freq_updates[0];
+        assert_eq!((bus, band), (2, 3));
+        let slewed_hz = crate::model::osc_to_eq_freq_hz(osc_f);
+        assert!((slewed_hz - 2100.0).abs() < 2.0);
+
+        // Within 150 Hz deadband of current ~2100 Hz -> no new freq update
+        am.set_rta_snapshot(Some(RtaSnapshot {
+            bands: RtaBands::default(),
+            vocal_peak_hz: Some(2180.0),
+            vocal_peak_energy: 0.6,
+        }));
+        let step_deadband = am.step(&[0.30, 0.25, 0.20], None);
+        assert!(step_deadband.eq_freq_updates.is_empty());
     }
 }

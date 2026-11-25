@@ -179,6 +179,25 @@ pub fn bus_eq_gain_path(_model: MixerModel, bus: u8, band: u8) -> String {
     format!("/bus/{:02}/eq/{}/g", bus, band)
 }
 
+/// Returns the mixbus parametric EQ band frequency OSC path (`/bus/XX/eq/{band}/f`).
+pub fn bus_eq_freq_path(_model: MixerModel, bus: u8, band: u8) -> String {
+    format!("/bus/{:02}/eq/{}/f", bus, band)
+}
+
+/// Converts a parametric EQ frequency in Hz (`20.0..=20000.0`) to a normalized `[0.0, 1.0]` OSC float.
+pub fn eq_freq_hz_to_osc(hz: f32) -> f32 {
+    let clamped = hz.clamp(20.0, 20000.0);
+    ((clamped.log10() - 20.0f32.log10()) / (20000.0f32.log10() - 20.0f32.log10())).clamp(0.0, 1.0)
+}
+
+/// Converts a normalized `[0.0, 1.0]` OSC EQ frequency float back to Hz (`20.0..=20000.0`).
+pub fn osc_to_eq_freq_hz(osc: f32) -> f32 {
+    let norm = osc.clamp(0.0, 1.0);
+    let min_l = 20.0f32.log10();
+    let max_l = 20000.0f32.log10();
+    10.0f32.powf(min_l + norm * (max_l - min_l))
+}
+
 /// Returns the headamp gain OSC path for the given model and 1-based channel number.
 pub fn headamp_gain_path(_model: MixerModel, ch: u8) -> String {
     format!("/headamp/{:02}/gain", ch)
@@ -225,6 +244,13 @@ mod tests {
         assert_eq!(main_mute_path(MixerModel::XR12), "/lr/mix/on");
 
         assert_eq!(bus_eq_gain_path(MixerModel::X32, 2, 3), "/bus/02/eq/3/g");
+        assert_eq!(bus_eq_freq_path(MixerModel::X32, 2, 3), "/bus/02/eq/3/f");
+
+        for hz in [20.0f32, 200.0, 2000.0, 20000.0] {
+            let osc = eq_freq_hz_to_osc(hz);
+            let back = osc_to_eq_freq_hz(osc);
+            assert!((back - hz).abs() / hz < 0.001);
+        }
     }
 
     #[test]
