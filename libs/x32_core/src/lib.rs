@@ -241,9 +241,53 @@ impl Mixer {
             };
 
             if num_floats > 0 {
-                // Generate a dummy blob of 0.0 floats (4 bytes per 32-bit float)
+                // Generate synthetic meter levels reflecting live channel fader/mute and oscillator state
                 let blob_size = num_floats * 4;
-                let blob = vec![0u8; blob_size];
+                let mut blob = vec![0u8; blob_size];
+
+                match meter_idx {
+                    0 | 1 => {
+                        let max_ch = match self.model {
+                            MixerModel::X32 => 32,
+                            MixerModel::Wing => 40,
+                            MixerModel::XR18 | MixerModel::XR16 => 16,
+                            MixerModel::XR12 => 12,
+                        }
+                        .min(num_floats);
+                        for ch in 1..=max_ch {
+                            let fader = match self.state.get(&format!("/ch/{:02}/mix/fader", ch)) {
+                                Some(OscArg::Float(f)) => *f,
+                                _ => 0.0,
+                            };
+                            let on = match self.state.get(&format!("/ch/{:02}/mix/on", ch)) {
+                                Some(OscArg::Int(0)) => 0.0,
+                                _ => 1.0,
+                            };
+                            let level = (fader * on * 0.5).clamp(0.0, 1.0);
+                            let offset = (ch - 1) * 4;
+                            blob[offset..offset + 4].copy_from_slice(&level.to_le_bytes());
+                        }
+                    }
+                    4 => {
+                        // RTA meter: emit synthetic pink-noise floor when console oscillator is active
+                        let osc_on = matches!(
+                            self.state.get("/config/osc/on"),
+                            Some(OscArg::Int(v)) if *v != 0
+                        );
+                        if osc_on {
+                            let osc_lvl = match self.state.get("/config/osc/level") {
+                                Some(OscArg::Float(f)) => f.clamp(0.0, 1.0),
+                                _ => 0.25,
+                            };
+                            for bin in 0..num_floats {
+                                let level = (osc_lvl * 0.4).clamp(0.0, 1.0);
+                                let offset = bin * 4;
+                                blob[offset..offset + 4].copy_from_slice(&level.to_le_bytes());
+                            }
+                        }
+                    }
+                    _ => {}
+                }
 
                 let path = format!("/meters/{}", meter_idx);
                 if let Ok(bytes) = OscMessage::serialize_to_bytes(&path, [&OscArg::Blob(blob)]) {
@@ -692,10 +736,21 @@ impl Mixer {
                             }
                         }
 
+                        // Optional 0-based source channel/FX index at args[3] (X32 /save ,sisi "libchan" slot name src_idx)
+                        let target_unit = match osc_msg.args.get(3) {
+                            Some(OscArg::Int(v)) if *v >= 0 => (*v as usize) + 1,
+                            _ => 1,
+                        };
                         let (src_prefix, dst_prefix) = match item_type.as_str() {
-                            "libchan" => (Some("/ch/01/"), Some(format!("/-libs/ch/{:03}/", idx))), // Dummy fixed source
-                            "libfx" => (Some("/fx/1/"), Some(format!("/-libs/fx/{:03}/", idx))), // Dummy fixed source
-                            "librout" => (Some("/"), Some(format!("/-libs/r/{:03}/", idx))),
+                            "libchan" => (
+                                Some(format!("/ch/{:02}/", target_unit)),
+                                Some(format!("/-libs/ch/{:03}/", idx)),
+                            ),
+                            "libfx" => (
+                                Some(format!("/fx/{}/", target_unit)),
+                                Some(format!("/-libs/fx/{:03}/", idx)),
+                            ),
+                            "librout" => (Some("/".to_string()), Some(format!("/-libs/r/{:03}/", idx))),
                             _ => (None, None),
                         };
 
@@ -703,7 +758,7 @@ impl Mixer {
                             let mut to_copy = Vec::new();
                             let mut new_key_buf = String::with_capacity(64);
                             for (key, val) in self.state.values.iter() {
-                                if key.starts_with(src)
+                                if key.starts_with(&src)
                                     && !key.starts_with("/-show/")
                                     && !key.starts_with("/-stat/")
                                     && !key.starts_with("/-prefs/")
@@ -895,6 +950,11 @@ impl Mixer {
                 {
                     // For load, we simulate the hardware behavior by applying the preset state.
                     // This mirrors the /copy command but moves data from the library to the root level.
+                    // Optional 0-based destination channel/FX index at args[2] (X32 /load ,sii "libchan" slot dst_idx)
+                    let target_unit = match osc_msg.args.get(2) {
+                        Some(OscArg::Int(v)) if *v >= 0 => (*v as usize) + 1,
+                        _ => 1,
+                    };
                     let (src_prefix, dst_prefix) = match item_type.as_str() {
                         "scene" => (
                             Some(format!("/-show/showfile/scene/{:03}/", idx)),
@@ -904,15 +964,13 @@ impl Mixer {
                             Some(format!("/-show/showfile/snippet/{:03}/", idx)),
                             Some("/".to_string()),
                         ),
-                        // Note: For libchan, the client usually passes mask parameters, but /load
-                        // doesn't have them in its standard OSC arguments, so we copy all applicable.
                         "libchan" => (
                             Some(format!("/-libs/ch/{:03}/", idx)),
-                            Some("/ch/01/".to_string()), // Dummy fixed destination for simulation unless specified
+                            Some(format!("/ch/{:02}/", target_unit)),
                         ),
                         "libfx" => (
                             Some(format!("/-libs/fx/{:03}/", idx)),
-                            Some("/fx/1/".to_string()), // Dummy fixed destination for simulation
+                            Some(format!("/fx/{}/", target_unit)),
                         ),
                         "librout" => (Some(format!("/-libs/r/{:03}/", idx)), Some("/".to_string())),
                         _ => (None, None),

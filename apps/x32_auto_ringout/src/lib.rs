@@ -171,24 +171,50 @@ struct LayoutCache {
     waiting_notch_strs: Vec<String>,
 }
 
-pub async fn run(args: Args) -> Result<()> {
-    if !args.simulate {
-        anyhow::bail!(
-            "x32_auto_ringout currently uses simulated notch frequencies; pass --simulate for offline/emulator testing, or use x32_feedback_detect for live audio."
-        );
+/// Detects a narrow-band resonant feedback peak from a 100-band X32 RTA blob (`/meters/4`).
+///
+/// Returns the center frequency in Hz of the strongest bin in `80..=12000 Hz` that exceeds
+/// both the `-45 dBFS` noise floor and its local neighborhood average by at least
+/// `min_prominence_db` (default `9.0 dB`).
+pub fn detect_rta_feedback_peak(bins: &[f32], min_prominence_db: f32) -> Option<f32> {
+    let n = bins.len();
+    if n < 16 {
+        return None;
     }
 
+    let mut best_bin: Option<usize> = None;
+    let mut best_prominence = min_prominence_db;
+
+    for i in 2..(n - 2) {
+        let hz = x32_lib::meters::rta_bin_to_hz(i, n);
+        if !(80.0..=12_000.0).contains(&hz) {
+            continue;
+        }
+        let peak_db = x32_lib::meters::linear_to_dbfs(bins[i]);
+        if peak_db < -45.0 {
+            continue;
+        }
+        // Local neighborhood average excluding immediate peak bin
+        let local_lin = (bins[i - 2] + bins[i - 1] + bins[i + 1] + bins[i + 2]) * 0.25;
+        let local_db = x32_lib::meters::linear_to_dbfs(local_lin);
+        let prominence = peak_db - local_db;
+        if prominence >= best_prominence {
+            best_prominence = prominence;
+            best_bin = Some(i);
+        }
+    }
+
+    best_bin.map(|b| x32_lib::meters::rta_bin_to_hz(b, n))
+}
+
+pub async fn run(args: Args) -> Result<()> {
     if args.buses.is_empty() {
         println!("No valid buses provided. Expected format: --buses 1,2,5");
         return Ok(());
     }
 
     println!("Connecting to {}...", args.ip);
-    let ip = if args.ip.contains(':') {
-        args.ip.clone()
-    } else {
-        format!("{}:10023", args.ip)
-    };
+    let ip = x32_lib::model::resolve_target_address(&args.ip, args.model);
     let client = MixerClient::connect(&ip, true).await?;
     println!("Connected.");
 
@@ -214,6 +240,7 @@ pub async fn run(args: Args) -> Result<()> {
         waiting_notch_strs: Vec::new(),
     };
     let mut eq_path_buf = String::with_capacity(32);
+    let mut latest_rta_peak_hz: Option<f32> = None;
 
     loop {
         // Render
@@ -261,8 +288,11 @@ pub async fn run(args: Args) -> Result<()> {
             }
 
             _ = ticker.tick() => {
-                // Ask for meter updates for feedback detection (simulated)
+                // Request meter updates (/meters/1 for bus levels, /meters/4 for live 100-band RTA)
                 let _ = client.send_message("/meters", vec![OscArg::String("/meters/1".to_string())]).await;
+                if !args.simulate {
+                    let _ = client.send_message("/meters", vec![OscArg::String("/meters/4".to_string())]).await;
+                }
 
                 let mut fader_updates = Vec::new();
                 {
@@ -304,6 +334,14 @@ pub async fn run(args: Args) -> Result<()> {
                     Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => continue,
                     Err(_) => break,
                 };
+
+                if msg.path == "/meters/4" && !args.simulate {
+                    if let Some(OscArg::Blob(data)) = msg.args.first() {
+                        let bins = x32_lib::meters::parse_meter_blob(data);
+                        latest_rta_peak_hz = detect_rta_feedback_peak(&bins, 9.0);
+                    }
+                    continue;
+                }
 
                 if msg.path == "/meters/1" {
                     if let Some(OscArg::Blob(data)) = msg.args.first() {
@@ -351,9 +389,27 @@ pub async fn run(args: Args) -> Result<()> {
                                     let current_db = 20.0 * val.log10();
                                     // Threshold for "feedback"
                                     if current_db > -6.0 {
+                                        let detected_freq = if args.simulate {
+                                            Some(1000.0 + (bus.notches.len() as f32 * 500.0))
+                                        } else {
+                                            latest_rta_peak_hz.take()
+                                        };
+
+                                        let Some(freq) = detected_freq else {
+                                            continue;
+                                        };
+
+                                        // Avoid stacking duplicate notches within ±5% of an existing notch
+                                        if bus
+                                            .notches
+                                            .iter()
+                                            .any(|n| ((n.freq_hz - freq).abs() / freq.max(1.0)) < 0.05)
+                                        {
+                                            continue;
+                                        }
+
                                         // Trigger notch
                                         let notch_idx = bus.notches.len() + 1; // 1-based EQ band
-                                        let freq = 1000.0 + (bus.notches.len() as f32 * 500.0); // simulated frequency
                                         let gain = -6.0;
                                         let q = 15.0;
 

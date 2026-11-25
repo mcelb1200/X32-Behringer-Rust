@@ -29,6 +29,34 @@ pub struct Args {
     /// Mixer model: X32, Wing, XR18, XR16, XR12
     #[arg(short = 'M', long, default_value = "X32")]
     pub model: MixerModel,
+
+    /// Audio input device name substring (defaults to system default input)
+    #[arg(long)]
+    pub device: Option<String>,
+
+    /// 1-based audio interface input channel to analyze (0 = mono sum of all channels)
+    #[arg(long, default_value_t = 1)]
+    pub input_channel: usize,
+
+    /// List available audio input devices and exit
+    #[arg(long, default_value_t = false)]
+    pub list_devices: bool,
+}
+
+/// Extracts a single mono sample stream from an interleaved multi-channel audio frame slice.
+///
+/// If `input_channel == 0`, averages all channels in each frame (mono sum).
+/// Otherwise extracts the 1-based channel index (clamped to `channels`).
+pub fn extract_mono_sample(frame: &[f32], input_channel: usize) -> f32 {
+    if frame.is_empty() {
+        return 0.0;
+    }
+    if input_channel == 0 {
+        frame.iter().copied().sum::<f32>() / frame.len() as f32
+    } else {
+        let idx = (input_channel - 1).min(frame.len() - 1);
+        frame[idx]
+    }
 }
 
 /// Returns maximum allowed input channels for the specified mixer model.
@@ -42,6 +70,23 @@ pub fn max_channels_for_model(model: MixerModel) -> u8 {
 }
 
 pub async fn run(args: Args) -> Result<()> {
+    let host = cpal::default_host();
+
+    if args.list_devices {
+        println!("Available audio input devices:");
+        if let Ok(devices) = host.input_devices() {
+            for (idx, dev) in devices.enumerate() {
+                let name = dev.name().unwrap_or_else(|_| "<unknown>".to_string());
+                let ch_info = dev
+                    .default_input_config()
+                    .map(|c| format!("{} ch @ {} Hz", c.channels(), c.sample_rate().0))
+                    .unwrap_or_else(|_| "unknown format".to_string());
+                println!("  [{}] {} ({})", idx + 1, name, ch_info);
+            }
+        }
+        return Ok(());
+    }
+
     let max_ch = max_channels_for_model(args.model);
     if args.channel < 1 || args.channel > max_ch {
         anyhow::bail!(
@@ -51,17 +96,30 @@ pub async fn run(args: Args) -> Result<()> {
             max_ch
         );
     }
-    // 1. Set up audio capture using cpal
-    let host = cpal::default_host();
-    let device = host
-        .default_input_device()
-        .context("No input device available")?;
-    let config: cpal::StreamConfig = device.default_input_config()?.into();
+
+    // 1. Set up audio capture using cpal (with device selection and multi-channel de-interleaving)
+    let device = if let Some(ref filter) = args.device {
+        let needle = filter.to_ascii_lowercase();
+        host.input_devices()?
+            .find(|d| {
+                d.name()
+                    .map(|n| n.to_ascii_lowercase().contains(&needle))
+                    .unwrap_or(false)
+            })
+            .with_context(|| format!("No audio input device matching '{}'", filter))?
+    } else {
+        host.default_input_device()
+            .context("No input device available")?
+    };
+
+    let supported_config = device.default_input_config()?;
+    let sample_format = supported_config.sample_format();
+    let config: cpal::StreamConfig = supported_config.into();
     let sample_rate = config.sample_rate.0;
+    let ch_count = (config.channels as usize).max(1);
+    let selected_input_ch = args.input_channel;
 
     let (mut producer, mut consumer) = HeapRb::<f32>::new(4096 * 4).split();
-
-    let sample_format = device.default_input_config()?.sample_format();
 
     let err_fn = move |err| {
         eprintln!("Audio input stream error: {}", err);
@@ -71,8 +129,8 @@ pub async fn run(args: Args) -> Result<()> {
         cpal::SampleFormat::F32 => device.build_input_stream(
             &config,
             move |data: &[f32], _: &cpal::InputCallbackInfo| {
-                for &sample in data {
-                    let _ = producer.push(sample);
+                for frame in data.chunks_exact(ch_count) {
+                    let _ = producer.push(extract_mono_sample(frame, selected_input_ch));
                 }
             },
             err_fn,
@@ -81,8 +139,18 @@ pub async fn run(args: Args) -> Result<()> {
         cpal::SampleFormat::I16 => device.build_input_stream(
             &config,
             move |data: &[i16], _: &cpal::InputCallbackInfo| {
-                for &sample in data {
-                    let _ = producer.push(sample as f32 / i16::MAX as f32);
+                for frame in data.chunks_exact(ch_count) {
+                    let s = if selected_input_ch == 0 {
+                        frame
+                            .iter()
+                            .map(|&v| v as f32 / i16::MAX as f32)
+                            .sum::<f32>()
+                            / ch_count as f32
+                    } else {
+                        let idx = (selected_input_ch - 1).min(ch_count - 1);
+                        frame[idx] as f32 / i16::MAX as f32
+                    };
+                    let _ = producer.push(s);
                 }
             },
             err_fn,
@@ -91,9 +159,16 @@ pub async fn run(args: Args) -> Result<()> {
         cpal::SampleFormat::U16 => device.build_input_stream(
             &config,
             move |data: &[u16], _: &cpal::InputCallbackInfo| {
-                for &sample in data {
-                    let _ = producer
-                        .push((sample as f32 - u16::MAX as f32 / 2.0) / (u16::MAX as f32 / 2.0));
+                let half = u16::MAX as f32 / 2.0;
+                for frame in data.chunks_exact(ch_count) {
+                    let s = if selected_input_ch == 0 {
+                        frame.iter().map(|&v| (v as f32 - half) / half).sum::<f32>()
+                            / ch_count as f32
+                    } else {
+                        let idx = (selected_input_ch - 1).min(ch_count - 1);
+                        (frame[idx] as f32 - half) / half
+                    };
+                    let _ = producer.push(s);
                 }
             },
             err_fn,

@@ -79,3 +79,15 @@ Tracked items identified from comparing `pmaillot/X32-Behringer` (`upstream/mast
 | **2. X-Air FX & Scene Parsers** | `XAir_fxparse.c`, `XAir_fxparse1.c`, `XAirSetSceneParse.c` | High | ✅ COMPLETED | Added X-Air (`/lr`, `/rtn/aux`, `/rtn/1..4`, `/fxsend/1..4`, `/headamp`) scene parsing and model-aware `chlink`/`buslink`/`mute`/`fx` limits in `libs/x32_setsceneparse`. |
 | **3. Emulator `/meters` Parity Fixes** | `X32.c` (`84fb370`, `0178461`) | High | ✅ COMPLETED | Added `/meters` command subscription with `time_factor` throttling (including `/meters/5` and `/meters/6` arg positions) in `libs/x32_core` and hooked `mixer.tick()` into `tools/x32_emulator`. |
 | **4. `X32ReaperW.c` New OSC/Reaper Mappings** | `X32ReaperW.c` (`783fe42`) | Medium | ✅ COMPLETED | Ported ReaEQ/ReaComp FX sync (`eq/on`↔`fx/1/bypass`, `dyn/on`↔`fx/2/bypass`, `fxparam` bands, `/-stat/screen/CHAN/page`↔`openui`), User-Bank C encoders `33..36` with play/pause scrub (`40073`, `40172`/`40173`, `40318`/`40319`, `40839`–`40842`), and connect-time refresh (`41743`) into `apps/x32_reaper`. |
+
+---
+
+## 🛠️ Live-Show Functional Gaps Backlog
+
+| Task | Target Crate(s) | Priority | Status | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| **1. Live RTA Feedback Peak Detection in `x32_auto_ringout`** | `apps/x32_auto_ringout` | High | ✅ COMPLETED | Subscribes to X32 100-band RTA (`/meters/4`) with `detect_rta_feedback_peak` (prominence ≥ 9 dB) and ±5% duplicate-notch guard; `--simulate` remains available for offline testing. |
+| **2. Multi-Channel Audio De-Interleaving & Device Selection** | `apps/x32_feedback_detect` | Critical | ✅ COMPLETED | De-interleaves `cpal` frames by `config.channels` (`extract_mono_sample`), and adds `--device`, `--list-devices`, and `--input-channel` flags. |
+| **3. `MixerClient` Transport Resilience & `ConnectionState`** | `libs/x32_lib` | High | ✅ COMPLETED | Retries transient UDP recv/send errors with bounded exponential backoff instead of killing background tasks; exposes `MixerClient::connection_state()`. |
+| **4. `x32_core` Synthetic Meter Levels & Library Indices** | `libs/x32_core` | Medium | ✅ COMPLETED | Generates live fader/mute/oscillator-scaled meter blobs in `tick()` and honors source/destination channel & FX indices in `/save` and `/load`. |
+| **5. Centralized Model-Aware OSC Path Builder** | `libs/x32_lib`, `apps/*` | Medium | ✅ COMPLETED | Added `main_fader_path`, `main_on_path`, `ch_fader_path`, `ch_bus_send_path`, and `ch_eq_band_path` in `libs/x32_lib/src/model.rs` and wired into `x32_automix`. |

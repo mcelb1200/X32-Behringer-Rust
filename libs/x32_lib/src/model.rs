@@ -90,6 +90,49 @@ pub fn resolve_target_address(ip: &str, model: MixerModel) -> String {
     }
 }
 
+/// Returns the model-accurate OSC address for the Main LR fader.
+pub fn main_fader_path(model: MixerModel) -> &'static str {
+    match model {
+        MixerModel::XR18 | MixerModel::XR16 | MixerModel::XR12 => "/lr/mix/fader",
+        MixerModel::Wing => "/main/1/fdr",
+        MixerModel::X32 => "/main/st/mix/fader",
+    }
+}
+
+/// Returns the model-accurate OSC address for the Main LR mute/on toggle.
+pub fn main_on_path(model: MixerModel) -> &'static str {
+    match model {
+        MixerModel::XR18 | MixerModel::XR16 | MixerModel::XR12 => "/lr/mix/on",
+        MixerModel::Wing => "/main/1/mute",
+        MixerModel::X32 => "/main/st/mix/on",
+    }
+}
+
+/// Returns the model-accurate OSC address for a 1-based channel's main fader.
+pub fn ch_fader_path(model: MixerModel, ch: u8) -> String {
+    match model {
+        MixerModel::Wing => format!("/ch/{}/fdr", ch),
+        _ => format!("/ch/{:02}/mix/fader", ch),
+    }
+}
+
+/// Returns the model-accurate OSC address for a 1-based channel's bus send level.
+pub fn ch_bus_send_path(model: MixerModel, ch: u8, bus: u8) -> String {
+    match model {
+        MixerModel::Wing => format!("/ch/{}/send/{}/lvl", ch, bus),
+        _ => format!("/ch/{:02}/mix/{:02}/level", ch, bus),
+    }
+}
+
+/// Returns the model-accurate OSC address for a 1-based channel's parametric EQ band parameter
+/// (`param` is `"f"`, `"g"`, `"q"`, or `"type"`).
+pub fn ch_eq_band_path(model: MixerModel, ch: u8, band: u8, param: &str) -> String {
+    match model {
+        MixerModel::Wing => format!("/ch/{}/eq/{}{}", ch, band, param),
+        _ => format!("/ch/{:02}/eq/{}/{}", ch, band, param),
+    }
+}
+
 /// Converts a normalized `[0.0, 1.0]` fader float to decibels (`-90.0` to `+10.0` dB)
 /// using the standard 4-segment Behringer X32 fader taper.
 pub fn fader_to_db(fader: f32) -> f32 {

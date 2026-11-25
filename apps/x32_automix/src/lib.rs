@@ -76,11 +76,11 @@ pub fn max_channels_for_model(model: MixerModel) -> u8 {
 }
 
 /// Generates the OSC path for controlling fader level or bus send level on a channel.
-pub fn get_fader_or_bus_path(_model: MixerModel, ch: u8, use_bus: bool, bus_number: u8) -> String {
+pub fn get_fader_or_bus_path(model: MixerModel, ch: u8, use_bus: bool, bus_number: u8) -> String {
     if use_bus {
-        format!("/ch/{:02}/mix/{:02}/level", ch, bus_number)
+        x32_lib::model::ch_bus_send_path(model, ch, bus_number)
     } else {
-        format!("/ch/{:02}/mix/fader", ch)
+        x32_lib::model::ch_fader_path(model, ch)
     }
 }
 
@@ -228,7 +228,7 @@ mod tests {
         );
         assert_eq!(
             get_fader_or_bus_path(MixerModel::Wing, 40, false, 1),
-            "/ch/40/mix/fader"
+            "/ch/40/fdr"
         );
         assert_eq!(
             get_fader_or_bus_path(MixerModel::XR18, 16, true, 4),

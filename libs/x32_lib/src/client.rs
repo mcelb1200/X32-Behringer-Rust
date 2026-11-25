@@ -5,11 +5,23 @@ use std::sync::Arc;
 use tokio::sync::{broadcast, watch};
 use tokio::time::{self, Duration};
 
+/// Live connection health reported by [`MixerClient`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ConnectionState {
+    /// Transport is healthy and sending/receiving OSC messages.
+    Connected,
+    /// A transient transport error occurred; background tasks are retrying with backoff.
+    Reconnecting,
+    /// Too many consecutive errors occurred; link is considered down until traffic resumes.
+    Disconnected,
+}
+
 /// A client for interacting with a Behringer X32/Midas M32 mixer.
 pub struct MixerClient {
     transport: Arc<dyn MixerTransport>,
     msg_tx: broadcast::Sender<OscMessage>,
     heartbeat_tx: watch::Sender<bool>,
+    conn_state_rx: watch::Receiver<ConnectionState>,
     _receiver_handle: tokio::task::JoinHandle<()>,
     _heartbeat_handle: tokio::task::JoinHandle<()>,
 }
@@ -44,28 +56,63 @@ impl MixerClient {
         let (msg_tx, _) = broadcast::channel(100);
         let msg_tx_clone = msg_tx.clone();
         let transport_clone = transport.clone();
+        let (conn_state_tx, conn_state_rx) = watch::channel(ConnectionState::Connected);
+        let conn_tx_recv = conn_state_tx.clone();
 
-        // Background receiver task
+        // Background receiver task with bounded exponential backoff on transient I/O errors
         let _receiver_handle = tokio::spawn(async move {
-            while let Ok(msg) = transport_clone.recv().await {
-                let _ = msg_tx_clone.send(msg);
+            let mut consecutive_errors: u32 = 0;
+            loop {
+                match transport_clone.recv().await {
+                    Ok(msg) => {
+                        if consecutive_errors > 0 {
+                            consecutive_errors = 0;
+                            let _ = conn_tx_recv.send(ConnectionState::Connected);
+                        }
+                        let _ = msg_tx_clone.send(msg);
+                    }
+                    Err(_) => {
+                        consecutive_errors = consecutive_errors.saturating_add(1);
+                        let state = if consecutive_errors >= 5 {
+                            ConnectionState::Disconnected
+                        } else {
+                            ConnectionState::Reconnecting
+                        };
+                        let _ = conn_tx_recv.send(state);
+                        let backoff_ms = (50u64 << consecutive_errors.min(6)).min(2_000);
+                        time::sleep(Duration::from_millis(backoff_ms)).await;
+                    }
+                }
             }
         });
 
         let (heartbeat_tx, heartbeat_rx) = watch::channel(heartbeat);
         let transport_heartbeat = transport.clone();
+        let conn_tx_hb = conn_state_tx;
         let _heartbeat_handle = tokio::spawn(async move {
             let mut interval = time::interval(Duration::from_secs(9));
             let heartbeat_msg = OscMessage::new("/xremote".to_string(), vec![]);
+            let mut consecutive_failures: u32 = 0;
             loop {
                 interval.tick().await;
-                if *heartbeat_rx.borrow()
-                    && transport_heartbeat
-                        .send(heartbeat_msg.clone())
-                        .await
-                        .is_err()
-                {
-                    break;
+                if *heartbeat_rx.borrow() {
+                    match transport_heartbeat.send(heartbeat_msg.clone()).await {
+                        Ok(()) => {
+                            if consecutive_failures > 0 {
+                                consecutive_failures = 0;
+                                let _ = conn_tx_hb.send(ConnectionState::Connected);
+                            }
+                        }
+                        Err(_) => {
+                            consecutive_failures = consecutive_failures.saturating_add(1);
+                            let state = if consecutive_failures >= 3 {
+                                ConnectionState::Disconnected
+                            } else {
+                                ConnectionState::Reconnecting
+                            };
+                            let _ = conn_tx_hb.send(state);
+                        }
+                    }
                 }
             }
         });
@@ -74,9 +121,15 @@ impl MixerClient {
             transport,
             msg_tx,
             heartbeat_tx,
+            conn_state_rx,
             _receiver_handle,
             _heartbeat_handle,
         }
+    }
+
+    /// Returns a watch receiver for monitoring live connection health.
+    pub fn connection_state(&self) -> watch::Receiver<ConnectionState> {
+        self.conn_state_rx.clone()
     }
 
     /// Connects to a mixer at the given IP address (OSC over Ethernet or tunneled AES50).
