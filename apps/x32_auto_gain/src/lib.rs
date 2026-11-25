@@ -304,15 +304,19 @@ mod tests {
     fn test_get_headamp_paths() {
         assert_eq!(
             get_headamp_gain_path(MixerModel::X32, 1),
-            "/headamp/01/gain"
+            "/headamp/000/gain"
         );
         assert_eq!(
             get_headamp_gain_path(MixerModel::Wing, 40),
-            "/headamp/40/gain"
+            "/io/in/LCL/40/g"
+        );
+        assert_eq!(
+            get_headamp_gain_path(MixerModel::XR18, 1),
+            "/headamp/01/gain"
         );
         assert_eq!(
             get_headamp_phantom_path(MixerModel::X32, 5),
-            "/headamp/05/+48V"
+            "/headamp/004/phantom"
         );
     }
 
