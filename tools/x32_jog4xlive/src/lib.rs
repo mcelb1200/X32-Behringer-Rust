@@ -42,7 +42,7 @@ pub async fn run(args: Args) -> Result<()> {
         println!("Connecting to X32 at {}", args.ip);
     }
 
-    let addr = format!("{}:10023", args.ip);
+    let addr = x32_lib::model::resolve_target_address(&args.ip, x32_lib::MixerModel::X32);
     let client = MixerClient::connect(&addr, true).await?;
     let mut rx = client.subscribe();
 

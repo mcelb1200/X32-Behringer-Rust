@@ -75,10 +75,15 @@ pub fn get_dca_from_selidx(model: MixerModel, idx: i32) -> Option<u8> {
     }
 }
 
-pub fn get_custom_bank_path(_model: MixerModel, i: usize) -> String {
+pub fn get_custom_bank_path(model: MixerModel, i: usize) -> Option<String> {
     let block = (i / 8) + 1;
     let fader = (i % 8) + 1;
-    format!("/-prefs/custom_bank/{}/{}", block, fader)
+    match model {
+        MixerModel::X32 => Some(format!("/-prefs/custom_bank/{}/{}", block, fader)),
+        MixerModel::Wing => Some(format!("/cfg/layer/{}/{}", block, fader)),
+        // X-Air rack mixers have no physical custom fader banks
+        MixerModel::XR18 | MixerModel::XR16 | MixerModel::XR12 => None,
+    }
 }
 
 pub async fn run(args: Args) -> Result<()> {
@@ -211,10 +216,17 @@ pub async fn spill_dca(
             0 // 0 = OFF
         };
 
-        let path = get_custom_bank_path(model, i);
-        client
-            .send_message(&path, vec![OscArg::Int(source_id)])
-            .await?;
+        if let Some(path) = get_custom_bank_path(model, i) {
+            client
+                .send_message(&path, vec![OscArg::Int(source_id)])
+                .await?;
+        } else if i == 0 {
+            eprintln!(
+                "Warning: {:?} has no physical custom fader banks; skipping fader spill.",
+                model
+            );
+            break;
+        }
     }
 
     println!("Spill complete.");
@@ -307,19 +319,16 @@ mod tests {
     fn test_custom_bank_path_formatting() {
         assert_eq!(
             get_custom_bank_path(MixerModel::X32, 0),
-            "/-prefs/custom_bank/1/1"
+            Some("/-prefs/custom_bank/1/1".to_string())
         );
         assert_eq!(
             get_custom_bank_path(MixerModel::X32, 7),
-            "/-prefs/custom_bank/1/8"
+            Some("/-prefs/custom_bank/1/8".to_string())
         );
         assert_eq!(
             get_custom_bank_path(MixerModel::Wing, 8),
-            "/-prefs/custom_bank/2/1"
+            Some("/cfg/layer/2/1".to_string())
         );
-        assert_eq!(
-            get_custom_bank_path(MixerModel::XR18, 23),
-            "/-prefs/custom_bank/3/8"
-        );
+        assert_eq!(get_custom_bank_path(MixerModel::XR18, 23), None);
     }
 }

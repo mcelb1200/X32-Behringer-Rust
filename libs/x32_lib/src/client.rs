@@ -223,11 +223,8 @@ impl MixerClient {
                 } else {
                     primary_ip
                 };
-                let full_ip = if target_ip.contains(':') {
-                    target_ip.to_string()
-                } else {
-                    format!("{}:10023", target_ip)
-                };
+                let full_ip =
+                    crate::model::resolve_target_address(target_ip, crate::MixerModel::X32);
                 let client = Self::connect(&full_ip, heartbeat).await?;
                 Ok((client, transport.to_string()))
             }

@@ -745,7 +745,7 @@ mod tests {
             Some(&OscArg::Int(1))
         );
         // The original C code puts the note at the next index, but doesn't explicitly mention the path for note in save.
-        // I will assume standard format /note for it. Let's just check name for now to see if basic implementation works.
+        // Verify saved scene name metadata is stored at /-show/showfile/scene/001/name.
 
         // We expect a response acknowledging the save
         assert!(responses.len() >= 1);

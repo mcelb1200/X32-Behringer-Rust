@@ -17,12 +17,13 @@ impl UdpTransport {
         let has_port = ip.contains("]:")
             || (ip.contains(':') && ip.chars().filter(|&c| c == ':').count() == 1);
 
+        let default_port = crate::model::default_port_for_model(crate::MixerModel::X32);
         let full_ip = if has_port {
             ip.to_string()
         } else if ip.contains(':') && !ip.starts_with('[') {
-            format!("[{}]:10023", ip)
+            format!("[{}]:{}", ip, default_port)
         } else {
-            format!("{}:10023", ip)
+            format!("{}:{}", ip, default_port)
         };
         let remote_addr: SocketAddr = full_ip.parse()?;
 

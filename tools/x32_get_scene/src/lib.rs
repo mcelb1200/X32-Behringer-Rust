@@ -57,16 +57,7 @@ pub struct Args {
 
 /// Resolves the target IP and port based on the provided IP string and mixer model.
 pub fn resolve_target_address(ip: &str, model: MixerModel) -> String {
-    if ip.contains(':') {
-        ip.to_string()
-    } else {
-        let port = match model {
-            MixerModel::X32 => 10023,
-            MixerModel::Wing => 2222,
-            MixerModel::XR18 | MixerModel::XR16 | MixerModel::XR12 => 10024,
-        };
-        format!("{}:{}", ip, port)
-    }
+    x32_lib::model::resolve_target_address(ip, model)
 }
 
 /// Formats the model-specific scene file header.

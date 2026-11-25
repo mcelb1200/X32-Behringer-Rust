@@ -39,7 +39,8 @@ pub async fn run(args: Args) -> Result<()> {
     println!(" XAir_Command - Rust Rewrite - (c)2014-18 Patrick-Gilles Maillot");
     print!("Connecting to XR18.");
 
-    let port = std::env::var("XAIR_PORT").unwrap_or_else(|_| "10024".to_string());
+    let port = std::env::var("XAIR_PORT")
+        .unwrap_or_else(|_| x32_lib::model::default_port_for_model(x32_lib::MixerModel::XR18).to_string());
     let target_addr = format!("{}:{}", args.ip, port);
     let _addr: SocketAddr = target_addr.parse().context("Invalid IP address")?;
 

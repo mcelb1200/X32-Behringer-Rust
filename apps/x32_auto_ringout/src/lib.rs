@@ -70,10 +70,7 @@ pub fn max_eq_bands_for_model(model: MixerModel) -> u8 {
 
 /// Formats the bus fader path according to mixer model requirements.
 pub fn get_bus_fader_path(model: MixerModel, bus: u8) -> String {
-    match model {
-        MixerModel::X32 | MixerModel::Wing => format!("/bus/{:02}/mix/fader", bus),
-        MixerModel::XR18 | MixerModel::XR16 | MixerModel::XR12 => format!("/bus/{}/mix/fader", bus),
-    }
+    x32_lib::model::bus_fader_path(model, bus)
 }
 
 /// Writes the bus EQ parameter path into `buf` according to mixer model requirements.

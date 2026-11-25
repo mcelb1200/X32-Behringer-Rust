@@ -61,7 +61,7 @@ struct AppState {
 
 /// The main entry point for the application.
 pub async fn run(args: Args) -> Result<()> {
-    let addr = format!("{}:10023", args.ip);
+    let addr = x32_lib::model::resolve_target_address(&args.ip, x32_lib::MixerModel::X32);
     let client = Arc::new(MixerClient::connect(&addr, false).await?);
 
     if args.verbose {

@@ -16,11 +16,7 @@ pub struct Args {
 }
 
 pub async fn run(args: Args) -> Result<()> {
-    let ip = if args.ip.contains(':') {
-        args.ip.clone()
-    } else {
-        format!("{}:10024", args.ip)
-    };
+    let ip = x32_lib::model::resolve_target_address(&args.ip, x32_lib::MixerModel::XR18);
 
     let client = MixerClient::connect(&ip, false).await?;
 

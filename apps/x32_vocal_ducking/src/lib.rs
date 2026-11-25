@@ -108,8 +108,14 @@ pub fn get_bus_eq_f_path(model: MixerModel, bus_idx: usize) -> String {
 }
 
 /// Generate OSC path for bus compressor dynamic key filter frequency.
-pub fn get_bus_dyn_filter_path(_model: MixerModel, bus_idx: usize) -> String {
-    format!("/bus/{:02}/dyn/filter/f", bus_idx)
+pub fn get_bus_dyn_filter_path(model: MixerModel, bus_idx: usize) -> String {
+    match model {
+        MixerModel::Wing => format!("/bus/{}/dyn/flt/f", bus_idx),
+        MixerModel::XR18 | MixerModel::XR16 | MixerModel::XR12 => {
+            format!("/bus/{}/dyn/filter/f", bus_idx)
+        }
+        MixerModel::X32 => format!("/bus/{:02}/dyn/filter/f", bus_idx),
+    }
 }
 
 /// Get OSC meter subscription path for bus levels.

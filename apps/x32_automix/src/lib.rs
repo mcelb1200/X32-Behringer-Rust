@@ -80,7 +80,7 @@ pub fn get_fader_or_bus_path(model: MixerModel, ch: u8, use_bus: bool, bus_numbe
     if use_bus {
         x32_lib::model::ch_bus_send_path(model, ch, bus_number)
     } else {
-        x32_lib::model::ch_fader_path(model, ch)
+        x32_lib::model::channel_fader_path(model, ch)
     }
 }
 

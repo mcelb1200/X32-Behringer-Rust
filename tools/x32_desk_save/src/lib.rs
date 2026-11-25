@@ -96,12 +96,11 @@ pub async fn run(args: Args) -> Result<(), X32Error> {
     let target_ip = if args.ip.contains(':') {
         args.ip.clone()
     } else {
-        let port = match args.model {
-            MixerModel::X32 => 10023,
-            MixerModel::Wing => 2222,
-            MixerModel::XR18 | MixerModel::XR16 | MixerModel::XR12 => 10024,
-        };
-        format!("{}:{}", args.ip, port)
+        format!(
+            "{}:{}",
+            args.ip,
+            x32_lib::model::default_port_for_model(args.model)
+        )
     };
 
     let (client, _) = MixerClient::connect_with_transport(

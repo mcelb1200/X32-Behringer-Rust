@@ -106,7 +106,7 @@ async fn test_x32_feedback_detect_mixer_state() {
     let transport2 = UdpTransport::connect(&addr).await.unwrap();
     let client2 = MixerClient::new(Arc::new(transport2), true);
 
-    // Since band 6 was available in the fake state (as the logic iterates backwards [6, 5, 4, 3, 2, 1] to find an unused band), it should use it.
+    // Since band 6 was available in the mock state (as the logic iterates backwards [6, 5, 4, 3, 2, 1] to find an unused band), it should use it.
     if let Ok(OscArg::Int(val)) = client2.query_value("/ch/01/eq/6/type").await {
         assert_eq!(val, 3); // PEQ
     } else {

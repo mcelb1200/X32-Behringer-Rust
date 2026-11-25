@@ -53,6 +53,9 @@ PATH_ALLOWLIST = {
     "libs/x32_lib/src/main_bus.rs",
     "libs/x32_core/src/lib.rs",
     "libs/x32_setsceneparse/src/lib.rs",
+    # X32-specific DAW bridge and scene-line prefix matcher
+    "apps/x32_reaper/src/lib.rs",
+    "apps/x32_scene_checker/src/lib.rs",
 }
 
 
@@ -184,9 +187,10 @@ def analyze_file(path: Path, root: Path) -> list[Finding]:
                 )
             )
 
-        # Hardcoded X32 OSC paths in apps/tools
+        # Hardcoded X32 OSC paths in apps/tools (ignore clap default_value attributes)
         if (
             rel not in PATH_ALLOWLIST
+            and "default_value" not in line
             and (rel.startswith("apps/") or rel.startswith("tools/"))
             and HARDCODED_OSC_PATH_RE.search(line)
         ):

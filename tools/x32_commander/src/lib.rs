@@ -59,12 +59,7 @@ pub fn resolve_target_address(ip: &str, model: MixerModel) -> String {
     if ip.contains(':') {
         ip.to_string()
     } else {
-        let port = match model {
-            MixerModel::X32 => 10023,
-            MixerModel::Wing => 2222,
-            MixerModel::XR18 | MixerModel::XR16 | MixerModel::XR12 => 10024,
-        };
-        format!("{}:{}", ip, port)
+        format!("{}:{}", ip, x32_lib::model::default_port_for_model(model))
     }
 }
 

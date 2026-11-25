@@ -121,11 +121,7 @@ pub async fn run(args: Args) -> Result<()> {
     }
 
     println!("Connecting to {} ({}) ...", args.ip, args.model);
-    let ip = if args.ip.contains(':') {
-        args.ip.clone()
-    } else {
-        format!("{}:10023", args.ip)
-    };
+    let ip = x32_lib::model::resolve_target_address(&args.ip, args.model);
     let client = MixerClient::connect(&ip, true).await?;
     println!("Connected. Monitoring channels: {:?}", channels);
 

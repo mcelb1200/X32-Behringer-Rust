@@ -318,7 +318,8 @@ async fn update_bk_ch(
         };
         let _ = x_client.send_message(&msg.path, msg.args.clone()).await;
 
-        for j in 1..=16 {
+        let max_buses = x32_lib::model::limits_for_model(x32_lib::MixerModel::X32).buses as i32;
+        for j in 1..=max_buses {
             path_buf.clear();
             write!(&mut path_buf, "/ch/{:02}/mix/{:02}/level", i, j)
                 .expect("Failed to format OSC path");
@@ -532,7 +533,10 @@ async fn process_x32_message(
                             if let Some(track) =
                                 state_guard.bank_tracks.get_mut((cnum - 1) as usize)
                             {
-                                if (1..=16).contains(&bus) {
+                                let max_buses =
+                                    x32_lib::model::limits_for_model(x32_lib::MixerModel::X32).buses
+                                        as i32;
+                                if (1..=max_buses).contains(&bus) {
                                     track.mixbus[bus as usize - 1] = *f;
                                 }
                             }

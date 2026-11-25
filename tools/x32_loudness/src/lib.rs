@@ -453,7 +453,9 @@ async fn run_calibration(
 
     // Query main fader value
     println!("Querying main fader level...");
-    let fader_arg = client.query_value("/main/st/mix/fader").await?;
+    let fader_arg = client
+        .query_value(x32_lib::model::main_fader_path(x32_lib::MixerModel::X32))
+        .await?;
     let fader_val = match fader_arg {
         OscArg::Float(f) => f,
         _ => return Err(anyhow!("Unexpected fader response type: {:?}", fader_arg)),
@@ -665,10 +667,16 @@ async fn update_eq(
 
             // Configure PEQ types (Low Shelf / High Shelf) to ensure correctness
             client
-                .send_message("/main/st/eq/1/type", vec![OscArg::Int(1)])
+                .send_message(
+                "/main/st/eq/1/type",
+                vec![OscArg::Int(x32_lib::common::EqType::LShv as i32)],
+            )
                 .await?; // Low Shelf
             client
-                .send_message("/main/st/eq/6/type", vec![OscArg::Int(2)])
+                .send_message(
+                "/main/st/eq/6/type",
+                vec![OscArg::Int(x32_lib::common::EqType::Peq as i32)],
+            )
                 .await?; // High Shelf
 
             // Send gains

@@ -90,14 +90,6 @@ pub fn resolve_target_address(ip: &str, model: MixerModel) -> String {
     }
 }
 
-/// Returns the model-accurate OSC address for a 1-based channel's main fader.
-pub fn ch_fader_path(model: MixerModel, ch: u8) -> String {
-    match model {
-        MixerModel::Wing => format!("/ch/{}/fdr", ch),
-        _ => format!("/ch/{:02}/mix/fader", ch),
-    }
-}
-
 /// Returns the model-accurate OSC address for a 1-based channel's bus send level.
 pub fn ch_bus_send_path(model: MixerModel, ch: u8, bus: u8) -> String {
     match model {
@@ -180,33 +172,67 @@ pub fn main_mix_base_path(model: MixerModel) -> &'static str {
 }
 
 /// Returns the channel fader OSC path for the given model and 1-based channel number.
-pub fn channel_fader_path(_model: MixerModel, ch: u8) -> String {
-    format!("/ch/{:02}/mix/fader", ch)
+pub fn channel_fader_path(model: MixerModel, ch: u8) -> String {
+    match model {
+        MixerModel::Wing => format!("/ch/{}/fdr", ch),
+        MixerModel::X32 | MixerModel::XR18 | MixerModel::XR16 | MixerModel::XR12 => {
+            format!("/ch/{:02}/mix/fader", ch)
+        }
+    }
 }
 
 /// Returns the channel mute/on OSC path for the given model and 1-based channel number.
-pub fn channel_mute_path(_model: MixerModel, ch: u8) -> String {
-    format!("/ch/{:02}/mix/on", ch)
+pub fn channel_mute_path(model: MixerModel, ch: u8) -> String {
+    match model {
+        MixerModel::Wing => format!("/ch/{}/mute", ch),
+        MixerModel::X32 | MixerModel::XR18 | MixerModel::XR16 | MixerModel::XR12 => {
+            format!("/ch/{:02}/mix/on", ch)
+        }
+    }
 }
 
 /// Returns the mixbus master fader OSC path for the given model and 1-based bus number.
-pub fn bus_fader_path(_model: MixerModel, bus: u8) -> String {
-    format!("/bus/{:02}/mix/fader", bus)
+pub fn bus_fader_path(model: MixerModel, bus: u8) -> String {
+    match model {
+        MixerModel::Wing => format!("/bus/{}/fdr", bus),
+        MixerModel::XR18 | MixerModel::XR16 | MixerModel::XR12 => {
+            format!("/bus/{}/mix/fader", bus)
+        }
+        MixerModel::X32 => format!("/bus/{:02}/mix/fader", bus),
+    }
 }
 
 /// Returns the mixbus master mute/on OSC path for the given model and 1-based bus number.
-pub fn bus_mute_path(_model: MixerModel, bus: u8) -> String {
-    format!("/bus/{:02}/mix/on", bus)
+pub fn bus_mute_path(model: MixerModel, bus: u8) -> String {
+    match model {
+        MixerModel::Wing => format!("/bus/{}/mute", bus),
+        MixerModel::XR18 | MixerModel::XR16 | MixerModel::XR12 => {
+            format!("/bus/{}/mix/on", bus)
+        }
+        MixerModel::X32 => format!("/bus/{:02}/mix/on", bus),
+    }
 }
 
-/// Returns the mixbus parametric EQ band gain OSC path (`/bus/XX/eq/{band}/g`).
-pub fn bus_eq_gain_path(_model: MixerModel, bus: u8, band: u8) -> String {
-    format!("/bus/{:02}/eq/{}/g", bus, band)
+/// Returns the mixbus parametric EQ band gain OSC path.
+pub fn bus_eq_gain_path(model: MixerModel, bus: u8, band: u8) -> String {
+    match model {
+        MixerModel::Wing => format!("/bus/{}/eq/{}g", bus, band),
+        MixerModel::XR18 | MixerModel::XR16 | MixerModel::XR12 => {
+            format!("/bus/{}/eq/{}/g", bus, band)
+        }
+        MixerModel::X32 => format!("/bus/{:02}/eq/{}/g", bus, band),
+    }
 }
 
-/// Returns the mixbus parametric EQ band frequency OSC path (`/bus/XX/eq/{band}/f`).
-pub fn bus_eq_freq_path(_model: MixerModel, bus: u8, band: u8) -> String {
-    format!("/bus/{:02}/eq/{}/f", bus, band)
+/// Returns the mixbus parametric EQ band frequency OSC path.
+pub fn bus_eq_freq_path(model: MixerModel, bus: u8, band: u8) -> String {
+    match model {
+        MixerModel::Wing => format!("/bus/{}/eq/{}f", bus, band),
+        MixerModel::XR18 | MixerModel::XR16 | MixerModel::XR12 => {
+            format!("/bus/{}/eq/{}/f", bus, band)
+        }
+        MixerModel::X32 => format!("/bus/{:02}/eq/{}/f", bus, band),
+    }
 }
 
 /// Converts a parametric EQ frequency in Hz (`20.0..=20000.0`) to a normalized `[0.0, 1.0]` OSC float.
@@ -224,13 +250,25 @@ pub fn osc_to_eq_freq_hz(osc: f32) -> f32 {
 }
 
 /// Returns the headamp gain OSC path for the given model and 1-based channel number.
-pub fn headamp_gain_path(_model: MixerModel, ch: u8) -> String {
-    format!("/headamp/{:02}/gain", ch)
+pub fn headamp_gain_path(model: MixerModel, ch: u8) -> String {
+    match model {
+        MixerModel::Wing => format!("/io/in/LCL/{}/g", ch),
+        MixerModel::XR18 | MixerModel::XR16 | MixerModel::XR12 => {
+            format!("/headamp/{:02}/gain", ch)
+        }
+        MixerModel::X32 => format!("/headamp/{:03}/gain", ch.saturating_sub(1)),
+    }
 }
 
 /// Returns the headamp +48V phantom power OSC path for the given model and 1-based channel number.
-pub fn headamp_phantom_path(_model: MixerModel, ch: u8) -> String {
-    format!("/headamp/{:02}/+48V", ch)
+pub fn headamp_phantom_path(model: MixerModel, ch: u8) -> String {
+    match model {
+        MixerModel::Wing => format!("/io/in/LCL/{}/48v", ch),
+        MixerModel::XR18 | MixerModel::XR16 | MixerModel::XR12 => {
+            format!("/headamp/{:02}/phantom", ch)
+        }
+        MixerModel::X32 => format!("/headamp/{:03}/phantom", ch.saturating_sub(1)),
+    }
 }
 
 #[cfg(test)]

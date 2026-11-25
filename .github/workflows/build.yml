@@ -13,6 +13,18 @@ env:
   RUSTFLAGS: ""
 
 jobs:
+  static_analysis:
+    name: Static Analysis & Comment Audit
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Run static analysis
+      run: python3 tools/static_analysis.py --fail-on-findings
+
+    - name: Run comment audit
+      run: python3 tools/audit_comments.py --fail-on-findings
+
   build_and_test:
     name: Build on ${{ matrix.os }} for ${{ matrix.target }}
     runs-on: ${{ matrix.os }}

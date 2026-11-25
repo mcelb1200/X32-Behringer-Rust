@@ -190,11 +190,7 @@ pub async fn run(args: Args) -> Result<()> {
     }
 
     println!("Connecting to {}...", args.ip);
-    let ip = if args.ip.contains(':') {
-        args.ip.clone()
-    } else {
-        format!("{}:10023", args.ip)
-    };
+    let ip = x32_lib::model::resolve_target_address(&args.ip, args.model);
     let client = MixerClient::connect(&ip, true).await?;
     let delay = Duration::from_millis(10);
     let state_file = get_state_file_path();

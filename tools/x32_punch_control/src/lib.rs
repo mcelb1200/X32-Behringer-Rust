@@ -50,7 +50,8 @@ pub async fn run(args: Args) -> Result<()> {
     println!("Connecting to X32 at {}", config.xip_str);
 
     let socket = UdpSocket::bind("0.0.0.0:0").await?;
-    let x32_addr = format!("{}:10023", config.xip_str);
+    let x32_addr =
+        x32_lib::model::resolve_target_address(&config.xip_str, x32_lib::MixerModel::X32);
     socket.connect(&x32_addr).await?;
     let socket = Arc::new(socket);
 

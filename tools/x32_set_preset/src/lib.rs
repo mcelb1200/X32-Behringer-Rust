@@ -146,7 +146,10 @@ pub async fn run(args: Args) -> Result<()> {
     if args.master_safe {
         println!("Muting Main L/R and M/C...");
         client
-            .send_message("/main/st/mix/on", vec![OscArg::Int(0)])
+            .send_message(
+                x32_lib::model::main_mute_path(x32_lib::MixerModel::X32),
+                vec![OscArg::Int(0)],
+            )
             .await?;
         client
             .send_message("/main/m/mix/on", vec![OscArg::Int(0)])
