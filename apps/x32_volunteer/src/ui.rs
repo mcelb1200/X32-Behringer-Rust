@@ -82,10 +82,18 @@ impl Tui {
             Status::Caution => "🟡 CAUTION",
             Status::Problem => "🔴 PROBLEM",
         };
+        let conn_text = if state.last_rx_at.is_none() {
+            "CONNECTING"
+        } else if state.is_online() {
+            "ONLINE"
+        } else {
+            "OFFLINE"
+        };
+        let main_mute_text = if state.main_muted { "MUTED" } else { "LIVE" };
         write!(
             self.header_buf,
-            "  🎛️  SOUND DESK — Volunteer Mode              {}",
-            status_text
+            "  🎛️  VOLUNTEER MODE  |  {}  |  Main LR: {} ({:.2})  |  {}",
+            conn_text, main_mute_text, state.main_fader, status_text
         )
         .expect("Write to header buffer failed");
 
@@ -204,8 +212,20 @@ impl Tui {
                         Line::from(mute_text),
                     ];
 
+                    let border_style = if i == state.selected_idx {
+                        Style::default()
+                            .fg(Color::Cyan)
+                            .add_modifier(Modifier::BOLD)
+                    } else {
+                        Style::default()
+                    };
+
                     let ch_para = Paragraph::new(ch_text)
-                        .block(Block::default().borders(Borders::ALL))
+                        .block(
+                            Block::default()
+                                .borders(Borders::ALL)
+                                .border_style(border_style),
+                        )
                         .style(Style::default().fg(level_color));
 
                     f.render_widget(ch_para, channel_chunks[i]);
@@ -217,10 +237,23 @@ impl Tui {
                 "ALERTS",
                 Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
             ))];
+            if state.is_panic_armed() {
+                alert_lines.push(Line::from(Span::styled(
+                    "⚠️  PANIC ARMED — Press [P] again within 3s to mute & zero all channels, or any key to cancel",
+                    Style::default()
+                        .fg(Color::Yellow)
+                        .add_modifier(Modifier::BOLD),
+                )));
+            } else if !state.is_online() {
+                alert_lines.push(Line::from(Span::styled(
+                    "🔴 Mixer not responding — check network connection or console IP",
+                    Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
+                )));
+            }
             for alert_buf in &self.alert_bufs {
                 alert_lines.push(Line::from(alert_buf.as_str()));
             }
-            if state.alerts.is_empty() {
+            if state.alerts.is_empty() && !state.is_panic_armed() && state.is_online() {
                 alert_lines.push(Line::from(Span::styled(
                     "No active alerts",
                     Style::default().fg(Color::DarkGray),
@@ -230,8 +263,10 @@ impl Tui {
             f.render_widget(alerts, chunks[2]);
 
             // 4. Footer
-            let footer = Paragraph::new("  [M]ute all  [P]anic  [Q]uit")
-                .block(Block::default().borders(Borders::ALL));
+            let footer = Paragraph::new(
+                "  [←/→] Select  [Space] Mute  [↑/↓] Fader  [M]ute all  [P]anic (2x)  [Q]uit",
+            )
+            .block(Block::default().borders(Borders::ALL));
             f.render_widget(footer, chunks[3]);
         })?;
         Ok(())
@@ -244,7 +279,14 @@ impl Tui {
                     KeyCode::Esc | KeyCode::Char('q') => return Ok(Some(UIEvent::Quit)),
                     KeyCode::Char('m') => return Ok(Some(UIEvent::MuteAll)),
                     KeyCode::Char('p') => return Ok(Some(UIEvent::Panic)),
-                    _ => {}
+                    KeyCode::Left | KeyCode::Char('h') => return Ok(Some(UIEvent::SelectPrev)),
+                    KeyCode::Right | KeyCode::Char('l') => return Ok(Some(UIEvent::SelectNext)),
+                    KeyCode::Char(' ') | KeyCode::Enter => {
+                        return Ok(Some(UIEvent::ToggleSelectedMute))
+                    }
+                    KeyCode::Up | KeyCode::Char('k') => return Ok(Some(UIEvent::FaderUp)),
+                    KeyCode::Down | KeyCode::Char('j') => return Ok(Some(UIEvent::FaderDown)),
+                    _ => return Ok(Some(UIEvent::CancelConfirm)),
                 }
             }
         }
@@ -267,4 +309,10 @@ pub enum UIEvent {
     Quit,
     MuteAll,
     Panic,
+    SelectPrev,
+    SelectNext,
+    ToggleSelectedMute,
+    FaderUp,
+    FaderDown,
+    CancelConfirm,
 }

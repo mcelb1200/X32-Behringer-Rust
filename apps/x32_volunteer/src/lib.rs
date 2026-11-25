@@ -100,6 +100,49 @@ pub fn fader_float_to_db(fader: f32) -> f32 {
     }
 }
 
+/// Converts a dBFS value (-90.0 to +10.0) to a 0.0-1.0 float fader position.
+pub fn db_to_fader_float(db: f32) -> f32 {
+    let d = db.clamp(-90.0, 10.0);
+    if d <= -90.0 {
+        0.0
+    } else if d <= -30.0 {
+        ((d + 90.0) / 60.0) * 0.25
+    } else if d <= -10.0 {
+        0.25 + ((d + 30.0) / 20.0) * 0.25
+    } else if d <= 0.0 {
+        0.50 + ((d + 10.0) / 10.0) * 0.25
+    } else {
+        0.75 + (d / 10.0) * 0.25
+    }
+}
+
+/// Clamps a target fader float within `[0.0, 1.0]` and any configured `max_limit_db` ceiling.
+pub fn clamp_fader_with_limit(fader: f32, max_limit_db: Option<f32>) -> f32 {
+    let max_float = max_limit_db.map(db_to_fader_float).unwrap_or(1.0);
+    fader.clamp(0.0, max_float)
+}
+
+/// Computes overall dashboard health status from active alerts, panic arming, main mute, and connectivity.
+pub fn compute_status(state: &AppState) -> state::Status {
+    let has_clipping = state
+        .active_alerts
+        .iter()
+        .any(|a| matches!(a, state::Alert::Clipping { .. }));
+    if has_clipping || !state.is_online() {
+        return state::Status::Problem;
+    }
+
+    let has_fader_limit = state
+        .active_alerts
+        .iter()
+        .any(|a| matches!(a, state::Alert::FaderLimit { .. }));
+    if has_fader_limit || state.is_panic_armed() || state.main_muted {
+        return state::Status::Caution;
+    }
+
+    state::Status::Ok
+}
+
 pub fn load_config_file(path: &str) -> Result<ConfigFile> {
     let file = std::fs::File::open(path)?;
     let mut reader = std::io::Read::take(file, 1024 * 1024); // 1MB limit for safety
@@ -216,6 +259,8 @@ async fn run_tui_loop(
         network.send_message(ch.mute_path.as_str(), vec![]).await?;
         network.send_message(ch.name_path.as_str(), vec![]).await?;
     }
+    network.send_message("/main/st/mix/fader", vec![]).await?;
+    network.send_message("/main/st/mix/on", vec![]).await?;
     network
         .send_message("/meters", vec![OscArg::String("/meters/1".to_string())])
         .await?;
@@ -226,7 +271,20 @@ async fn run_tui_loop(
     loop {
         // Handle incoming OSC
         while let Ok(msg) = rx.try_recv() {
+            state.last_rx_at = Some(Instant::now());
             let path = msg.path;
+
+            if path == "/main/st/mix/fader" {
+                if let Some(OscArg::Float(v)) = msg.args.first() {
+                    state.main_fader = *v;
+                }
+                continue;
+            } else if path == "/main/st/mix/on" {
+                if let Some(OscArg::Int(v)) = msg.args.first() {
+                    state.main_muted = *v == 0;
+                }
+                continue;
+            }
 
             // Fader / Mute updates
             for ch in &mut state.channels {
@@ -310,27 +368,87 @@ async fn run_tui_loop(
                 }
             }
 
+            state.status = compute_status(&state);
             tui.draw(&state)?;
 
             if let Some(event) = tui.handle_events()? {
                 match event {
                     UIEvent::Quit => break,
                     UIEvent::MuteAll => {
-                        for ch in &state.channels {
+                        state.confirm_panic_at = None;
+                        for ch in &mut state.channels {
+                            ch.muted = true;
                             network
                                 .send_message(&ch.mute_path, vec![OscArg::Int(0)])
                                 .await?;
                         }
                     }
                     UIEvent::Panic => {
-                        for ch in &state.channels {
+                        if state.is_panic_armed() {
+                            state.confirm_panic_at = None;
+                            for ch in &mut state.channels {
+                                ch.muted = true;
+                                ch.fader = 0.0;
+                                network
+                                    .send_message(&ch.mute_path, vec![OscArg::Int(0)])
+                                    .await?;
+                                network
+                                    .send_message(&ch.fader_path, vec![OscArg::Float(0.0)])
+                                    .await?;
+                            }
+                        } else {
+                            state.confirm_panic_at = Some(Instant::now());
+                        }
+                    }
+                    UIEvent::SelectPrev => {
+                        state.confirm_panic_at = None;
+                        if !state.channels.is_empty() {
+                            state.selected_idx = state
+                                .selected_idx
+                                .checked_sub(1)
+                                .unwrap_or(state.channels.len() - 1);
+                        }
+                    }
+                    UIEvent::SelectNext => {
+                        state.confirm_panic_at = None;
+                        if !state.channels.is_empty() {
+                            state.selected_idx = (state.selected_idx + 1) % state.channels.len();
+                        }
+                    }
+                    UIEvent::ToggleSelectedMute => {
+                        state.confirm_panic_at = None;
+                        if let Some(ch) = state.channels.get_mut(state.selected_idx) {
+                            ch.muted = !ch.muted;
+                            let osc_on = if ch.muted { 0 } else { 1 };
                             network
-                                .send_message(&ch.mute_path, vec![OscArg::Int(0)])
-                                .await?;
-                            network
-                                .send_message(&ch.fader_path, vec![OscArg::Float(0.0)])
+                                .send_message(&ch.mute_path, vec![OscArg::Int(osc_on)])
                                 .await?;
                         }
+                    }
+                    UIEvent::FaderUp => {
+                        state.confirm_panic_at = None;
+                        let limit_db = state.max_fader_limit_db;
+                        if let Some(ch) = state.channels.get_mut(state.selected_idx) {
+                            let next = clamp_fader_with_limit(ch.fader + 0.02, limit_db);
+                            ch.fader = next;
+                            network
+                                .send_message(&ch.fader_path, vec![OscArg::Float(next)])
+                                .await?;
+                        }
+                    }
+                    UIEvent::FaderDown => {
+                        state.confirm_panic_at = None;
+                        let limit_db = state.max_fader_limit_db;
+                        if let Some(ch) = state.channels.get_mut(state.selected_idx) {
+                            let next = clamp_fader_with_limit(ch.fader - 0.02, limit_db);
+                            ch.fader = next;
+                            network
+                                .send_message(&ch.fader_path, vec![OscArg::Float(next)])
+                                .await?;
+                        }
+                    }
+                    UIEvent::CancelConfirm => {
+                        state.confirm_panic_at = None;
                     }
                 }
             }
@@ -447,5 +565,42 @@ mod tests {
         let _network = MixerClient::new(Arc::new(transport), false);
 
         Ok(())
+    }
+
+    #[test]
+    fn test_db_to_fader_roundtrip_and_clamp() {
+        assert!((db_to_fader_float(0.0) - 0.75).abs() < 0.001);
+        assert!((db_to_fader_float(-10.0) - 0.50).abs() < 0.001);
+        assert!((db_to_fader_float(-30.0) - 0.25).abs() < 0.001);
+        assert_eq!(db_to_fader_float(-90.0), 0.0);
+        assert_eq!(db_to_fader_float(10.0), 1.0);
+
+        let clamped = clamp_fader_with_limit(0.95, Some(-3.0));
+        assert!((clamped - db_to_fader_float(-3.0)).abs() < 0.001);
+        assert_eq!(clamp_fader_with_limit(-0.2, None), 0.0);
+    }
+
+    #[test]
+    fn test_compute_status_transitions() {
+        let ch = ChannelState::new("/ch/01".to_string(), false, 1);
+        let mut state = AppState::new(vec![ch]);
+        assert_eq!(compute_status(&state), state::Status::Ok);
+
+        state.main_muted = true;
+        assert_eq!(compute_status(&state), state::Status::Caution);
+
+        state.main_muted = false;
+        state.active_alerts.push(state::Alert::FaderLimit {
+            channel_idx: 0,
+            fader_db: 2.0,
+            limit: 0.0,
+        });
+        assert_eq!(compute_status(&state), state::Status::Caution);
+
+        state.active_alerts.push(state::Alert::Clipping {
+            channel_idx: 0,
+            level_db: -2.0,
+        });
+        assert_eq!(compute_status(&state), state::Status::Problem);
     }
 }

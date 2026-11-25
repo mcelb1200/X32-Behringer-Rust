@@ -4,6 +4,30 @@ Welcome to the X32 Tools User Guide. This document categorizes the workspace uti
 
 ---
 
+## 🛡️ Volunteer & Safety Apps
+
+High-level applications in `apps/` designed for non-expert operators, live safety guardrails, and automated setup:
+
+### `x32_volunteer` (Interactive)
+Simplified Terminal UI dashboard for volunteer sound operators across X32, Wing, and X-Air (`XR18`/`XR16`/`XR12`). Supports `x32_config.json`, per-channel mute/fader nudging clamped to `--max-fader-limit-db`, Main LR status, connection health monitoring, clipping alerts, and a 2-step confirmed `[P]anic` button. See [apps/x32_volunteer/README.md](../apps/x32_volunteer/README.md).
+
+### `x32_safe_mute`
+"Panic Button" utility that silences the system using a rapid exponential fade instead of a hard mute to prevent speaker pops and thumps.
+
+### `x32_scene_checker`
+Pre-flight scene diffing and risk-classification tool (`--safe-load` skips critical/high-risk changes, `--locked-paths` protects routing/main buses, and `--backup` saves the pre-load state).
+
+### `x32_speech_mode`
+Model-aware one-shot macro that configures spoken-word channels (HPF, compression, EQ) safely across X32, Wing, and X-Air consoles.
+
+### `x32_auto_gain` / `x32_auto_ringout` / `x32_feedback_detect` / `x32_vocal_ducking`
+Automated gain staging, monitor ringout notch filtering, live feedback detection, and music-under-speech ducking.
+
+### `x32_dca_spill` / `x32_sync` / `x32_system_tune`
+DCA spill controller, bidirectional multi-console state sync, and system tuning TUI.
+
+---
+
 ## 🎭 Live Performance & Mixing
 
 These tools are designed for real-time use during a performance.

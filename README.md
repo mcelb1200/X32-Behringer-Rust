@@ -66,6 +66,8 @@ graph TD;
 ### Featured Tools
 | Crate | Category | Description |
 | :--- | :--- | :--- |
+| `x32_volunteer` | **Volunteer** | Simplified TUI dashboard with fader limits, clipping alerts, and guarded panic mute. |
+| `x32_scene_checker`| **Safety** | Pre-flight scene risk analyzer with `--safe-load` and path locking. |
 | `x32_autobeat` | **Live** | Automatic BPM detection (Energy/Spectral) and effect synchronization. |
 | `x32_crossfade` | **Live** | Smooth interpolation and scene transition engine for live shows. |
 | `x32_tapw` | **Live** | Interactive TUI for setting delay tap tempo with auto-thresholding. |
