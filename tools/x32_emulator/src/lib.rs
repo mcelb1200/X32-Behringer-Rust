@@ -82,6 +82,11 @@ pub mod server {
                     break;
                 }
             }
+
+            // Emit any due meter packets for active /meters subscriptions
+            for (addr, packet) in mixer.tick() {
+                let _ = socket.send_to(&packet, addr);
+            }
         }
         Ok(())
     }

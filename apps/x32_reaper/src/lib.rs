@@ -237,6 +237,15 @@ async fn init_user_ctrl(
         update_bk_ch(x_client, config, state, reaper_info).await?;
     }
 
+    // Force REAPER control surface refresh on connect (X32ReaperW.c)
+    if let Some((r_sock, r_addr)) = reaper_info {
+        let refresh = OscMessage {
+            path: "/action/41743".to_string(),
+            args: vec![],
+        };
+        let _ = send_to_r(r_sock, r_addr, &refresh).await;
+    }
+
     Ok(())
 }
 
@@ -536,6 +545,72 @@ async fn process_x32_message(
                 }
             }
         }
+        // ReaEQ / ReaComp FX sync (X32ReaperW.c)
+        if config.eq_ctrl_on {
+            if msg.path.ends_with("/eq/on") {
+                xr_mask = X32FX;
+                if let Some(OscArg::Int(v)) = msg.args.first() {
+                    let bypass = if *v != 0 { 0.0 } else { 1.0 };
+                    rb_msg = Some(OscMessage {
+                        path: format!("/track/{}/fx/1/bypass", cnum1),
+                        args: vec![OscArg::Float(bypass)],
+                    });
+                }
+            } else if msg.path.ends_with("/dyn/on") {
+                xr_mask = X32FX;
+                if let Some(OscArg::Int(v)) = msg.args.first() {
+                    let bypass = if *v != 0 { 0.0 } else { 1.0 };
+                    rb_msg = Some(OscMessage {
+                        path: format!("/track/{}/fx/2/bypass", cnum1),
+                        args: vec![OscArg::Float(bypass)],
+                    });
+                }
+            } else if extract_nth_segment(&msg.path, 3) == Some("eq") {
+                if let (Some(band_str), Some(param), Some(OscArg::Float(f))) = (
+                    extract_nth_segment(&msg.path, 4),
+                    extract_nth_segment(&msg.path, 5),
+                    msg.args.first(),
+                ) {
+                    if let Ok(band) = band_str.parse::<i32>() {
+                        if (1..=4).contains(&band) {
+                            let fxparam = match param {
+                                "f" => Some((band - 1) * 3 + 1),
+                                "g" => Some((band - 1) * 3 + 2),
+                                "q" => Some((band - 1) * 3 + 3),
+                                _ => None,
+                            };
+                            if let Some(p) = fxparam {
+                                xr_mask = X32FX;
+                                rb_msg = Some(OscMessage {
+                                    path: format!("/track/{}/fx/1/fxparam/{}/value", cnum1, p),
+                                    args: vec![OscArg::Float(*f)],
+                                });
+                            }
+                        }
+                    }
+                }
+            } else if extract_nth_segment(&msg.path, 3) == Some("dyn") {
+                if let (Some(param), Some(OscArg::Float(f))) =
+                    (extract_nth_segment(&msg.path, 4), msg.args.first())
+                {
+                    let fxparam = match param {
+                        "thr" => Some(1),
+                        "ratio" => Some(2),
+                        "attack" => Some(3),
+                        "release" => Some(4),
+                        "mix" => Some(12),
+                        _ => None,
+                    };
+                    if let Some(p) = fxparam {
+                        xr_mask = X32FX;
+                        rb_msg = Some(OscMessage {
+                            path: format!("/track/{}/fx/2/fxparam/{}/value", cnum1, p),
+                            args: vec![OscArg::Float(*f)],
+                        });
+                    }
+                }
+            }
+        }
     }
 
     // /main/st/mix/
@@ -591,7 +666,24 @@ async fn process_x32_message(
     }
 
     if msg.path.starts_with("/-stat/") {
-        if msg.path.contains("selidx") {
+        if msg.path == "/-stat/screen/CHAN/page" && config.eq_ctrl_on {
+            if let Some(OscArg::Int(page)) = msg.args.first() {
+                let fx_idx = match *page {
+                    4 => Some(1), // EQ screen -> ReaEQ
+                    3 => Some(2), // DYN screen -> ReaComp
+                    _ => None,
+                };
+                if let Some(fx) = fx_idx {
+                    if state_guard.r_selected > 0 {
+                        xr_mask = X32FX;
+                        rb_msg = Some(OscMessage {
+                            path: format!("/track/{}/fx/{}/openui", state_guard.r_selected, fx),
+                            args: vec![OscArg::Float(1.0)],
+                        });
+                    }
+                }
+            }
+        } else if msg.path.contains("selidx") {
             xr_mask = X32SELECT;
             if (xr_mask & config.xr_send_mask) != 0 {
                 send_to_r(
@@ -873,7 +965,61 @@ async fn handle_user_par(
                     .await?;
                 }
             }
-            // Encoders 33-36 logic omitted for brevity but follows same pattern
+            // Bank C encoders 33-36 (X32ReaperW.c infinite rotation around center 64)
+            33..=36 => {
+                const CENTER: i32 = 64;
+                if val != CENTER {
+                    let was_playing = state.play;
+                    if was_playing {
+                        send_to_r(
+                            r_sock,
+                            r_addr,
+                            &OscMessage {
+                                path: "/action/40073".to_string(),
+                                args: vec![],
+                            },
+                        )
+                        .await?;
+                    }
+                    let action = match (idx, val > CENTER) {
+                        (33, true) => "/action/40839",  // Move cursor forward one beat
+                        (33, false) => "/action/40840", // Move cursor back one beat
+                        (34, true) => "/action/40841",  // Move cursor forward one measure
+                        (34, false) => "/action/40842", // Move cursor back one measure
+                        (35, true) => "/action/40173",  // Next marker
+                        (35, false) => "/action/40172", // Previous marker
+                        (36, true) => "/action/40319",  // Move right to next item
+                        (36, false) => "/action/40318", // Move left to previous item
+                        _ => unreachable!(),
+                    };
+                    send_to_r(
+                        r_sock,
+                        r_addr,
+                        &OscMessage {
+                            path: action.to_string(),
+                            args: vec![],
+                        },
+                    )
+                    .await?;
+                    if was_playing {
+                        send_to_r(
+                            r_sock,
+                            r_addr,
+                            &OscMessage {
+                                path: "/action/40073".to_string(),
+                                args: vec![],
+                            },
+                        )
+                        .await?;
+                    }
+                    let _ = x_client
+                        .send_message(
+                            &format!("/-stat/userpar/{}/value", idx),
+                            vec![OscArg::Int(CENTER)],
+                        )
+                        .await;
+                }
+            }
             _ => {}
         }
     } else if val == 0 {
@@ -1156,6 +1302,107 @@ async fn process_single_reaper_message(
                                     path: "/-stat/selidx".to_string(),
                                     args: vec![OscArg::Int(x_sel)],
                                 });
+                            }
+                        }
+                    }
+                } else if config.eq_ctrl_on && extract_nth_segment(&msg.path, 3) == Some("fx") {
+                    // ReaEQ (fx/1) and ReaComp (fx/2) -> X32 EQ/DYN (X32ReaperW.c)
+                    xx_mask = TRACKFX;
+                    let fx_num = extract_nth_segment(&msg.path, 4).unwrap_or("");
+                    let fx_cmd = extract_nth_segment(&msg.path, 5).unwrap_or("");
+
+                    // Resolve X32 strip prefix for this track (skip DCA tracks)
+                    let strip_prefix = if tnum >= config.trk_min && tnum <= config.trk_max {
+                        let idx = tnum - config.trk_min;
+                        let ch = if config.ch_bank_on {
+                            idx - state_guard.ch_bank_offset * config.bank_size + 1
+                        } else {
+                            idx + 1
+                        };
+                        if ch >= 1 && ch <= config.bank_size {
+                            Some(format!("/ch/{:02}", ch))
+                        } else {
+                            None
+                        }
+                    } else if config.aux_max > 0 && tnum >= config.aux_min && tnum <= config.aux_max
+                    {
+                        Some(format!("/auxin/{:02}", tnum - config.aux_min + 1))
+                    } else if config.fxr_max > 0 && tnum >= config.fxr_min && tnum <= config.fxr_max
+                    {
+                        Some(format!("/fxrtn/{:02}", tnum - config.fxr_min + 1))
+                    } else if config.bus_max > 0 && tnum >= config.bus_min && tnum <= config.bus_max
+                    {
+                        Some(format!("/bus/{:02}", tnum - config.bus_min + 1))
+                    } else {
+                        None
+                    };
+
+                    if fx_cmd == "openui" {
+                        if let Some(OscArg::Float(f)) = msg.args.first() {
+                            if *f > 0.5 && strip_prefix.is_some() {
+                                let page = match fx_num {
+                                    "1" => Some(4), // EQ page
+                                    "2" => Some(3), // DYN page
+                                    _ => None,
+                                };
+                                if let Some(p) = page {
+                                    xb_msg = Some(OscMessage {
+                                        path: "/-stat/screen/CHAN/page".to_string(),
+                                        args: vec![OscArg::Int(p)],
+                                    });
+                                }
+                            }
+                        }
+                    } else if let Some(prefix) = strip_prefix {
+                        if fx_cmd == "bypass" {
+                            if let Some(OscArg::Float(f)) = msg.args.first() {
+                                let on_val = if *f > 0.5 { 0 } else { 1 };
+                                let suffix = match fx_num {
+                                    "1" => Some("/eq/on"),
+                                    "2" => Some("/dyn/on"),
+                                    _ => None,
+                                };
+                                if let Some(sfx) = suffix {
+                                    xb_msg = Some(OscMessage {
+                                        path: format!("{}{}", prefix, sfx),
+                                        args: vec![OscArg::Int(on_val)],
+                                    });
+                                }
+                            }
+                        } else if fx_cmd == "fxparam"
+                            && extract_nth_segment(&msg.path, 7) == Some("value")
+                        {
+                            if let (Some(p_str), Some(OscArg::Float(f))) =
+                                (extract_nth_segment(&msg.path, 6), msg.args.first())
+                            {
+                                if let Ok(p) = p_str.parse::<i32>() {
+                                    let sub_path = match fx_num {
+                                        "1" if (1..=12).contains(&p) => {
+                                            let band = (p - 1) / 3 + 1;
+                                            let param = match (p - 1) % 3 {
+                                                0 => "f",
+                                                1 => "g",
+                                                _ => "q",
+                                            };
+                                            Some(format!("/eq/{}/{}", band, param))
+                                        }
+                                        "2" => match p {
+                                            1 => Some("/dyn/thr".to_string()),
+                                            2 => Some("/dyn/ratio".to_string()),
+                                            3 => Some("/dyn/attack".to_string()),
+                                            4 => Some("/dyn/release".to_string()),
+                                            12 => Some("/dyn/mix".to_string()),
+                                            _ => None,
+                                        },
+                                        _ => None,
+                                    };
+                                    if let Some(sp) = sub_path {
+                                        xb_msg = Some(OscMessage {
+                                            path: format!("{}{}", prefix, sp),
+                                            args: vec![OscArg::Float(*f)],
+                                        });
+                                    }
+                                }
                             }
                         }
                     }

@@ -145,11 +145,20 @@ impl MixerState {
 }
 
 /// A struct that emulates the behavior of a digital mixer console (X32, Wing, XR18, XR16, XR12).
+/// Active meter subscription state (matching `X32.c` v0.88 `Xprepmeter` time-factor behavior).
+#[derive(Debug, Clone, Copy)]
+struct MeterSubscription {
+    expiry: Instant,
+    interval: Duration,
+    last_sent: Option<Instant>,
+}
+
+/// The central emulated digital mixer state machine.
 pub struct Mixer {
     state: MixerState,
     clients: Vec<(SocketAddr, Instant)>,
-    // Track active meters per client. Map of (client_addr, meter_idx) -> expiry time
-    active_meters: HashMap<(SocketAddr, u8), Instant>,
+    // Track active meters per client. Map of (client_addr, meter_idx) -> subscription state
+    active_meters: HashMap<(SocketAddr, u8), MeterSubscription>,
     model: MixerModel,
 }
 
@@ -185,16 +194,24 @@ impl Mixer {
         self.model = model;
     }
 
-    /// Seeds the mixer's state from a vector of OSC command strings.
+    /// Generates periodic meter blobs for active meter subscriptions whose
+    /// `time_factor` interval (`50ms * tf`) has elapsed.
     pub fn tick(&mut self) -> Vec<(SocketAddr, Arc<[u8]>)> {
         let mut responses = Vec::new();
         let now = Instant::now();
 
         // Expire old meters
-        self.active_meters.retain(|_, expiry| now < *expiry);
+        self.active_meters.retain(|_, sub| now < sub.expiry);
 
-        // Generate meter blobs for each active subscription
-        for &(addr, meter_idx) in self.active_meters.keys() {
+        // Generate meter blobs for each active subscription that is due
+        for (&(addr, meter_idx), sub) in self.active_meters.iter_mut() {
+            if let Some(last_sent) = sub.last_sent {
+                if now.duration_since(last_sent) < sub.interval {
+                    continue;
+                }
+            }
+            sub.last_sent = Some(now);
+
             // Number of floats expected per meter index based on mixer model
             let num_floats = match (self.model, meter_idx) {
                 (MixerModel::X32, 0) => 70,
@@ -224,7 +241,7 @@ impl Mixer {
             };
 
             if num_floats > 0 {
-                // Generate a dummy blob of 0.0 floats
+                // Generate a dummy blob of 0.0 floats (4 bytes per 32-bit float)
                 let blob_size = num_floats * 4;
                 let blob = vec![0u8; blob_size];
 
@@ -334,12 +351,56 @@ impl Mixer {
             return Ok(responses);
         }
 
-        // Handle /meters subscriptions
+        // Handle standard X32 /meters subscriptions:
+        //   /meters ,s "/meters/i"
+        //   /meters ,si "/meters/i" <time_factor>
+        //   /meters ,siii "/meters/5" <p1> <p2> <time_factor>
+        //   /meters ,sii "/meters/6" <p1> <time_factor>
+        if osc_msg.path == "/meters" {
+            if let Some(OscArg::String(target)) = osc_msg.args.first() {
+                if let Some(idx_str) = target.strip_prefix("/meters/") {
+                    if let Ok(meter_idx) = idx_str.parse::<u8>() {
+                        if meter_idx <= 16 {
+                            let tf_arg = match meter_idx {
+                                5 => osc_msg.args.get(3).or_else(|| osc_msg.args.get(1)),
+                                6 => osc_msg.args.get(2).or_else(|| osc_msg.args.get(1)),
+                                _ => osc_msg.args.get(1),
+                            };
+                            let tf = match tf_arg {
+                                Some(OscArg::Int(v)) if (1..=99).contains(v) => *v as u64,
+                                _ => 1,
+                            };
+                            self.active_meters.insert(
+                                (remote_addr, meter_idx),
+                                MeterSubscription {
+                                    expiry: now + Duration::from_secs(10),
+                                    interval: Duration::from_millis(50 * tf),
+                                    last_sent: None,
+                                },
+                            );
+                        }
+                    }
+                }
+            }
+            return Ok(responses);
+        }
+
+        // Handle direct /meters/<i> subscriptions (legacy/shorthand form)
         if osc_msg.path.starts_with("/meters/") {
             if let Ok(meter_idx) = osc_msg.path[8..].parse::<u8>() {
                 if meter_idx <= 16 {
-                    self.active_meters
-                        .insert((remote_addr, meter_idx), now + Duration::from_secs(10));
+                    let tf = match osc_msg.args.first() {
+                        Some(OscArg::Int(v)) if (1..=99).contains(v) => *v as u64,
+                        _ => 1,
+                    };
+                    self.active_meters.insert(
+                        (remote_addr, meter_idx),
+                        MeterSubscription {
+                            expiry: now + Duration::from_secs(10),
+                            interval: Duration::from_millis(50 * tf),
+                            last_sent: None,
+                        },
+                    );
                 }
             }
             return Ok(responses);

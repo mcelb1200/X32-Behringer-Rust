@@ -1219,4 +1219,65 @@ mod tests {
             }
         }
     }
+
+    #[test]
+    fn test_mixer_meters_command_with_time_factor() {
+        let mut mixer = Mixer::new();
+        let addr = test_addr(2345);
+
+        // /meters ,siii "/meters/5" 0 0 10 (500ms interval)
+        let msg5 = OscMessage::new(
+            "/meters".to_string(),
+            vec![
+                OscArg::String("/meters/5".to_string()),
+                OscArg::Int(0),
+                OscArg::Int(0),
+                OscArg::Int(10),
+            ],
+        )
+        .to_bytes()
+        .unwrap();
+        mixer.dispatch(&msg5, addr).unwrap();
+
+        // /meters ,sii "/meters/6" 0 10 (500ms interval)
+        let msg6 = OscMessage::new(
+            "/meters".to_string(),
+            vec![
+                OscArg::String("/meters/6".to_string()),
+                OscArg::Int(0),
+                OscArg::Int(10),
+            ],
+        )
+        .to_bytes()
+        .unwrap();
+        mixer.dispatch(&msg6, addr).unwrap();
+
+        // First tick emits immediately for both /meters/5 (27 floats = 108B) and /meters/6 (4 floats = 16B)
+        let first = mixer.tick();
+        assert_eq!(first.len(), 2);
+        for (_, bytes) in &first {
+            let m = OscMessage::from_bytes(bytes).unwrap();
+            match m.path.as_str() {
+                "/meters/5" => assert_eq!(
+                    match &m.args[0] {
+                        OscArg::Blob(b) => b.len(),
+                        _ => 0,
+                    },
+                    27 * 4
+                ),
+                "/meters/6" => assert_eq!(
+                    match &m.args[0] {
+                        OscArg::Blob(b) => b.len(),
+                        _ => 0,
+                    },
+                    4 * 4
+                ),
+                other => panic!("Unexpected meter path: {}", other),
+            }
+        }
+
+        // Immediate second tick is throttled by the 500ms time_factor interval
+        let second = mixer.tick();
+        assert!(second.is_empty());
+    }
 }

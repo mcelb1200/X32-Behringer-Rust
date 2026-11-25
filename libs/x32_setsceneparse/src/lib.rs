@@ -104,8 +104,12 @@ fn parse_scene_line_internal(parser: &mut SceneParser, line: &str) -> Vec<OscMes
     match parts {
         // --- FX Types and Sources ---
         ["fx", slot, "type"] => {
+            let max_fx = match parser.model {
+                MixerModel::XR18 | MixerModel::XR16 | MixerModel::XR12 => 4,
+                _ => 8,
+            };
             if let Ok(s) = slot.parse::<usize>() {
-                if (1..=8).contains(&s) {
+                if (1..=max_fx).contains(&s) {
                     let type_val = if s <= 4 {
                         parse_list(arg_str, XFXTYP4)
                     } else {
@@ -135,8 +139,12 @@ fn parse_scene_line_internal(parser: &mut SceneParser, line: &str) -> Vec<OscMes
             }
         }
         ["fx", slot, "par"] => {
+            let max_fx = match parser.model {
+                MixerModel::XR18 | MixerModel::XR16 | MixerModel::XR12 => 4,
+                _ => 8,
+            };
             if let Ok(s) = slot.parse::<usize>() {
-                if (1..=8).contains(&s) {
+                if (1..=max_fx).contains(&s) {
                     let fx_type = parser.fx_types[s - 1];
                     if let Some(msg) = parse_fx_par(slot, fx_type, arg_str) {
                         messages.push(msg);
@@ -145,9 +153,64 @@ fn parse_scene_line_internal(parser: &mut SceneParser, line: &str) -> Vec<OscMes
             }
         }
 
+        // --- X-Air Specific Paths (/lr, /rtn, /fxsend, /headamp) ---
+        ["lr", rest @ ..] => {
+            if let Some(msg) = parse_xair_strip_path(path, rest, arg_str, 6) {
+                messages.push(msg);
+            }
+        }
+        ["rtn", "aux", rest @ ..] => {
+            if let Some(msg) = parse_xair_strip_path(path, rest, arg_str, 4) {
+                messages.push(msg);
+            }
+        }
+        ["rtn", slot, rest @ ..] => {
+            if let Ok(s) = slot.parse::<usize>() {
+                if (1..=4).contains(&s) {
+                    if let Some(msg) = parse_xair_strip_path(path, rest, arg_str, 4) {
+                        messages.push(msg);
+                    }
+                }
+            }
+        }
+        ["fxsend", slot, rest @ ..] => {
+            if let Ok(s) = slot.parse::<usize>() {
+                if (1..=4).contains(&s) {
+                    if let Some(msg) = parse_xair_strip_path(path, rest, arg_str, 0) {
+                        messages.push(msg);
+                    }
+                }
+            }
+        }
+        ["headamp", idx, param] => {
+            let max_ha = match parser.model {
+                MixerModel::XR12 => 12,
+                MixerModel::XR16 | MixerModel::XR18 => 16,
+                _ => 128,
+            };
+            if let Ok(h) = idx.parse::<usize>() {
+                if (1..=max_ha).contains(&h) {
+                    let arg = match *param {
+                        "gain" => parse_linf_arg(arg_str, -12.0, 60.0),
+                        "phantom" => parse_onoff(arg_str, "OFF"),
+                        _ => None,
+                    };
+                    if let Some(a) = arg {
+                        messages.push(OscMessage::new(path.to_string(), vec![a]));
+                    }
+                }
+            }
+        }
+
         // --- Config ---
         ["config", "chlink"] => {
-            for ch in (1..32).step_by(2) {
+            let max_ch = match parser.model {
+                MixerModel::XR12 => 12,
+                MixerModel::XR16 | MixerModel::XR18 => 16,
+                MixerModel::Wing => 40,
+                MixerModel::X32 => 32,
+            };
+            for ch in (1..max_ch).step_by(2) {
                 let p = format!("/config/chlink/{}-{}", ch, ch + 1);
                 if let Some(arg) = parse_onoff(arg_str, "OFF") {
                     messages.push(OscMessage::new(p, vec![arg]));
@@ -171,7 +234,14 @@ fn parse_scene_line_internal(parser: &mut SceneParser, line: &str) -> Vec<OscMes
             }
         }
         ["config", "buslink"] => {
-            for ch in (1..16).step_by(2) {
+            let max_bus = match parser.model {
+                MixerModel::XR12 => 2,
+                MixerModel::XR16 => 4,
+                MixerModel::XR18 => 6,
+                MixerModel::Wing => 28,
+                MixerModel::X32 => 16,
+            };
+            for ch in (1..max_bus).step_by(2) {
                 let p = format!("/config/buslink/{}-{}", ch, ch + 1);
                 if let Some(arg) = parse_onoff(arg_str, "OFF") {
                     messages.push(OscMessage::new(p, vec![arg]));
@@ -187,7 +257,11 @@ fn parse_scene_line_internal(parser: &mut SceneParser, line: &str) -> Vec<OscMes
             }
         }
         ["config", "mute"] => {
-            for ch in 1..=6 {
+            let max_mute = match parser.model {
+                MixerModel::XR12 | MixerModel::XR16 | MixerModel::XR18 => 4,
+                _ => 6,
+            };
+            for ch in 1..=max_mute {
                 let p = format!("/config/mute/{}", ch);
                 if let Some(arg) = parse_onoff(arg_str, "OFF") {
                     messages.push(OscMessage::new(p, vec![arg]));
@@ -297,6 +371,125 @@ pub(crate) fn parse_list(val: &str, list: &[&str]) -> Option<OscArg> {
 )]
 pub(crate) fn parse_fx_par(slot: &str, fx_type: i32, args_str: &str) -> Option<OscMessage> {
     x32_fxparse::parse_fx_par(fx_type as usize, args_str, &format!("/fx/{}/par", slot))
+}
+
+const XAIR_EQ_TYPES: &[&str] = &["LCut", "LShv", "PEQ", "VEQ", "HShv", "HCut"];
+const XAIR_DYN_RATIOS: &[&str] = &[
+    "1.1", "1.3", "1.5", "2.0", "2.5", "3.0", "4.0", "5.0", "7.0", "10", "20", "100",
+];
+const XAIR_MIX_TAPS: &[&str] = &["IN", "PREEQ", "POSTEQ", "PRE", "POST", "GRP"];
+
+fn parse_linf_arg(val: &str, min: f32, max: f32) -> Option<OscArg> {
+    let f = val.trim().parse::<f32>().ok()?;
+    Some(OscArg::Float(((f - min) / (max - min)).clamp(0.0, 1.0)))
+}
+
+fn parse_level_arg(val: &str) -> Option<OscArg> {
+    let v = val.trim();
+    if v == "-oo" {
+        return Some(OscArg::Float(0.0));
+    }
+    let fval = v.parse::<f32>().ok()?;
+    let scaled = if fval < -60.0 {
+        (fval * 0.002_083_333_4 + 0.1875).max(0.0)
+    } else if fval < -30.0 {
+        0.00625 * fval + 0.4375
+    } else if fval < -10.0 {
+        0.0125 * fval + 0.625
+    } else {
+        (fval * 0.025 + 0.75).min(1.0)
+    };
+    Some(OscArg::Float(scaled.clamp(0.0, 1.0)))
+}
+
+fn parse_bits_arg(val: &str) -> Option<OscArg> {
+    let v = val.trim().strip_prefix('%')?;
+    let mut res = 0i32;
+    for (i, c) in v.chars().rev().enumerate() {
+        if c == '1' {
+            res |= 1 << i;
+        }
+    }
+    Some(OscArg::Int(res))
+}
+
+/// Parses X-Air-specific strip parameters (`/lr/...`, `/rtn/aux/...`, `/rtn/1..4/...`, `/fxsend/1..4/...`)
+/// matching `XAirSetSceneParse.c`.
+fn parse_xair_strip_path(
+    full_path: &str,
+    rest: &[&str],
+    arg_str: &str,
+    max_eq_bands: usize,
+) -> Option<OscMessage> {
+    let arg = match rest {
+        ["config", "name"] => {
+            let v = arg_str.trim();
+            let stripped = v
+                .strip_prefix('"')
+                .and_then(|s| s.strip_suffix('"'))
+                .unwrap_or(v);
+            Some(OscArg::String(stripped.to_string()))
+        }
+        ["config", "color"] => arg_str.trim().parse::<i32>().ok().map(OscArg::Int),
+        ["preamp", "rtntrim"] => parse_linf_arg(arg_str, -18.0, 18.0),
+        ["preamp", "rtnsw"] => parse_onoff(arg_str, "OFF"),
+        ["eq", "on"] => parse_onoff(arg_str, "OFF"),
+        ["eq", band, param] => {
+            let b = band.parse::<usize>().ok()?;
+            if b < 1 || b > max_eq_bands {
+                return None;
+            }
+            match *param {
+                "type" => parse_list(arg_str, XAIR_EQ_TYPES),
+                "f" => {
+                    // Delegate frequency parsing via x32_fxparse
+                    return x32_fxparse::parse_parameter(
+                        MixerModel::XR18,
+                        &format!("/ch/01/eq/1/f"),
+                        arg_str,
+                    )
+                    .map(|m| OscMessage::new(full_path.to_string(), m.args));
+                }
+                "g" => parse_linf_arg(arg_str, -15.0, 15.0),
+                "q" => {
+                    let f = arg_str.trim().parse::<f32>().ok()?;
+                    let norm = ((f / 10.0).ln() / -3.506_558).clamp(0.0, 1.0);
+                    Some(OscArg::Float(norm))
+                }
+                _ => None,
+            }
+        }
+        ["dyn", "on"] => parse_onoff(arg_str, "OFF"),
+        ["dyn", "mode"] => parse_onoff(arg_str, "COMP"),
+        ["dyn", "det"] => parse_onoff(arg_str, "PEAK"),
+        ["dyn", "env"] => parse_onoff(arg_str, "LIN"),
+        ["dyn", "thr"] => parse_linf_arg(arg_str, -60.0, 0.0),
+        ["dyn", "ratio"] => parse_list(arg_str, XAIR_DYN_RATIOS),
+        ["dyn", "knee"] => parse_linf_arg(arg_str, 0.0, 5.0),
+        ["dyn", "mgain"] => parse_linf_arg(arg_str, 0.0, 24.0),
+        ["dyn", "attack"] => parse_linf_arg(arg_str, 0.0, 120.0),
+        ["dyn", "hold"] => {
+            let f = arg_str.trim().parse::<f32>().ok()?;
+            Some(OscArg::Float(
+                ((f / 0.02).ln() / 11.512_925).clamp(0.0, 1.0),
+            ))
+        }
+        ["dyn", "release"] => {
+            let f = arg_str.trim().parse::<f32>().ok()?;
+            Some(OscArg::Float(((f / 5.0).ln() / 6.684_612).clamp(0.0, 1.0)))
+        }
+        ["dyn", "mix"] => parse_linf_arg(arg_str, 0.0, 100.0),
+        ["mix", "on"] | ["mix", "lr"] => parse_onoff(arg_str, "OFF"),
+        ["mix", "fader"] => parse_level_arg(arg_str),
+        ["mix", "pan"] => parse_linf_arg(arg_str, -100.0, 100.0),
+        ["mix", _, "level"] => parse_level_arg(arg_str),
+        ["mix", _, "grpon"] => parse_onoff(arg_str, "OFF"),
+        ["mix", _, "tap"] => parse_list(arg_str, XAIR_MIX_TAPS),
+        ["mix", _, "pan"] => parse_linf_arg(arg_str, -100.0, 100.0),
+        ["grp", "dca"] | ["grp", "mute"] => parse_bits_arg(arg_str),
+        _ => None,
+    }?;
+    Some(OscMessage::new(full_path.to_string(), vec![arg]))
 }
 
 #[cfg(test)]
@@ -489,5 +682,49 @@ mod tests {
         // Some unmapped or out of bounds FX type
         let msg = parse_fx_par("1", 999, "0.5 0.5");
         assert!(msg.is_none());
+    }
+
+    #[test]
+    fn test_xair_scene_paths_and_limits() {
+        let mut parser = SceneParser::with_model(MixerModel::XR18);
+
+        // /lr/config/name & /lr/mix/fader & /lr/dyn/thr
+        let m_lr_name = parser.parse_scene_line("/lr/config/name \"Main LR\"");
+        assert_eq!(m_lr_name.len(), 1);
+        assert_eq!(m_lr_name[0].path, "/lr/config/name");
+        assert_eq!(
+            m_lr_name[0].args,
+            vec![OscArg::String("Main LR".to_string())]
+        );
+
+        let m_lr_fader = parser.parse_scene_line("/lr/mix/fader -oo");
+        assert_eq!(m_lr_fader.len(), 1);
+        assert_eq!(m_lr_fader[0].args, vec![OscArg::Float(0.0)]);
+
+        // /rtn/aux & /rtn/1 & /fxsend/1 & /headamp/01
+        let m_rtn_aux = parser.parse_scene_line("/rtn/aux/mix/on ON");
+        assert_eq!(m_rtn_aux.len(), 1);
+        assert_eq!(m_rtn_aux[0].args, vec![OscArg::Int(1)]);
+
+        let m_rtn1 = parser.parse_scene_line("/rtn/1/eq/2/type PEQ");
+        assert_eq!(m_rtn1.len(), 1);
+        assert_eq!(m_rtn1[0].args, vec![OscArg::Int(2)]);
+
+        let m_fxsend = parser.parse_scene_line("/fxsend/1/config/name \"Hall\"");
+        assert_eq!(m_fxsend.len(), 1);
+        assert_eq!(
+            m_fxsend[0].args,
+            vec![OscArg::String("Hall".to_string())]
+        );
+
+        let m_ha = parser.parse_scene_line("/headamp/01/phantom ON");
+        assert_eq!(m_ha.len(), 1);
+        assert_eq!(m_ha[0].args, vec![OscArg::Int(1)]);
+
+        // Model-aware link/mute limits for XR18 (16 ch = 8 pairs, 6 bus = 3 pairs, 4 mute groups, 4 FX slots)
+        assert_eq!(parser.parse_scene_line("/config/chlink ON").len(), 8);
+        assert_eq!(parser.parse_scene_line("/config/buslink ON").len(), 3);
+        assert_eq!(parser.parse_scene_line("/config/mute ON").len(), 4);
+        assert!(parser.parse_scene_line("/fx/5/type GEQ").is_empty());
     }
 }
