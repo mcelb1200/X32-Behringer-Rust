@@ -43,6 +43,7 @@ pub struct AppState {
     pub ch_bank_offset: i32,
     pub loop_toggle: i32,
     pub play: bool,
+    pub shift: bool,
     #[allow(dead_code)]
     pub play_1: bool,
 }
@@ -72,6 +73,7 @@ impl AppState {
             ch_bank_offset: config.ch_bank_offset,
             loop_toggle: 0,
             play: false,
+            shift: false,
             play_1: false,
         }
     }

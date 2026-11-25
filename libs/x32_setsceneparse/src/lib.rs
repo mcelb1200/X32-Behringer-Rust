@@ -201,6 +201,18 @@ fn parse_scene_line_internal(parser: &mut SceneParser, line: &str) -> Vec<OscMes
                 }
             }
         }
+        ["routing", bus_type, _idx, param] => {
+            let arg = match (*bus_type, *param) {
+                ("main", "src") => parse_list(arg_str, XAIR_MAIN_SRC),
+                ("aux" | "p16", "src") => parse_list(arg_str, XAIR_AUX_SRC),
+                ("usb", "src") => parse_list(arg_str, XAIR_USB_SRC),
+                ("aux" | "p16" | "usb", "pos") => parse_list(arg_str, XAIR_SRC_POS),
+                _ => None,
+            };
+            if let Some(a) = arg {
+                messages.push(OscMessage::new(path.to_string(), vec![a]));
+            }
+        }
 
         // --- Config ---
         ["config", "chlink"] => {
@@ -378,6 +390,28 @@ const XAIR_DYN_RATIOS: &[&str] = &[
     "1.1", "1.3", "1.5", "2.0", "2.5", "3.0", "4.0", "5.0", "7.0", "10", "20", "100",
 ];
 const XAIR_MIX_TAPS: &[&str] = &["IN", "PREEQ", "POSTEQ", "PRE", "POST", "GRP"];
+const XAIR_RTN_SRC: &[&str] = &[
+    "U0102", "U0304", "U0506", "U0708", "U0910", "U1112", "U1314", "U1516", "U1718",
+];
+const XAIR_MAIN_SRC: &[&str] = &[
+    "LR", "MON", "U0102", "U0304", "U0506", "U0708", "U0910", "U1112", "U1314", "U1516", "U1718",
+];
+const XAIR_AUX_SRC: &[&str] = &[
+    "Ch01", "Ch02", "Ch03", "Ch04", "Ch05", "Ch06", "Ch07", "Ch08", "Ch09", "Ch10", "Ch11", "Ch12",
+    "Ch13", "Ch14", "Ch15", "Ch16", "AuxL", "AuxR", "Fx1L", "Fx1R", "Fx2L", "Fx2R", "Fx3L", "Fx3R",
+    "Fx4L", "Fx4R", "Bus1", "Bus2", "Bus3", "Bus4", "Bus5", "Bus6", "Send1", "Send2", "Send3",
+    "Send4", "L", "R", "U01", "U02", "U03", "U04", "U05", "U06", "U07", "U08", "U09", "U10", "U11",
+    "U12", "U13", "U14", "U15", "U16", "U17", "U18",
+];
+const XAIR_USB_SRC: &[&str] = &[
+    "Ch01", "Ch02", "Ch03", "Ch04", "Ch05", "Ch06", "Ch07", "Ch08", "Ch09", "Ch10", "Ch11", "Ch12",
+    "Ch13", "Ch14", "Ch15", "Ch16", "AuxL", "AuxR", "Fx1L", "Fx1R", "Fx2L", "Fx2R", "Fx3L", "Fx3R",
+    "Fx4L", "Fx4R", "Bus1", "Bus2", "Bus3", "Bus4", "Bus5", "Bus6", "Send1", "Send2", "Send3",
+    "Send4", "L", "R",
+];
+const XAIR_SRC_POS: &[&str] = &[
+    "AIN", "AIN+M", "IN", "IN+M", "PREEQ", "PREEQ+M", "POSTEQ", "POSTEQ+M", "PRE", "PRE+M", "POST",
+];
 
 fn parse_linf_arg(val: &str, min: f32, max: f32) -> Option<OscArg> {
     let f = val.trim().parse::<f32>().ok()?;
@@ -431,6 +465,7 @@ fn parse_xair_strip_path(
             Some(OscArg::String(stripped.to_string()))
         }
         ["config", "color"] => arg_str.trim().parse::<i32>().ok().map(OscArg::Int),
+        ["config", "rtnsrc"] => parse_list(arg_str, XAIR_RTN_SRC),
         ["preamp", "rtntrim"] => parse_linf_arg(arg_str, -18.0, 18.0),
         ["preamp", "rtnsw"] => parse_onoff(arg_str, "OFF"),
         ["eq", "on"] => parse_onoff(arg_str, "OFF"),
@@ -720,6 +755,23 @@ mod tests {
         let m_ha = parser.parse_scene_line("/headamp/01/phantom ON");
         assert_eq!(m_ha.len(), 1);
         assert_eq!(m_ha[0].args, vec![OscArg::Int(1)]);
+
+        // /rtn/aux/config/rtnsrc & /routing/{main,aux,p16,usb}
+        let m_rtnsrc = parser.parse_scene_line("/rtn/aux/config/rtnsrc U0304");
+        assert_eq!(m_rtnsrc.len(), 1);
+        assert_eq!(m_rtnsrc[0].args, vec![OscArg::Int(1)]);
+
+        let m_rout_main = parser.parse_scene_line("/routing/main/01/src MON");
+        assert_eq!(m_rout_main.len(), 1);
+        assert_eq!(m_rout_main[0].args, vec![OscArg::Int(1)]);
+
+        let m_rout_aux_pos = parser.parse_scene_line("/routing/aux/01/pos PRE");
+        assert_eq!(m_rout_aux_pos.len(), 1);
+        assert_eq!(m_rout_aux_pos[0].args, vec![OscArg::Int(8)]);
+
+        let m_rout_usb = parser.parse_scene_line("/routing/usb/01/src Ch01");
+        assert_eq!(m_rout_usb.len(), 1);
+        assert_eq!(m_rout_usb[0].args, vec![OscArg::Int(0)]);
 
         // Model-aware link/mute limits for XR18 (16 ch = 8 pairs, 6 bus = 3 pairs, 4 mute groups, 4 FX slots)
         assert_eq!(parser.parse_scene_line("/config/chlink ON").len(), 8);

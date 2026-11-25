@@ -874,8 +874,11 @@ async fn handle_user_par(
                 }
             }
             21 => {
-                // Loop
-                if val == 0 {
+                // Loop / Bank UP (also acts as Shift key when held, matching X32ReaperW.c v2.72)
+                if val != 0 {
+                    state.shift = true;
+                } else {
+                    state.shift = false;
                     if config.ch_bank_on {
                         // Bank UP
                         if state.ch_bank_offset
@@ -917,9 +920,20 @@ async fn handle_user_par(
                 }
             }
             22 => {
-                // Repeat / Bank Down
+                // Repeat / Bank Down (or Shift+22 = Toggle record arm /action/40294)
                 if val == 0 {
-                    if config.ch_bank_on {
+                    if state.shift {
+                        state.shift = false;
+                        send_to_r(
+                            r_sock,
+                            r_addr,
+                            &OscMessage {
+                                path: "/action/40294".to_string(),
+                                args: vec![],
+                            },
+                        )
+                        .await?;
+                    } else if config.ch_bank_on {
                         if state.ch_bank_offset > 0 {
                             state.ch_bank_offset -= 1;
                             update_bk_ch(x_client, config, state, Some((r_sock, r_addr))).await?;
