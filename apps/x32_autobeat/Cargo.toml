@@ -15,7 +15,6 @@ crossterm = "0.27"
 ratatui = "0.24"
 tokio = { workspace = true }
 crossbeam-channel = "0.5"
-ringbuf = "0.3"
 osc_lib = { workspace = true }
 x32_lib = { workspace = true }
 rustfft = "6.1"

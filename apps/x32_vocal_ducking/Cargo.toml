@@ -14,7 +14,6 @@ cpal = { workspace = true }
 x32_lib = { workspace = true }
 osc_lib = { workspace = true }
 rustfft = "6.1.0"
-thread-priority = "1.1.0"
 
 [lints]
 workspace = true

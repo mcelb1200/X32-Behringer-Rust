@@ -192,16 +192,6 @@ async fn run_automix(args: Args, client: MixerClient) -> Result<()> {
     }
 }
 
-/// Converts a linear fader level (0.0 to 1.0) to decibels.
-fn level_to_db(level: f32) -> f32 {
-    x32_lib::model::fader_to_db(level)
-}
-
-/// Converts a decibel value to a linear fader level (0.0 to 1.0).
-fn db_to_level(db: f32) -> f32 {
-    x32_lib::model::db_to_fader(db)
-}
-
 /// Calculates the gain for each channel based on the shared Dugan algorithm.
 fn calculate_dugan_gains(levels: &[f32], noise_floor: f32, gains_out: &mut [f32]) {
     x32_lib::automix::calculate_dugan_gains(levels, noise_floor, gains_out);
@@ -340,10 +330,10 @@ mod tests {
 
     #[test]
     fn test_db_level_conversion() {
-        assert!((level_to_db(1.0) - 10.0).abs() < 0.01);
-        assert!((level_to_db(0.0) - -90.0).abs() < 0.01);
-        assert!((db_to_level(10.0) - 1.0).abs() < 0.01);
-        assert!((db_to_level(-90.0) - 0.0).abs() < 0.01);
+        assert!((x32_lib::model::fader_to_db(1.0) - 10.0).abs() < 0.01);
+        assert!((x32_lib::model::fader_to_db(0.0) - -90.0).abs() < 0.01);
+        assert!((x32_lib::model::db_to_fader(10.0) - 1.0).abs() < 0.01);
+        assert!((x32_lib::model::db_to_fader(-90.0) - 0.0).abs() < 0.01);
     }
 
     #[test]

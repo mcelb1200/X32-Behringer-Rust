@@ -8,7 +8,6 @@ anyhow = { workspace = true }
 clap = { workspace = true }
 x32_core = { workspace = true }
 osc_lib = { workspace = true }
-x32_lib = { workspace = true }
 
 [dev-dependencies]
 assert_cmd = "2.0"
