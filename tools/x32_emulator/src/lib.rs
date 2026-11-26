@@ -7,6 +7,7 @@
 //! *   **Additional concepts by:** mcelb1200
 //! *   **Rust implementation by:** mcelb1200
 
+/// UDP server implementation for the X32/Wing/X-Air emulator.
 pub mod server {
     use anyhow::Result;
     use std::net::{SocketAddr, UdpSocket};
@@ -113,6 +114,7 @@ pub struct Cli {
     pub model: MixerModel,
 }
 
+/// Runs the X32/M32/Wing/XAir emulator with the given CLI options.
 pub fn run(cli: Cli) -> Result<()> {
     let bind_addr = format!("{}:{}", cli.ip, cli.port);
     server::run_with_model(&bind_addr, cli.model, None, None)

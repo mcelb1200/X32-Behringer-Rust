@@ -58,6 +58,7 @@
 mod tests;
 
 pub mod automix;
+/// High-level async OSC client for mixer communication.
 pub mod client;
 pub mod command;
 pub mod common;
@@ -68,8 +69,10 @@ pub mod meters;
 pub mod model;
 pub mod room_tune;
 pub mod safety;
+/// Scene file parsing utilities.
 pub mod scene_parse;
 pub mod streaming;
+/// Transport layer implementations (UDP, MIDI, etc.).
 pub mod transport;
 
 pub use crate::client::MixerClient;

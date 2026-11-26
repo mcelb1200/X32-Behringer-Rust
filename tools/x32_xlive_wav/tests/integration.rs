@@ -1,3 +1,5 @@
+//! Integration tests for `x32_xlive_wav`.
+
 use assert_cmd::cargo::cargo_bin_cmd;
 use hound::{SampleFormat, WavReader, WavSpec, WavWriter};
 use std::fs;

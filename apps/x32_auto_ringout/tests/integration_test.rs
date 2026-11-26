@@ -1,3 +1,5 @@
+//! Integration tests for `x32_auto_ringout`.
+
 use anyhow::Result;
 use clap::Parser;
 use osc_lib::{OscArg, OscMessage};

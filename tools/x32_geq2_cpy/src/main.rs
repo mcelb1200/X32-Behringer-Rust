@@ -1,3 +1,5 @@
+//! CLI entry point for `x32_geq2_cpy`.
+
 use anyhow::Result;
 use clap::Parser;
 

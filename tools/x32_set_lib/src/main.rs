@@ -1,3 +1,5 @@
+//! CLI entry point for `x32_set_lib`.
+
 use anyhow::Result;
 use clap::Parser;
 

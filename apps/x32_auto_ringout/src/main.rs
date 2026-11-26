@@ -1,3 +1,5 @@
+//! CLI entry point for `x32_auto_ringout`.
+
 use anyhow::Result;
 use clap::Parser;
 

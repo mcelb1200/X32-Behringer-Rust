@@ -5,44 +5,74 @@ use x32_lib::MixerModel;
 
 /// AppState holds the internal state of the x32_tapw TUI application.
 pub struct AppState {
+    /// Configured mixer IP address.
     #[allow(dead_code)]
     pub ip: String,
+    /// Target digital mixer model.
     pub model: MixerModel,
+    /// FX slot number containing the delay effect.
     pub slot: u8,
+    /// Channel number monitored in auto-tap mode.
     pub channel: u8,
+    /// Gate meter threshold level for auto-tap triggering.
     pub threshold: f32,
+    /// Whether auto-tap mode is enabled.
     pub is_auto: bool,
+    /// Timestamp of the previous tap.
     pub last_tap: Option<Instant>,
+    /// Whether the monitored meter was above `threshold` on the previous sample.
     pub was_above_threshold: bool,
+    /// Most recently calculated delay time in milliseconds.
     pub current_delay_ms: Option<i32>,
+    /// Recent status log lines.
     pub logs: Vec<Cow<'static, str>>,
+    /// Whether the mixer is currently responding.
     pub is_connected: bool,
+    /// Currently active TUI input mode.
     pub active_input: InputMode,
+    /// Whether the application should exit.
     pub should_quit: bool,
+    /// Detected delay effect type name.
     pub delay_type: String,
 
     // Input editing state
+    /// Editable IP address input buffer.
     pub ip_input: String,
+    /// Editable FX slot input buffer.
     pub slot_input: String,
+    /// Editable channel number input buffer.
     pub ch_input: String,
+    /// Editable sensitivity threshold input buffer.
     pub sens_input: String,
 
     // Formatted strings to avoid per-frame format allocations in the TUI loop
+    /// Pre-formatted IP and model display text.
     pub display_ip_text: String,
+    /// Pre-formatted mode and delay type display text.
     pub display_mode_text: String,
+    /// Pre-formatted FX slot display text.
     pub display_slot_text: String,
+    /// Pre-formatted log panel display text.
     pub display_logs_text: String,
 
+    /// Last terminal area used for layout caching.
     pub cached_area: Rect,
+    /// Cached layout rectangles for the TUI grid.
     pub cached_chunks: Vec<Vec<Rect>>,
 }
 
+/// Active keyboard input mode in the TUI.
 #[derive(PartialEq)]
 pub enum InputMode {
+    /// Normal navigation and manual tap mode.
     Normal,
+    /// Editing the mixer IP address field.
     EditingIp,
+    /// Editing the FX slot field.
     EditingSlot,
+    /// Editing the auto-tap channel field.
     EditingChannel,
+    /// Editing the auto-tap sensitivity threshold field.
     EditingSensitivity,
 }
 
@@ -53,10 +83,12 @@ impl Default for AppState {
 }
 
 impl AppState {
+    /// Creates a new `AppState` with default mixer settings.
     pub fn new() -> Self {
         Self::with_options(MixerModel::X32, "192.168.0.64", 1, 1, 0.5, false)
     }
 
+    /// Creates a new `AppState` with the specified mixer and tap-tempo options.
     pub fn with_options(
         model: MixerModel,
         ip: &str,
@@ -98,6 +130,7 @@ impl AppState {
         state
     }
 
+    /// Rebuilds the cached display strings for the TUI panels.
     pub fn update_display_strings(&mut self) {
         self.display_ip_text.clear();
         use std::fmt::Write;
@@ -119,6 +152,7 @@ impl AppState {
         let _ = write!(self.display_slot_text, "Delay Slot: {}", self.slot_input);
     }
 
+    /// Appends a message to the rolling log buffer and updates the formatted log text.
     pub fn log(&mut self, msg: String) {
         self.logs.push(Cow::Owned(msg));
         if self.logs.len() > 100 {
@@ -132,10 +166,12 @@ impl AppState {
         }
     }
 
+    /// Converts a tap interval in milliseconds into a normalized OSC float value (`0.0..=1.0`).
     pub fn calculate_fval(delta_ms: f32) -> f32 {
         (delta_ms / 3000.0).clamp(0.0, 1.0)
     }
 
+    /// Records a manual tap timestamp and returns the normalized delay value if a previous tap exists.
     pub fn handle_manual_tap(&mut self, now: Instant) -> Option<f32> {
         if let Some(last) = self.last_tap {
             let delta = now.duration_since(last);
@@ -150,6 +186,7 @@ impl AppState {
         }
     }
 
+    /// Extracts the little-endian `f32` meter level from an OSC meter blob.
     pub fn parse_meter_blob(data: &[u8]) -> Option<f32> {
         if data.len() >= 16 {
             let mut f_bytes = [0u8; 4];
@@ -164,6 +201,7 @@ impl AppState {
         }
     }
 
+    /// Processes an incoming meter level sample and returns a normalized delay value on rising-edge triggers.
     pub fn process_meter_data(&mut self, level: f32, now: Instant) -> Option<f32> {
         if level > self.threshold {
             if !self.was_above_threshold {

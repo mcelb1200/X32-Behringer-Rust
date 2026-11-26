@@ -1,3 +1,5 @@
+//! `x32_udp` is a simple UDP client for sending a single OSC command to an X32 mixer.
+
 use anyhow::{Context, Result};
 use clap::Parser;
 use osc_lib::OscMessage;
@@ -27,6 +29,7 @@ pub struct Args {
     pub timeout: u64,
 }
 
+/// Sends the configured OSC command over UDP and prints any response.
 pub async fn run(args: Args) -> Result<()> {
     println!("Connection status: 1");
 

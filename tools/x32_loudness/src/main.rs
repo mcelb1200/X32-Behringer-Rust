@@ -1,3 +1,5 @@
+//! CLI entry point for `x32_loudness`.
+
 use anyhow::Result;
 use clap::Parser;
 

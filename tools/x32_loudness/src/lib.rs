@@ -1,3 +1,5 @@
+//! Equal-Loudness (Fletcher-Munson / ISO 226) dynamic EQ automation for X32/M32.
+
 use anyhow::{anyhow, Result};
 use clap::{Parser, Subcommand, ValueEnum};
 use osc_lib::OscArg;
@@ -10,56 +12,74 @@ use std::time::Duration;
 use tokio::time::sleep;
 use x32_lib::MixerClient;
 
+/// Command-line arguments for `x32_loudness`.
 #[derive(Parser, Debug)]
 #[command(name = "x32_loudness")]
 #[command(about = "Equal-Loudness (Fletcher-Munson) dynamic EQ automation for X32/M32", long_about = None)]
 pub struct Cli {
+    /// Target mixer IP address.
     #[arg(short, long, default_value = "192.168.1.50")]
     pub ip: String,
 
+    /// AES50 bridge IP address.
     #[arg(long, default_value = "")]
     pub aes50_ip: String,
 
+    /// Path to calibration config JSON file.
     #[arg(long, default_value = ".x32_loudness.json")]
     pub config: String,
 
+    /// Optional path to room EQ baseline JSON file.
     #[arg(long)]
     pub room_eq: Option<String>,
 
+    /// EQ mode used for loudness compensation.
     #[arg(long, value_enum, default_value_t = LoudnessMode::Peq)]
     pub mode: LoudnessMode,
 
+    /// FX slot index (for GEQ/DEQ modes).
     #[arg(long, default_value_t = 5)]
     pub fx_slot: usize,
 
+    /// OSC path of the monitored fader.
     #[arg(long, default_value = "/main/st/mix/fader")]
     pub fader_path: String,
 
+    /// Transport backend to use.
     #[arg(long, value_enum, default_value_t = TransportType::Auto)]
     pub transport: TransportType,
 
+    /// USB serial port name (for USB transport).
     #[arg(long, default_value = "")]
     pub usb_port: String,
 
+    /// Use ISO 226:2003 equal-loudness contours.
     #[arg(
         long,
         help = "Use ISO 226:2003 equal-loudness contours for calculation"
     )]
     pub iso226: bool,
 
+    /// Subcommand to execute.
     #[command(subcommand)]
     pub command: Commands,
 }
 
+/// Transport backend selection.
 #[derive(ValueEnum, Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum TransportType {
+    /// Automatically select transport.
     Auto,
+    /// UDP OSC transport.
     Osc,
+    /// USB serial transport.
     Usb,
+    /// AES50 transport.
     Aes50,
 }
 
+/// Subcommands for `x32_loudness`.
 #[derive(Subcommand, Debug, Clone)]
 pub enum Commands {
     /// Run calibration using the built-in pink noise generator
@@ -82,11 +102,15 @@ pub enum Commands {
     },
 }
 
+/// Equal-loudness EQ implementation mode.
 #[derive(ValueEnum, Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum LoudnessMode {
+    /// Parametric EQ mode.
     Peq,
+    /// Graphic EQ mode.
     Geq,
+    /// Dynamic EQ mode.
     Deq,
 }
 
@@ -369,6 +393,7 @@ fn show_curve_calculation(
     Ok(())
 }
 
+/// Runs `x32_loudness` with the given CLI arguments.
 pub async fn run(_cli: Cli) -> Result<()> {
     let cli = Cli::parse();
 

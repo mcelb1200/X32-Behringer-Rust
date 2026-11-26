@@ -1,3 +1,5 @@
+//! Integration tests for `x32_cpxlivemarkers`.
+
 use assert_cmd::Command;
 use byteorder::{LittleEndian, WriteBytesExt};
 use predicates::prelude::*;

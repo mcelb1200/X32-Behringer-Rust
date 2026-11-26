@@ -1,3 +1,5 @@
+//! Integration tests for `x32_udp`.
+
 use assert_cmd::cargo::cargo_bin;
 use std::net::UdpSocket;
 use std::process::Command;

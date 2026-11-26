@@ -5,50 +5,85 @@ use x32_lib::safety::ConsoleSnapshot;
 use x32_lib::streaming::{StreamMonitor, StreamTelemetry};
 use x32_lib::MixerModel;
 
+/// Active operational alert displayed in the Volunteer Mode TUI.
 pub enum Alert {
+    /// A channel meter exceeded the clipping threshold.
     Clipping {
+        /// Index into `AppState::channels`.
         channel_idx: usize,
+        /// Measured level in dBFS.
         level_db: f32,
     },
+    /// A channel fader exceeded the configured maximum limit.
     FaderLimit {
+        /// Index into `AppState::channels`.
         channel_idx: usize,
+        /// Current fader level in dB.
         fader_db: f32,
+        /// Configured fader limit in dB.
         limit: f32,
     },
 }
 
+/// Shared application state for the Volunteer Mode TUI.
 pub struct AppState {
+    /// Connected mixer model.
     pub model: MixerModel,
+    /// Monitored channels and DCAs.
     pub channels: Vec<ChannelState>,
+    /// Currently selected channel index.
     pub selected_idx: usize,
+    /// Main LR fader position (`0.0..=1.0`).
     pub main_fader: f32,
+    /// Whether the main LR bus is muted.
     pub main_muted: bool,
+    /// Indices of channels with active alerts.
     pub alerts: Vec<usize>,
+    /// Detailed active alert entries.
     pub active_alerts: Vec<Alert>,
+    /// Overall system health status.
     pub status: Status,
+    /// Status banner message.
     pub message: String,
+    /// Optional maximum fader limit in dB.
     pub max_fader_limit_db: Option<f32>,
+    /// Timestamp when the panic confirmation prompt was armed.
     pub confirm_panic_at: Option<Instant>,
+    /// Timestamp of the last received OSC packet from the mixer.
     pub last_rx_at: Option<Instant>,
+    /// Application startup timestamp.
     pub started_at: Instant,
+    /// Most recent console snapshot for undo/restore.
     pub last_snapshot: Option<ConsoleSnapshot>,
+    /// Whether mixbus automix is currently enabled.
     pub automix_enabled: bool,
+    /// Whether RTA-assisted automix is enabled.
     pub rta_assisted: bool,
+    /// Optional spectrum automixer instance.
     pub automixer: Option<SpectrumAutomixer>,
+    /// Optional livestream monitor instance.
     pub stream_monitor: Option<StreamMonitor>,
+    /// Latest livestream telemetry reading.
     pub stream_telemetry: Option<StreamTelemetry>,
+    /// Current stream bus fader position (`0.0..=1.0`).
     pub stream_fader: f32,
+    /// Optional soundcheck status message.
     pub check_status_msg: Option<String>,
 }
 
+/// Overall health status indicator for the Volunteer Mode dashboard.
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Status {
+    /// All monitored channels are within normal operating bounds.
     Ok,
+    /// A non-critical condition requires attention.
     Caution,
+    /// A critical alert (such as clipping or offline console) is active.
     Problem,
 }
 
 impl AppState {
+    /// Creates a new `AppState` for the given monitored channels.
     pub fn new(channels: Vec<ChannelState>) -> Self {
         Self {
             model: MixerModel::X32,

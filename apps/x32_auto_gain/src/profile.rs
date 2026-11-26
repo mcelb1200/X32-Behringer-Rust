@@ -1,9 +1,13 @@
 //! Profile matching for Auto-Gain based on channel name and icon metadata.
 
+/// Target RMS and peak levels for an instrument or vocal profile.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct TargetProfile {
+    /// Human-readable profile name.
     pub name: &'static str,
+    /// Target RMS level in dBFS.
     pub target_dbfs: f32,
+    /// Target peak level in dBFS.
     pub peak_target_dbfs: f32,
 }
 

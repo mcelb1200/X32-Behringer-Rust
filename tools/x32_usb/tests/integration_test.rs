@@ -1,3 +1,5 @@
+//! Integration tests for `x32_usb`.
+
 use std::sync::mpsc::{channel, Sender};
 use std::thread::{self, JoinHandle};
 use std::time::Duration;

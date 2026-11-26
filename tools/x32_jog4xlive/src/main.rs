@@ -1,3 +1,5 @@
+//! CLI entry point for `x32_jog4xlive`.
+
 use anyhow::Result;
 use clap::Parser;
 

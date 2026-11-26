@@ -1,3 +1,5 @@
+//! Guided oscillator testing and cut-only room calibration for Behringer mixers.
+
 use anyhow::Result;
 use clap::Parser;
 use osc_lib::OscArg;
@@ -14,12 +16,14 @@ use x32_lib::room_tune::{
 use x32_lib::safety::ConsoleSnapshot;
 use x32_lib::{MixerClient, MixerModel};
 
+/// Terminal UI module for `x32_system_tune`.
 pub mod ui;
 use ui::{AppState, Tui, UIEvent};
 
 /// Strict EBU R128 limit for oscillator level (-18 dBFS digital headroom limit)
 pub const MAX_EBU_R128_LEVEL: f32 = 0.25;
 
+/// Command-line arguments for `x32_system_tune`.
 #[derive(Parser, Debug, Clone)]
 #[command(
     author,
@@ -71,8 +75,11 @@ impl Args {
 /// Represents an output destination for Guided Output Verification.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OutputDest {
+    /// Display name of the output destination.
     pub name: &'static str,
+    /// OSC path for configuring the oscillator destination.
     pub path: &'static str,
+    /// Mixer-specific destination index.
     pub dest_index: i32,
 }
 
@@ -216,6 +223,7 @@ async fn apply_peq_suggestions(
     }
 }
 
+/// Runs the `x32_system_tune` interactive calibration workflow.
 pub async fn run(args: Args) -> Result<()> {
     if args.list_mics {
         print_mic_profiles();

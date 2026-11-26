@@ -1,3 +1,5 @@
+//! Bidirectional OSC parameter synchronization between two Behringer mixers.
+
 use anyhow::Result;
 use clap::Parser;
 use osc_lib::OscArg;
@@ -6,6 +8,7 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use x32_lib::{MixerClient, MixerModel};
 
+/// Command-line arguments for `x32_sync`.
 #[derive(Parser, Debug, Clone)]
 #[command(author, version, about = "Bidirectional synchronization tool for two X32/M32 consoles", long_about = None)]
 pub struct Args {
@@ -118,6 +121,7 @@ async fn run_proxy(
     }
 }
 
+/// Runs the bidirectional console synchronization proxy.
 pub async fn run(args: Args) -> Result<()> {
     let model_a = args.model_a;
     let model_b = args.console_b_model();

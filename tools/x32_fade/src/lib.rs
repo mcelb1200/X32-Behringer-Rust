@@ -122,6 +122,7 @@ pub fn check_fader_path_for_model(path: &str, model: MixerModel) -> Result<(), S
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 pub struct Args {
+    /// IP address of the mixer.
     #[arg(short, long)]
     pub ip: Option<String>,
 
@@ -129,12 +130,15 @@ pub struct Args {
     #[arg(short = 'M', long, value_enum, default_value = "X32")]
     pub model: MixerModel,
 
+    /// Transport mode (`auto`, `udp`, `usb`, `aes50`).
     #[arg(long, default_value = "auto")]
     pub transport: String,
 
+    /// USB serial port path when using USB transport.
     #[arg(long, default_value = "")]
     pub usb_port: String,
 
+    /// AES50 IP address when using AES50 transport.
     #[arg(long, default_value = "")]
     pub aes50_ip: String,
 

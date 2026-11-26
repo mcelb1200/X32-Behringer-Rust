@@ -1,3 +1,5 @@
+//! X32Tap TUI binary entry point.
+
 use anyhow::Result;
 use clap::Parser;
 

@@ -1,3 +1,5 @@
+//! Automated monitor bus ringout and feedback notch tuning for X32/M32, Wing, and X-Air mixers.
+
 use anyhow::Result;
 use clap::Parser;
 use crossterm::{
@@ -20,6 +22,7 @@ use std::time::Duration;
 use tokio::time::interval;
 use x32_lib::{MixerClient, MixerModel};
 
+/// Command-line arguments for `x32_auto_ringout`.
 #[derive(Parser, Debug, Clone)]
 #[command(author, version, about = "Auto-Ringout / Smart Monitor Tuning for X32/M32", long_about = None)]
 pub struct Args {
@@ -94,18 +97,27 @@ pub fn get_bus_eq_path(model: MixerModel, bus: u8, notch: usize, param: &str) ->
     buf
 }
 
+/// Ringout state of an individual monitor bus.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BusStatus {
+    /// Bus is disarmed and will not be ramped.
     Disarmed,
+    /// Bus is armed and ready to ring out.
     Armed,
-    Active, // Currently ramping / ringing out
+    /// Bus is currently ramping or ringing out.
+    Active,
+    /// Bus has completed ringout.
     Done,
 }
 
+/// Parametric EQ notch applied to suppress feedback on a bus.
 #[derive(Debug, Clone)]
 pub struct Notch {
+    /// Center frequency in Hz.
     pub freq_hz: f32,
+    /// Cut gain in dB.
     pub gain_db: f32,
+    /// Filter Q factor.
     pub q: f32,
 }
 
@@ -121,27 +133,39 @@ pub fn bus_meter_index(model: MixerModel, bus_idx: u8) -> usize {
     base + bus_idx.saturating_sub(1) as usize
 }
 
+/// Runtime state for a single monitor bus being tuned.
 #[derive(Debug, Clone)]
 pub struct BusState {
+    /// 1-based mix bus index.
     pub bus_idx: u8,
+    /// Current ringout status.
     pub status: BusStatus,
+    /// Current fader level in dB.
     pub current_level_db: f32,
+    /// Original fader level in dB before ringout started.
     pub original_level_db: f32,
+    /// Target fader level in dB.
     pub target_level_db: f32,
     /// Live measured bus level in dBFS from `/meters/1` (`-90.0` floor).
     pub measured_dbfs: f32,
+    /// Notches applied to this bus so far.
     pub notches: Vec<Notch>,
+    /// OSC path for this bus's fader.
     pub fader_path: String,
 }
 
+/// Shared application state for the `x32_auto_ringout` TUI.
 pub struct AppState {
-    // Store buses as a sorted Vec instead of HashMap to eliminate per-frame Vec allocation and sorting in the TUI render loop.
+    /// Monitored buses sorted by `bus_idx`.
     pub buses: Vec<BusState>,
+    /// Whether the application should exit.
     pub should_quit: bool,
+    /// Whether automatic fader ramping is paused.
     pub pause_ramp: bool,
 }
 
 impl AppState {
+    /// Creates a new `AppState` from parsed CLI arguments.
     pub fn new(args: &Args) -> Self {
         let mut buses_vec = Vec::new();
         let max_buses = max_buses_for_model(args.model);
@@ -219,6 +243,7 @@ pub fn detect_rta_feedback_peak(bins: &[f32], min_prominence_db: f32) -> Option<
     best_bin.map(|b| x32_lib::meters::rta_bin_to_hz(b, n))
 }
 
+/// Runs the `x32_auto_ringout` TUI and ringout loop.
 pub async fn run(args: Args) -> Result<()> {
     if args.buses.is_empty() {
         println!("No valid buses provided. Expected format: --buses 1,2,5");

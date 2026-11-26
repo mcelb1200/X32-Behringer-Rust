@@ -1,3 +1,5 @@
+//! `xair_command` is an interactive and batch OSC command client for Behringer X-Air mixers.
+
 use anyhow::{Context, Result};
 use clap::Parser;
 use std::net::SocketAddr;
@@ -35,6 +37,7 @@ pub struct Args {
     pub file: Option<String>,
 }
 
+/// Connects to the X-Air mixer and runs batch or interactive OSC commands.
 pub async fn run(args: Args) -> Result<()> {
     println!(" XAir_Command - Rust Rewrite - (c)2014-18 Patrick-Gilles Maillot");
     print!("Connecting to XR18.");

@@ -1,3 +1,5 @@
+//! CLI entry point for `xair_get_scene`.
+
 use anyhow::Result;
 use clap::Parser;
 

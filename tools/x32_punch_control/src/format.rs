@@ -1,3 +1,5 @@
+//! Binary `.xpc` punch-control file reader and writer.
+
 use anyhow::Result;
 use std::time::Duration;
 use tokio::fs::File;
@@ -6,7 +8,9 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt, BufReader, BufWriter};
 /// Represents a single recorded OSC message in a punch control file.
 #[derive(Debug, Clone)]
 pub struct PunchRecord {
+    /// Timestamp offset of the recorded message.
     pub time: Duration,
+    /// Raw OSC packet bytes.
     pub data: Vec<u8>,
 }
 
@@ -16,6 +20,7 @@ pub struct PunchReader {
 }
 
 impl PunchReader {
+    /// Creates a new `PunchReader` from an open file.
     pub fn new(file: File) -> Self {
         Self {
             reader: BufReader::new(file.take(10 * 1024 * 1024)),
@@ -69,6 +74,7 @@ pub struct PunchWriter {
 
 #[allow(dead_code)]
 impl PunchWriter {
+    /// Creates a new `PunchWriter` from an open file.
     pub fn new(file: File) -> Self {
         Self {
             writer: BufWriter::new(file),
@@ -89,6 +95,7 @@ impl PunchWriter {
         Ok(())
     }
 
+    /// Flushes buffered data to the underlying file.
     pub async fn flush(&mut self) -> Result<()> {
         self.writer.flush().await?;
         Ok(())

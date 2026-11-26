@@ -1,3 +1,5 @@
+//! CLI entry point for `x32_desk_save`.
+
 use anyhow::Result;
 use clap::Parser;
 

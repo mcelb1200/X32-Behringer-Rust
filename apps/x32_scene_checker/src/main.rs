@@ -1,3 +1,5 @@
+//! CLI entry point for `x32_scene_checker`.
+
 use clap::Parser;
 use x32_scene_checker::{run, Args};
 

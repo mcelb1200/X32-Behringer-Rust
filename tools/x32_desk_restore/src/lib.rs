@@ -15,14 +15,18 @@ use x32_lib::{
     MixerClient, MixerModel,
 };
 
+/// Node-line parsing helpers.
 pub mod parse;
 
+/// Command-line arguments for `x32_desk_restore`.
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 pub struct Args {
+    /// Target mixer IP address.
     #[arg(short, long, default_value = "192.168.1.64")]
     pub ip: String,
 
+    /// Target mixer model.
     #[arg(
         short = 'M',
         long,
@@ -31,15 +35,19 @@ pub struct Args {
     )]
     pub model: MixerModel,
 
+    /// Transport type (`auto`, `osc`, `usb`, `aes50`).
     #[arg(long, default_value = "auto")]
     pub transport: String,
 
+    /// USB serial port name.
     #[arg(long, default_value = "")]
     pub usb_port: String,
 
+    /// AES50 bridge IP address.
     #[arg(long, default_value = "")]
     pub aes50_ip: String,
 
+    /// Input backup file path.
     #[arg(index = 1)]
     pub file: PathBuf,
 }
@@ -75,6 +83,7 @@ async fn send_commands(client: &MixerClient, commands: &[String]) -> Result<()> 
     Ok(())
 }
 
+/// Runs `x32_desk_restore` with the given arguments.
 pub async fn run(args: Args) -> Result<()> {
     let file = File::open(&args.file)?;
 

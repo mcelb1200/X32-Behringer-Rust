@@ -1,7 +1,10 @@
+//! Built-in default parameter strings for X32 FX types.
+
 use lazy_static::lazy_static;
 use std::collections::HashMap;
 
 lazy_static! {
+    /// Map from X32 FX type code to default parameter string.
     pub static ref FX_DEFAULTS: HashMap<&'static str, &'static str> = {
         let mut m = HashMap::new();
         m.insert("HALL", "20 1.57 60 5k74 25 0.0 83 7k2 0.95 25 50 30");

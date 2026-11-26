@@ -7,6 +7,7 @@
 //!
 //! It supports reading custom default values from a file, allowing for personalized initial states.
 
+/// Default FX parameter strings by effect type.
 pub mod fx_defaults;
 
 use clap::Parser;
@@ -17,12 +18,15 @@ use std::io::{BufRead, Read};
 use std::path::PathBuf;
 use x32_lib::{error::X32Error, MixerClient, MixerModel};
 
+/// Command-line arguments for `x32_copy_fx`.
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 pub struct Args {
+    /// Target mixer IP address.
     #[arg(short, long, default_value = "192.168.0.64")]
     pub ip: String,
 
+    /// Target mixer model.
     #[arg(
         short,
         long,
@@ -31,24 +35,31 @@ pub struct Args {
     )]
     pub model: MixerModel,
 
+    /// Transport type (`auto`, `osc`, `usb`, `aes50`).
     #[arg(long, default_value = "auto")]
     pub transport: String,
 
+    /// USB serial port name.
     #[arg(long, default_value = "")]
     pub usb_port: String,
 
+    /// AES50 bridge IP address.
     #[arg(long, default_value = "")]
     pub aes50_ip: String,
 
+    /// Optional custom defaults file path.
     #[arg(long)]
     pub defaults_file: Option<PathBuf>,
 
+    /// Source FX slot number (1-based).
     #[arg(long, default_value_t = 1)]
     pub from: u8,
 
+    /// Destination FX slot number (1-based).
     #[arg(long, default_value_t = 0)]
     pub to: u8,
 
+    /// FX operation to perform.
     #[command(subcommand)]
     pub action: Action,
 }
@@ -62,23 +73,32 @@ pub fn max_fx_slots_for_model(model: MixerModel) -> u8 {
     }
 }
 
+/// FX subcommand action.
 #[derive(clap::Subcommand, Debug)]
 pub enum Action {
+    /// Reset an FX slot to default parameters.
     Reset,
+    /// Copy FX parameters from `--from` to `--to`.
     Copy {
+        /// Also copy master/routing parameters.
         #[arg(long)]
         master: bool,
     },
+    /// Copy side A parameters to side B within `--from`.
     AtoB {
+        /// Also copy master/routing parameters.
         #[arg(long)]
         master: bool,
     },
+    /// Copy side B parameters to side A within `--from`.
     BtoA {
+        /// Also copy master/routing parameters.
         #[arg(long)]
         master: bool,
     },
 }
 
+/// Runs `x32_copy_fx` with the given arguments.
 pub async fn run(args: Args) -> Result<(), X32Error> {
     let max_slots = max_fx_slots_for_model(args.model);
     if args.from < 1 || args.from > max_slots {

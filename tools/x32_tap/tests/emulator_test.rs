@@ -1,3 +1,5 @@
+//! Emulator integration tests for `x32_tap`.
+
 use osc_lib::{OscArg, OscMessage};
 use std::process::Command;
 use std::time::Duration;

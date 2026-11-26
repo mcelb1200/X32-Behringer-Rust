@@ -1,11 +1,15 @@
+//! Scene-to-OSC token parser for converting X32 scene text values into OSC arguments.
+
 use x32_xsprint::{xsprint, XsprintValue};
 
+/// Stateful parser for X32 scene file tokens and parameter values.
 pub struct Xscene2xParser<'a> {
     input: &'a [u8],
     pos: usize,
 }
 
 impl<'a> Xscene2xParser<'a> {
+    /// Creates a new parser over the given input string.
     pub fn new(input: &'a str) -> Self {
         Self {
             input: input.as_bytes(),
@@ -19,6 +23,7 @@ impl<'a> Xscene2xParser<'a> {
         }
     }
 
+    /// Reads the next whitespace-delimited token from the input.
     pub fn read_token(&mut self) -> Option<&'a str> {
         self.skip_whitespace();
         if self.pos >= self.input.len() {
@@ -31,6 +36,7 @@ impl<'a> Xscene2xParser<'a> {
         std::str::from_utf8(&self.input[start..self.pos]).ok()
     }
 
+    /// Reads the next double-quoted string from the input.
     pub fn read_quoted_string(&mut self) -> Option<&'a str> {
         while self.pos < self.input.len() && self.input[self.pos] != b'"' {
             self.pos += 1;
@@ -50,6 +56,7 @@ impl<'a> Xscene2xParser<'a> {
         std::str::from_utf8(&self.input[start..end]).ok()
     }
 
+    /// Parses an on/off token and writes an OSC integer (`0` or `1`) to `buf`.
     pub fn xp_off_on(&mut self, buf: &mut Vec<u8>, crit_0: &str) {
         if let Some(token) = self.read_token() {
             let ival = if token == crit_0 { 0 } else { 1 };
@@ -58,6 +65,7 @@ impl<'a> Xscene2xParser<'a> {
         }
     }
 
+    /// Parses a floating-point token, supporting `k` suffix notation (e.g., `5k6` -> `5600.0`).
     pub fn xr_float(&mut self) -> Option<f32> {
         let token = self.read_token()?;
         if let Some(k_idx) = token.find('k') {
@@ -90,6 +98,7 @@ impl<'a> Xscene2xParser<'a> {
         }
     }
 
+    /// Parses a percentage token and writes a normalized `0.0..=1.0` OSC float to `buf`.
     pub fn xp_percent(&mut self, buf: &mut Vec<u8>) {
         if let Some(token) = self.read_token() {
             if let Ok(mut fval) = token.parse::<f32>() {
@@ -100,6 +109,7 @@ impl<'a> Xscene2xParser<'a> {
         }
     }
 
+    /// Parses a linear-scale float token and writes a normalized OSC float to `buf`.
     pub fn xp_linf(&mut self, buf: &mut Vec<u8>, xmin: f32, lmaxmin: f32, mut xstep: f32) {
         if let Some(mut fval) = self.xr_float() {
             fval = (fval - xmin) / lmaxmin;
@@ -111,6 +121,7 @@ impl<'a> Xscene2xParser<'a> {
         }
     }
 
+    /// Parses a logarithmic-scale float token and writes a normalized OSC float to `buf`.
     pub fn xp_logf(&mut self, buf: &mut Vec<u8>, xmin: f32, lmaxmin: f32, nsteps: i32) {
         if let Some(mut fval) = self.xr_float() {
             fval = (fval / xmin).ln() / lmaxmin;
@@ -121,6 +132,7 @@ impl<'a> Xscene2xParser<'a> {
         }
     }
 
+    /// Parses an integer token and writes an OSC integer to `buf`.
     pub fn xp_int(&mut self, buf: &mut Vec<u8>) {
         if let Some(token) = self.read_token() {
             if let Ok(ival) = token.parse::<i32>() {
@@ -130,6 +142,7 @@ impl<'a> Xscene2xParser<'a> {
         }
     }
 
+    /// Parses a quoted string token and writes an OSC string to `buf`.
     pub fn xp_str(&mut self, buf: &mut Vec<u8>) {
         if let Some(s) = self.read_quoted_string() {
             xsprint(buf, 's', XsprintValue::String(",s"));
@@ -137,6 +150,7 @@ impl<'a> Xscene2xParser<'a> {
         }
     }
 
+    /// Parses a token matching an entry in `list` and writes its index as an OSC integer to `buf`.
     pub fn xp_list(&mut self, buf: &mut Vec<u8>, list: &[&str]) {
         if let Some(token) = self.read_token() {
             if let Some(ival) = list.iter().position(|&s| s == token) {
@@ -146,6 +160,7 @@ impl<'a> Xscene2xParser<'a> {
         }
     }
 
+    /// Parses an FX type token matching `list`, writes its index to `buf`, and returns the index.
     pub fn xp_fxlist(&mut self, buf: &mut Vec<u8>, list: &[&str]) -> Option<i32> {
         if let Some(token) = self.read_token() {
             if let Some(ival) = list.iter().position(|&s| s == token) {
@@ -158,6 +173,7 @@ impl<'a> Xscene2xParser<'a> {
         None
     }
 
+    /// Parses a `%`-prefixed binary bitmask token and writes an OSC integer to `buf`.
     pub fn xp_bit(&mut self, buf: &mut Vec<u8>) {
         if let Some(token) = self.read_token() {
             if let Some(pct_idx) = token.find('%') {
@@ -174,6 +190,7 @@ impl<'a> Xscene2xParser<'a> {
         }
     }
 
+    /// Parses a frequency token (20 Hz–20 kHz) and writes a normalized OSC float to `buf`.
     #[allow(clippy::excessive_precision)]
     pub fn xp_frequency(&mut self, buf: &mut Vec<u8>, nsteps: i32) {
         if let Some(mut fval) = self.xr_float() {
@@ -185,6 +202,7 @@ impl<'a> Xscene2xParser<'a> {
         }
     }
 
+    /// Parses a dB level token (including `-oo`) and writes a normalized OSC float to `buf`.
     #[allow(clippy::excessive_precision)]
     pub fn xp_level(&mut self, buf: &mut Vec<u8>, nsteps: i32) {
         if let Some(token) = self.read_token() {

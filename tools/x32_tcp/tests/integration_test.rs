@@ -1,3 +1,5 @@
+//! Integration tests for `x32_tcp`.
+
 use osc_lib::{OscArg, OscMessage};
 use std::io::{BufRead, BufReader, Write};
 use std::net::{TcpStream, UdpSocket};

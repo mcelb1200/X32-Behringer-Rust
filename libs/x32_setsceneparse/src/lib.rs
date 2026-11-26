@@ -1,7 +1,10 @@
+//! Parser for X32/XAir scene files into OSC messages.
+
 use osc_lib::{OscArg, OscMessage};
 use x32_fxparse::MixerModel;
 
 // --- FX Type and Source Arrays from C ---
+/// Effect type names for X32 FX slots 1-4.
 pub const XFXTYP4: &[&str] = &[
     "HALL", "AMBI", "RPLT", "ROOM", "CHAM", "PLAT", "VREV", "VRM", "GATE", "RVRS", "DLY", "3TAP",
     "4TAP", "CRS", "FLNG", "PHAS", "DIMC", "FILT", "ROTA", "PAN", "SUB", "D/RV", "CR/R", "FL/R",
@@ -10,12 +13,14 @@ pub const XFXTYP4: &[&str] = &[
     "ENH2", "ENH", "EXC2", "EXC", "IMG", "EDI", "SON", "AMP2", "AMP", "DRV2", "DRV", "PIT2", "PIT",
 ];
 
+/// Effect type names for X32 FX slots 5-8.
 pub const XFXTYP5: &[&str] = &[
     "GEQ2", "GEQ", "TEQ2", "TEQ", "DES2", "DES", "P1A", "P1A2", "PQ5", "PQ5S", "WAVD", "LIM",
     "FAC", "FAC1M", "FAC2", "LEC", "LEC2", "ULC", "ULC2", "ENH2", "ENH", "EXC2", "EXC", "IMG",
     "EDI", "SON", "AMP2", "AMP", "DRV2", "DRV", "PHAS", "FILT", "PAN", "SUB",
 ];
 
+/// Effect source names for X32 FX slots.
 pub const XFXSRC4: &[&str] = &[
     "INS", "MIX1", "MIX2", "MIX3", "MIX4", "MIX5", "MIX6", "MIX7", "MIX8", "MIX9", "MIX10",
     "MIX11", "MIX12", "MIX13", "MIX14", "MIX15", "MIX16", "M/C",
@@ -26,6 +31,7 @@ pub const XFXSRC4: &[&str] = &[
 /// effect parameters which have context-dependent types and scales.
 #[derive(Debug, Clone)]
 pub struct SceneParser {
+    /// The target mixer model.
     pub model: MixerModel,
     /// Tracks the current FX type for slots 1-8. Default initialized to 0 (HALL/GEQ2).
     pub fx_types: [i32; 8],
@@ -38,6 +44,7 @@ impl Default for SceneParser {
 }
 
 impl SceneParser {
+    /// Creates a new `SceneParser` defaulting to `MixerModel::X32`.
     pub fn new() -> Self {
         Self {
             model: MixerModel::X32,
@@ -45,6 +52,7 @@ impl SceneParser {
         }
     }
 
+    /// Creates a new `SceneParser` for the specified mixer model.
     pub fn with_model(model: MixerModel) -> Self {
         Self {
             model,

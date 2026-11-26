@@ -16,6 +16,7 @@ use std::{io, time::Duration};
 
 use crate::mixer::AppliedNotch;
 
+/// Terminal UI controller for `x32_feedback_detect`.
 pub struct AppTui {
     terminal: Terminal<CrosstermBackend<io::Stdout>>,
     notch_text: String,
@@ -23,13 +24,18 @@ pub struct AppTui {
     cached_chunks: std::rc::Rc<[Rect]>,
 }
 
+/// User input events produced by [`AppTui`].
 pub enum TuiEvent {
+    /// Exit the application.
     Quit,
+    /// Reset all applied EQ notches.
     ResetNotches,
+    /// No relevant input event occurred.
     None,
 }
 
 impl AppTui {
+    /// Initializes raw mode, enters the alternate screen, and creates an [`AppTui`].
     pub fn new() -> Result<Self> {
         enable_raw_mode()?;
         let mut stdout = io::stdout();
@@ -44,6 +50,7 @@ impl AppTui {
         })
     }
 
+    /// Renders the current status and active EQ notches to the terminal.
     pub fn draw(
         &mut self,
         status: &str,
@@ -105,6 +112,7 @@ impl AppTui {
         Ok(())
     }
 
+    /// Polls for terminal key events and returns the corresponding `TuiEvent`.
     pub fn handle_events(&self) -> Result<TuiEvent> {
         if event::poll(Duration::from_millis(10))? {
             if let Event::Key(key) = event::read()? {
@@ -121,6 +129,7 @@ impl AppTui {
         Ok(TuiEvent::None)
     }
 
+    /// Restores the terminal to its normal state.
     pub fn cleanup(&mut self) -> Result<()> {
         disable_raw_mode()?;
         execute!(

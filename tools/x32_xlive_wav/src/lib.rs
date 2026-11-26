@@ -9,6 +9,7 @@ use hound::{SampleFormat, WavReader, WavSpec, WavWriter};
 use std::fs;
 use std::path::PathBuf;
 
+/// Command-line arguments for `x32_xlive_wav`.
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 pub struct Args {
@@ -53,6 +54,7 @@ pub struct Args {
     pub silent: bool,
 }
 
+/// Explodes an X-Live multi-channel WAV session into mono WAV files.
 pub fn run(args: Args) -> Result<()> {
     let args = &args;
     if let Some(num) = args.num_channels {

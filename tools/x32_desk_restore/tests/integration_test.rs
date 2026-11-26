@@ -1,3 +1,5 @@
+//! Integration tests for `x32_desk_restore`.
+
 use osc_lib::OscMessage;
 use std::fs::File;
 use std::io::Write;

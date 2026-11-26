@@ -1,3 +1,5 @@
+//! Automatically spills DCA group members onto a mixer's custom fader bank.
+
 use anyhow::{bail, Context, Result};
 use clap::Parser;
 use osc_lib::OscArg;
@@ -5,6 +7,7 @@ use std::collections::HashMap;
 use tokio::sync::broadcast;
 use x32_lib::{MixerClient, MixerModel};
 
+/// Command-line arguments for `x32_dca_spill`.
 #[derive(Parser, Debug, Clone)]
 #[command(
     author,
@@ -26,6 +29,7 @@ pub struct Args {
     pub dca: Option<u8>,
 }
 
+/// Returns the maximum input channel count for `model`.
 pub fn max_channels_for_model(model: MixerModel) -> u8 {
     match model {
         MixerModel::X32 => 32,
@@ -35,6 +39,7 @@ pub fn max_channels_for_model(model: MixerModel) -> u8 {
     }
 }
 
+/// Returns the maximum auxiliary input count for `model`.
 pub fn max_auxins_for_model(model: MixerModel) -> u8 {
     match model {
         MixerModel::X32 | MixerModel::Wing => 8,
@@ -43,6 +48,7 @@ pub fn max_auxins_for_model(model: MixerModel) -> u8 {
     }
 }
 
+/// Returns the maximum FX return count for `model`.
 pub fn max_fxrtns_for_model(model: MixerModel) -> u8 {
     match model {
         MixerModel::X32 | MixerModel::Wing => 8,
@@ -50,6 +56,7 @@ pub fn max_fxrtns_for_model(model: MixerModel) -> u8 {
     }
 }
 
+/// Returns the maximum DCA count for `model`.
 pub fn max_dcas_for_model(model: MixerModel) -> u8 {
     match model {
         MixerModel::X32 => 8,
@@ -58,6 +65,7 @@ pub fn max_dcas_for_model(model: MixerModel) -> u8 {
     }
 }
 
+/// Returns the inclusive `/-stat/selidx` range corresponding to DCA buttons for `model`.
 pub fn dca_select_index_range(model: MixerModel) -> (i32, i32) {
     match model {
         MixerModel::X32 => (72, 79),
@@ -66,6 +74,7 @@ pub fn dca_select_index_range(model: MixerModel) -> (i32, i32) {
     }
 }
 
+/// Converts a `/-stat/selidx` value into a 1-based DCA number for `model`, if applicable.
 pub fn get_dca_from_selidx(model: MixerModel, idx: i32) -> Option<u8> {
     let (start, end) = dca_select_index_range(model);
     if idx >= start && idx <= end {
@@ -75,6 +84,7 @@ pub fn get_dca_from_selidx(model: MixerModel, idx: i32) -> Option<u8> {
     }
 }
 
+/// Returns the OSC path for custom fader bank slot `i` (0-based), or `None` if unsupported.
 pub fn get_custom_bank_path(model: MixerModel, i: usize) -> Option<String> {
     let block = (i / 8) + 1;
     let fader = (i % 8) + 1;
@@ -86,6 +96,7 @@ pub fn get_custom_bank_path(model: MixerModel, i: usize) -> Option<String> {
     }
 }
 
+/// Runs the DCA spill listener loop.
 pub async fn run(args: Args) -> Result<()> {
     let max_dca = max_dcas_for_model(args.model);
     if let Some(target) = args.dca {
@@ -165,6 +176,7 @@ pub async fn run(args: Args) -> Result<()> {
     Ok(())
 }
 
+/// Queries members of `dca` and maps them onto the mixer's custom fader bank.
 pub async fn spill_dca(
     client: &mut MixerClient,
     model: MixerModel,

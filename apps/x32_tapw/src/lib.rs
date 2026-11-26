@@ -1,3 +1,6 @@
+//! X32Tap TUI library for manual and auto-tap delay tempo control over OSC.
+
+/// Application state and tap-tempo logic.
 pub mod app;
 
 use anyhow::{anyhow, Result};
@@ -74,6 +77,7 @@ pub struct Args {
     pub threshold: f32,
 }
 
+/// Runs the X32Tap TUI application with the given CLI arguments.
 pub async fn run(args: Args) -> Result<()> {
     let max_slots = max_fx_slots_for_model(args.model);
     if args.slot < 1 || args.slot > max_slots {

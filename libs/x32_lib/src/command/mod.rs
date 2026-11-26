@@ -9,6 +9,7 @@ use bitflags::bitflags;
 
 pub mod auxin;
 pub mod bus;
+/// Main configuration command types and definitions.
 pub mod cfg_main;
 pub mod channel;
 pub mod dca;

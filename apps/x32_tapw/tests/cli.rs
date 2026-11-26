@@ -1,3 +1,5 @@
+//! CLI integration tests for `x32_tapw`.
+
 use assert_cmd::Command;
 use predicates::prelude::*;
 

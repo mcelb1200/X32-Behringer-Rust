@@ -1,3 +1,5 @@
+//! Intelligent scene pre-flight checker for Behringer X32/M32, Wing, and X-Air mixers.
+
 use clap::Parser;
 use osc_lib::OscArg;
 use std::collections::HashMap;
@@ -8,15 +10,19 @@ use x32_lib::scene_parse::SceneParser;
 use x32_lib::MixerClient;
 use x32_lib::MixerModel;
 
+/// Command-line arguments for `x32_scene_checker`.
 #[derive(Parser, Debug)]
 #[command(author, version, about = "Intelligent Scene Pre-flight Checker", long_about = None)]
 pub struct Args {
+    /// IP address of the target mixer.
     #[arg(short, long, default_value = "192.168.0.64")]
     pub ip: String,
 
+    /// Path to the scene file to inspect.
     #[arg(short, long)]
     pub scene: String,
 
+    /// Mixer model (`X32`, `Wing`, `XR18`, `XR16`, `XR12`).
     #[arg(
         short,
         long,
@@ -25,18 +31,22 @@ pub struct Args {
     )]
     pub model: MixerModel,
 
+    /// Automatically load the scene without prompting.
     #[arg(long)]
     pub auto_load: bool,
 
+    /// Safe-load the scene automatically, skipping `Critical` and `High` issues.
     #[arg(
         long,
         help = "Safe-load scene automatically (skipping CRITICAL and HIGH issues) without interactive prompt"
     )]
     pub safe_load: bool,
 
+    /// Optional path to save a pre-load mixer state backup snapshot.
     #[arg(long, help = "Path to save pre-load mixer state backup snapshot file")]
     pub backup: Option<String>,
 
+    /// Comma-separated list of OSC paths or prefixes to lock.
     #[arg(
         long,
         help = "Comma-separated list of OSC paths or prefixes to lock (e.g. /routing,/main/st/mix/on)"
@@ -44,21 +54,31 @@ pub struct Args {
     pub locked_paths: Option<String>,
 }
 
+/// Risk severity level assigned to a scene parameter change.
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
 pub enum RiskLevel {
+    /// Informational change with negligible impact.
     Info,
+    /// Low-risk change.
     Low,
+    /// Moderate-risk change.
     Moderate,
+    /// High-risk change that may noticeably alter audio or routing.
     High,
+    /// Critical change that may cause loud pops, feedback, or routing loss.
     Critical,
 }
 
+/// Scene loading mode controlling which risk levels are applied.
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum LoadMode {
+    /// Apply all scene changes.
     All,
+    /// Apply only changes below `High` risk.
     Safe,
 }
 
+/// Filters detected risk issues according to the selected `LoadMode` and locked path prefixes.
 pub fn filter_issues<'a>(
     issues: &'a [RiskIssue],
     mode: LoadMode,
@@ -92,12 +112,18 @@ impl RiskLevel {
     }
 }
 
+/// A single parameter difference between the live mixer and the target scene.
 #[derive(Debug, Clone)]
 pub struct RiskIssue {
+    /// Assessed risk severity of the change.
     pub level: RiskLevel,
+    /// OSC parameter path.
     pub path: String,
+    /// Human-readable description of the change.
     pub description: String,
+    /// Current value on the mixer.
     pub from: OscArg,
+    /// Target value in the scene file.
     pub to: OscArg,
 }
 
@@ -110,6 +136,7 @@ fn format_arg(arg: &OscArg) -> String {
     }
 }
 
+/// Classifies the risk of changing `path` from `current` to `scene` using X32 defaults.
 pub fn classify_risk(path: &str, current: &OscArg, scene: &OscArg) -> Option<RiskIssue> {
     classify_risk_with_model(MixerModel::X32, path, current, scene)
 }
@@ -349,6 +376,7 @@ fn check_model_bounds(model: MixerModel, path: &str) -> Option<String> {
     None
 }
 
+/// Classifies the risk of changing `path` from `current` to `scene` for a specific `MixerModel`.
 pub fn classify_risk_with_model(
     model: MixerModel,
     path: &str,
@@ -534,6 +562,7 @@ fn print_full_details(issues: &[RiskIssue]) {
     println!("--------------------");
 }
 
+/// Runs the scene pre-flight checker CLI workflow.
 pub async fn run(args: Args) -> anyhow::Result<()> {
     let f = std::fs::File::open(&args.scene)?;
     let mut scn_content = String::new();

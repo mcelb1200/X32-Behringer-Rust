@@ -1,3 +1,5 @@
+//! CLI entry point for `x32_usb`.
+
 use anyhow::Result;
 use clap::Parser;
 use x32_usb::{run, Args};

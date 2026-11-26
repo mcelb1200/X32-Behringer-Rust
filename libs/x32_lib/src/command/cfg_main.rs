@@ -5,100 +5,195 @@ use std::fmt;
 pub enum CommandType {
     /// No type.
     Nil,
+    /// I32 variant.
     I32,
+    /// F32 variant.
     F32,
+    /// S32 variant.
     S32,
+    /// B32 variant.
     B32,
+    /// E32 variant.
     E32,
+    /// P32 variant.
     P32,
+    /// Res2 variant.
     Res2,
+    /// Res3 variant.
     Res3,
+    /// Res4 variant.
     Res4,
+    /// Fx32 variant.
     Fx32,
+    /// OffOn variant.
     OffOn,
+    /// CMono variant.
     CMono,
+    /// CSolo variant.
     CSolo,
+    /// CTalk variant.
     CTalk,
+    /// CTalkAB variant.
     CTalkAB,
+    /// COsc variant.
     COsc,
+    /// CRoutSw variant.
     CRoutSw,
+    /// CRoutIn variant.
     CRoutIn,
+    /// CRoutAc variant.
     CRoutAc,
+    /// CRoutOt variant.
     CRoutOt,
+    /// CRoutPlay variant.
     CRoutPlay,
+    /// CCtrl variant.
     CCtrl,
+    /// CEnc variant.
     CEnc,
+    /// CTape variant.
     CTape,
+    /// CMix variant.
     CMix,
+    /// ChCo variant.
     ChCo,
+    /// ChDe variant.
     ChDe,
+    /// ChPr variant.
     ChPr,
+    /// ChGa variant.
     ChGa,
+    /// ChGf variant.
     ChGf,
+    /// ChDy variant.
     ChDy,
+    /// ChDf variant.
     ChDf,
+    /// ChIn variant.
     ChIn,
+    /// ChEq variant.
     ChEq,
+    /// ChMx variant.
     ChMx,
+    /// ChMo variant.
     ChMo,
+    /// ChMe variant.
     ChMe,
+    /// ChGrp variant.
     ChGrp,
+    /// ChAMix variant.
     ChAMix,
+    /// AxPr variant.
     AxPr,
+    /// BsCo variant.
     BsCo,
+    /// MxPr variant.
     MxPr,
+    /// MxDy variant.
     MxDy,
+    /// MsMx variant.
     MsMx,
+    /// FxTyp1 variant.
     FxTyp1,
+    /// FxSrc variant.
     FxSrc,
+    /// FxPar1 variant.
     FxPar1,
+    /// FxTyp2 variant.
     FxTyp2,
+    /// FxPar2 variant.
     FxPar2,
+    /// OMain variant.
     OMain,
+    /// OMain2 variant.
     OMain2,
+    /// OP16 variant.
     OP16,
+    /// OMainD variant.
     OMainD,
+    /// HAmp variant.
     HAmp,
+    /// Prefs variant.
     Prefs,
+    /// PIR variant.
     PIR,
+    /// PIQ variant.
     PIQ,
+    /// PCard variant.
     PCard,
+    /// PRtA variant.
     PRtA,
+    /// PIP variant.
     PIP,
+    /// PAddr variant.
     PAddr,
+    /// PMask variant.
     PMask,
+    /// PGway variant.
     PGway,
+    /// Stat variant.
     Stat,
+    /// SScreen variant.
     SScreen,
+    /// SCha variant.
     SCha,
+    /// SMet variant.
     SMet,
+    /// SRou variant.
     SRou,
+    /// SSet variant.
     SSet,
+    /// SLib variant.
     SLib,
+    /// SFx variant.
     SFx,
+    /// SMon variant.
     SMon,
+    /// SUsb variant.
     SUsb,
+    /// SSce variant.
     SSce,
+    /// SAss variant.
     SAss,
+    /// SSoloSw variant.
     SSoloSw,
+    /// SAes variant.
     SAes,
+    /// STape variant.
     STape,
+    /// SOsc variant.
     SOsc,
+    /// STalk variant.
     STalk,
+    /// Usb variant.
     Usb,
+    /// SNam variant.
     SNam,
+    /// SCue variant.
     SCue,
+    /// SScn variant.
     SScn,
+    /// SSnp variant.
     SSnp,
+    /// HA variant.
     HA,
+    /// Action variant.
     Action,
+    /// URec variant.
     URec,
+    /// SLibs variant.
     SLibs,
+    /// D48 variant.
     D48,
+    /// D48A variant.
     D48A,
+    /// D48G variant.
     D48G,
+    /// URouO variant.
     URouO,
+    /// URouI variant.
     URouI,
+    /// PKey variant.
     PKey,
 }
 
@@ -150,23 +245,37 @@ pub struct Command {
 }
 
 // Flags
+/// F_GET const.
 pub const F_GET: i32 = 0x0001;
+/// F_SET const.
 pub const F_SET: i32 = 0x0002;
+/// F_XET const.
 pub const F_XET: i32 = F_GET | F_SET;
+/// F_NPR const.
 pub const F_NPR: i32 = 0x0004;
+/// F_FND const.
 pub const F_FND: i32 = 0x0008;
 
 // Node arrays
+/// OFF_ON const.
 pub const OFF_ON: &[&str] = &[" OFF", " ON", ""];
+/// X_MN_MODE const.
 pub const X_MN_MODE: &[&str] = &[" LR+M", " LCR", ""];
+/// X_S_SOURC const.
 pub const X_S_SOURC: &[&str] = &[
     " OFF", " LR", " LR+C", " LRPFL", " LRAFL", " AUX56", " AUX78", "",
 ];
+/// X_CH_MODE const.
 pub const X_CH_MODE: &[&str] = &[" PFL", " AFL", ""];
+/// X_T_SOURC const.
 pub const X_T_SOURC: &[&str] = &[" INT", " EXT", ""];
+/// X_OSC_SEL const.
 pub const X_OSC_SEL: &[&str] = &[" F1", " F2", ""];
+/// X_OSC_TYP const.
 pub const X_OSC_TYP: &[&str] = &[" SINE", " PINK", " WHITE", ""];
+/// X_CF_RSW const.
 pub const X_CF_RSW: &[&str] = &[" REC", " PLAY", ""];
+/// X_RTG_IN const.
 pub const X_RTG_IN: &[&str] = &[
     " AN1-8",
     " AN9-16",
@@ -190,6 +299,7 @@ pub const X_RTG_IN: &[&str] = &[
     " CARD25-32",
     "",
 ];
+/// X_RTA_EA const.
 pub const X_RTA_EA: &[&str] = &[
     " AN1-8",
     " AN9-16",
@@ -219,10 +329,12 @@ pub const X_RTA_EA: &[&str] = &[
     " AuxIN1-6/TB",
     "",
 ];
+/// X_RTI_NA const.
 pub const X_RTI_NA: &[&str] = &[
     " AUX1-4", " AN1-2", " AN1-4", " AN1-6", " A1-2", " A1-4", " A1-6", " B1-2", " B1-4", " B1-6",
     " CARD1-2", " CARD1-4", " CARD1-6", "",
 ];
+/// X_ROUT1 const.
 pub const X_ROUT1: &[&str] = &[
     " AN1-4",
     " AN9-12",
@@ -252,6 +364,7 @@ pub const X_ROUT1: &[&str] = &[
     " AUX/TB",
     "",
 ];
+/// X_ROUT5 const.
 pub const X_ROUT5: &[&str] = &[
     " AN5-8",
     " AN13-16",
@@ -281,32 +394,43 @@ pub const X_ROUT5: &[&str] = &[
     " AUX/TB",
     "",
 ];
+/// X_COLORS const.
 pub const X_COLORS: &[&str] = &[
     " OFF", " RD", " GN", " YE", " BL", " MG", " CY", " WH", " OFFi", " RDi", " GNi", " YEi",
     " BLi", " MGi", " CYi", " WHi", "",
 ];
+/// X_DY_MODE const.
 pub const X_DY_MODE: &[&str] = &[" COMP", " EXP", ""];
+/// X_DY_DET const.
 pub const X_DY_DET: &[&str] = &[" PEAK", " RMS", ""];
+/// X_DY_ENV const.
 pub const X_DY_ENV: &[&str] = &[" LIN", " LOG", ""];
+/// X_DY_RAT const.
 pub const X_DY_RAT: &[&str] = &[
     " 1.1", " 1.3", " 1.5", " 2.0", " 2.5", " 3.0", " 4.0", " 5.0", " 7.0", " 10", " 20", " 100",
     "",
 ];
+/// X_DYP_POS const.
 pub const X_DYP_POS: &[&str] = &[" PRE", " POST", ""];
+/// X_DYF_TYP const.
 pub const X_DYF_TYP: &[&str] = &[
     " LC6", " LC12", " HC6", " HC12", " 1.0", " 2.0", " 3.0", " 5.0", " 10.0", "",
 ];
+/// X_I_SEL const.
 pub const X_I_SEL: &[&str] = &[
     " OFF", " FX1L", " FX1R", " FX2L", " FX2R", " FX3L", " FX3R", " FX4L", " FX4R", " FX5L",
     " FX5R", " FX6L", " FX6R", " FX7L", " FX7R", " FX8L", " FX8R", " AUX1", " AUX2", " AUX3",
     " AUX4", " AUX5", " AUX6", "",
 ];
+/// X_EQ_TY2 const.
 pub const X_EQ_TY2: &[&str] = &[
     " LCut", " LShv", " PEQ", " VEQ", " HShv", " HCut", " BU6", " BU12", " BS12", " LR12", " BU18",
     " BU24", " BS24", " LR24", "",
 ];
+/// X_M_TYPE const.
 pub const X_M_TYPE: &[&str] = &[" IN/LC", " <-EQ", " EQ->", " PRE", " POST", " GRP", ""];
 
+/// XCONFIG const.
 pub const XCONFIG: &[Command] = &[
     Command {
         command: "/config",
@@ -2655,6 +2779,7 @@ pub const XCONFIG: &[Command] = &[
     },
 ];
 
+/// XMAIN const.
 pub const XMAIN: &[Command] = &[
     Command {
         command: "/main",

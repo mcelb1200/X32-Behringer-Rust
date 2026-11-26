@@ -10,14 +10,18 @@ use std::path::PathBuf;
 use tokio::time::{timeout, Duration};
 use x32_lib::{error::X32Error, MixerClient, MixerModel};
 
+/// Predefined OSC node lists for desk, scene, and routing saves.
 pub mod nodes;
 
+/// Command-line arguments for `x32_desk_save`.
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 pub struct Args {
+    /// Target mixer IP address.
     #[arg(short, long, default_value = "192.168.1.64")]
     pub ip: String,
 
+    /// Target mixer model.
     #[arg(
         short = 'M',
         long,
@@ -26,27 +30,35 @@ pub struct Args {
     )]
     pub model: MixerModel,
 
+    /// Transport type (`auto`, `osc`, `usb`, `aes50`).
     #[arg(long, default_value = "auto")]
     pub transport: String,
 
+    /// USB serial port name.
     #[arg(long, default_value = "")]
     pub usb_port: String,
 
+    /// AES50 bridge IP address.
     #[arg(long, default_value = "")]
     pub aes50_ip: String,
 
+    /// Save desk preferences and status nodes.
     #[arg(short = 'd', long)]
     pub desk_save: bool,
 
+    /// Save scene nodes.
     #[arg(short, long)]
     pub scene: bool,
 
+    /// Save routing nodes.
     #[arg(short, long)]
     pub routing: bool,
 
+    /// Optional pattern file listing OSC nodes to save.
     #[arg(short, long)]
     pub pattern_file: Option<PathBuf>,
 
+    /// Output file path.
     #[arg(index = 1)]
     pub destination_file: PathBuf,
 }
@@ -67,6 +79,7 @@ async fn get_desk_data(client: &MixerClient, commands: &[String]) -> Result<Vec<
     Ok(results)
 }
 
+/// Runs `x32_desk_save` with the given arguments.
 pub async fn run(args: Args) -> Result<(), X32Error> {
     let commands: Vec<String> = if args.desk_save {
         nodes::DS_NODE.iter().map(|s| s.to_string()).collect()

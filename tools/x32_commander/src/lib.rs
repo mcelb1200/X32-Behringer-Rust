@@ -20,6 +20,7 @@ use tokio::net::UdpSocket;
 
 use midir::MidiOutput;
 use osc_lib::{OscArg, OscMessage};
+/// Reverse Polish Notation (RPN) expression evaluator.
 pub mod rpn;
 use rpn::RpnCalculator;
 use x32_lib::{MixerClient, MixerModel};
@@ -272,19 +273,24 @@ fn parse_midi_hex(hex_str: &str) -> std::result::Result<Vec<u8>, anyhow::Error> 
     Ok(result)
 }
 
+/// Parameter value for a parsed command.
 #[derive(Debug, Clone)]
 pub enum CommandParam {
+    /// Floating-point parameter value.
     Float(f64),
+    /// String parameter value.
     String(String),
 }
 
 impl CommandParam {
+    /// Returns the parameter as an `f64`, or `0.0` if it is a string.
     pub fn as_f64(&self) -> f64 {
         match self {
             CommandParam::Float(f) => *f,
             CommandParam::String(_) => 0.0,
         }
     }
+    /// Returns the parameter as a string slice, or `""` if it is a float.
     pub fn as_str(&self) -> &str {
         match self {
             CommandParam::Float(_) => "",
@@ -379,6 +385,7 @@ fn expand_template(
     Ok(result)
 }
 
+/// Runs the `x32_commander` tool with the given CLI arguments.
 pub async fn run(args: Args) -> anyhow::Result<()> {
     let commands = parse_command_file(&args.file)
         .map_err(|e| anyhow::anyhow!("Failed to parse command file: {}", e))?;

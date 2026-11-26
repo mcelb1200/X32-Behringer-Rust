@@ -2,7 +2,9 @@ use crate::error::Result;
 use async_trait::async_trait;
 use osc_lib::OscMessage;
 
+/// MIDI transport implementation for communicating with X32/M32 mixers.
 pub mod midi;
+/// UDP transport implementation for communicating with X32/M32 mixers.
 pub mod udp;
 
 /// A trait for abstracting the physical transport layer of the X32/M32 mixer.

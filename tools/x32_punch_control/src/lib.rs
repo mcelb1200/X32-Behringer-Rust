@@ -17,13 +17,17 @@ use tokio::net::UdpSocket;
 use tokio::sync::Mutex;
 use tokio::time::{self, Duration, Instant};
 
+/// Configuration loading for punch control.
 pub mod config;
+/// Binary `.xpc` file format reader and writer.
 pub mod format;
+/// Shared runtime state types.
 pub mod state;
 
 use config::Config;
 use state::AppState;
 
+/// Command-line arguments for `x32_punch_control`.
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 pub struct Args {
@@ -40,6 +44,7 @@ pub struct Args {
     pub file: Option<String>,
 }
 
+/// Runs the `x32_punch_control` event loop with the given arguments.
 pub async fn run(args: Args) -> Result<()> {
     let mut config = Config::load(&args.config).unwrap_or_default();
     if let Some(ip) = args.ip {

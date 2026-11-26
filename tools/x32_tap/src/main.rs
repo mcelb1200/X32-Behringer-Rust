@@ -1,3 +1,5 @@
+//! CLI entry point for `x32_tap`.
+
 use anyhow::Result;
 use clap::Parser;
 

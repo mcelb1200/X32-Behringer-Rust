@@ -1,3 +1,5 @@
+//! Unified CLI entry point for Behringer X32 control tools.
+
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 

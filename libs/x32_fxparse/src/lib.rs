@@ -1,3 +1,5 @@
+//! Effect parameter parsing and mixer model definitions for X32/XAir/Wing consoles.
+
 #![allow(clippy::excessive_precision)]
 #![allow(clippy::collapsible_if)]
 #![allow(clippy::manual_range_contains)]
@@ -5,12 +7,18 @@
 use osc_lib::{OscArg, OscMessage};
 use std::str::FromStr;
 
+/// Supported Behringer/Midas digital mixer models.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MixerModel {
+    /// Behringer X32 / Midas M32 series.
     X32,
+    /// Behringer Wing.
     Wing,
+    /// Behringer X Air XR18 / Midas MR18.
     XR18,
+    /// Behringer X Air XR16.
     XR16,
+    /// Behringer X Air XR12 / Midas MR12.
     XR12,
 }
 

@@ -1,3 +1,5 @@
+//! Build script that generates effect parameter parsing tables from JSON specs.
+
 use std::collections::BTreeMap;
 use std::env;
 use std::fs::File;

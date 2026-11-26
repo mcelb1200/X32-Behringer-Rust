@@ -1,3 +1,5 @@
+//! CLI entry point for `x32_custom_layer`.
+
 use anyhow::Result;
 use clap::Parser;
 

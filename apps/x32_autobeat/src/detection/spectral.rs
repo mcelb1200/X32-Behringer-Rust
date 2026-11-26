@@ -5,6 +5,7 @@ use rustfft::{Fft, FftPlanner};
 use std::collections::VecDeque;
 use std::sync::Arc;
 
+/// Beat detector using FFT spectral flux onset detection.
 pub struct SpectralFluxDetector {
     fft: Arc<dyn Fft<f32>>,
     scratch: Vec<Complex<f32>>,
@@ -29,6 +30,7 @@ pub struct SpectralFluxDetector {
 }
 
 impl SpectralFluxDetector {
+    /// Creates a new [`SpectralFluxDetector`] for the given `sample_rate` and `fft_size`.
     pub fn new(sample_rate: u32, fft_size: usize) -> Self {
         let mut planner = FftPlanner::new();
         let fft = planner.plan_fft_forward(fft_size);
@@ -59,6 +61,7 @@ impl SpectralFluxDetector {
         }
     }
 
+    /// Sets the adaptive flux threshold multiplier.
     pub fn set_threshold_multiplier(&mut self, multiplier: f32) {
         self.threshold_multiplier = multiplier;
     }

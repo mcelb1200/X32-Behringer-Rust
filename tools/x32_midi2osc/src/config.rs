@@ -1,14 +1,22 @@
+//! Configuration file (`.m2o`) parser for `x32_midi2osc`.
+
 #![allow(dead_code)]
 use anyhow::{Result, anyhow};
 use std::fs::File;
 use std::io::{BufRead, Read};
 
+/// A single MIDI-to-OSC mapping rule.
 #[derive(Debug, Clone, PartialEq)]
 pub struct MidiOscCommand {
+    /// MIDI status byte (e.g. `0xB0`).
     pub midi_status: u8,
+    /// MIDI channel (1-based).
     pub midi_channel: u8,
+    /// First MIDI data byte (or `-1` for wildcard).
     pub data1: i32,
+    /// Second MIDI data byte (or `-1` for wildcard).
     pub data2: i32,
+    /// OSC command template string.
     pub osc_command: String,
 }
 
@@ -22,6 +30,7 @@ impl MidiOscCommand {
     }
 }
 
+/// Parses a `.m2o` MIDI-to-OSC mapping file.
 pub fn parse_file(path: &str) -> Result<Vec<MidiOscCommand>> {
     let file = File::open(path)?;
 
@@ -146,9 +155,12 @@ mod tests {
     }
 }
 
+/// Configuration for `x32_midi2osc` loaded from a config file.
 #[derive(Debug, Clone)]
 pub struct Config {
+    /// MIDI input port index.
     pub midi_in_port: i32,
+    /// Target mixer IP address.
     pub ip_str: String,
 }
 
@@ -162,6 +174,7 @@ impl Default for Config {
 }
 
 impl Config {
+    /// Loads configuration from the specified file path.
     pub fn load(path: &str) -> Result<Self> {
         let file = File::open(path)?;
 

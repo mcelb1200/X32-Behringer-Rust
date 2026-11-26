@@ -1,12 +1,17 @@
+//! `xair_set_scene` reads scene lines from stdin and sends them as OSC commands
+//! to a Behringer X-Air mixer.
+
 use anyhow::Result;
 use clap::Parser;
 use osc_lib::OscMessage;
 use std::io::{self, BufRead, Read};
 use x32_lib::MixerClient;
 
+/// Command-line arguments for `xair_set_scene`.
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 pub struct Args {
+    /// IP address of the X-Air mixer.
     #[arg(short, long)]
     pub ip: String,
 
@@ -15,6 +20,7 @@ pub struct Args {
     pub delay: u64,
 }
 
+/// Connects to the X-Air mixer and sends scene commands read from stdin.
 pub async fn run(args: Args) -> Result<()> {
     let ip = x32_lib::model::resolve_target_address(&args.ip, x32_lib::MixerModel::XR18);
 

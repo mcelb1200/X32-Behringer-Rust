@@ -1,31 +1,56 @@
+//! Configuration loading for `x32_punch_control`.
+
 use anyhow::Result;
 use std::fs::File;
 use std::io::{BufRead, Read};
 use std::path::Path;
 
+/// Configuration loaded from `.X32PunchControl.ini` or defaults.
 #[derive(Debug, Clone)]
 pub struct Config {
+    /// Target X32 IP address.
     pub xip_str: String,
+    /// Target scene string.
     pub xscene_str: String,
+    /// Whether MIDI control is enabled.
     pub xusemidi: bool,
+    /// MIDI input port index.
     pub xmidiinport: i32,
+    /// MIDI output port index.
     pub xmidioutport: i32,
+    /// MIDI string for play.
     pub xmidi_play_str: String,
+    /// MIDI string for punch-in.
     pub xmidi_pchin_str: String,
+    /// MIDI string for punch-out.
     pub xmidi_pchout_str: String,
+    /// MIDI string for stop.
     pub xmidi_stop_str: String,
+    /// MIDI string for pause.
     pub xmidi_pause_str: String,
+    /// MIDI string for resume.
     pub xmidi_resume_str: String,
+    /// MIDI string for reset.
     pub xmidi_reset_str: String,
+    /// MIDI string for beginning of tape.
     pub xmidi_bot_str: String,
+    /// MIDI string for end of tape.
     pub xmidi_eot_str: String,
+    /// MIDI string for record.
     pub xmidi_record_str: String,
+    /// Whether User Bank buttons are used.
     pub xusebank: bool,
+    /// User Bank identifier (`A`, `B`, or `C`).
     pub xbank: char,
+    /// Button backlight color index.
     pub xbbcolor: i32,
+    /// Whether the window stays on top.
     pub xkeepontop: bool,
+    /// Whether record-play mode is enabled.
     pub xrecordplay: bool,
+    /// Whether MIDI Time Code (MTC) is enabled.
     pub xmtcon: bool,
+    /// Catch-up delay in milliseconds.
     pub xcatchdelay: i32,
 }
 
@@ -59,6 +84,7 @@ impl Default for Config {
 }
 
 impl Config {
+    /// Loads configuration from `path`, returning defaults if the file cannot be opened.
     pub fn load<P: AsRef<Path>>(path: P) -> Result<Self> {
         let file = match File::open(path.as_ref()) {
             Ok(f) => f,

@@ -1,3 +1,5 @@
+//! Integration tests for `x32_get_scene_name`.
+
 use osc_lib::{OscArg, OscMessage};
 use std::net::{SocketAddr, UdpSocket};
 use std::thread;

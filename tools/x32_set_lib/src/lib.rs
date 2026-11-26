@@ -17,9 +17,11 @@ use std::path::{Path, PathBuf};
 use tokio::time::{timeout, Duration};
 use x32_lib::{MixerClient, MixerModel};
 
+/// Command-line arguments for `x32_set_lib`.
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 pub struct Args {
+    /// IP address of the mixer.
     #[arg(short, long, default_value = "192.168.1.62")]
     pub ip: String,
 
@@ -27,25 +29,32 @@ pub struct Args {
     #[arg(short = 'm', long, default_value = "X32")]
     pub model: MixerModel,
 
+    /// Transport protocol (`auto`, `udp`, `tcp`, `usb`, `aes50`).
     #[arg(long, default_value = "auto")]
     pub transport: String,
 
+    /// Serial port path for USB transport.
     #[arg(long, default_value = "")]
     pub usb_port: String,
 
+    /// IP address for AES50 transport.
     #[arg(long, default_value = "")]
     pub aes50_ip: String,
 
+    /// Starting library slot index (1-100).
     #[arg(short, long, default_value_t = 1)]
     pub start_index: usize,
 
+    /// Preset files to upload (`.chn`, `.efx`, or `.rou`).
     #[arg(required = true)]
     pub files: Vec<PathBuf>,
 
+    /// Enable verbose output.
     #[arg(short, long)]
     pub verbose: bool,
 }
 
+/// Runs the `x32_set_lib` upload workflow with the given arguments.
 pub async fn run(args: Args) -> Result<()> {
     let target_ip = args.model.resolve_target_address(&args.ip);
     let (client, _) = MixerClient::connect_with_transport(

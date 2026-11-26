@@ -33,9 +33,11 @@ pub fn max_fx_slots_for_model(model: MixerModel) -> u8 {
 #[derive(Parser, Debug)]
 #[command(author, version, about = "A utility to copy GEQ settings between FX slots on an X32 console.", long_about = None)]
 pub struct Args {
+    /// IP address of the mixer.
     #[arg(short, long, default_value = "192.168.0.64")]
     pub ip: String,
 
+    /// Mixer model (`X32`, `Wing`, `XR18`, `XR16`, `XR12`).
     #[arg(
         short,
         long,
@@ -44,12 +46,15 @@ pub struct Args {
     )]
     pub model: MixerModel,
 
+    /// Transport protocol (`auto`, `udp`, `tcp`, `usb`, `aes50`).
     #[arg(long, default_value = "auto")]
     pub transport: String,
 
+    /// Serial port path for USB transport.
     #[arg(long, default_value = "")]
     pub usb_port: String,
 
+    /// IP address for AES50 transport.
     #[arg(long, default_value = "")]
     pub aes50_ip: String,
 

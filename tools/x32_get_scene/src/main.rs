@@ -1,3 +1,5 @@
+//! CLI entry point for `x32_get_scene`.
+
 use anyhow::Result;
 use clap::Parser;
 

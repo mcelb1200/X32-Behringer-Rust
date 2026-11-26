@@ -37,6 +37,7 @@ pub struct Args {
     pub verbose: bool,
 }
 
+/// Connects to the X32 mixer and maps Bank C encoders 1 and 3 to X-Live jog controls.
 pub async fn run(args: Args) -> Result<()> {
     if args.verbose {
         println!("Connecting to X32 at {}", args.ip);
@@ -115,6 +116,7 @@ pub async fn run(args: Args) -> Result<()> {
     }
 }
 
+/// Calculates the time delta in milliseconds for a given jog wheel movement value.
 pub fn calculate_delta_time(move_val: i32) -> i32 {
     let delta = move_val * move_val + 1;
     delta * 10

@@ -1,3 +1,5 @@
+//! `x32_reaper` binary entry point.
+
 use anyhow::Result;
 use clap::Parser;
 

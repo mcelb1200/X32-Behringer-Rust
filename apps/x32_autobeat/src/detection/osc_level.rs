@@ -21,6 +21,7 @@ impl Default for OscLevelDetector {
 }
 
 impl OscLevelDetector {
+    /// Creates a new [`OscLevelDetector`].
     pub fn new() -> Self {
         Self {
             last_level: 0.0,

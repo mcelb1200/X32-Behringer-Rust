@@ -1,15 +1,25 @@
+//! Screen saver state tracking for `x32_ssavergw`.
+
 use std::time::{Duration, Instant};
 
+/// Tracks inactivity timeout and saved console brightness settings.
 pub struct AppState {
+    /// Whether the console is currently dimmed.
     pub is_dimmed: bool,
+    /// Saved main LCD brightness before dimming.
     pub saved_lcd_bright: f32,
+    /// Saved LED brightness before dimming.
     pub saved_led_bright: f32,
+    /// Timestamp of the last detected console activity.
     pub last_activity: Instant,
+    /// Inactivity duration before dimming.
     pub timeout: Duration,
+    /// Whether the client is connected to the console.
     pub is_connected: bool,
 }
 
 impl AppState {
+    /// Creates a new `AppState` with the given inactivity timeout in seconds.
     pub fn new(timeout_secs: u64) -> Self {
         Self {
             is_dimmed: false,
@@ -21,14 +31,17 @@ impl AppState {
         }
     }
 
+    /// Updates `last_activity` to the current time.
     pub fn mark_activity(&mut self) {
         self.last_activity = Instant::now();
     }
 
+    /// Returns `true` if the console is not dimmed and has exceeded the inactivity timeout.
     pub fn should_dim(&self) -> bool {
         !self.is_dimmed && self.last_activity.elapsed() > self.timeout
     }
 
+    /// Returns `true` if the console is dimmed and recent activity occurred.
     pub fn should_restore(&self) -> bool {
         self.is_dimmed && self.last_activity.elapsed() <= self.timeout
     }

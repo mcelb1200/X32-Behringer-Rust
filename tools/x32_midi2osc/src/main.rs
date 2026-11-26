@@ -1,3 +1,5 @@
+//! CLI entry point for `x32_midi2osc`.
+
 use anyhow::Result;
 use clap::Parser;
 

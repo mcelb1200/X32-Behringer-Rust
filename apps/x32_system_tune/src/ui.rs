@@ -1,3 +1,5 @@
+//! Terminal UI rendering and input handling for `x32_system_tune`.
+
 use anyhow::Result;
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
@@ -14,14 +16,21 @@ use ratatui::{
 };
 use std::{io, time::Duration};
 
+/// Snapshot of UI state rendered by [`Tui::draw`].
 pub struct AppState<'a> {
+    /// Name of the active calibration phase.
     pub current_phase: &'a str,
+    /// Description of the current step within the phase.
     pub current_step: &'a str,
+    /// Summary of the selected measurement microphone profile.
     pub mic_summary: &'a str,
+    /// Current oscillator level (`0.0..=1.0`).
     pub level: f32,
+    /// Status or prompt message displayed in the main panel.
     pub status_message: &'a str,
 }
 
+/// RAII guard that restores terminal raw mode and alternate screen on drop.
 pub struct TuiDropGuard;
 impl Drop for TuiDropGuard {
     fn drop(&mut self) {
@@ -30,6 +39,7 @@ impl Drop for TuiDropGuard {
     }
 }
 
+/// Terminal UI controller for `x32_system_tune`.
 pub struct Tui {
     terminal: Terminal<CrosstermBackend<io::Stdout>>,
     _guard: TuiDropGuard,
@@ -38,6 +48,7 @@ pub struct Tui {
 }
 
 impl Tui {
+    /// Initializes raw mode, enters the alternate screen, and creates a [`Tui`] instance.
     pub fn new() -> Result<Self> {
         enable_raw_mode()?;
         let mut stdout = io::stdout();
@@ -55,6 +66,7 @@ impl Tui {
         })
     }
 
+    /// Renders the current [`AppState`] to the terminal.
     pub fn draw(&mut self, state: &AppState) -> Result<()> {
         self.terminal.draw(|f| {
             let size = f.size();
@@ -143,6 +155,7 @@ impl Tui {
         Ok(())
     }
 
+    /// Polls for keyboard events and maps them to [`UIEvent`] variants.
     pub fn handle_events(&self) -> Result<Option<UIEvent>> {
         if event::poll(Duration::from_millis(50))? {
             if let Event::Key(key) = event::read()? {
@@ -167,17 +180,30 @@ impl Tui {
     }
 }
 
+/// User input events produced by [`Tui::handle_events`].
 pub enum UIEvent {
+    /// Exit the application.
     Quit,
+    /// Confirm an action (`y`).
     Yes,
+    /// Decline an action (`n`).
     No,
+    /// Advance to the next step (`Enter`).
     Next,
+    /// Move selection up.
     Up,
+    /// Move selection down.
     Down,
+    /// Capture an RTA sample (`Space`).
     Sample,
+    /// Switch to bypassed EQ (`b`).
     Bypass,
+    /// Switch to tuned EQ (`t`).
     Tuned,
+    /// Undo the last applied change (`u`).
     Undo,
+    /// Tighten the maximum cut guardrail (`[`).
     TightenGuardrail,
+    /// Relax the maximum cut guardrail (`]`).
     RelaxGuardrail,
 }

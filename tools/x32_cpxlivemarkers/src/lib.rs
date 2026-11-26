@@ -1,3 +1,6 @@
+//! `x32_cpxlivemarkers` extracts cue markers from an X-Live `SE_LOG.BIN` session file
+//! and formats them for REAPER or Adobe Audition.
+
 use anyhow::{anyhow, Result};
 use byteorder::{LittleEndian, ReadBytesExt};
 use clap::{Parser, ValueEnum};
@@ -6,6 +9,7 @@ use std::io::{Read, Seek, SeekFrom};
 use std::path::PathBuf;
 use std::process;
 
+/// Command-line arguments for `x32_cpxlivemarkers`.
 #[derive(Parser, Debug)]
 #[command(author, version, about = "Reads markers from an XLive! session/SE_LOG.BIN file", long_about = None)]
 pub struct Cli {
@@ -22,12 +26,16 @@ pub struct Cli {
     pub prefix: String,
 }
 
+/// Output marker format.
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
 pub enum Format {
+    /// REAPER marker CSV/text format.
     Reaper,
+    /// Adobe Audition cue marker format.
     Audition,
 }
 
+/// Formats a single marker position into the requested output format.
 pub fn format_marker(
     format: Format,
     index: u32,
@@ -56,6 +64,7 @@ pub fn format_marker(
     }
 }
 
+/// Reads and formats all markers from an `SE_LOG.BIN` stream.
 pub fn process_file<R: Read + Seek>(mut file: R, cli: &Cli) -> Result<Vec<String>> {
     file.seek(SeekFrom::Start(8))?;
     let samprate = file.read_u32::<LittleEndian>()?;
@@ -87,6 +96,7 @@ pub fn process_file<R: Read + Seek>(mut file: R, cli: &Cli) -> Result<Vec<String
     Ok(output)
 }
 
+/// Runs `x32_cpxlivemarkers` with the parsed CLI arguments.
 pub fn run(cli: Cli) -> Result<()> {
     let mut file = match File::open(&cli.file) {
         Ok(file) => file,

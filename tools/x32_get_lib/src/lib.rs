@@ -12,9 +12,11 @@ use std::path::{Path, PathBuf};
 use tokio::time::{timeout, Duration};
 use x32_lib::{error::X32Error, MixerClient, MixerModel};
 
+/// Command-line arguments for `x32_get_lib`.
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 pub struct Args {
+    /// Target mixer IP address.
     #[arg(short, long, default_value = "192.168.0.64")]
     pub ip: String,
 
@@ -22,30 +24,41 @@ pub struct Args {
     #[arg(short = 'm', long, default_value = "X32")]
     pub model: MixerModel,
 
+    /// Transport type (`auto`, `osc`, `usb`, `aes50`).
     #[arg(long, default_value = "auto")]
     pub transport: String,
 
+    /// USB serial port name.
     #[arg(long, default_value = "")]
     pub usb_port: String,
 
+    /// AES50 bridge IP address.
     #[arg(long, default_value = "")]
     pub aes50_ip: String,
 
+    /// Output directory for saved preset files.
     #[arg(short, long, default_value = ".")]
     pub output_dir: PathBuf,
 
+    /// Library preset type to retrieve.
     #[arg(short, long, value_enum, default_value_t = LibType::All)]
     pub type_: LibType,
 
+    /// Enable verbose output.
     #[arg(short, long)]
     pub verbose: bool,
 }
 
+/// Library preset category.
 #[derive(ValueEnum, Clone, Debug, PartialEq)]
 pub enum LibType {
+    /// Channel presets.
     Channel,
+    /// Effects presets.
     Effects,
+    /// Routing presets.
     Routing,
+    /// All preset types.
     All,
 }
 
@@ -68,6 +81,7 @@ impl LibType {
     }
 }
 
+/// Returns the channel preset OSC parameter paths for the given mixer model.
 pub fn get_channel_preset_params(model: MixerModel) -> Vec<String> {
     let mut p = vec![
         "ch/01/config".to_string(),
@@ -96,6 +110,7 @@ pub fn get_channel_preset_params(model: MixerModel) -> Vec<String> {
     p
 }
 
+/// Runs `x32_get_lib` with the given arguments.
 pub async fn run(args: Args) -> Result<()> {
     let target_ip = args.model.resolve_target_address(&args.ip);
     let (client, _) = MixerClient::connect_with_transport(

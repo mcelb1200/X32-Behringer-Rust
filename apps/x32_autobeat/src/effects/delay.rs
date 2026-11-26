@@ -63,6 +63,7 @@ impl EffectHandler for GenericDelayHandler {
 /// Handler for Multi-Tap Delays (3TAP, 4TAP).
 /// Param 1 is Time (Master).
 pub struct TapDelayHandler {
+    /// Whether this is a 4-tap delay (`true`) or 3-tap delay (`false`).
     pub is_4tap: bool,
 }
 
@@ -125,6 +126,7 @@ impl EffectHandler for TapDelayHandler {
 /// Handler for Combined Delays (D_CR, D_FL, MODD).
 /// Param 1 is Time.
 pub struct CombinedDelayHandler {
+    /// Whether this handler is for a Modulation Delay (`MODD`) effect.
     pub is_modd: bool,
 }
 

@@ -3,14 +3,20 @@ use rustfft::num_traits::Zero;
 use rustfft::{Fft, FftPlanner};
 use std::sync::Arc;
 
+/// A sustained narrow-band feedback peak detected by [`FeedbackDetector`].
 #[derive(Debug, Clone, Copy)]
 pub struct ActiveFeedback {
+    /// Detected feedback frequency in Hz.
     pub frequency: f32,
+    /// Duration in milliseconds that the peak has persisted.
     pub persistence_ms: u64,
+    /// Peak-to-average magnitude ratio.
     pub q_ratio: f32,
+    /// Peak magnitude level.
     pub level: f32,
 }
 
+/// FFT-based feedback detector that tracks persistent narrow-band peaks.
 pub struct FeedbackDetector {
     fft: Arc<dyn Fft<f32>>,
     scratch: Vec<Complex<f32>>,
@@ -26,6 +32,7 @@ pub struct FeedbackDetector {
 }
 
 impl FeedbackDetector {
+    /// Creates a new [`FeedbackDetector`] for the given `sample_rate` and `fft_size`.
     pub fn new(sample_rate: u32, fft_size: usize) -> Self {
         let mut planner = FftPlanner::new();
         let fft = planner.plan_fft_forward(fft_size);

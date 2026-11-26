@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 use anyhow::{anyhow, Result};
 
+/// Reverse Polish Notation (RPN) calculator for `x32_commander` expressions.
 pub struct RpnCalculator {
     memory: f64,
 }
@@ -12,10 +13,12 @@ impl Default for RpnCalculator {
 }
 
 impl RpnCalculator {
+    /// Creates a new `RpnCalculator` with memory initialized to `0.0`.
     pub fn new() -> Self {
         Self { memory: 0.0 }
     }
 
+    /// Evaluates an RPN expression using the provided command parameters.
     pub fn calculate(&mut self, expr: &str, mparam: &[crate::CommandParam]) -> Result<f64> {
         let mut stack: Vec<f64> = Vec::new();
 

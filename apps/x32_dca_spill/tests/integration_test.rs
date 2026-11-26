@@ -1,3 +1,5 @@
+//! Integration tests for `x32_dca_spill`.
+
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;

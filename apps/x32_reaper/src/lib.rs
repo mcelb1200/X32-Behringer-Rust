@@ -21,7 +21,9 @@ use tokio::net::UdpSocket;
 use tokio::sync::Mutex;
 use x32_lib::MixerClient;
 
+/// INI configuration loader and settings.
 pub mod config;
+/// Shared bridge state and channel tracking.
 pub mod state;
 
 use config::Config;

@@ -18,6 +18,7 @@ use tokio::sync::Mutex;
 use tokio::time::{self, Duration};
 use x32_lib::MixerClient;
 
+/// Screen saver state tracking.
 pub mod state;
 use state::AppState;
 
@@ -34,6 +35,7 @@ pub struct Args {
     pub delay: u64,
 }
 
+/// Runs `x32_ssavergw` with the given arguments.
 pub async fn run(args: Args) -> Result<()> {
     let addr = x32_lib::model::resolve_target_address(&args.ip, x32_lib::MixerModel::X32);
     let client = MixerClient::connect(&addr, true).await?;

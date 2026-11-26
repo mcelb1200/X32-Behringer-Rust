@@ -1,5 +1,8 @@
+//! Reverse Polish Notation (RPN) expression evaluator for MIDI-to-OSC templates.
+
 use anyhow::{Result, anyhow};
 
+/// Evaluates RPN expressions used in `.m2o` OSC templates.
 pub struct RpnCalculator {
     memory: f64,
 }
@@ -11,6 +14,7 @@ impl Default for RpnCalculator {
 }
 
 impl RpnCalculator {
+    /// Creates a new `RpnCalculator` with zeroed memory.
     pub fn new() -> Self {
         Self { memory: 0.0 }
     }

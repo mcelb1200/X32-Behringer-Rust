@@ -1,3 +1,5 @@
+//! Integration tests for `x32_wav_xlive`.
+
 use assert_cmd::Command;
 use byteorder::{LittleEndian, ReadBytesExt};
 use hound::{WavReader, WavSpec, WavWriter};

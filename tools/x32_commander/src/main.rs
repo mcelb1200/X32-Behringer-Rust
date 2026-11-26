@@ -1,3 +1,5 @@
+//! CLI entry point for `x32_commander`.
+
 use anyhow::Result;
 use clap::Parser;
 

@@ -1,3 +1,5 @@
+//! Parser for INI-style X32 test parameter files.
+
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{self, BufRead, BufReader, Read};
@@ -23,11 +25,17 @@ pub enum ParamType {
 /// Represents the parsed value of a parameter.
 #[derive(Debug, Clone, PartialEq)]
 pub enum ParamValue {
+    /// A single character value.
     Char(char),
+    /// A 32-bit signed integer value.
     Int(i32),
+    /// A 32-bit floating-point value.
     Float(f32),
+    /// A string value.
     String(String),
+    /// A sequence of bytes parsed from hex strings.
     HexString(Vec<u8>),
+    /// A boolean value parsed from yes/no.
     YesNo(bool),
 }
 

@@ -1,3 +1,5 @@
+//! Automatic feedback detection and parametric EQ notch insertion for Behringer mixers.
+
 use anyhow::{Context, Result};
 use clap::Parser;
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
@@ -7,14 +9,18 @@ use std::time::{Duration, Instant};
 use tokio::sync::Mutex;
 use x32_lib::{MixerClient, MixerModel};
 
+/// FFT-based feedback detection module.
 pub mod detector;
+/// Mixer EQ notch state and OSC control module.
 pub mod mixer;
+/// Terminal UI module.
 pub mod tui;
 
 use detector::FeedbackDetector;
 use mixer::MixerState;
 use tui::{AppTui, TuiEvent};
 
+/// Command-line arguments for `x32_feedback_detect`.
 #[derive(Parser, Debug, Clone)]
 #[command(author, version, about = "Automatic Feedback Detection and Management", long_about = None)]
 pub struct Args {
@@ -69,6 +75,7 @@ pub fn max_channels_for_model(model: MixerModel) -> u8 {
     }
 }
 
+/// Runs the `x32_feedback_detect` audio capture, detection, and TUI loop.
 pub async fn run(args: Args) -> Result<()> {
     let host = cpal::default_host();
 

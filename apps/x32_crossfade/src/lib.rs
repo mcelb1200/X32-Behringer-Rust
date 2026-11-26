@@ -1,3 +1,5 @@
+//! Smoothly interpolates faders, EQs, and dynamics parameters between two mixer scenes.
+
 use anyhow::{Context, Result};
 use clap::Parser;
 use osc_lib::OscArg;
@@ -7,6 +9,7 @@ use x32_lib::scene_parse::SceneParser;
 use x32_lib::MixerClient;
 use x32_lib::MixerModel;
 
+/// Command-line arguments for `x32_crossfade`.
 #[derive(Parser, Debug, Clone)]
 #[command(
     author,
@@ -45,6 +48,7 @@ pub struct Args {
     pub discrete_at: f64,
 }
 
+/// Runs the scene crossfade workflow.
 pub async fn run(args: Args) -> Result<()> {
     use std::io::Read;
 

@@ -1,3 +1,5 @@
+//! Integration tests for `x32_ssavergw`.
+
 use predicates::prelude::*;
 use std::process::{Child, Command as StdCommand};
 use std::time::Duration;

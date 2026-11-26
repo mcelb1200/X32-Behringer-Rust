@@ -101,31 +101,55 @@ const ACH_NODES: [&str; 29] = [
     "/auxin/01/preamp",
 ];
 
+/// Command-line arguments for `x32_custom_layer`.
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 pub struct Cli {
+    /// Target mixer IP address.
     #[arg(short, long, default_value = "192.168.0.64")]
     pub ip: String,
 
+    /// Transport type (`auto`, `osc`, `usb`, `aes50`).
     #[arg(long, default_value = "auto")]
     pub transport: String,
 
+    /// USB serial port name.
     #[arg(long, default_value = "")]
     pub usb_port: String,
 
+    /// AES50 bridge IP address.
     #[arg(long, default_value = "")]
     pub aes50_ip: String,
 
+    /// Subcommand to execute.
     #[clap(subcommand)]
     pub command: Commands,
 }
 
+/// Subcommands for `x32_custom_layer`.
 #[derive(Subcommand, Debug)]
 pub enum Commands {
-    Set { assignments: Vec<String> },
-    Save { file: String },
-    Restore { file: String },
-    Reset { channels: String },
+    /// Assign source channels to destination strips (`dest:src`).
+    Set {
+        /// Channel assignments in `dest:src` format.
+        assignments: Vec<String>,
+    },
+    /// Save the current custom layer to a file.
+    Save {
+        /// Output snippet file path.
+        file: String,
+    },
+    /// Restore a custom layer from a file.
+    Restore {
+        /// Input snippet file path.
+        file: String,
+    },
+    /// Reset channels to their default 1:1 mapping.
+    Reset {
+        /// Channel range or list to reset.
+        channels: String,
+    },
+    /// List current channel source assignments.
     List,
 }
 
@@ -163,6 +187,7 @@ fn parse_assignments(assignments_str: &[String]) -> Result<Vec<Assignment>> {
     Ok(assignments)
 }
 
+/// Runs `x32_custom_layer` with the given CLI arguments.
 pub async fn run(cli: Cli) -> anyhow::Result<()> {
     let (client, _) = match MixerClient::connect_with_transport(
         &cli.ip,

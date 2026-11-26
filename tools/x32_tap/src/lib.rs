@@ -49,12 +49,15 @@ pub struct Args {
     #[arg(short, long, default_value = "192.168.0.64")]
     pub ip: String,
 
+    /// Transport protocol (`auto`, `udp`, `tcp`, `usb`, `aes50`).
     #[arg(long, default_value = "auto")]
     pub transport: String,
 
+    /// Serial port path for USB transport.
     #[arg(long, default_value = "")]
     pub usb_port: String,
 
+    /// IP address for AES50 transport.
     #[arg(long, default_value = "")]
     pub aes50_ip: String,
 

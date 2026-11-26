@@ -3,44 +3,78 @@ use std::fs::File;
 use std::io::{BufRead, Read};
 use std::path::Path;
 
+/// Configuration settings loaded from `.X32Reaper.ini`.
 #[derive(Debug, Clone)]
 pub struct Config {
+    /// Enable verbose OSC/bridge logging.
     pub verbose: bool,
+    /// Delay in milliseconds between bank-switch updates.
     pub delay_bank: u64,
+    /// Delay in milliseconds between generic OSC updates.
     pub delay_generic: u64,
+    /// Bitmask of X32-to-Reaper send flags.
     pub xx_send_mask: i32,
+    /// Bitmask of Reaper-to-X32 send flags.
     pub xr_send_mask: i32,
+    /// IP address of the X32/M32 mixer.
     pub x32_ip: String,
+    /// IP address of the Reaper host.
     pub reaper_ip: String,
+    /// UDP port Reaper listens on for incoming OSC.
     pub reaper_send_port: u16,
+    /// UDP port `x32_reaper` listens on for Reaper OSC.
     pub reaper_recv_port: u16,
+    /// Enable transport control synchronization.
     pub transport_on: bool,
+    /// Enable channel bank switching.
     pub ch_bank_on: bool,
+    /// Enable marker button synchronization.
     pub marker_btn_on: bool,
+    /// Scribble-strip color index for bank C.
     pub bank_c_color: i32,
+    /// Enable EQ control synchronization.
     #[allow(dead_code)]
     pub eq_ctrl_on: bool,
+    /// Enable master fader/pan/mute synchronization.
     pub master_on: bool,
+    /// Minimum Reaper track number mapped to X32 channels.
     pub trk_min: i32,
+    /// Maximum Reaper track number mapped to X32 channels.
     pub trk_max: i32,
+    /// Minimum Reaper track number mapped to X32 auxes.
     pub aux_min: i32,
+    /// Maximum Reaper track number mapped to X32 auxes.
     pub aux_max: i32,
+    /// Minimum Reaper track number mapped to X32 FX returns.
     pub fxr_min: i32,
+    /// Maximum Reaper track number mapped to X32 FX returns.
     pub fxr_max: i32,
+    /// Minimum Reaper track number mapped to X32 buses.
     pub bus_min: i32,
+    /// Maximum Reaper track number mapped to X32 buses.
     pub bus_max: i32,
+    /// Minimum Reaper track number mapped to X32 DCAs.
     pub dca_min: i32,
+    /// Maximum Reaper track number mapped to X32 DCAs.
     pub dca_max: i32,
+    /// Offset applied to track sends.
     pub track_send_offset: i32,
+    /// Reaper-to-X32 DCA mapping pairs `(reaper_track, x32_dca)`.
     pub rdca: Vec<(i32, i32)>,
+    /// X32 user-defined key/button index for bank up.
     pub bank_up: i32,
+    /// X32 user-defined key/button index for bank down.
     pub bank_dn: i32,
+    /// X32 user-defined key/button index for marker toggle.
     pub marker_btn: i32,
+    /// Initial channel bank offset.
     pub ch_bank_offset: i32,
+    /// Number of channels per bank.
     pub bank_size: i32,
 }
 
 impl Config {
+    /// Loads configuration from an `.X32Reaper.ini` file at `path`.
     pub fn load<P: AsRef<Path>>(path: P) -> Result<Self> {
         let file = File::open(path).context("Failed to open config file")?;
 

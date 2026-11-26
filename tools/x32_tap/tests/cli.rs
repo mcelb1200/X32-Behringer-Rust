@@ -1,3 +1,5 @@
+//! CLI integration tests for `x32_tap`.
+
 use assert_cmd::cargo::cargo_bin_cmd;
 use predicates::prelude::*;
 

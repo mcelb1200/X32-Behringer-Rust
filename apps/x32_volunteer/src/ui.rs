@@ -16,6 +16,7 @@ use ratatui::{
 use std::{fmt::Write, io, time::Duration};
 use x32_lib::streaming::StreamStatus;
 
+/// Terminal user interface wrapper managing raw mode, layout caching, and rendering.
 pub struct Tui {
     terminal: Terminal<CrosstermBackend<io::Stdout>>,
     cached_area: Rect,
@@ -29,6 +30,7 @@ pub struct Tui {
 }
 
 impl Tui {
+    /// Initializes raw terminal mode and enters the alternate screen.
     pub fn new() -> Result<Self> {
         enable_raw_mode()?;
         let mut stdout = io::stdout();
@@ -48,6 +50,7 @@ impl Tui {
         })
     }
 
+    /// Renders the current `AppState` to the terminal.
     pub fn draw(&mut self, state: &AppState) -> Result<()> {
         if self.cached_constraints.len() != state.channels.len() {
             self.cached_constraints = state
@@ -324,6 +327,7 @@ impl Tui {
         Ok(())
     }
 
+    /// Polls for keyboard input and maps it to a `UIEvent`, if any.
     pub fn handle_events(&self) -> Result<Option<UIEvent>> {
         if event::poll(Duration::from_millis(16))? {
             if let Event::Key(key) = event::read()? {
@@ -348,6 +352,7 @@ impl Tui {
         Ok(None)
     }
 
+    /// Restores terminal state and exits the alternate screen.
     pub fn cleanup(&mut self) -> Result<()> {
         disable_raw_mode()?;
         execute!(
@@ -360,17 +365,30 @@ impl Tui {
     }
 }
 
+/// User input actions handled by the Volunteer Mode TUI event loop.
 pub enum UIEvent {
+    /// Exit the application.
     Quit,
+    /// Mute all monitored channels.
     MuteAll,
+    /// Trigger or confirm the panic mute-all action.
     Panic,
+    /// Toggle mixbus automix on or off.
     ToggleAutomix,
+    /// Run the pre-service soundcheck.
     PreServiceCheck,
+    /// Restore the most recent console snapshot.
     Undo,
+    /// Select the previous channel or DCA.
     SelectPrev,
+    /// Select the next channel or DCA.
     SelectNext,
+    /// Toggle mute on the currently selected channel or DCA.
     ToggleSelectedMute,
+    /// Raise the selected fader.
     FaderUp,
+    /// Lower the selected fader.
     FaderDown,
+    /// Cancel any pending confirmation prompt.
     CancelConfirm,
 }

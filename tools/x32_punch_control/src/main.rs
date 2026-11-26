@@ -1,3 +1,5 @@
+//! CLI entry point for `x32_punch_control`.
+
 use anyhow::Result;
 use clap::Parser;
 

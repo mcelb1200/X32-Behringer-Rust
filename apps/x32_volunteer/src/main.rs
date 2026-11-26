@@ -1,3 +1,5 @@
+//! Volunteer Mode TUI binary entry point.
+
 use clap::Parser;
 
 #[tokio::main]

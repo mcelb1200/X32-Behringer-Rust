@@ -1,3 +1,5 @@
+//! Integration tests for `xair_get_scene`.
+
 use assert_cmd::Command;
 use osc_lib::{OscArg, OscMessage};
 use predicates::prelude::*;

@@ -1,3 +1,5 @@
+//! `x32_command` is an interactive and batch OSC command client for Behringer X32/M32 mixers.
+
 use anyhow::{Context, Result};
 use clap::Parser;
 use osc_lib::OscMessage;
@@ -93,6 +95,7 @@ pub struct Args {
     pub snippet: Option<String>,
 }
 
+/// Connects to the mixer and runs batch or interactive OSC commands.
 pub async fn run(args: Args) -> Result<()> {
     println!(" X32_Command - Rust Rewrite - (c)2014-20 Patrick-Gilles Maillot");
     let target = args.model.resolve_target_address(&args.ip);

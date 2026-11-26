@@ -1,3 +1,5 @@
+//! Binary launch smoke tests for `x32_tapw`.
+
 use std::process::Command;
 
 // Testing interactive TUIs is tricky because x32_tapw takes over terminal raw mode.

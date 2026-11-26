@@ -1,5 +1,8 @@
+/// Energy moving-average beat detector.
 pub mod energy;
+/// OSC meter level beat detector.
 pub mod osc_level;
+/// FFT spectral-flux beat detector.
 pub mod spectral;
 
 pub use energy::EnergyDetector;

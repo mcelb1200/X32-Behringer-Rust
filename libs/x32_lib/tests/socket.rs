@@ -1,3 +1,5 @@
+//! Integration tests for UDP socket creation.
+
 #![allow(deprecated)]
 use std::net::UdpSocket;
 use x32_lib::create_socket;

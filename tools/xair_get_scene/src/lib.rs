@@ -1,22 +1,30 @@
+//! `xair_get_scene` queries OSC paths from stdin on a Behringer X-Air mixer
+//! and prints the scene data to stdout.
+
 use anyhow::Result;
 use clap::Parser;
 use osc_lib::{OscArg, OscMessage};
 use std::io::{self, BufRead, Read};
 use x32_lib::MixerClient;
 
+/// Command-line arguments for `xair_get_scene`.
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 pub struct Args {
+    /// IP address of the X-Air mixer.
     #[arg(short, long)]
     pub ip: String,
 
+    /// Optional scene name for the header.
     #[arg(short, long)]
     pub scene_name: Option<String>,
 
+    /// Optional scene note for the header.
     #[arg(short, long)]
     pub note: Option<String>,
 }
 
+/// Connects to the X-Air mixer and queries OSC paths read from stdin.
 pub async fn run(args: Args) -> Result<()> {
     let ip = x32_lib::model::resolve_target_address(&args.ip, x32_lib::MixerModel::XR18);
 

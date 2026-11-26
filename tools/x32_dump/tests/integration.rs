@@ -1,3 +1,5 @@
+//! Integration tests for `x32_dump`.
+
 use assert_cmd::prelude::*;
 use std::io::Write;
 use std::process::Command;

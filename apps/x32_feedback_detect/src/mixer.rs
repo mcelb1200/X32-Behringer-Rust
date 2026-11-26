@@ -3,22 +3,28 @@ use osc_lib::OscArg;
 use std::collections::HashMap;
 use x32_lib::{MixerClient, MixerModel};
 
+/// A parametric EQ notch applied to a mixer channel.
 #[derive(Debug, Clone, PartialEq)]
 pub struct AppliedNotch {
+    /// Center frequency in Hz.
     pub frequency: f32,
-    pub depth: f32, // in dB, typically negative
+    /// Cut depth in dB (typically negative).
+    pub depth: f32,
+    /// Filter Q factor.
     pub q: f32,
 }
 
+/// Manages EQ notch state and OSC updates for a target mixer channel.
 pub struct MixerState {
     client: MixerClient,
     target_channel: u8,
     model: MixerModel,
-    // Max 3 notches. Key is eq band index (1..=6)
+    /// Active notches keyed by 1-based EQ band index (`1..=6`, max 3 notches).
     pub applied_notches: HashMap<u8, AppliedNotch>,
 }
 
 impl MixerState {
+    /// Creates a new [`MixerState`] for `target_channel` on `model`.
     pub fn new(client: MixerClient, target_channel: u8, model: MixerModel) -> Self {
         Self {
             client,
@@ -28,10 +34,12 @@ impl MixerState {
         }
     }
 
+    /// Returns the configured [`MixerModel`].
     pub fn model(&self) -> MixerModel {
         self.model
     }
 
+    /// Returns the 1-based target channel number.
     pub fn target_channel(&self) -> u8 {
         self.target_channel
     }
@@ -60,6 +68,7 @@ impl MixerState {
         1.0
     }
 
+    /// Applies or deepens an EQ notch at `frequency` Hz on the target channel.
     pub async fn apply_notch(&mut self, frequency: f32) -> Result<()> {
         let max_depth = -12.0;
 
@@ -153,6 +162,7 @@ impl MixerState {
         Ok(())
     }
 
+    /// Resets all applied EQ notches back to 0 dB.
     pub async fn reset_notches(&mut self) -> Result<()> {
         let ch_str = format!("{:02}", self.target_channel);
 

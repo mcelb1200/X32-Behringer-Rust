@@ -1,3 +1,5 @@
+//! Integration tests for `x32_emulator`.
+
 use osc_lib::{OscArg, OscMessage};
 use std::net::UdpSocket;
 use std::sync::mpsc::channel;

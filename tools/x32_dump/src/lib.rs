@@ -1,3 +1,6 @@
+//! `x32_dump` reads raw OSC packets from a file or stdin and prints them in a
+//! human-readable format.
+
 use anyhow::Result;
 use byteorder::{LittleEndian, ReadBytesExt};
 use clap::Parser;
@@ -5,6 +8,7 @@ use osc_lib::{OscArg, OscMessage};
 use std::fs::File;
 use std::io::{self, Read};
 
+/// Command-line arguments for `x32_dump`.
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 pub struct Args {
@@ -177,6 +181,7 @@ fn process_stream<R: Read>(reader: R) -> Result<()> {
     Ok(())
 }
 
+/// Runs the `x32_dump` tool with the given CLI arguments.
 pub fn run(args: Args) -> Result<()> {
     if let Some(file_path) = args.file {
         let file = File::open(file_path)?;

@@ -1,3 +1,5 @@
+//! Integration tests for X32 effects commands.
+
 #![allow(deprecated)]
 use std::thread;
 use x32_emulator::server;

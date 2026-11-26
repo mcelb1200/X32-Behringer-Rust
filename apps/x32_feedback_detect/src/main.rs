@@ -1,3 +1,5 @@
+//! CLI entry point for `x32_feedback_detect`.
+
 use clap::Parser;
 use x32_feedback_detect::{run, Args};
 

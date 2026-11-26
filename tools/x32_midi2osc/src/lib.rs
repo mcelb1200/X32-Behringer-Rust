@@ -1,4 +1,8 @@
+//! MIDI-to-OSC bridge for Behringer X32/M32 mixers.
+
+/// Configuration file (`.m2o`) parser.
 pub mod config;
+/// RPN expression evaluator.
 pub mod rpn;
 
 use anyhow::{Context, Result};
@@ -10,6 +14,7 @@ use std::sync::Arc;
 use tokio::net::UdpSocket;
 use tokio::time::{self, Duration, Instant};
 
+/// Command-line arguments for `x32_midi2osc`.
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 pub struct Args {
@@ -217,6 +222,7 @@ mod tests {
     }
 }
 
+/// Runs `x32_midi2osc` with the given arguments.
 pub async fn run(args: Args) -> Result<()> {
     let rules = config::parse_file(&args.file).context("Failed to load .m2o rules file")?;
     println!("Loaded {} rules from {}", rules.len(), args.file);

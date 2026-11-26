@@ -4,15 +4,23 @@ use crate::network::NetworkManager;
 use crate::scaling::{afine2float, log2float};
 use anyhow::Result;
 
+/// Supported mixer reverb algorithms with their decay time ranges.
 #[derive(Clone, Copy)]
 pub enum ReverbType {
-    Hall,        // 0.2 - 5.0s
-    Ambience,    // 0.2 - 7.3s
-    Plate,       // 0.5 - 10.0s
-    Room,        // 0.3 - 29.0s
-    Chamber,     // 0.3 - 29.0s
-    Vintage,     // 0.4 - 4.5s (VREV)
-    VintageRoom, // 0.1 - 20.0s (VRM)
+    /// Hall reverb (`0.2 - 5.0 s`).
+    Hall,
+    /// Ambience reverb (`0.2 - 7.3 s`).
+    Ambience,
+    /// Plate reverb (`0.5 - 10.0 s`).
+    Plate,
+    /// Room reverb (`0.3 - 29.0 s`).
+    Room,
+    /// Chamber reverb (`0.3 - 29.0 s`).
+    Chamber,
+    /// Vintage reverb (`VREV`, `0.4 - 4.5 s`).
+    Vintage,
+    /// Vintage Room reverb (`VRM`, `0.1 - 20.0 s`).
+    VintageRoom,
 }
 
 impl ReverbType {
@@ -30,11 +38,13 @@ impl ReverbType {
     }
 }
 
+/// Effect handler for tempo-synced reverb algorithms.
 pub struct ReverbHandler {
     rv_type: ReverbType,
 }
 
 impl ReverbHandler {
+    /// Creates a new [`ReverbHandler`] for the given [`ReverbType`].
     pub fn new(rv_type: ReverbType) -> Self {
         Self { rv_type }
     }

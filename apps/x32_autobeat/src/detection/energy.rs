@@ -14,6 +14,7 @@ pub struct EnergyDetector {
 }
 
 impl EnergyDetector {
+    /// Creates a new [`EnergyDetector`] with a moving-average window of `history_seconds`.
     pub fn new(history_seconds: f32, _sample_rate: u32) -> Self {
         let history_size = 43 * history_seconds as usize;
 

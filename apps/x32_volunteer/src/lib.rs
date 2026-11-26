@@ -1,5 +1,10 @@
+//! Simplified Volunteer Mode TUI dashboard for Behringer X32/Wing/X-Air mixers.
+
+/// Network channel state and OSC path helpers.
 pub mod network;
+/// Shared application state and alert types.
 pub mod state;
+/// Terminal user interface rendering and input handling.
 pub mod ui;
 
 use anyhow::Result;
@@ -23,6 +28,7 @@ use x32_lib::streaming::{StreamConfig, StreamMonitor, StreamStatus};
 use x32_lib::transport::{udp::UdpTransport, MixerTransport};
 use x32_lib::{MixerClient, MixerModel};
 
+/// Command-line arguments for the Volunteer Mode TUI.
 #[derive(Parser, Debug, Clone)]
 #[command(author, version, about = "Simplified TUI Dashboard (Volunteer Mode)")]
 pub struct Args {
@@ -50,16 +56,22 @@ pub struct Args {
 /// Mixbus Dugan automix configuration section in `x32_config.json`.
 #[derive(Debug, Deserialize, Clone)]
 pub struct MixbusAutomixConfig {
+    /// Whether automix is enabled when the application starts.
     #[serde(default)]
     pub enabled_on_start: bool,
+    /// Whether RTA-assisted EQ ducking is enabled.
     #[serde(default)]
     pub rta_assisted: bool,
+    /// Maximum EQ cut in dB.
     #[serde(default = "default_max_cut")]
     pub max_cut_db: f32,
+    /// Maximum EQ boost in dB.
     #[serde(default = "default_max_boost")]
     pub max_boost_db: f32,
+    /// Noise floor threshold below which automix ignores signal.
     #[serde(default = "default_noise_floor")]
     pub noise_floor: f32,
+    /// Bus specifications for automix.
     pub buses: Vec<BusAutomixSpec>,
 }
 
@@ -73,19 +85,27 @@ fn default_noise_floor() -> f32 {
     0.005
 }
 
+/// Volunteer Mode configuration section from `x32_config.json`.
 #[derive(Debug, Deserialize, Default)]
 pub struct VolunteerConfigSection {
+    /// Optional maximum fader limit in dBFS.
     pub max_fader_limit_db: Option<f32>,
+    /// Optional list of 1-based channel numbers to display.
     pub visible_channels: Option<Vec<u32>>,
+    /// Optional list of 1-based DCA numbers to display.
     pub visible_dcas: Option<Vec<u32>>,
+    /// Optional mixbus automix configuration.
     #[serde(default)]
     pub mixbus_automix: Option<MixbusAutomixConfig>,
+    /// Optional livestream monitor configuration.
     #[serde(default)]
     pub stream_monitor: Option<StreamConfig>,
 }
 
+/// Top-level JSON configuration file wrapper.
 #[derive(Debug, Deserialize, Default)]
 pub struct ConfigFile {
+    /// Volunteer Mode configuration section.
     pub volunteer_mode: Option<VolunteerConfigSection>,
 }
 
@@ -100,26 +120,31 @@ pub fn max_dcas_for_model(model: MixerModel) -> u32 {
 }
 
 /// Resolves default target OSC port based on mixer model when port is omitted.
+/// Resolves the target OSC `ip:port` string for the given mixer model.
 pub fn resolve_target_address(ip: &str, model: MixerModel) -> String {
     x32_lib::model::resolve_target_address(ip, model)
 }
 
 /// Converts a 0.0-1.0 float fader value to approximate dBFS (-90 dB to +10 dB curve).
+/// Converts a normalized fader position (`0.0..=1.0`) to an approximate dB value.
 pub fn fader_float_to_db(fader: f32) -> f32 {
     x32_lib::model::fader_to_db(fader)
 }
 
 /// Converts a dBFS value (-90.0 to +10.0) to a 0.0-1.0 float fader position.
+/// Converts a dB value to a normalized fader position (`0.0..=1.0`).
 pub fn db_to_fader_float(db: f32) -> f32 {
     x32_lib::model::db_to_fader(db)
 }
 
 /// Clamps a target fader float within `[0.0, 1.0]` and any configured `max_limit_db` ceiling.
+/// Clamps a normalized fader value against an optional maximum limit in dB.
 pub fn clamp_fader_with_limit(fader: f32, max_limit_db: Option<f32>) -> f32 {
     x32_lib::model::clamp_fader_with_limit(fader, max_limit_db)
 }
 
 /// Computes overall dashboard health status from active alerts, panic arming, main mute, stream status, and connectivity.
+/// Computes the overall dashboard `Status` from the current `AppState`.
 pub fn compute_status(state: &AppState) -> state::Status {
     let has_clipping = state
         .active_alerts
@@ -148,6 +173,7 @@ pub fn compute_status(state: &AppState) -> state::Status {
     state::Status::Ok
 }
 
+/// Loads and parses a JSON configuration file from `path`.
 pub fn load_config_file(path: &str) -> Result<ConfigFile> {
     let file = std::fs::File::open(path)?;
     let mut reader = std::io::Read::take(file, 1024 * 1024);
@@ -156,6 +182,7 @@ pub fn load_config_file(path: &str) -> Result<ConfigFile> {
 }
 
 /// Maps a bus/matrix/main source string (e.g. `"bus15"`, `"mtx1"`, `"main"`) to a `/meters/1` float index.
+/// Returns the meter blob index for the configured stream source on `model`.
 pub fn stream_source_meter_index(source: &str, model: MixerModel) -> usize {
     let limits = limits_for_model(model);
     let bus_base = (limits.channels + limits.aux_ins) as usize;
@@ -171,6 +198,7 @@ pub fn stream_source_meter_index(source: &str, model: MixerModel) -> usize {
 }
 
 /// Maps a stream source string (e.g. `"bus15"`, `"mtx1"`, `"main"`) to its fader OSC path.
+/// Returns the OSC fader path for the configured stream source on `model`.
 pub fn stream_source_fader_path(source: &str, model: MixerModel) -> String {
     let s = source.trim().to_ascii_lowercase();
     if let Some(num) = s.strip_prefix("bus").and_then(|n| n.parse::<u8>().ok()) {
@@ -191,6 +219,7 @@ fn capture_channel_snapshot(state: &AppState) -> ConsoleSnapshot {
     snap
 }
 
+/// Runs the Volunteer Mode TUI dashboard with the given CLI arguments.
 pub async fn run(args: Args) -> Result<()> {
     let config_file = if let Some(ref config_path) = args.config {
         Some(load_config_file(config_path)?)

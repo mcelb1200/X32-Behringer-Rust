@@ -1,3 +1,6 @@
+//! Predefined X32 OSC node lists for desk, scene, and routing backups.
+
+/// Desk status and preference nodes.
 pub const DS_NODE: &[&str] = &[
     "-stat",
     "-stat/screen",
@@ -42,6 +45,7 @@ pub const DS_NODE: &[&str] = &[
     "-urec",
 ];
 
+/// Scene configuration nodes.
 pub const SC_NODE: &[&str] = &[
     "/config/chlink",
     "/config/auxlink",
@@ -2148,6 +2152,7 @@ pub const SC_NODE: &[&str] = &[
     "/headamp/127",
 ];
 
+/// Routing configuration nodes.
 pub const RO_NODE: &[&str] = &[
     "/config/routing/IN",
     "/config/routing/AES50A",

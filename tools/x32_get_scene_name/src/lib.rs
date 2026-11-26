@@ -27,12 +27,15 @@ pub struct Args {
     #[arg(short, long, default_value = "192.168.1.62")]
     pub ip: String,
 
+    /// Transport protocol (`auto`, `udp`, `tcp`, `usb`, `aes50`).
     #[arg(long, default_value = "auto")]
     pub transport: String,
 
+    /// Serial port path for USB transport.
     #[arg(long, default_value = "")]
     pub usb_port: String,
 
+    /// IP address for AES50 transport.
     #[arg(long, default_value = "")]
     pub aes50_ip: String,
 
@@ -45,6 +48,7 @@ pub struct Args {
     pub onetime: u8,
 }
 
+/// Connects to the mixer and listens for scene change events.
 pub async fn run(args: Args) -> Result<(), X32Error> {
     let target_ip = args.model.resolve_target_address(&args.ip);
 

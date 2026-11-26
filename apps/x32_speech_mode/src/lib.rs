@@ -13,6 +13,7 @@ use std::time::Duration;
 use x32_lib::MixerClient;
 use x32_lib::MixerModel;
 
+/// Command-line arguments for `x32_speech_mode`.
 #[derive(Parser, Debug, Clone)]
 #[command(author, version, about = "One-Touch Speech Mode Macro for X32/M32", long_about = None)]
 pub struct Args {
@@ -99,9 +100,13 @@ fn max_channels_for_model(model: MixerModel) -> u8 {
 /// Model-specific EQ bands assigned for Speech Mode processing.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct SpeechEqBands {
+    /// High-pass filter band index.
     pub hpf_band: u8,
+    /// Low-pass filter band index.
     pub lpf_band: u8,
+    /// Presence boost band index.
     pub presence_band: u8,
+    /// Mud/scoop cut band index.
     pub scoop_band: u8,
 }
 
@@ -170,6 +175,7 @@ pub fn get_speech_mode_paths(model: MixerModel) -> Vec<String> {
     paths
 }
 
+/// Applies speech-mode EQ, dynamics, and gate settings to the configured channels.
 pub async fn run(args: Args) -> Result<()> {
     let max_ch = max_channels_for_model(args.model);
     let mut channels: Vec<u8> = Vec::new();

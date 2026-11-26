@@ -7,18 +7,28 @@
 use bitflags::bitflags;
 
 #[derive(Debug, Clone)]
+/// Represents CommandFormat.
 pub enum CommandFormat {
+    /// Int variant.
     Int,
+    /// Float variant.
     Float,
+    /// String variant.
     String,
+    /// StringList variant.
     StringList(&'static [&'static str]),
 }
 
 #[derive(Debug, Clone)]
+/// Represents CommandValue.
 pub enum CommandValue {
+    /// Int variant.
     Int(i32),
+    /// Float variant.
     Float(f32),
+    /// String variant.
     String(String),
+    /// None variant.
     None,
 }
 
@@ -40,10 +50,15 @@ bitflags! {
 }
 
 #[derive(Debug, Clone)]
+/// Represents X32Command.
 pub struct X32Command<S: AsRef<str>> {
+    /// The command field.
     pub command: S,
+    /// The format field.
     pub format: CommandFormat,
+    /// The flags field.
     pub flags: CommandFlags,
+    /// The value field.
     pub value: CommandValue,
 }
 
@@ -51,11 +66,14 @@ pub struct X32Command<S: AsRef<str>> {
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[repr(u8)]
 pub enum On {
+    /// Off variant.
     Off = 0,
+    /// On variant.
     On = 1,
 }
 
 impl On {
+    /// from_id fn.
     pub fn from_id(id: u8) -> Option<Self> {
         match id {
             0 => Some(On::Off),
@@ -69,25 +87,42 @@ impl On {
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[repr(u8)]
 pub enum Color {
+    /// Off variant.
     Off = 0,
+    /// Red variant.
     Red,
+    /// Green variant.
     Green,
+    /// Yellow variant.
     Yellow,
+    /// Blue variant.
     Blue,
+    /// Magenta variant.
     Magenta,
+    /// Cyan variant.
     Cyan,
+    /// White variant.
     White,
+    /// OffInverted variant.
     OffInverted,
+    /// RedInverted variant.
     RedInverted,
+    /// GreenInverted variant.
     GreenInverted,
+    /// YellowInverted variant.
     YellowInverted,
+    /// BlueInverted variant.
     BlueInverted,
+    /// MagentaInverted variant.
     MagentaInverted,
+    /// CyanInverted variant.
     CyanInverted,
+    /// WhiteInverted variant.
     WhiteInverted,
 }
 
 impl Color {
+    /// from_id fn.
     pub fn from_id(id: u8) -> Option<Self> {
         match id {
             0 => Some(Color::Off),
@@ -130,6 +165,7 @@ pub enum EqType {
 }
 
 impl EqType {
+    /// from_id fn.
     pub fn from_id(id: u8) -> Option<Self> {
         match id {
             0 => Some(EqType::Lcut),
@@ -147,11 +183,14 @@ impl EqType {
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[repr(u8)]
 pub enum InsertPosition {
+    /// Pre variant.
     Pre = 0,
+    /// Post variant.
     Post = 1,
 }
 
 impl InsertPosition {
+    /// from_id fn.
     pub fn from_id(id: u8) -> Option<Self> {
         match id {
             0 => Some(InsertPosition::Pre),
@@ -165,32 +204,56 @@ impl InsertPosition {
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[repr(u8)]
 pub enum InsertSelection {
+    /// Off variant.
     Off = 0,
+    /// Fx1L variant.
     Fx1L,
+    /// Fx1R variant.
     Fx1R,
+    /// Fx2L variant.
     Fx2L,
+    /// Fx2R variant.
     Fx2R,
+    /// Fx3L variant.
     Fx3L,
+    /// Fx3R variant.
     Fx3R,
+    /// Fx4L variant.
     Fx4L,
+    /// Fx4R variant.
     Fx4R,
+    /// Fx5L variant.
     Fx5L,
+    /// Fx5R variant.
     Fx5R,
+    /// Fx6L variant.
     Fx6L,
+    /// Fx6R variant.
     Fx6R,
+    /// Fx7L variant.
     Fx7L,
+    /// Fx7R variant.
     Fx7R,
+    /// Fx8L variant.
     Fx8L,
+    /// Fx8R variant.
     Fx8R,
+    /// Aux1 variant.
     Aux1,
+    /// Aux2 variant.
     Aux2,
+    /// Aux3 variant.
     Aux3,
+    /// Aux4 variant.
     Aux4,
+    /// Aux5 variant.
     Aux5,
+    /// Aux6 variant.
     Aux6,
 }
 
 impl InsertSelection {
+    /// from_id fn.
     pub fn from_id(id: u8) -> Option<Self> {
         match id {
             0 => Some(InsertSelection::Off),
@@ -225,15 +288,22 @@ impl InsertSelection {
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[repr(u8)]
 pub enum FxSource {
+    /// Off variant.
     Off = 0,
+    /// MixBus variant.
     MixBus(u8),
+    /// Bus variant.
     Bus(u8),
+    /// Mtx variant.
     Mtx(u8),
+    /// Main variant.
     Main(u8),
+    /// Group variant.
     Group(u8),
 }
 
 impl FxSource {
+    /// to_id fn.
     pub fn to_id(&self) -> u8 {
         match self {
             FxSource::Off => 0,
@@ -244,6 +314,7 @@ impl FxSource {
             FxSource::Group(grp) => *grp + 40,
         }
     }
+    /// from_id fn.
     pub fn from_id(id: u8) -> Option<Self> {
         match id {
             0 => Some(FxSource::Off),

@@ -1,3 +1,5 @@
+//! CLI entry point for `x32_speech_mode`.
+
 use clap::Parser;
 use x32_speech_mode::{run, Args};
 

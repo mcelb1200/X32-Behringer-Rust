@@ -1,3 +1,5 @@
+//! Integration tests for `x32_feedback_detect`.
+
 use std::f32::consts::PI;
 use x32_feedback_detect::detector::FeedbackDetector;
 

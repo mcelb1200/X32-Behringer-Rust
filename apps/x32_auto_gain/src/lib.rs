@@ -2,6 +2,7 @@
 //! and automatically sets the HA (Headamp) gain to an optimal target (e.g., -18dBFS),
 //! minimizing clipping for new operators across digital mixer models (X32, Wing, XR series).
 
+/// Instrument target profile matching module.
 pub mod profile;
 use anyhow::Result;
 use clap::Parser;
@@ -11,6 +12,7 @@ use std::time::Duration;
 use tokio::time::interval;
 use x32_lib::{MixerClient, MixerModel};
 
+/// Command-line arguments for `x32_auto_gain`.
 #[derive(Parser, Debug, Clone)]
 #[command(author, version, about = "Auto-Gain / Smart Gain Staging for X32/M32/Wing/XAir", long_about = None)]
 pub struct Args {
@@ -48,6 +50,7 @@ pub fn max_channels_for_model(model: MixerModel) -> u8 {
     x32_lib::model::limits_for_model(model).channels as u8
 }
 
+/// Parses a comma-separated list of 1-based channel numbers, filtering to valid channels for `model`.
 pub fn parse_channels_for_model(channels_str: &str, model: MixerModel) -> Vec<u8> {
     let max_ch = max_channels_for_model(model);
     let mut channels = Vec::new();
@@ -71,6 +74,7 @@ pub fn get_headamp_phantom_path(model: MixerModel, channel: u8) -> String {
     x32_lib::model::headamp_phantom_path(model, channel)
 }
 
+/// Returns all adjacent stereo link pairs `(ch1, ch2, osc_path)` for `model`.
 pub fn get_stereo_link_pairs(model: MixerModel) -> Vec<(u8, u8, String)> {
     let max_ch = max_channels_for_model(model);
     let mut pairs = Vec::new();
@@ -82,6 +86,7 @@ pub fn get_stereo_link_pairs(model: MixerModel) -> Vec<(u8, u8, String)> {
     pairs
 }
 
+/// Calculates the headamp gain adjustment in dB given `current_db`, `target_dbfs`, `tolerance_db`, and `max_step_db`.
 pub fn calculate_gain_adjustment(
     current_db: f32,
     target_dbfs: f32,
@@ -98,6 +103,7 @@ pub fn calculate_gain_adjustment(
     }
 }
 
+/// Extracts the 1-based channel number from a `/headamp/<ch>/gain` OSC path.
 pub fn parse_channel_from_gain_path(path: &str) -> Option<u8> {
     if path.starts_with("/headamp/") && path.ends_with("/gain") {
         if let Some(ch_str) = path.split('/').nth(2) {
@@ -107,6 +113,7 @@ pub fn parse_channel_from_gain_path(path: &str) -> Option<u8> {
     None
 }
 
+/// Runs the `x32_auto_gain` monitoring and headamp adjustment loop.
 pub async fn run(args: Args) -> Result<()> {
     // Parse model-aware channels
     let channels = parse_channels_for_model(&args.channels, args.model);

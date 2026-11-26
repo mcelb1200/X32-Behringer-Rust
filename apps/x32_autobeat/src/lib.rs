@@ -26,7 +26,9 @@ use x32_lib::MixerModel;
 
 mod audio;
 mod compressor;
+/// Beat detection algorithms.
 pub mod detection;
+/// Tempo-synced mixer effect handlers.
 pub mod effects;
 mod musical_theory;
 mod network;
@@ -38,6 +40,7 @@ mod ui;
 #[command(author, version, about, long_about = None)]
 #[derive(Debug)]
 pub struct Cli {
+    /// Optional subcommand.
     #[command(subcommand)]
     pub command: Option<Commands>,
 
@@ -147,6 +150,7 @@ fn parse_slots(s: &str) -> Vec<usize> {
     slots
 }
 
+/// Runs the `x32_autobeat` application with the given CLI options.
 pub async fn run(cli: Cli) -> Result<()> {
     if let Some(Commands::ListDevices) = cli.command {
         let devices = AudioEngine::list_devices()?;

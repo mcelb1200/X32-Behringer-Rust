@@ -1,3 +1,5 @@
+//! Integration tests for `x32_sync`.
+
 use assert_cmd::Command;
 use osc_lib::{OscArg, OscMessage};
 use predicates::prelude::*;
