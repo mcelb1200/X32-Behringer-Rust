@@ -5,7 +5,6 @@ edition = "2021"
 
 [dependencies]
 osc_lib = { workspace = true }
-anyhow = { workspace = true }
 
 [build-dependencies]
 serde = { version = "1.0", features = ["derive"] }

@@ -2574,7 +2574,6 @@ dependencies = [
 name = "x32_fxparse"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "osc_lib",
  "serde",
  "serde_json",
