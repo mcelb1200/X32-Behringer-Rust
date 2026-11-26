@@ -121,10 +121,24 @@ def resolve_latest_run_id(repo: str, root: Path, branch: str | None) -> str:
     return str(data[0]["databaseId"])
 
 
-def fetch_ci_logs(repo: str, run_id: str, failed_only: bool, root: Path) -> str:
+def fetch_ci_logs(
+    repo: str, run_id: str, job_id: str | None, failed_only: bool, root: Path
+) -> str:
     cmd = ["gh", "run", "view", run_id, "-R", repo]
+    if job_id:
+        cmd.extend(["--job", job_id])
     cmd.append("--log-failed" if failed_only else "--log")
     return run_cmd(cmd, root)
+
+
+def parse_github_url(url: str) -> tuple[str | None, str | None, str | None]:
+    m = re.search(
+        r"github\.com/(?P<repo>[^/]+/[^/]+)/actions/runs/(?P<run_id>\d+)(?:/job/(?P<job_id>\d+))?",
+        url,
+    )
+    if not m:
+        return None, None, None
+    return m.group("repo"), m.group("run_id"), m.group("job_id")
 
 
 def strip_gh_prefix(raw_line: str) -> tuple[str, str]:
@@ -327,19 +341,45 @@ def extract_ast_context(file_rel: str, lineno: int, root: Path) -> ConnectedCont
     return ctx
 
 
-def format_markdown(repo: str, run_id: str, diagnostics: list[Diagnostic]) -> str:
+def format_markdown(
+    repo: str, run_id: str, job_id: str | None, diagnostics: list[Diagnostic]
+) -> str:
+    from collections import Counter
+
     err_cnt = sum(1 for d in diagnostics if d.severity == "error")
     warn_cnt = sum(1 for d in diagnostics if d.severity == "warning")
+    url = f"https://github.com/{repo}/actions/runs/{run_id}" + (
+        f"/job/{job_id}" if job_id else ""
+    )
     out = [
-        f"# CI High-SNR Diagnostic & AST Context Report",
+        "# CI High-SNR Diagnostic & AST Context Report",
         f"- **Repository:** `{repo}`",
-        f"- **Run ID:** `{run_id}` (https://github.com/{repo}/actions/runs/{run_id})",
+        f"- **Target:** {url}",
         f"- **Unique Diagnostics:** {len(diagnostics)} ({err_cnt} errors, {warn_cnt} warnings)",
         "",
     ]
     if not diagnostics:
         out.append("No Rust compiler errors, warnings, or test panics detected.")
         return "\n".join(out)
+
+    # High-level summary tables for rapid AI triage
+    by_msg = Counter((d.severity.upper(), d.message) for d in diagnostics)
+    by_file = Counter(d.file for d in diagnostics)
+    out.append("## Summary by Diagnostic Type")
+    out.append("| Severity | Message | Count |")
+    out.append("| :--- | :--- | :---: |")
+    for (sev, msg), cnt in by_msg.most_common():
+        out.append(f"| `{sev}` | {msg} | {cnt} |")
+    out.append("")
+
+    out.append("## Summary by File")
+    out.append("| File | Count |")
+    out.append("| :--- | :---: |")
+    for fpath, cnt in by_file.most_common():
+        out.append(f"| `{fpath}` | {cnt} |")
+    out.append("")
+    out.append("---")
+    out.append("")
 
     for idx, d in enumerate(diagnostics, start=1):
         code_str = f"[{d.code}]" if d.code else ""
@@ -377,30 +417,46 @@ def main() -> int:
         description="Extract GitHub CI logs, parse high-SNR diagnostics, and attach Rust AST context."
     )
     parser.add_argument("--root", type=Path, default=Path(__file__).resolve().parent.parent)
+    parser.add_argument("--url", help="Full GitHub Actions run or job URL.")
     parser.add_argument("--repo", help="GitHub owner/repo (auto-detected from git origin if omitted).")
     parser.add_argument("--run-id", help="GitHub Actions run ID (defaults to latest run).")
+    parser.add_argument("--job-id", help="Optional specific GitHub Actions job ID.")
     parser.add_argument("--branch", help="Optional branch filter when resolving latest run.")
     parser.add_argument("--failed-only", action="store_true", help="Fetch only failed job logs.")
-    parser.add_argument("--max-diagnostics", type=int, default=25, help="Max diagnostics to report.")
+    parser.add_argument(
+        "--max-diagnostics",
+        type=int,
+        default=0,
+        help="Max diagnostics to report (0 = unlimited).",
+    )
     parser.add_argument("--json", action="store_true", help="Emit JSON instead of Markdown.")
     parser.add_argument("--output", type=Path, help="Optional file path to write the report.")
     args = parser.parse_args()
 
-    repo = args.repo or detect_repo(args.root)
-    run_id = args.run_id or resolve_latest_run_id(repo, args.root, args.branch)
-    log_text = fetch_ci_logs(repo, run_id, args.failed_only, args.root)
-    diagnostics = parse_diagnostics(log_text)[: args.max_diagnostics]
+    url_repo, url_run, url_job = parse_github_url(args.url) if args.url else (None, None, None)
+    repo = args.repo or url_repo or detect_repo(args.root)
+    run_id = args.run_id or url_run or resolve_latest_run_id(repo, args.root, args.branch)
+    job_id = args.job_id or url_job
+    log_text = fetch_ci_logs(repo, run_id, job_id, args.failed_only, args.root)
+    diagnostics = parse_diagnostics(log_text)
+    if args.max_diagnostics > 0:
+        diagnostics = diagnostics[: args.max_diagnostics]
 
     for diag in diagnostics:
         diag.context = extract_ast_context(diag.file, diag.line, args.root)
 
     report = (
         json.dumps(
-            {"repo": repo, "run_id": run_id, "diagnostics": [asdict(d) for d in diagnostics]},
+            {
+                "repo": repo,
+                "run_id": run_id,
+                "job_id": job_id,
+                "diagnostics": [asdict(d) for d in diagnostics],
+            },
             indent=2,
         )
         if args.json
-        else format_markdown(repo, run_id, diagnostics)
+        else format_markdown(repo, run_id, job_id, diagnostics)
     )
 
     if args.output:
