@@ -34,3 +34,6 @@ docs/xml/
 coverage.json
 coverage.md
 x32_test_log_bash.txt
+
+__pycache__/
+*.pyc
