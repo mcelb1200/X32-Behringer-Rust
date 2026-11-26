@@ -10,7 +10,6 @@ x32_setsceneparse = { path = "../x32_setsceneparse" }
 bitflags = "2.4.1"
 lazy_static = "1.5.0"
 tokio = { workspace = true }
-anyhow = { workspace = true }
 midir = { workspace = true }
 async-trait = { workspace = true }
 serde = { workspace = true }
