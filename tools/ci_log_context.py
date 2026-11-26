@@ -23,7 +23,7 @@ import sys
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
-ANSI_RE = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
+ANSI_RE = re.compile(r"(?:\x1b|\^\[)\[[0-9;]*[A-Za-z]")
 # Matches Rust compiler diagnostic header: `error[E0428]: ...` or `warning: ...`
 RUSTC_DIAG_RE = re.compile(
     r"(?P<sev>error|warning)(?:\[(?P<code>[^\]]+)\])?:\s+(?P<msg>.+)$"
