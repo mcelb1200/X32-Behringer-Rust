@@ -13,11 +13,11 @@
   "reaper_send_port": 8000,
   "reaper_recv_port": 9000,
   "reaper_session_path": "",
-  "auto_launch_reaper": false,
+  "auto_launch_reaper": true,
   "reaper_exe_path": "",
   "recordings_dir": "recordings",
   "sync_event_replay_with_daw": true,
-  "launch_daw_bridge_in_daw_mode": false,
+  "launch_daw_bridge_in_daw_mode": true,
   "preserve_card_uout": true,
   "auto_generate_rpp_on_connect": true
 }

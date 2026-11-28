@@ -25,10 +25,15 @@ Thumbs.db
 
 # Project-specific ignored files
 docs/unofficial_x32_osc_remote_protocol.md
+logs/
+recordings/
 
 # Generated documentation
 docs/html/
 docs/xml/
+
+# Scene and presets
+*.scn
 
 # Coverage reports & test logs
 coverage.json
