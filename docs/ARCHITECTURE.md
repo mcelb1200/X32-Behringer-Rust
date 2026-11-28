@@ -92,3 +92,14 @@ External audio processing vs. hybrid analysis comparison under RT-Linux kernel.
 * **Math**:
   $$\text{X-USB Capture}~(\sim2.2\text{ms}) + \text{FFT Window}~(512\text{ samples} \approx 10.6\text{ms}) + \text{OSC Network Tx}~(<0.5\text{ms}) + \text{X32 CPU Parse}~(\sim10\text{ms}) \approx 23.3\text{ms}$$
 * **Advantage**: Zero phase cancellation. Clean direct sound. Perfectly suited for dynamic parameter controls (e.g. vocal ducking trigger times).
+
+---
+
+## 🖥️ Consolidated Web UI & Digital Twin Architecture (`x32_ui`)
+
+The `apps/x32_ui` crate provides an embedded control plane over a **zero-external-HTTP `tokio` HTTP/1.1 + Server-Sent Events server** (`server.rs`) serving static dashboard assets from `src/web/`:
+
+* **Live State Cache (`mixer.rs`):** Maintains an authoritative `MixerSnapshotState` covering input channels 1–32 (including physical `source` patching and stereo links), Aux In 1–8, Mix Buses 1–16, Matrices 1–6, DCAs 1–8, stereo-link states (`/config/*link/*`), Main LR, routing blocks (`IN`, `PLAY`, `CARD`, `OUT`, `AES50A`, `AES50B`), and recent OSC traffic.
+* **Console-First Studio Controller (`studio_mode.rs`):** Implements unattended `--auto-boot` console supervision, pop-guarded Live (`REC`) ↔ DAW (`PLAY`) switching, active-port-safe digital split planning (checking both AES50 stagebox `IN` ranges `4..=15` and active `1–32` AES50 outputs `>= 16`), automatic `AutoSession.rpp` + `.X32Reaper.ini` generation on connect, and bidirectional X32 **User Assign Bank (`A`/`B`/`C`, buttons 5–12)** hardware button/LED synchronization.
+* **Event Recorder (`event_recorder.rs`):** Captures a full-console keyframe followed by timestamped OSC parameter deltas and markers in `.x32events.jsonl` files synchronized with REAPER transport commands.
+* **Offline Scene Import & Digital Twin VSC Engine (`scene_import.rs`, `vsc.rs`):** Adheres to Sentinel bounds (4 MiB limit on `.scn` scene imports) to hydrate `MixerSnapshotState` offline, maps channel sources (`/ch/XX/config/source`) with shared-source `HWOUT` deduplication, preserves X32 v4 `UOUT1-48` Card blocks (`26..=31`) and `PLAY/AUX` `CARD` returns (`10..=12`), and emits Digital Twin `VOLPAN`/`MUTESOLO` `.rpp` projects or live REAPER OSC updates.

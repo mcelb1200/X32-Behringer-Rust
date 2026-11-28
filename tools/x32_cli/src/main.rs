@@ -113,6 +113,8 @@ enum Commands {
     X32SafeMute(x32_safe_mute::Args),
     /// Run x32_speech_mode
     X32SpeechMode(x32_speech_mode::Args),
+    /// Run consolidated X32 Web UI & Reaper Virtual Soundcheck suite
+    X32Ui(x32_ui::Args),
 }
 
 #[tokio::main]
@@ -189,5 +191,6 @@ async fn main() -> Result<()> {
         Commands::X32SpeechMode(args) => {
             x32_speech_mode::run(args).await.map_err(anyhow::Error::msg)
         }
+        Commands::X32Ui(args) => x32_ui::run(args).await.map_err(anyhow::Error::msg),
     }
 }

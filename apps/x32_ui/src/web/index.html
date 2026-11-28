@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>X32 Consolidated Console &amp; Reaper Virtual Soundcheck</title>
+  <link rel="stylesheet" href="/app.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-badge">X32</div>
+      <div>
+        <div class="brand-title">X32 Control Suite</div>
+        <div class="brand-sub" id="modelSubtitle">Disconnected</div>
+      </div>
+    </div>
+
+    <div class="conn-controls">
+      <select id="transportSelect" title="Transport">
+        <option value="auto">Auto</option>
+        <option value="osc">Ethernet OSC</option>
+        <option value="aes50">AES50</option>
+        <option value="usb">USB MIDI</option>
+      </select>
+      <input id="ipInput" type="text" value="127.0.0.1:10023" placeholder="192.168.1.64 or auto" />
+      <button class="btn btn-primary" id="connectBtn">Connect</button>
+      <button class="btn" id="discoverBtn">Discover LAN</button>
+      <button class="btn" id="startEmuBtn" title="Start local x32-emulator on 127.0.0.1:10023">Start Emulator</button>
+      <button class="btn" id="refreshBtn" title="Refresh console state">Refresh</button>
+    </div>
+
+    <div class="global-actions">
+      <span class="pill pill-off" id="connBadge">Disconnected</span>
+      <button class="pill pill-rec" id="globalModePill" title="Toggle X32 REC (Live) / PLAY (Virtual Soundcheck)">
+        MODE: REC (LIVE)
+      </button>
+      <button class="btn btn-sm" id="quickBackupBtn">Save Snapshot</button>
+      <button class="btn btn-sm" id="quickRestoreBtn">Restore</button>
+      <button class="btn btn-danger" id="panicBtn">PANIC MUTE</button>
+    </div>
+  </header>
+
+  <div id="discoverBanner" class="banner hidden"></div>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="mixer">Mixer Console</button>
+    <button class="tab" data-tab="studio">Live / DAW Split &amp; Recorder</button>
+    <button class="tab" data-tab="vsc">Virtual Soundcheck (Reaper)</button>
+    <button class="tab" data-tab="routing">Routing Matrix</button>
+    <button class="tab" data-tab="tools">All X32 Tools (<span id="toolCount">48</span>)</button>
+    <button class="tab" data-tab="osc">OSC Console &amp; Logs</button>
+  </nav>
+
+  <main class="workspace">
+    <!-- TAB 1: MIXER CONSOLE -->
+    <section id="tab-mixer" class="tab-panel active">
+      <div class="bank-bar">
+        <div class="bank-pills" id="bankPills">
+          <button class="bank-btn active" data-bank="ch1">Ch 1–8</button>
+          <button class="bank-btn" data-bank="ch9">Ch 9–16</button>
+          <button class="bank-btn" data-bank="ch17">Ch 17–24</button>
+          <button class="bank-btn" data-bank="ch25">Ch 25–32</button>
+          <button class="bank-btn" data-bank="aux">Aux 1–8</button>
+          <button class="bank-btn" data-bank="bus1">Bus 1–8</button>
+          <button class="bank-btn" data-bank="bus9">Bus 9–16</button>
+          <button class="bank-btn" data-bank="mtx">Matrices 1–6</button>
+          <button class="bank-btn" data-bank="dca">DCAs 1–8</button>
+        </div>
+        <div class="hint">Click a strip label to rename, click color dot to cycle scribble color</div>
+      </div>
+
+      <div class="mixer-layout">
+        <div class="strips-grid" id="stripsGrid"></div>
+        <aside class="master-strip" id="masterStrip"></aside>
+      </div>
+    </section>
+
+    <!-- TAB 2: LIVE / DAW SPLIT & EVENT RECORDER -->
+    <section id="tab-studio" class="tab-panel">
+      <div class="vsc-grid">
+        <!-- Panel 1: Mode & Digital Split -->
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h2>1. Mode &amp; Full Digital Split</h2>
+              <p class="muted">Pop-guarded switching between Live Console Mode and DAW Playback Mode.</p>
+            </div>
+            <button class="btn btn-primary" id="studioApplySplitBtn">Apply Digital Split</button>
+          </div>
+          <div class="vsc-switch-box">
+            <button class="btn btn-switch-rec active" id="studioModeLiveBtn">LIVE CONSOLE MODE (REC)</button>
+            <button class="btn btn-switch-play" id="studioModeDawBtn">DAW / VSC MODE (PLAY)</button>
+          </div>
+          <div class="split-flow" id="studioSplitFlow">
+            Stage Inputs &rarr; <strong>FOH Console</strong> + <strong>Card Out 1–32 (REAPER)</strong> + <strong>Pre-staged Play Return</strong>
+          </div>
+          <div class="vsc-meta-row" style="margin-top:8px;">
+            <span>Split Active: <strong id="studioSplitBadge">No</strong></span>
+            <span>Pop Guard: <strong id="studioPopGuardBadge">Idle</strong></span>
+            <span>Bridge: <strong id="studioBridgeBadge">Off</strong></span>
+          </div>
+          <div id="studioLastAction" class="status-line">Ready</div>
+        </div>
+
+        <!-- Panel 2: Synced Audio + Full Event Recorder -->
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h2>2. Full Event + Audio Recorder</h2>
+              <p class="muted">Captures initial snapshot keyframe, every OSC move, and markers in sync with REAPER.</p>
+            </div>
+          </div>
+          <div class="vsc-meta-row">
+            <span>State: <strong id="recStateLabel">idle</strong></span>
+            <span>Events: <strong id="recEventCount">0</strong></span>
+            <span>Markers: <strong id="recMarkerCount">0</strong></span>
+          </div>
+          <div class="form-grid-2">
+            <div class="form-row">
+              <label>Session Label</label>
+              <input id="recSessionLabel" type="text" value="LiveSession" />
+            </div>
+            <div class="form-row">
+              <label>Marker Label</label>
+              <input id="recMarkerLabel" type="text" placeholder="Song / Cue name" />
+            </div>
+          </div>
+          <div class="btn-row" style="margin:6px 0 10px;">
+            <button class="btn btn-danger" id="studioRecStartBtn">Record Audio + Events</button>
+            <button class="btn" id="studioPlayBtn">Synced Play</button>
+            <button class="btn" id="studioStopBtn">Stop All</button>
+            <button class="btn btn-primary" id="studioMarkerBtn">Drop Marker</button>
+          </div>
+          <div class="form-row">
+            <label>Recorded Event Sessions (.x32events.jsonl)</label>
+            <div class="btn-row">
+              <select id="studioRecordingsSelect" style="flex:1;"></select>
+              <button class="btn btn-sm" id="studioRefreshRecsBtn">Refresh</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Panel 3: Console Hardware User Assign Deck -->
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h2>3. X32 Console Control Deck (User Assign Bank <span id="studioBankLabel">C</span>)</h2>
+              <p class="muted">Operate directly from X32 User Assign Buttons 5–12 (Red = Live, Green = DAW).</p>
+            </div>
+            <button class="btn btn-primary" id="studioProgramBtnsBtn">Program Console Buttons</button>
+          </div>
+          <div class="hw-deck-grid" id="studioHwDeck"></div>
+        </div>
+
+        <!-- Panel 4: Turn-On & Go Profile -->
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h2>4. Turn-On &amp; Go Auto-Boot Profile</h2>
+              <p class="muted">Persisted in <code>x32_studio_profile.json</code> for unattended console-first startup.</p>
+            </div>
+            <button class="btn btn-primary" id="studioSaveProfileBtn">Save Profile</button>
+          </div>
+          <div class="form-grid-2">
+            <div class="form-row">
+              <label>Auto-Connect Mixer IP (or "auto")</label>
+              <input id="profMixerIp" type="text" value="auto" />
+            </div>
+            <div class="form-row">
+              <label>Digital Split AES50 Mirror</label>
+              <select id="profMirrorAes50">
+                <option value="none">None (Card 1–32 only)</option>
+                <option value="aes50a">Mirror Stage Split to AES50-A</option>
+                <option value="aes50b">Mirror Stage Split to AES50-B</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label>X32 User Assign Bank</label>
+              <select id="profControlBank">
+                <option value="C">Bank C (default)</option>
+                <option value="B">Bank B</option>
+                <option value="A">Bank A</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label>Pop-Guard Main Mute (ms)</label>
+              <input id="profPopGuardMs" type="number" value="60" min="0" max="1000" />
+            </div>
+            <div class="form-row">
+              <label>Recordings Directory</label>
+              <input id="profRecDir" type="text" value="recordings" />
+            </div>
+            <div class="form-row">
+              <label>REAPER Project Path (optional auto-launch)</label>
+              <input id="profReaperSession" type="text" placeholder="path/to/show.rpp" />
+            </div>
+          </div>
+          <div class="checks-grid">
+            <label class="checkbox-inline"><input type="checkbox" id="profAutoConnect" checked /> Auto-connect &amp; reconnect on boot</label>
+            <label class="checkbox-inline"><input type="checkbox" id="profAutoSplit" checked /> Auto-apply digital split on connect</label>
+            <label class="checkbox-inline"><input type="checkbox" id="profEnableBtns" checked /> Program X32 User Assign buttons</label>
+            <label class="checkbox-inline"><input type="checkbox" id="profSyncReplay" checked /> Sync event replay in DAW Play</label>
+            <label class="checkbox-inline"><input type="checkbox" id="profRestoreLive" /> Restore pre-DAW snapshot on return to Live</label>
+            <label class="checkbox-inline"><input type="checkbox" id="profBridgeInDaw" /> Auto-start x32-reaper bridge in DAW mode</label>
+            <label class="checkbox-inline"><input type="checkbox" id="profAutoLaunchReaper" /> Auto-launch REAPER on connect</label>
+            <label class="checkbox-inline"><input type="checkbox" id="profPreserveUout" checked /> Preserve Card UOUT (User Out) feeds</label>
+            <label class="checkbox-inline"><input type="checkbox" id="profAutoGenRpp" checked /> Auto-generate fresh .rpp on connect</label>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: VIRTUAL SOUNDCHECK (REAPER) -->
+    <section id="tab-vsc" class="tab-panel">
+      <div class="vsc-grid">
+        <!-- Step 1: Capture Console -->
+        <div class="card vsc-card-wide">
+          <div class="card-head">
+            <div>
+              <h2>1. Capture Console Settings</h2>
+              <p class="muted">Read channel names, scribble colors, stereo links, sample rate, and routing from the console.</p>
+            </div>
+            <div class="btn-row">
+              <button class="btn btn-primary" id="vscCaptureLiveBtn">Capture from Live Console</button>
+              <button class="btn" id="vscCaptureCachedBtn">Use Current Cached State</button>
+              <label class="btn" style="cursor:pointer;">
+                Import .scn File
+                <input type="file" id="vscSceneFile" accept=".scn,.SCN" style="display:none;" />
+              </label>
+            </div>
+          </div>
+          <div id="vscWarningsBox" class="split-flow hidden" style="margin-bottom:8px;"></div>
+          <div class="vsc-meta-row" id="vscCaptureMeta">
+            <span>Sample Rate: <strong id="vscSampleRateLabel">48000 Hz</strong></span>
+            <span>Channels Active: <strong id="vscActiveCount">32</strong></span>
+            <span>Current Switch: <strong id="vscCurrentSwitch">REC (Live)</strong></span>
+          </div>
+          <div class="table-wrap vsc-table-wrap">
+            <table class="data-table" id="vscChannelTable">
+              <thead>
+                <tr>
+                  <th>Include</th>
+                  <th>Ch</th>
+                  <th>Track Name</th>
+                  <th>Color</th>
+                  <th>Stereo Link</th>
+                  <th>Card In</th>
+                  <th>Card Out</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Step 2: X32 Routing & Mode Toggle -->
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h2>2. X32 Card Routing &amp; VSC Switch</h2>
+              <p class="muted">Mirrors physical stage inputs to Card Out and maps Card 1–32 to Play inputs.</p>
+            </div>
+          </div>
+
+          <div class="vsc-switch-box">
+            <button class="btn btn-switch-rec active" id="vscModeRecBtn">LIVE / RECORD (REC)</button>
+            <button class="btn btn-switch-play" id="vscModePlayBtn">VIRTUAL SOUNDCHECK (PLAY)</button>
+          </div>
+
+          <div class="form-row">
+            <label>Backup Snapshot Path</label>
+            <input id="vscBackupPath" type="text" value="x32_pre_vsc_backup.json" />
+          </div>
+          <label class="checkbox-inline">
+            <input type="checkbox" id="vscIncludeAuxCard" checked />
+            Also route Play Aux In 1–6 to Card 1–6
+          </label>
+          <label class="checkbox-inline">
+            <input type="checkbox" id="vscPreserveUout" checked />
+            Preserve Card UOUT (User Out) feeds if configured
+          </label>
+          <label class="checkbox-inline">
+            <input type="checkbox" id="vscSwitchOnApply" />
+            Switch console to PLAY immediately after applying routing
+          </label>
+
+          <div class="table-wrap">
+            <table class="data-table" id="vscRoutingDiffTable">
+              <thead>
+                <tr>
+                  <th>Block</th>
+                  <th>Current</th>
+                  <th>Planned VSC</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+
+          <div class="btn-row" style="margin-top: 12px;">
+            <button class="btn btn-primary" id="vscApplyRoutingBtn">Backup &amp; Apply VSC Routing</button>
+            <button class="btn" id="vscRestoreRoutingBtn">Restore Original Routing</button>
+          </div>
+        </div>
+
+        <!-- Step 3: REAPER .rpp & .X32Reaper.ini Generator/Adapter -->
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h2>3. REAPER Session (.rpp) &amp; .X32Reaper.ini</h2>
+              <p class="muted">Generate a fresh session or adapt an existing .rpp template while preserving audio items &amp; FX.</p>
+            </div>
+          </div>
+
+          <div class="form-grid-2">
+            <div class="form-row">
+              <label>Session Name</label>
+              <input id="vscProjectName" type="text" value="X32_Virtual_Soundcheck" />
+            </div>
+            <div class="form-row">
+              <label>Record Subfolder</label>
+              <input id="vscRecordPath" type="text" value="Audio" />
+            </div>
+            <div class="form-row">
+              <label>Sample Rate</label>
+              <select id="vscSampleRateSelect">
+                <option value="48000">48000 Hz</option>
+                <option value="44100">44100 Hz</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label>Existing .rpp Path to Adapt (optional)</label>
+              <input id="vscTemplatePath" type="text" placeholder="e.g. docs/X32Template.rpp" />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <label>Or Upload Existing .rpp Template/Session</label>
+            <input id="vscTemplateFile" type="file" accept=".rpp,.RPP" />
+          </div>
+
+          <div class="checks-grid">
+            <label class="checkbox-inline"><input type="checkbox" id="vscMergeStereo" checked /> Merge stereo-linked pairs</label>
+            <label class="checkbox-inline"><input type="checkbox" id="vscArmTracks" checked /> Record-arm all tracks</label>
+            <label class="checkbox-inline"><input type="checkbox" id="vscDisableMaster" checked /> Disable REAPER Master Send (1:1 HWOut)</label>
+            <label class="checkbox-inline"><input type="checkbox" id="vscIncludeEmpty" /> Include unnamed channels</label>
+            <label class="checkbox-inline"><input type="checkbox" id="vscDedupSources" checked /> Deduplicate shared input sources</label>
+            <label class="checkbox-inline"><input type="checkbox" id="vscDigitalTwin" checked /> Digital Twin mix state (fader/pan/mute)</label>
+            <label class="checkbox-inline"><input type="checkbox" id="vscAppendTags" checked /> Append %icon %color tags</label>
+            <label class="checkbox-inline"><input type="checkbox" id="vscIncludeDcas" /> Include DCA 1–8 tracks</label>
+            <label class="checkbox-inline"><input type="checkbox" id="vscIncludeAux" /> Include Aux 1–8 tracks</label>
+            <label class="checkbox-inline"><input type="checkbox" id="vscIncludeBuses" /> Include Bus 1–16 tracks</label>
+            <label class="checkbox-inline"><input type="checkbox" id="vscIncludeMatrices" /> Include Matrix 1–6 tracks</label>
+          </div>
+
+          <div class="form-grid-2" style="margin-top:8px;">
+            <div class="form-row">
+              <label>Save .rpp To Disk (optional)</label>
+              <input id="vscOutputRppPath" type="text" placeholder="e.g. ./VirtualSoundcheck.rpp" />
+            </div>
+            <div class="form-row">
+              <label>Save .X32Reaper.ini To Disk (optional)</label>
+              <input id="vscOutputIniPath" type="text" value=".X32Reaper.ini" />
+            </div>
+          </div>
+
+          <div class="btn-row" style="margin-top:10px;">
+            <button class="btn btn-primary" id="vscGenerateBtn">Generate / Adapt Session</button>
+            <button class="btn" id="vscDownloadRppBtn" disabled>Download .rpp</button>
+            <button class="btn" id="vscDownloadIniBtn" disabled>Download .X32Reaper.ini</button>
+          </div>
+          <div id="vscGenStatus" class="status-line"></div>
+          <textarea id="vscRppPreview" class="code-preview" readonly placeholder="Generated .rpp preview will appear here..."></textarea>
+        </div>
+
+        <!-- Step 4: Live REAPER OSC & Bridge -->
+        <div class="card vsc-card-wide">
+          <div class="card-head">
+            <div>
+              <h2>4. Live REAPER OSC Sync &amp; Bridge Control</h2>
+              <p class="muted">Push track names &amp; record-arm directly to a running REAPER instance, control transport, or launch x32-reaper.</p>
+            </div>
+          </div>
+          <div class="form-grid-4">
+            <div class="form-row">
+              <label>REAPER IP</label>
+              <input id="reaperIpInput" type="text" value="127.0.0.1" />
+            </div>
+            <div class="form-row">
+              <label>REAPER Receive Port</label>
+              <input id="reaperSendPortInput" type="number" value="8000" />
+            </div>
+            <div class="form-row">
+              <label>Bridge Listen Port</label>
+              <input id="reaperRecvPortInput" type="number" value="9000" />
+            </div>
+            <div class="form-row">
+              <label>Fader Bank Size</label>
+              <select id="reaperBankSizeInput">
+                <option value="32">32</option>
+                <option value="16">16</option>
+                <option value="8">8</option>
+              </select>
+            </div>
+          </div>
+          <div class="btn-row" style="margin-top:8px;">
+            <button class="btn btn-primary" id="reaperPushTracksBtn">Push Track Names &amp; Arm to REAPER</button>
+            <button class="btn" data-reaper-act="play">Play</button>
+            <button class="btn" data-reaper-act="stop">Stop</button>
+            <button class="btn btn-danger-outline" data-reaper-act="record">Record</button>
+            <button class="btn" data-reaper-act="arm_all">Arm All</button>
+            <button class="btn" data-reaper-act="disarm_all">Disarm All</button>
+            <button class="btn" data-reaper-act="refresh">Refresh Surface</button>
+            <button class="btn btn-accent" id="startReaperBridgeBtn">Start x32-reaper Bridge</button>
+          </div>
+          <div id="reaperStatusLine" class="status-line"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: ROUTING MATRIX -->
+    <section id="tab-routing" class="tab-panel">
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <h2>X32 Routing Matrix</h2>
+            <p class="muted">Inspect and modify Input, Play, Card, Out, and AES50 routing blocks.</p>
+          </div>
+          <button class="btn" id="routingRefreshBtn">Refresh Routing</button>
+        </div>
+        <div class="routing-grid" id="routingGrid"></div>
+      </div>
+    </section>
+
+    <!-- TAB 4: ALL X32 TOOLS -->
+    <section id="tab-tools" class="tab-panel">
+      <div class="tools-toolbar">
+        <input id="toolSearchInput" type="search" placeholder="Search 48 X32/Wing/X-Air tools (e.g. automix, xlive, scene, ringout)..." />
+        <div class="category-pills" id="categoryPills"></div>
+      </div>
+
+      <div class="tools-layout">
+        <div class="tools-grid" id="toolsGrid"></div>
+        <aside class="tool-runner-panel card" id="toolRunnerPanel">
+          <h3>Select a tool</h3>
+          <p class="muted">Choose any utility card to configure its parameters and run it via x32-cli.</p>
+        </aside>
+      </div>
+    </section>
+
+    <!-- TAB 5: OSC CONSOLE & LOGS -->
+    <section id="tab-osc" class="tab-panel">
+      <div class="osc-layout">
+        <div class="card">
+          <h3>Raw OSC Sender</h3>
+          <div class="osc-send-bar">
+            <input id="oscPathInput" type="text" value="/ch/01/mix/fader" placeholder="/ch/01/mix/fader" />
+            <select id="oscArgType">
+              <option value="none">(Query / No Args)</option>
+              <option value="f">Float</option>
+              <option value="i">Int</option>
+              <option value="s">String</option>
+            </select>
+            <input id="oscArgValue" type="text" placeholder="Value (e.g. 0.75)" />
+            <button class="btn btn-primary" id="oscSendBtn">Send OSC</button>
+          </div>
+          <div class="table-wrap osc-log-wrap">
+            <table class="data-table" id="oscLogTable">
+              <thead>
+                <tr><th>Dir</th><th>Path</th><th>Args</th></tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <h3>Running &amp; Recent Tool Jobs</h3>
+            <button class="btn btn-sm" id="refreshJobsBtn">Refresh</button>
+          </div>
+          <div id="jobsList" class="jobs-list"></div>
+          <pre id="jobLogOutput" class="log-drawer-pre"></pre>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="bottom-drawer" id="bottomDrawer">
+    <div class="drawer-head">
+      <span id="drawerSummary">Ready</span>
+      <button class="btn btn-sm" id="toggleDrawerBtn">Logs</button>
+    </div>
+    <pre id="drawerLogs" class="drawer-body hidden"></pre>
+  </footer>
+
+  <script src="/app.js"></script>
+</body>
+</html>

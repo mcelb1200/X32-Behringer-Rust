@@ -8,6 +8,53 @@ Welcome to the X32 Tools User Guide. This document categorizes the workspace uti
 
 High-level applications in `apps/` designed for non-expert operators, live safety guardrails, and automated setup:
 
+### `x32_ui` / `x32-cli x32-ui` (Consolidated Web UI & Digital Twin Suite)
+Local browser-based control suite (`http://127.0.0.1:8080`, zero external HTTP crates) unifying every X32/M32/Wing/X-Air tool alongside live mixing, Console-First Studio Mode, full OSC event recording, and automated **REAPER Virtual Soundcheck (Digital Twin)**. See [apps/x32_ui/README.md](../apps/x32_ui/README.md).
+
+#### Launching & CLI Flags
+```bash
+# Start local dashboard and open browser
+x32-cli x32-ui --open
+
+# Auto-discover mixer on LAN and expose dashboard to tablets on port 8080
+x32-cli x32-ui --bind-ip 0.0.0.0 --port 8080 --ip auto
+
+# Unattended Turn-On & Go boot supervisor using saved profile
+x32-cli x32-ui --profile x32_studio_profile.json --auto-boot
+```
+- `--bind-ip` (`127.0.0.1`), `--port` (`8080`), `--ip <IP|auto>`, `--transport <auto|osc|aes50|usb>`, `--aes50-ip`, `--usb-port`, `--open`, `--profile` (`x32_studio_profile.json`), `--auto-boot`.
+
+#### Live Console Control
+- Multi-bank faders, mutes, pans, scribble-strip names/colors, and live meters across **Channels 1–32**, **Aux In 1–8**, **Mix Buses 1–16**, **Matrices 1–6**, **DCAs 1–8**, and **Main LR**.
+- Tracks stereo link state across channels (`/config/chlink/*`), auxes (`/config/auxlink/*`), buses (`/config/buslink/*`), and matrices (`/config/mtxlink/*`).
+- Visual Routing Matrix (`routswitch`, `IN`, `PLAY`, `CARD`, `OUT`, `AES50-A`, `AES50-B`), raw typed OSC console with live stream, searchable launcher for all 48 `x32-cli` tools, snapshot backup/restore, and 2-step smooth panic mute.
+
+#### Console-First Turn-On & Go & Digital Split Workflow
+1. Configure and save your studio profile once in the **Studio Mode** tab (`x32_studio_profile.json`: mixer IP/transport, REAPER paths & OSC ports, `recordings_dir`, AES50 split mirror option, pop-guard mute duration, User Assign bank, `preserve_card_uout`, `auto_generate_rpp_on_connect`, `auto_connect_on_boot`).
+2. Start `x32-cli x32-ui --auto-boot` at computer login (or enable `auto_connect_on_boot`). When the console comes online, the supervisor connects automatically, applies the safe digital split (if enabled), generates `<recordings_dir>/AutoSession.rpp` + `.X32Reaper.ini` (when `auto_generate_rpp_on_connect` is enabled), optionally launches REAPER and `x32-reaper`, and programs the X32 **User Assign Bank** (`A`, `B`, or `C`, buttons **5–12**) with synced LEDs:
+   - **Button 5 (`LIVE/DAW`):** Pop-guarded `routswitch` switch between **LIVE (REC)** and **DAW (PLAY)** (temporarily engages Main LR/Matrix/Monitor pop-guard mute during clock/routing transition).
+   - **Button 6 (`REC`):** Starts/stops synchronized REAPER audio recording + full console OSC event recording.
+   - **Button 7 (`PLAY`):** Starts/stops REAPER DAW playback (with optional synced console event replay).
+   - **Button 8 (`STOP`):** Stops active recording/playback.
+   - **Button 9 (`MARKER`):** Drops a synchronized marker in both REAPER and the event recording log.
+   - **Button 10 (`EVT SYNC`):** Toggles synchronized console event replay during DAW playback.
+   - **Button 11 (`SNAPSHOT`):** Saves a quick timestamped console snapshot backup.
+   - **Button 12 (`DAW BRIDGE`):** Starts/stops the bidirectional `x32-reaper` bridge process.
+3. **Digital Split & AES50 / `UOUT1-48` Protection:**
+   - Mirrors physical stage inputs (`IN`) to `CARD` Out `1–32` (automatically avoiding `CARD`-to-`CARD` feedback loops) and pre-stages `PLAY` return on `CARD 1–32` while preserving existing `PLAY/AUX` `CARD1-2/4/6` routing (`10..=12`).
+   - Supports X32 v4 **`UOUT1-48`** (`26..=31`) on `CARD` routing blocks: when `preserve_card_uout` is enabled, `UOUT` feeds remain intact with an advisory warning.
+   - Protects active AES50 ports: AES50-A or AES50-B split mirroring is skipped with a warning whenever that port already carries stagebox inputs (`4..=9` for AES50-A, `10..=15` for AES50-B) or active outputs (`>= 16`, such as `OUT*`, `P16*`, `CARD*`, or `UOUT*`) on blocks `1–32`.
+
+#### Full Console Event Recorder
+- Captures an initial full-console keyframe snapshot followed by timestamped OSC parameter deltas and markers into `.x32events.jsonl` files inside `recordings_dir`.
+- Replays timed console changes back to the X32 alongside REAPER multitrack audio playback.
+
+#### REAPER Virtual Soundcheck & Digital Twin Setup
+- **Live Capture or Offline `.scn` Import:** Capture live state directly from the console (`Capture`), or import any saved X32 `.scn` scene file offline in the Web UI (Sentinel-bounded to 4 MiB) to inspect routing and build a REAPER session before showtime.
+- **Source-Aware Patching & Shared-Source Deduplication:** Reads each channel's physical `/ch/XX/config/source` (`1..=32`) to assign `card_in`/`card_out`, deduplicates channels sharing the same physical source (`deduplicate_shared_sources`) so multiple mixer channels tapping one input do not double-drive a single `HWOUT`, and defaults `include_empty_channels` to `false` when custom channel names are present.
+- **Digital Twin Synchronization:** When `digital_twin_mode` is active, `.rpp` track generation writes converted console fader (`VOLPAN`), pan, and mute (`MUTESOLO`) values; optionally includes Aux In 1–8, Mix Bus 1–16, Matrix 1–6, and DCA 1–8 tracks; and `Push to REAPER OSC` transmits live `/track/{n}/name`, `/volume`, `/mute`, and `/pan`.
+- **Template Adaptation & Routing Backup:** Non-destructively adapts existing `.rpp` templates (such as [docs/X32Template.rpp](X32Template.rpp) and [docs/Template 48 tracks.rpp](Template%2048%20tracks.rpp)) while preserving recorded items, FX chains, and markers, generates a matching `.X32Reaper.ini`, and saves/restores pre-VSC console snapshots.
+
 ### `x32_volunteer` (Interactive)
 Simplified Terminal UI dashboard for volunteer sound operators across X32, Wing, and X-Air (`XR18`/`XR16`/`XR12`). Supports `--ip auto` LAN discovery, `x32_config.json` ([sample config](examples/x32_config.volunteer.json)), per-channel mute/fader nudging clamped to `--max-fader-limit-db`, Main LR & connection health monitoring, `[A]` spectrum-aware mixbus Dugan automixing with dynamic vocal-pocket EQ, broadcast `stream_monitor`, `[C]` pre-service check & backup, `[U]` undo rollback, and a 2-step smooth-fade `[P]anic` button. See [apps/x32_volunteer/README.md](../apps/x32_volunteer/README.md) and the [RTA Automix Spec](specs/rta_spectrum_automix.md).
 
@@ -130,6 +177,7 @@ Extracts markers from X-Live! session files and converts them to Reaper or Audit
 | `x32_ssavergw` | Bin | Console screen saver / dimmer. |
 | `x32_tap` | Bin | Delay tap tempo tool (CLI). |
 | `x32_tapw` | Bin | Delay tap tempo tool (TUI). |
+| `x32_ui` | App | Consolidated Web UI, Matrices, Digital Split & REAPER Digital Twin suite. |
 | `x32_tcp` | Bin | TCP-to-UDP OSC bridge. |
 | `x32_udp` | Bin | UDP-to-UDP OSC bridge. |
 | `x32_usb` | Bin | Console USB drive manager. |

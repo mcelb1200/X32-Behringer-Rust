@@ -8,6 +8,7 @@ This project is a high-performance, secure rewrite of the X32 command-line tools
 *   **🛡️ Sentinel Hardened:** Built with safety in mind. All file and network inputs are bounded to prevent memory exhaustion (OOM) and Denial-of-Service attacks.
 *   **📡 MixerClient Multi-Transport:** A unified, asynchronous connection manager that supports Ethernet UDP, AES50 Tunneled UDP, and USB MIDI Sysex with auto-fallback and built-in keep-alive heartbeats.
 *   **🧬 Model Specification Inheritance:** Zero-allocation parameter parsing dynamically generated along a model inheritance chain (X32 -> XR18 -> XR16 -> XR12) via compile-time JSON specifications.
+*   **🎛️ Consolidated Web UI & Digital Twin Studio Mode (`x32_ui`):** Zero-extra-dependency browser dashboard uniting all 48 `x32-cli` tools, multi-bank live mixing (Channels 1–32, Aux In 1–8, Mix Buses 1–16, Matrices 1–6, DCAs 1–8, Main LR), console-first **Turn-On & Go** operation via X32 User Assign hardware buttons, full digital split with active AES50 & X32 v4 `UOUT1-48` protection, synced audio + full OSC event recording, source-aware REAPER Digital Twin `.rpp` / `.X32Reaper.ini` generation, and offline `.scn` scene import.
 *   **🧩 Modular Architecture:** A collection of 30+ specialized tools built on a shared, stateful emulator and OSC library.
 *   **🎹 Creative Extensions:** Includes advanced tools like `x32_autobeat` for BPM-syncing effects and `x32_tapw` for interactive TUI-based tempo control.
 
@@ -27,6 +28,9 @@ graph TD;
 
     subgraph Binaries
         direction TB
+        subgraph Consolidated_UI
+            x32_ui[x32_ui: Web UI + Digital Twin VSC + Studio Mode];
+        end
         subgraph Live_Performance
             x32_autobeat; x32_automix; x32_tapw; x32_tap; x32_crossfade; x32_fade; x32_jog4xlive;
         end
@@ -66,6 +70,7 @@ graph TD;
 ### Featured Tools
 | Crate | Category | Description |
 | :--- | :--- | :--- |
+| `x32_ui` | **Consolidated UI** | Local Web UI unifying all 48 X32 tools, live mixing (including Matrices 1–6), Console-First Digital Split & Event Recorder, Digital Twin REAPER Virtual Soundcheck, and offline `.scn` import. |
 | `x32_volunteer` | **Volunteer** | Simplified TUI dashboard with fader limits, clipping alerts, and guarded panic mute. |
 | `x32_scene_checker`| **Safety** | Pre-flight scene risk analyzer with `--safe-load` and path locking. |
 | `x32_autobeat` | **Live** | Automatic BPM detection (Energy/Spectral) and effect synchronization. |
@@ -95,6 +100,11 @@ Compiled binaries are located in `target/release/`.
 ### Quick Start: Emulator & Command
 1. Start the emulator: `./target/release/x32-cli x32-emulator`
 2. Send a command: `./target/release/x32-cli command --ip 127.0.0.1 "/ch/01/mix/fader 0.75"`
+
+### Quick Start: Consolidated Web UI & Turn-On & Go Studio Mode
+1. Launch the browser dashboard and auto-discover your console: `./target/release/x32-cli x32-ui --ip auto --open`
+2. Once `x32_studio_profile.json` is saved, run unattended on startup for console-first hardware button control: `./target/release/x32-cli x32-ui --auto-boot`
+   See the [User Guide](docs/USER_GUIDE.md) and [x32_ui README](apps/x32_ui/README.md) for Digital Split, Matrix control, Event Recording, and REAPER Digital Twin setup.
 
 ---
 

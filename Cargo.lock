@@ -2323,6 +2323,7 @@ dependencies = [
  "x32_tapw",
  "x32_tcp",
  "x32_udp",
+ "x32_ui",
  "x32_usb",
  "x32_vocal_ducking",
  "x32_volunteer",
@@ -2917,6 +2918,22 @@ dependencies = [
  "osc_lib",
  "tokio",
  "x32_lib",
+]
+
+[[package]]
+name = "x32_ui"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "osc_lib",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "tokio",
+ "x32_core",
+ "x32_lib",
+ "x32_reaper",
 ]
 
 [[package]]

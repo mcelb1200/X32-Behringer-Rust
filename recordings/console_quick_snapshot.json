@@ -1,0 +1,1016 @@
+{
+  "entries": {
+    "/bus/01/mix/fader": {
+      "type": "Float",
+      "value": 0.0
+    },
+    "/bus/01/mix/on": {
+      "type": "Int",
+      "value": 1
+    },
+    "/bus/02/mix/fader": {
+      "type": "Float",
+      "value": 0.0
+    },
+    "/bus/02/mix/on": {
+      "type": "Int",
+      "value": 1
+    },
+    "/bus/03/mix/fader": {
+      "type": "Float",
+      "value": 0.0
+    },
+    "/bus/03/mix/on": {
+      "type": "Int",
+      "value": 1
+    },
+    "/bus/04/mix/fader": {
+      "type": "Float",
+      "value": 0.0
+    },
+    "/bus/04/mix/on": {
+      "type": "Int",
+      "value": 1
+    },
+    "/bus/05/mix/fader": {
+      "type": "Float",
+      "value": 0.0
+    },
+    "/bus/05/mix/on": {
+      "type": "Int",
+      "value": 1
+    },
+    "/bus/06/mix/fader": {
+      "type": "Float",
+      "value": 0.0
+    },
+    "/bus/06/mix/on": {
+      "type": "Int",
+      "value": 1
+    },
+    "/bus/07/mix/fader": {
+      "type": "Float",
+      "value": 0.0
+    },
+    "/bus/07/mix/on": {
+      "type": "Int",
+      "value": 1
+    },
+    "/bus/08/mix/fader": {
+      "type": "Float",
+      "value": 0.0
+    },
+    "/bus/08/mix/on": {
+      "type": "Int",
+      "value": 1
+    },
+    "/bus/09/mix/fader": {
+      "type": "Float",
+      "value": 0.0
+    },
+    "/bus/09/mix/on": {
+      "type": "Int",
+      "value": 1
+    },
+    "/bus/10/mix/fader": {
+      "type": "Float",
+      "value": 0.0
+    },
+    "/bus/10/mix/on": {
+      "type": "Int",
+      "value": 1
+    },
+    "/bus/11/mix/fader": {
+      "type": "Float",
+      "value": 0.0
+    },
+    "/bus/11/mix/on": {
+      "type": "Int",
+      "value": 1
+    },
+    "/bus/12/mix/fader": {
+      "type": "Float",
+      "value": 0.0
+    },
+    "/bus/12/mix/on": {
+      "type": "Int",
+      "value": 1
+    },
+    "/bus/13/mix/fader": {
+      "type": "Float",
+      "value": 0.0
+    },
+    "/bus/13/mix/on": {
+      "type": "Int",
+      "value": 1
+    },
+    "/bus/14/mix/fader": {
+      "type": "Float",
+      "value": 0.0
+    },
+    "/bus/14/mix/on": {
+      "type": "Int",
+      "value": 1
+    },
+    "/bus/15/mix/fader": {
+      "type": "Float",
+      "value": 0.0
+    },
+    "/bus/15/mix/on": {
+      "type": "Int",
+      "value": 1
+    },
+    "/bus/16/mix/fader": {
+      "type": "Float",
+      "value": 0.0
+    },
+    "/bus/16/mix/on": {
+      "type": "Int",
+      "value": 1
+    },
+    "/ch/01/config/color": {
+      "type": "Int",
+      "value": 0
+    },
+    "/ch/01/config/name": {
+      "type": "String",
+      "value": ""
+    },
+    "/ch/01/mix/fader": {
+      "type": "Float",
+      "value": 0.0
+    },
+    "/ch/01/mix/on": {
+      "type": "Int",
+      "value": 1
+    },
+    "/ch/01/mix/pan": {
+      "type": "Float",
+      "value": 0.5
+    },
+    "/ch/02/config/color": {
+      "type": "Int",
+      "value": 0
+    },
+    "/ch/02/config/name": {
+      "type": "String",
+      "value": ""
+    },
+    "/ch/02/mix/fader": {
+      "type": "Float",
+      "value": 0.0
+    },
+    "/ch/02/mix/on": {
+      "type": "Int",
+      "value": 1
+    },
+    "/ch/02/mix/pan": {
+      "type": "Float",
+      "value": 0.5
+    },
+    "/ch/03/config/color": {
+      "type": "Int",
+      "value": 0
+    },
+    "/ch/03/config/name": {
+      "type": "String",
+      "value": ""
+    },
+    "/ch/03/mix/fader": {
+      "type": "Float",
+      "value": 0.0
+    },
+    "/ch/03/mix/on": {
+      "type": "Int",
+      "value": 1
+    },
+    "/ch/03/mix/pan": {
+      "type": "Float",
+      "value": 0.5
+    },
+    "/ch/04/config/color": {
+      "type": "Int",
+      "value": 0
+    },
+    "/ch/04/config/name": {
+      "type": "String",
+      "value": ""
+    },
+    "/ch/04/mix/fader": {
+      "type": "Float",
+      "value": 0.0
+    },
+    "/ch/04/mix/on": {
+      "type": "Int",
+      "value": 1
+    },
+    "/ch/04/mix/pan": {
+      "type": "Float",
+      "value": 0.5
+    },
+    "/ch/05/config/color": {
+      "type": "Int",
+      "value": 0
+    },
+    "/ch/05/config/name": {
+      "type": "String",
+      "value": ""
+    },
+    "/ch/05/mix/fader": {
+      "type": "Float",
+      "value": 0.0
+    },
+    "/ch/05/mix/on": {
+      "type": "Int",
+      "value": 1
+    },
+    "/ch/05/mix/pan": {
+      "type": "Float",
+      "value": 0.5
+    },
+    "/ch/06/config/color": {
+      "type": "Int",
+      "value": 0
+    },
+    "/ch/06/config/name": {
+      "type": "String",
+      "value": ""
+    },
+    "/ch/06/mix/fader": {
+      "type": "Float",
+      "value": 0.0
+    },
+    "/ch/06/mix/on": {
+      "type": "Int",
+      "value": 1
+    },
+    "/ch/06/mix/pan": {
+      "type": "Float",
+      "value": 0.5
+    },
+    "/ch/07/config/color": {
+      "type": "Int",
+      "value": 0
+    },
+    "/ch/07/config/name": {
+      "type": "String",
+      "value": ""
+    },
+    "/ch/07/mix/fader": {
+      "type": "Float",
+      "value": 0.0
+    },
+    "/ch/07/mix/on": {
+      "type": "Int",
+      "value": 1
+    },
+    "/ch/07/mix/pan": {
+      "type": "Float",
+      "value": 0.5
+    },
+    "/ch/08/config/color": {
+      "type": "Int",
+      "value": 0
+    },
+    "/ch/08/config/name": {
+      "type": "String",
+      "value": ""
+    },
+    "/ch/08/mix/fader": {
+      "type": "Float",
+      "value": 0.0
+    },
+    "/ch/08/mix/on": {
+      "type": "Int",
+      "value": 1
+    },
+    "/ch/08/mix/pan": {
+      "type": "Float",
+      "value": 0.5
+    },
+    "/ch/09/config/color": {
+      "type": "Int",
+      "value": 0
+    },
+    "/ch/09/config/name": {
+      "type": "String",
+      "value": ""
+    },
+    "/ch/09/mix/fader": {
+      "type": "Float",
+      "value": 0.0
+    },
+    "/ch/09/mix/on": {
+      "type": "Int",
+      "value": 1
+    },
+    "/ch/09/mix/pan": {
+      "type": "Float",
+      "value": 0.5
+    },
+    "/ch/10/config/color": {
+      "type": "Int",
+      "value": 0
+    },
+    "/ch/10/config/name": {
+      "type": "String",
+      "value": ""
+    },
+    "/ch/10/mix/fader": {
+      "type": "Float",
+      "value": 0.0
+    },
+    "/ch/10/mix/on": {
+      "type": "Int",
+      "value": 1
+    },
+    "/ch/10/mix/pan": {
+      "type": "Float",
+      "value": 0.5
+    },
+    "/ch/11/config/color": {
+      "type": "Int",
+      "value": 0
+    },
+    "/ch/11/config/name": {
+      "type": "String",
+      "value": ""
+    },
+    "/ch/11/mix/fader": {
+      "type": "Float",
+      "value": 0.0
+    },
+    "/ch/11/mix/on": {
+      "type": "Int",
+      "value": 1
+    },
+    "/ch/11/mix/pan": {
+      "type": "Float",
+      "value": 0.5
+    },
+    "/ch/12/config/color": {
+      "type": "Int",
+      "value": 0
+    },
+    "/ch/12/config/name": {
+      "type": "String",
+      "value": ""
+    },
+    "/ch/12/mix/fader": {
+      "type": "Float",
+      "value": 0.0
+    },
+    "/ch/12/mix/on": {
+      "type": "Int",
+      "value": 1
+    },
+    "/ch/12/mix/pan": {
+      "type": "Float",
+      "value": 0.5
+    },
+    "/ch/13/config/color": {
+      "type": "Int",
+      "value": 0
+    },
+    "/ch/13/config/name": {
+      "type": "String",
+      "value": ""
+    },
+    "/ch/13/mix/fader": {
+      "type": "Float",
+      "value": 0.0
+    },
+    "/ch/13/mix/on": {
+      "type": "Int",
+      "value": 1
+    },
+    "/ch/13/mix/pan": {
+      "type": "Float",
+      "value": 0.5
+    },
+    "/ch/14/config/color": {
+      "type": "Int",
+      "value": 0
+    },
+    "/ch/14/config/name": {
+      "type": "String",
+      "value": ""
+    },
+    "/ch/14/mix/fader": {
+      "type": "Float",
+      "value": 0.0
+    },
+    "/ch/14/mix/on": {
+      "type": "Int",
+      "value": 1
+    },
+    "/ch/14/mix/pan": {
+      "type": "Float",
+      "value": 0.5
+    },
+    "/ch/15/config/color": {
+      "type": "Int",
+      "value": 0
+    },
+    "/ch/15/config/name": {
+      "type": "String",
+      "value": ""
+    },
+    "/ch/15/mix/fader": {
+      "type": "Float",
+      "value": 0.0
+    },
+    "/ch/15/mix/on": {
+      "type": "Int",
+      "value": 1
+    },
+    "/ch/15/mix/pan": {
+      "type": "Float",
+      "value": 0.5
+    },
+    "/ch/16/config/color": {
+      "type": "Int",
+      "value": 0
+    },
+    "/ch/16/config/name": {
+      "type": "String",
+      "value": ""
+    },
+    "/ch/16/mix/fader": {
+      "type": "Float",
+      "value": 0.0
+    },
+    "/ch/16/mix/on": {
+      "type": "Int",
+      "value": 1
+    },
+    "/ch/16/mix/pan": {
+      "type": "Float",
+      "value": 0.5
+    },
+    "/ch/17/config/color": {
+      "type": "Int",
+      "value": 0
+    },
+    "/ch/17/config/name": {
+      "type": "String",
+      "value": ""
+    },
+    "/ch/17/mix/fader": {
+      "type": "Float",
+      "value": 0.0
+    },
+    "/ch/17/mix/on": {
+      "type": "Int",
+      "value": 1
+    },
+    "/ch/17/mix/pan": {
+      "type": "Float",
+      "value": 0.5
+    },
+    "/ch/18/config/color": {
+      "type": "Int",
+      "value": 0
+    },
+    "/ch/18/config/name": {
+      "type": "String",
+      "value": ""
+    },
+    "/ch/18/mix/fader": {
+      "type": "Float",
+      "value": 0.0
+    },
+    "/ch/18/mix/on": {
+      "type": "Int",
+      "value": 1
+    },
+    "/ch/18/mix/pan": {
+      "type": "Float",
+      "value": 0.5
+    },
+    "/ch/19/config/color": {
+      "type": "Int",
+      "value": 0
+    },
+    "/ch/19/config/name": {
+      "type": "String",
+      "value": ""
+    },
+    "/ch/19/mix/fader": {
+      "type": "Float",
+      "value": 0.0
+    },
+    "/ch/19/mix/on": {
+      "type": "Int",
+      "value": 1
+    },
+    "/ch/19/mix/pan": {
+      "type": "Float",
+      "value": 0.5
+    },
+    "/ch/20/config/color": {
+      "type": "Int",
+      "value": 0
+    },
+    "/ch/20/config/name": {
+      "type": "String",
+      "value": ""
+    },
+    "/ch/20/mix/fader": {
+      "type": "Float",
+      "value": 0.0
+    },
+    "/ch/20/mix/on": {
+      "type": "Int",
+      "value": 1
+    },
+    "/ch/20/mix/pan": {
+      "type": "Float",
+      "value": 0.5
+    },
+    "/ch/21/config/color": {
+      "type": "Int",
+      "value": 0
+    },
+    "/ch/21/config/name": {
+      "type": "String",
+      "value": ""
+    },
+    "/ch/21/mix/fader": {
+      "type": "Float",
+      "value": 0.0
+    },
+    "/ch/21/mix/on": {
+      "type": "Int",
+      "value": 1
+    },
+    "/ch/21/mix/pan": {
+      "type": "Float",
+      "value": 0.5
+    },
+    "/ch/22/config/color": {
+      "type": "Int",
+      "value": 0
+    },
+    "/ch/22/config/name": {
+      "type": "String",
+      "value": ""
+    },
+    "/ch/22/mix/fader": {
+      "type": "Float",
+      "value": 0.0
+    },
+    "/ch/22/mix/on": {
+      "type": "Int",
+      "value": 1
+    },
+    "/ch/22/mix/pan": {
+      "type": "Float",
+      "value": 0.5
+    },
+    "/ch/23/config/color": {
+      "type": "Int",
+      "value": 0
+    },
+    "/ch/23/config/name": {
+      "type": "String",
+      "value": ""
+    },
+    "/ch/23/mix/fader": {
+      "type": "Float",
+      "value": 0.0
+    },
+    "/ch/23/mix/on": {
+      "type": "Int",
+      "value": 1
+    },
+    "/ch/23/mix/pan": {
+      "type": "Float",
+      "value": 0.5
+    },
+    "/ch/24/config/color": {
+      "type": "Int",
+      "value": 0
+    },
+    "/ch/24/config/name": {
+      "type": "String",
+      "value": ""
+    },
+    "/ch/24/mix/fader": {
+      "type": "Float",
+      "value": 0.0
+    },
+    "/ch/24/mix/on": {
+      "type": "Int",
+      "value": 1
+    },
+    "/ch/24/mix/pan": {
+      "type": "Float",
+      "value": 0.5
+    },
+    "/ch/25/config/color": {
+      "type": "Int",
+      "value": 0
+    },
+    "/ch/25/config/name": {
+      "type": "String",
+      "value": ""
+    },
+    "/ch/25/mix/fader": {
+      "type": "Float",
+      "value": 0.0
+    },
+    "/ch/25/mix/on": {
+      "type": "Int",
+      "value": 1
+    },
+    "/ch/25/mix/pan": {
+      "type": "Float",
+      "value": 0.5
+    },
+    "/ch/26/config/color": {
+      "type": "Int",
+      "value": 0
+    },
+    "/ch/26/config/name": {
+      "type": "String",
+      "value": ""
+    },
+    "/ch/26/mix/fader": {
+      "type": "Float",
+      "value": 0.0
+    },
+    "/ch/26/mix/on": {
+      "type": "Int",
+      "value": 1
+    },
+    "/ch/26/mix/pan": {
+      "type": "Float",
+      "value": 0.5
+    },
+    "/ch/27/config/color": {
+      "type": "Int",
+      "value": 0
+    },
+    "/ch/27/config/name": {
+      "type": "String",
+      "value": ""
+    },
+    "/ch/27/mix/fader": {
+      "type": "Float",
+      "value": 0.0
+    },
+    "/ch/27/mix/on": {
+      "type": "Int",
+      "value": 1
+    },
+    "/ch/27/mix/pan": {
+      "type": "Float",
+      "value": 0.5
+    },
+    "/ch/28/config/color": {
+      "type": "Int",
+      "value": 0
+    },
+    "/ch/28/config/name": {
+      "type": "String",
+      "value": ""
+    },
+    "/ch/28/mix/fader": {
+      "type": "Float",
+      "value": 0.0
+    },
+    "/ch/28/mix/on": {
+      "type": "Int",
+      "value": 1
+    },
+    "/ch/28/mix/pan": {
+      "type": "Float",
+      "value": 0.5
+    },
+    "/ch/29/config/color": {
+      "type": "Int",
+      "value": 0
+    },
+    "/ch/29/config/name": {
+      "type": "String",
+      "value": ""
+    },
+    "/ch/29/mix/fader": {
+      "type": "Float",
+      "value": 0.0
+    },
+    "/ch/29/mix/on": {
+      "type": "Int",
+      "value": 1
+    },
+    "/ch/29/mix/pan": {
+      "type": "Float",
+      "value": 0.5
+    },
+    "/ch/30/config/color": {
+      "type": "Int",
+      "value": 0
+    },
+    "/ch/30/config/name": {
+      "type": "String",
+      "value": ""
+    },
+    "/ch/30/mix/fader": {
+      "type": "Float",
+      "value": 0.0
+    },
+    "/ch/30/mix/on": {
+      "type": "Int",
+      "value": 1
+    },
+    "/ch/30/mix/pan": {
+      "type": "Float",
+      "value": 0.5
+    },
+    "/ch/31/config/color": {
+      "type": "Int",
+      "value": 0
+    },
+    "/ch/31/config/name": {
+      "type": "String",
+      "value": ""
+    },
+    "/ch/31/mix/fader": {
+      "type": "Float",
+      "value": 0.0
+    },
+    "/ch/31/mix/on": {
+      "type": "Int",
+      "value": 1
+    },
+    "/ch/31/mix/pan": {
+      "type": "Float",
+      "value": 0.5
+    },
+    "/ch/32/config/color": {
+      "type": "Int",
+      "value": 0
+    },
+    "/ch/32/config/name": {
+      "type": "String",
+      "value": ""
+    },
+    "/ch/32/mix/fader": {
+      "type": "Float",
+      "value": 0.0
+    },
+    "/ch/32/mix/on": {
+      "type": "Int",
+      "value": 1
+    },
+    "/ch/32/mix/pan": {
+      "type": "Float",
+      "value": 0.5
+    },
+    "/config/routing/CARD/1-8": {
+      "type": "Int",
+      "value": 0
+    },
+    "/config/routing/CARD/17-24": {
+      "type": "Int",
+      "value": 2
+    },
+    "/config/routing/CARD/25-32": {
+      "type": "Int",
+      "value": 3
+    },
+    "/config/routing/CARD/9-16": {
+      "type": "Int",
+      "value": 1
+    },
+    "/config/routing/IN/1-8": {
+      "type": "Int",
+      "value": 0
+    },
+    "/config/routing/IN/17-24": {
+      "type": "Int",
+      "value": 2
+    },
+    "/config/routing/IN/25-32": {
+      "type": "Int",
+      "value": 3
+    },
+    "/config/routing/IN/9-16": {
+      "type": "Int",
+      "value": 1
+    },
+    "/config/routing/IN/AUX": {
+      "type": "Int",
+      "value": 0
+    },
+    "/config/routing/OUT/1-4": {
+      "type": "Int",
+      "value": 0
+    },
+    "/config/routing/OUT/13-16": {
+      "type": "Int",
+      "value": 3
+    },
+    "/config/routing/OUT/5-8": {
+      "type": "Int",
+      "value": 1
+    },
+    "/config/routing/OUT/9-12": {
+      "type": "Int",
+      "value": 2
+    },
+    "/config/routing/PLAY/1-8": {
+      "type": "Int",
+      "value": 16
+    },
+    "/config/routing/PLAY/17-24": {
+      "type": "Int",
+      "value": 18
+    },
+    "/config/routing/PLAY/25-32": {
+      "type": "Int",
+      "value": 19
+    },
+    "/config/routing/PLAY/9-16": {
+      "type": "Int",
+      "value": 17
+    },
+    "/config/routing/PLAY/AUX": {
+      "type": "Int",
+      "value": 12
+    },
+    "/config/routing/routswitch": {
+      "type": "Int",
+      "value": 1
+    },
+    "/dca/1/fader": {
+      "type": "Float",
+      "value": 0.75
+    },
+    "/dca/1/on": {
+      "type": "Int",
+      "value": 1
+    },
+    "/dca/2/fader": {
+      "type": "Float",
+      "value": 0.75
+    },
+    "/dca/2/on": {
+      "type": "Int",
+      "value": 1
+    },
+    "/dca/3/fader": {
+      "type": "Float",
+      "value": 0.75
+    },
+    "/dca/3/on": {
+      "type": "Int",
+      "value": 1
+    },
+    "/dca/4/fader": {
+      "type": "Float",
+      "value": 0.75
+    },
+    "/dca/4/on": {
+      "type": "Int",
+      "value": 1
+    },
+    "/dca/5/fader": {
+      "type": "Float",
+      "value": 0.75
+    },
+    "/dca/5/on": {
+      "type": "Int",
+      "value": 1
+    },
+    "/dca/6/fader": {
+      "type": "Float",
+      "value": 0.75
+    },
+    "/dca/6/on": {
+      "type": "Int",
+      "value": 1
+    },
+    "/dca/7/fader": {
+      "type": "Float",
+      "value": 0.75
+    },
+    "/dca/7/on": {
+      "type": "Int",
+      "value": 1
+    },
+    "/dca/8/fader": {
+      "type": "Float",
+      "value": 0.75
+    },
+    "/dca/8/on": {
+      "type": "Int",
+      "value": 1
+    },
+    "/main/st/mix/fader": {
+      "type": "Float",
+      "value": 0.75
+    },
+    "/main/st/mix/on": {
+      "type": "Int",
+      "value": 1
+    },
+    "/mtx/01/config/color": {
+      "type": "Int",
+      "value": 5
+    },
+    "/mtx/01/config/name": {
+      "type": "String",
+      "value": "Mtx 01"
+    },
+    "/mtx/01/mix/fader": {
+      "type": "Float",
+      "value": 0.0
+    },
+    "/mtx/01/mix/on": {
+      "type": "Int",
+      "value": 1
+    },
+    "/mtx/02/config/color": {
+      "type": "Int",
+      "value": 5
+    },
+    "/mtx/02/config/name": {
+      "type": "String",
+      "value": "Mtx 02"
+    },
+    "/mtx/02/mix/fader": {
+      "type": "Float",
+      "value": 0.0
+    },
+    "/mtx/02/mix/on": {
+      "type": "Int",
+      "value": 1
+    },
+    "/mtx/03/config/color": {
+      "type": "Int",
+      "value": 5
+    },
+    "/mtx/03/config/name": {
+      "type": "String",
+      "value": "Mtx 03"
+    },
+    "/mtx/03/mix/fader": {
+      "type": "Float",
+      "value": 0.0
+    },
+    "/mtx/03/mix/on": {
+      "type": "Int",
+      "value": 1
+    },
+    "/mtx/04/config/color": {
+      "type": "Int",
+      "value": 5
+    },
+    "/mtx/04/config/name": {
+      "type": "String",
+      "value": "Mtx 04"
+    },
+    "/mtx/04/mix/fader": {
+      "type": "Float",
+      "value": 0.0
+    },
+    "/mtx/04/mix/on": {
+      "type": "Int",
+      "value": 1
+    },
+    "/mtx/05/config/color": {
+      "type": "Int",
+      "value": 5
+    },
+    "/mtx/05/config/name": {
+      "type": "String",
+      "value": "Mtx 05"
+    },
+    "/mtx/05/mix/fader": {
+      "type": "Float",
+      "value": 0.0
+    },
+    "/mtx/05/mix/on": {
+      "type": "Int",
+      "value": 1
+    },
+    "/mtx/06/config/color": {
+      "type": "Int",
+      "value": 5
+    },
+    "/mtx/06/config/name": {
+      "type": "String",
+      "value": "Mtx 06"
+    },
+    "/mtx/06/mix/fader": {
+      "type": "Float",
+      "value": 0.0
+    },
+    "/mtx/06/mix/on": {
+      "type": "Int",
+      "value": 1
+    }
+  }
+}
